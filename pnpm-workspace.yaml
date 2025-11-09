@@ -1,2 +1,5 @@
 packages:
   - packages/*
+
+onlyBuiltDependencies:
+  - node-pty-prebuilt-multiarch

@@ -1,0 +1,20 @@
+{
+  "name": "@rs485-homenet/simulator",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run --runTestsByPath packages/simulator/test/simulator.test.ts"
+  },
+  "dependencies": {
+    "node-pty-prebuilt-multiarch": "0.10.1-pre.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

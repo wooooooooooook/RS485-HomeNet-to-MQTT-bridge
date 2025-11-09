@@ -1,0 +1,21 @@
+{
+  "name": "@rs485-homenet/core",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --runTestsByPath packages/core/test/homeNetBridge.test.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mqtt": "^5.3.4",
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

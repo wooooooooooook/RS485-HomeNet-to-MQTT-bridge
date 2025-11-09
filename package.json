@@ -1,0 +1,23 @@
+{
+  "name": "rs485-homenet-to-mqtt-bridge",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "core:dev": "npm run dev --workspace @rs485-homenet/core",
+    "service:dev": "npm run dev --workspace @rs485-homenet/service",
+    "ui:dev": "npm run dev --workspace @rs485-homenet/ui",
+    "core:build": "npm run build --workspace @rs485-homenet/core",
+    "service:build": "npm run build --workspace @rs485-homenet/service",
+    "ui:build": "npm run build --workspace @rs485-homenet/ui",
+    "lint": "npm run lint --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "vitest": "^1.5.0"
+  }
+}

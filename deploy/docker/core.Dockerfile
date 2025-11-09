@@ -10,21 +10,24 @@ FROM base AS builder
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages/core/package.json packages/core/package.json
-COPY packages/core/tsconfig.json packages/core/tsconfig.json
-COPY packages/core/src packages/core/src
+COPY packages packages
+COPY scripts scripts
 
-RUN pnpm install --filter @rs485-homenet/core...
-RUN pnpm --filter @rs485-homenet/core build
+RUN pnpm install --recursive --no-frozen-lockfile
+RUN pnpm core:build && pnpm service:build
 
 FROM base AS runner
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
-COPY scripts/run-core.mjs scripts/run-core.mjs
+COPY packages/service/package.json packages/service/package.json
+COPY scripts scripts
+
+RUN pnpm install --filter @rs485-homenet/service... --prod
+
 COPY --from=builder /app/packages/core/dist packages/core/dist
+COPY --from=builder /app/packages/service/dist packages/service/dist
+COPY --from=builder /app/packages/service/static packages/service/static
 
-RUN pnpm install --filter @rs485-homenet/core... --prod
-
-CMD ["node", "scripts/run-core.mjs"]
+CMD ["node", "packages/service/dist/server.js"]

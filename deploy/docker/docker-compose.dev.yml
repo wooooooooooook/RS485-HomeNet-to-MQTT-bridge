@@ -47,6 +47,7 @@ services:
       - pnpm-store:/root/.local/share/pnpm
       - simulator_node_modules:/workspace/node_modules
       - simshare:/simshare
+      - /dev/pts:/dev/pts
     command: >
       bash -lc "
         set -euo pipefail
@@ -67,41 +68,16 @@ services:
       SERIAL_PORT: /simshare/rs485-sim-tty
       BAUD_RATE: '9600'
       MQTT_URL: mqtt://mq:1883
+      SERIAL_PATH_WAIT_TIMEOUT_MS: '60000'
+      PORT: '3000'
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
       - core_node_modules:/workspace/node_modules
       - simshare:/simshare
-    command: >
-      bash -lc "
-        set -euo pipefail
-        corepack enable
-        pnpm install --filter @rs485-homenet/core... --no-frozen-lockfile
-        pnpm --filter @rs485-homenet/core build
-        node scripts/run-core.mjs
-      "
-    depends_on:
-      simulator:
-        condition: service_started
-      mq:
-        condition: service_started
-    restart: unless-stopped
-
-  ui:
-    <<: *dev-base
-    container_name: rs485-ui-dev
-    environment:
-      PORT: '3000'
-      SERIAL_PORT: /simshare/rs485-sim-tty
-      BAUD_RATE: '9600'
-      MQTT_URL: mqtt://mq:1883
+      - /dev/pts:/dev/pts
     ports:
       - '3000:3000'
-    volumes:
-      - ../../:/workspace
-      - pnpm-store:/root/.local/share/pnpm
-      - service_node_modules:/workspace/node_modules
-      - simshare:/simshare
     command: >
       bash -lc "
         set -euo pipefail
@@ -112,7 +88,7 @@ services:
         node packages/service/dist/server.js
       "
     depends_on:
-      core:
+      simulator:
         condition: service_started
       mq:
         condition: service_started
@@ -126,4 +102,3 @@ volumes:
   pnpm-store:
   simulator_node_modules:
   core_node_modules:
-  service_node_modules:

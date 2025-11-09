@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
-
-  type View = 'form' | 'viewer';
+  import { onDestroy, onMount } from 'svelte';
 
   type PacketEvent = {
     topic: string;
@@ -11,82 +9,78 @@
     receivedAt: string;
   };
 
-  const MAX_PACKETS = 100;
+  type BridgeStatus = 'idle' | 'starting' | 'started' | 'error';
 
-  let serialPath = '/simshare/rs485-sim-tty';
-  let baudRate = 9600;
-  let mqttUrl = 'mqtt://mq:1883';
-  let formError = '';
-  let submitState: 'idle' | 'loading' = 'idle';
-  let view: View = 'form';
+  type BridgeInfo = {
+    serialPath: string;
+    baudRate: number;
+    mqttUrl: string;
+    status: BridgeStatus;
+    error?: string | null;
+    topic: string;
+  };
+
+  const MAX_PACKETS = 100;
+  const bridgeStatusLabels: Record<BridgeStatus, string> = {
+    idle: '브리지를 준비하는 중입니다.',
+    starting: '시리얼 장치를 찾는 중입니다.',
+    started: '브리지가 실행 중입니다.',
+    error: '브리지 오류가 발생했습니다.',
+  };
+
+  let bridgeInfo: BridgeInfo | null = null;
+  let infoLoading = false;
+  let infoError = '';
   let packets: PacketEvent[] = [];
   let eventSource: EventSource | null = null;
   let connectionStatus: 'idle' | 'connecting' | 'connected' | 'error' = 'idle';
   let statusMessage = '';
 
-  async function startBridge() {
-    if (submitState === 'loading') {
+  onMount(() => {
+    loadBridgeInfo(true);
+  });
+
+  async function loadBridgeInfo(force = false) {
+    if (infoLoading && !force) {
       return;
     }
 
-    formError = '';
-    submitState = 'loading';
+    infoLoading = true;
+    infoError = '';
 
     try {
-      const response = await fetch('/api/bridge/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ serialPath, baudRate, mqttUrl }),
-      });
-
+      const response = await fetch('/api/bridge/info');
       if (!response.ok) {
         const text = await response.text();
-        let message = text;
-        try {
-          const parsed = JSON.parse(text);
-          if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-            message = String((parsed as { error: unknown }).error ?? text);
-          }
-        } catch {
-          // 텍스트 그대로 사용
-        }
-
-        throw new Error(message || '브리지를 시작하지 못했습니다.');
+        throw new Error(text || '브리지 정보를 가져오지 못했습니다.');
       }
 
-      openViewer();
+      const data = (await response.json()) as BridgeInfo;
+      bridgeInfo = data;
+      packets = [];
+      startPacketStream();
     } catch (err) {
-      if (err instanceof Error) {
-        formError = err.message;
-      } else {
-        formError = '알 수 없는 오류가 발생했습니다.';
-      }
+      bridgeInfo = null;
+      closeStream();
+      infoError = err instanceof Error ? err.message : '브리지 정보를 불러오지 못했습니다.';
     } finally {
-      submitState = 'idle';
+      infoLoading = false;
     }
   }
 
-  function openViewer() {
-    view = 'viewer';
-    packets = [];
-    startPacketStream();
-  }
-
   function startPacketStream() {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !bridgeInfo) {
       return;
     }
 
     closeStream();
 
     connectionStatus = 'connecting';
-    statusMessage = 'MQTT 연결을 시도하는 중입니다...';
+    statusMessage = 'RS485 패킷 스트림을 연결하는 중입니다...';
 
     const url = new URL('/api/packets/stream', window.location.origin);
-    if (mqttUrl.trim().length > 0) {
-      url.searchParams.set('mqttUrl', mqttUrl.trim());
+    if (bridgeInfo.mqttUrl.trim().length > 0) {
+      url.searchParams.set('mqttUrl', bridgeInfo.mqttUrl.trim());
     }
 
     eventSource = new EventSource(url.toString());
@@ -100,19 +94,17 @@
       const state = data.state;
       if (state === 'connected') {
         connectionStatus = 'connected';
-        statusMessage = 'MQTT 연결 완료';
+        statusMessage = '패킷 스트림 연결 완료';
       } else if (state === 'subscribed') {
         connectionStatus = 'connected';
-        statusMessage = `'${data.topic}' 구독 중`;
+        statusMessage = `'${data.topic}' 패킷 수신 중`;
       } else if (state === 'error') {
         connectionStatus = 'error';
         statusMessage =
-          typeof data.message === 'string'
-            ? data.message
-            : '패킷 스트림 오류가 발생했습니다.';
+          typeof data.message === 'string' ? data.message : '패킷 스트림 오류가 발생했습니다.';
       } else if (state === 'connecting') {
         connectionStatus = 'connecting';
-        statusMessage = 'MQTT 연결을 시도하는 중입니다...';
+        statusMessage = '패킷 스트림을 다시 연결하는 중입니다...';
       }
     };
 
@@ -178,71 +170,85 @@
       })
       .join('');
 
-  function returnToForm() {
-    closeStream();
-    view = 'form';
-  }
+  const currentBridgeStatusLabel = () => {
+    if (infoLoading) {
+      return '브리지 정보를 불러오는 중입니다...';
+    }
+
+    if (infoError) {
+      return infoError;
+    }
+
+    if (!bridgeInfo) {
+      return '브리지 정보가 없습니다.';
+    }
+
+    return bridgeStatusLabels[bridgeInfo.status];
+  };
+
+  const bridgeStatusState = () => {
+    if (infoError) {
+      return 'error';
+    }
+
+    return bridgeInfo?.status ?? 'idle';
+  };
 
   onDestroy(closeStream);
 </script>
 
 <main>
-  {#if view === 'form'}
-    <section class="panel">
-      <h1>RS485 HomeNet Bridge</h1>
-      <form on:submit|preventDefault={startBridge} class="form">
-        <label>
-          Serial Path
-          <input bind:value={serialPath} placeholder="/simshare/rs485-sim-tty" />
-        </label>
-
-        <label>
-          Baud Rate
-          <input type="number" bind:value={baudRate} min="0" step="1" />
-        </label>
-
-        <label>
-          MQTT URL
-          <input bind:value={mqttUrl} placeholder="mqtt://mq:1883" />
-        </label>
-
-        {#if formError}
-          <p class="error">{formError}</p>
-        {/if}
-
-        <button type="submit" disabled={submitState === 'loading'}>
-          {submitState === 'loading' ? '브리지를 시작하는 중...' : 'Start Bridge & View Packets'}
-        </button>
-      </form>
-    </section>
-  {:else}
-    <section class="panel viewer">
-      <header class="viewer-header">
-        <div>
-          <p class="eyebrow">실시간 RS485 패킷 뷰어</p>
-          <h1>homenet/raw 구독</h1>
+  <section class="panel viewer">
+    <header class="viewer-header">
+      <div>
+        <p class="eyebrow">RS485 HomeNet Bridge</p>
+        <h1>실시간 상태</h1>
+      </div>
+      <div class="status-column">
+        <div class="status" data-state={bridgeStatusState()}>
+          <span class="dot" />
+          <span>{currentBridgeStatusLabel()}</span>
         </div>
         <div class="status" data-state={connectionStatus}>
           <span class="dot" />
-          <span>{statusMessage || '패킷을 기다리는 중입니다.'}</span>
+          <span>{statusMessage || 'RS485 패킷을 기다리는 중입니다.'}</span>
         </div>
-        <button class="ghost" type="button" on:click={returnToForm}>설정 변경</button>
-      </header>
+      </div>
+      <button
+        class="ghost"
+        type="button"
+        on:click={() => loadBridgeInfo(true)}
+        disabled={infoLoading}
+      >
+        {infoLoading ? '정보 새로고침 중...' : '정보 새로고침'}
+      </button>
+    </header>
 
+    {#if infoLoading && !bridgeInfo && !infoError}
+      <p class="hint">브리지 정보를 불러오는 중입니다...</p>
+    {:else if infoError}
+      <p class="error">{infoError}</p>
+    {:else if !bridgeInfo}
+      <p class="empty">브리지 정보가 없습니다.</p>
+    {:else}
       <div class="viewer-meta">
         <div>
           <span class="label">Serial Path</span>
-          <strong>{serialPath || '입력되지 않음'}</strong>
+          <strong>{bridgeInfo.serialPath || '입력되지 않음'}</strong>
         </div>
         <div>
           <span class="label">Baud Rate</span>
-          <strong>{baudRate}</strong>
+          <strong>{bridgeInfo.baudRate}</strong>
         </div>
         <div>
           <span class="label">MQTT URL</span>
-          <strong>{mqttUrl}</strong>
+          <strong>{bridgeInfo.mqttUrl}</strong>
         </div>
       </div>
+
+      {#if bridgeInfo.error}
+        <p class="error subtle">브리지 오류: {bridgeInfo.error}</p>
+      {/if}
 
       <div class="packet-list">
         {#if packets.length === 0}
@@ -275,8 +281,8 @@
           {/each}
         {/if}
       </div>
-    </section>
-  {/if}
+    {/if}
+  </section>
 </main>
 
 <style>
@@ -305,29 +311,8 @@
   }
 
   h1 {
-    margin: 0 0 1.5rem;
+    margin: 0 0 0.5rem;
     font-size: 1.8rem;
-  }
-
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-  }
-
-  input {
-    padding: 0.75rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(148, 163, 184, 0.5);
-    background: rgba(15, 23, 42, 0.7);
-    color: #e2e8f0;
   }
 
   button {
@@ -364,12 +349,6 @@
     box-shadow: none;
   }
 
-  .error {
-    color: #fca5a5;
-    font-size: 0.9rem;
-    margin: 0;
-  }
-
   .viewer {
     display: flex;
     flex-direction: column;
@@ -381,6 +360,12 @@
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 1rem;
+  }
+
+  .status-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .eyebrow {
@@ -398,100 +383,122 @@
     padding: 0.4rem 0.9rem;
     border-radius: 9999px;
     font-size: 0.85rem;
-    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.7);
   }
 
   .status .dot {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    display: inline-block;
-    background: #fbbf24;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 9999px;
+    background: #cbd5f5;
   }
 
   .status[data-state='connected'] .dot {
     background: #34d399;
   }
 
+  .status[data-state='starting'] .dot,
+  .status[data-state='connecting'] .dot {
+    background: #fcd34d;
+  }
+
   .status[data-state='error'] .dot {
     background: #f87171;
   }
 
-  .viewer-meta {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 1rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+  .status[data-state='idle'] .dot {
+    background: #94a3b8;
   }
 
-  .viewer-meta .label {
-    display: block;
-    font-size: 0.8rem;
+  .hint {
+    margin: 0;
     color: rgba(226, 232, 240, 0.7);
-    margin-bottom: 0.25rem;
+    text-align: center;
+  }
+
+  .error {
+    color: #fca5a5;
+    font-size: 0.95rem;
+    margin: 0;
+    text-align: center;
+  }
+
+  .error.subtle {
+    text-align: left;
+  }
+
+  .viewer-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    background: rgba(15, 23, 42, 0.7);
+  }
+
+  .label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(226, 232, 240, 0.6);
   }
 
   .packet-list {
-    max-height: 450px;
-    overflow: auto;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding-right: 0.5rem;
-  }
-
-  .empty {
-    text-align: center;
-    color: rgba(226, 232, 240, 0.65);
   }
 
   .packet {
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    border-radius: 0.85rem;
-    padding: 0.9rem 1rem;
-    background: rgba(15, 23, 42, 0.7);
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.6);
   }
 
   .packet header {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.7);
+    margin-bottom: 0.75rem;
   }
 
   .packet .topic {
-    color: #818cf8;
-  }
-
-  .packet .length {
-    color: rgba(226, 232, 240, 0.75);
+    font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+    background: rgba(148, 163, 184, 0.15);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.35rem;
   }
 
   .payload {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
   }
 
   .payload span {
     font-size: 0.75rem;
+    letter-spacing: 0.12em;
     color: rgba(226, 232, 240, 0.7);
-    letter-spacing: 0.08em;
   }
 
-  .payload.bytes {
-    gap: 0.5rem;
+  code {
+    font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+    background: rgba(15, 23, 42, 0.9);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: block;
+    overflow-x: auto;
   }
 
-  .byte-grid {
+  .payload.bytes .byte-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
     gap: 0.35rem;
   }
 
@@ -499,22 +506,17 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    padding: 0.25rem;
+    padding: 0.3rem;
+    background: rgba(148, 163, 184, 0.1);
     border-radius: 0.4rem;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(148, 163, 184, 0.25);
     font-size: 0.8rem;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
   }
 
-  code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 0.8rem;
-    background: rgba(15, 23, 42, 0.85);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    overflow-x: auto;
-    border: 1px solid rgba(148, 163, 184, 0.25);
+  .empty {
+    text-align: center;
+    color: rgba(226, 232, 240, 0.7);
+    margin: 0.5rem 0;
   }
 
   @media (max-width: 720px) {
@@ -522,8 +524,12 @@
       grid-template-columns: 1fr;
     }
 
-    .viewer-meta {
-      grid-template-columns: 1fr;
+    .status-column {
+      flex-direction: column;
+    }
+
+    button {
+      justify-self: start;
     }
   }
 </style>

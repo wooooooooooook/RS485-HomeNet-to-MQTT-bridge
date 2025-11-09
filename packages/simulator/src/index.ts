@@ -83,10 +83,18 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   let timer: NodeJS.Timeout | undefined;
   let packetIndex = 0;
 
+  const logPacket = (packet: Buffer) => {
+    const hex = Array.from(packet)
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join(' ');
+    console.log(`[simulator] TX (${packet.length} bytes): ${hex}`);
+  };
+
   const sendNextPacket = () => {
     const packet = normalizedPackets[packetIndex];
     packetIndex = (packetIndex + 1) % normalizedPackets.length;
     writer.write(packet);
+    logPacket(packet);
   };
 
   const start = () => {

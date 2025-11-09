@@ -69,7 +69,7 @@ describe('HomeNetBridge', () => {
     const port = serialPortInstances[0];
     port.emit('data', Buffer.from('payload'));
 
-    expect(publishMock).toHaveBeenCalledWith('homenet/raw', 'payload');
+    expect(publishMock).toHaveBeenCalledWith('homenet/raw', Buffer.from('payload'));
   });
 
   it('passes serial configuration options to SerialPort', async () => {

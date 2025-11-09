@@ -22,8 +22,11 @@ services:
       SERIAL_PORT: /simshare/rs485-sim-tty
       BAUD_RATE: '9600'
       MQTT_URL: mqtt://mq:1883
+      PORT: '3000'
     volumes:
       - simshare:/simshare
+    ports:
+      - '3000:3000'
     depends_on:
       simulator:
         condition: service_started
@@ -52,24 +55,6 @@ services:
     environment:
       - TZ=UTC
     depends_on:
-      mq:
-        condition: service_started
-    restart: unless-stopped
-
-  ui:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/service.Dockerfile
-    container_name: rs485-ui
-    environment:
-      PORT: '3000'
-    ports:
-      - '3000:3000'
-    volumes:
-      - simshare:/simshare
-    depends_on:
-      core:
-        condition: service_started
       mq:
         condition: service_started
     restart: unless-stopped

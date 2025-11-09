@@ -58,10 +58,9 @@ pnpm service:build (Svelte UI 빌드 및 정적 자산 동기화 포함)
 `deploy/docker/docker-compose.yml`에는 다음 컨테이너가 포함됩니다.
 
 - **simulator**: `@rs485-homenet/simulator`가 생성한 PTY를 `/simshare/rs485-sim-tty` 심볼릭 링크로 노출
-- **core**: `SERIAL_PORT=/simshare/rs485-sim-tty`를 통해 시뮬레이터에 연결하고 MQTT 브릿지 실행
+- **core**: `SERIAL_PORT=/simshare/rs485-sim-tty`를 통해 시뮬레이터에 연결하고 MQTT 브릿지 + Express API/Svelte UI를 함께 제공 (3000 노출)
 - **mq**: Eclipse Mosquitto 브로커 (1883 노출)
 - **homeassistant**: Home Assistant 안정 채널 (8123 노출)
-- **ui**: Express 서비스(`packages/service`)가 빌드된 Svelte UI와 API 프록시 제공 (3000 노출)
 
 실행:
 

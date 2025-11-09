@@ -12,7 +12,12 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-const defaultMqttUrl = process.env.MQTT_URL ?? 'mqtt://mq:1883';
+const defaultMqttUrl = resolveDefaultMqttUrl(process.env.MQTT_URL);
+const bridgeOptions = resolveBridgeOptions();
+const bridge = createBridge(bridgeOptions);
+let bridgeStatus: 'idle' | 'starting' | 'started' | 'error' = 'idle';
+let bridgeError: string | null = null;
+let bridgeStartPromise: Promise<void> | null = null;
 
 app.use(express.json());
 
@@ -20,30 +25,16 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.post('/api/bridge/start', async (req, res, next) => {
-  const { serialPath, baudRate = 9600, mqttUrl } = req.body ?? {};
-  if (!serialPath) {
-    res.status(400).json({ error: 'serialPath is required' });
-    return;
-  }
-
-  const resolvedMqttUrl = resolveMqttUrl(mqttUrl);
-  const bridge = createBridge({ serialPath, baudRate, mqttUrl: resolvedMqttUrl });
-  try {
-    await bridge.start();
-    res.json({ status: 'started', mqttUrl: resolvedMqttUrl });
-  } catch (err) {
-    next(err);
-  }
+app.get('/api/bridge/info', (_req, res) => {
+  res.json({
+    serialPath: bridgeOptions.serialPath,
+    baudRate: bridgeOptions.baudRate,
+    mqttUrl: bridgeOptions.mqttUrl,
+    status: bridgeStatus,
+    error: bridgeError,
+    topic: 'homenet/raw',
+  });
 });
-
-const resolveMqttUrl = (value: unknown) => {
-  if (typeof value === 'string' && value.trim().length > 0) {
-    return value.trim();
-  }
-
-  return defaultMqttUrl;
-};
 
 app.get('/api/packets/stream', (req, res) => {
   const streamMqttUrl = resolveMqttUrl(req.query.mqttUrl);
@@ -78,6 +69,10 @@ app.get('/api/packets/stream', (req, res) => {
     });
   });
 
+  client.on('reconnect', () => {
+    sendStatus('connecting', { mqttUrl: streamMqttUrl });
+  });
+
   client.on('message', (topic, payload) => {
     const packet = {
       topic,
@@ -92,6 +87,10 @@ app.get('/api/packets/stream', (req, res) => {
 
   client.on('error', (err) => {
     sendStatus('error', { message: err.message });
+  });
+
+  client.on('close', () => {
+    sendStatus('error', { message: 'MQTT 연결이 종료되었습니다.' });
   });
 
   const heartbeat = setInterval(() => {
@@ -116,16 +115,89 @@ app.get('*', (_req, res, next) => {
   });
 });
 
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('[service] 요청 처리 중 오류:', err);
-  if (res.headersSent) {
-    return;
-  }
+app.use(
+  (err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('[service] 요청 처리 중 오류:', err);
+    if (res.headersSent) {
+      return;
+    }
 
-  const message = err instanceof Error ? err.message : 'Internal Server Error';
-  res.status(500).json({ error: message });
-});
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    res.status(500).json({ error: message });
+  },
+);
 
 app.listen(port, () => {
   console.log(`Service listening on port ${port}`);
 });
+
+startBridge().catch((err) => {
+  console.error('[service] 브리지 시작 실패:', err);
+});
+
+function startBridge() {
+  if (bridgeStartPromise) {
+    return bridgeStartPromise;
+  }
+
+  bridgeStatus = 'starting';
+  bridgeError = null;
+
+  bridgeStartPromise = bridge
+    .start()
+    .then(() => {
+      bridgeStatus = 'started';
+      bridgeError = null;
+    })
+    .catch((err) => {
+      bridgeStatus = 'error';
+      bridgeError = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
+      bridgeStartPromise = null;
+      throw err;
+    });
+
+  return bridgeStartPromise;
+}
+
+function resolveBridgeOptions() {
+  return {
+    serialPath: resolveSerialPath(),
+    baudRate: resolveBaudRate(),
+    mqttUrl: defaultMqttUrl,
+  };
+}
+
+function resolveSerialPath() {
+  const value = process.env.SERIAL_PORT?.trim();
+  if (value && value.length > 0) {
+    return value;
+  }
+
+  return '/simshare/rs485-sim-tty';
+}
+
+function resolveBaudRate() {
+  const raw = process.env.BAUD_RATE ?? '';
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return 9600;
+  }
+
+  return parsed;
+}
+
+function resolveMqttUrl(value: unknown) {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  return defaultMqttUrl;
+}
+
+function resolveDefaultMqttUrl(value: unknown) {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  return 'mqtt://mq:1883';
+}

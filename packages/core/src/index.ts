@@ -37,7 +37,7 @@ const waitForSerialDevice = async (serialPath: string) => {
       const elapsed = Date.now() - startedAt;
       if (elapsed >= SERIAL_WAIT_TIMEOUT_MS) {
         throw new Error(
-          `시리얼 포트 경로(${serialPath})를 ${SERIAL_WAIT_TIMEOUT_MS}ms 내에 찾지 못했습니다.`
+          `시리얼 포트 경로(${serialPath})를 ${SERIAL_WAIT_TIMEOUT_MS}ms 내에 찾지 못했습니다.`,
         );
       }
 
@@ -95,7 +95,7 @@ export class HomeNetBridge {
     await openSerialPort(this.port);
 
     this.port.on('data', (data) => {
-      this.client.publish('homenet/raw', data.toString());
+      this.client.publish('homenet/raw', data);
     });
 
     this.port.on('error', (err) => {
@@ -103,7 +103,6 @@ export class HomeNetBridge {
     });
   }
 }
-
 export function createBridge(options: BridgeOptions) {
   return new HomeNetBridge(options);
 }

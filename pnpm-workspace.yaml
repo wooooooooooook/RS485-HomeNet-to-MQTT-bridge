@@ -2,4 +2,8 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - '@homebridge/node-pty-prebuilt-multiarch'
+  - '@serialport/bindings-cpp'
+  - esbuild
   - node-pty-prebuilt-multiarch
+  - svelte-preprocess

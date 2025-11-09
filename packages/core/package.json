@@ -2,12 +2,13 @@
   "name": "@rs485-homenet/core",
   "version": "0.1.0",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "src/index.ts",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -w -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
+    "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
     "test": "vitest run --runTestsByPath packages/core/test/homeNetBridge.test.ts"
   },
   "dependencies": {

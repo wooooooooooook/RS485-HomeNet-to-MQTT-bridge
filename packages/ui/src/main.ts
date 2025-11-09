@@ -7,7 +7,7 @@ if (!target) {
 }
 
 const app = new App({
-  target
+  target,
 });
 
 export default app;

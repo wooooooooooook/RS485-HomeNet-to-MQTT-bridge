@@ -1,2 +1,34 @@
+# Dependencies
 node_modules
+packages/*/node_modules
+
+# Build output
+dist
+packages/*/dist
+.svelte-kit
+
+# TypeScript metadata
+tsconfig.tsbuildinfo
+packages/*/tsconfig.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!*.example
+
+# Logs & coverage
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+coverage
+
+# Editor & OS cruft
+.DS_Store
+.idea
+.vscode/*
+!.vscode/settings.json
+
+# Lockfile (intentionally unmanaged)
 pnpm-lock.yaml

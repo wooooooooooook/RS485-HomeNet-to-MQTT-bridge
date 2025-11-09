@@ -7,9 +7,9 @@
     const response = await fetch('/api/bridge/start', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ serialPath, baudRate, mqttUrl })
+      body: JSON.stringify({ serialPath, baudRate, mqttUrl }),
     });
 
     if (!response.ok) {
@@ -24,10 +24,7 @@
 
 <main>
   <h1>RS485 HomeNet Bridge</h1>
-  <form
-    on:submit|preventDefault={startBridge}
-    class="form"
-  >
+  <form on:submit|preventDefault={startBridge} class="form">
     <label>
       Serial Path
       <input bind:value={serialPath} placeholder="/dev/ttyUSB0" />
@@ -105,7 +102,9 @@
     cursor: pointer;
     font-weight: 600;
     letter-spacing: 0.05em;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   button:hover {

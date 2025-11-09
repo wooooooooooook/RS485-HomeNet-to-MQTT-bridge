@@ -7,6 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "svelte-check --tsconfig ./tsconfig.json",
+    "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {

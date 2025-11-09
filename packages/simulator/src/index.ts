@@ -8,7 +8,7 @@ const DEFAULT_INTERVAL_MS = 1000;
 
 export const DEFAULT_PACKETS: readonly Buffer[] = [
   Buffer.from([0xaa, 0x55, 0x10, 0x02, 0x01, 0x00, 0xff]),
-  Buffer.from([0xaa, 0x55, 0x11, 0x03, 0x02, 0x33, 0xcc, 0xff])
+  Buffer.from([0xaa, 0x55, 0x11, 0x03, 0x02, 0x33, 0xcc, 0xff]),
 ];
 
 type PtyWithWrite = IPty & {
@@ -66,10 +66,7 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   const { open: openPty } = pty as PtyModule;
   const terminal = openPty({ cols: 80, rows: 24, encoding: null });
   const writer = terminal as unknown as { write(data: string | Buffer): void };
-  const ptyPath =
-    terminal.pty ??
-    terminal.ptsName ??
-    (terminal as { _pty?: string })._pty;
+  const ptyPath = terminal.pty ?? terminal.ptsName ?? (terminal as { _pty?: string })._pty;
 
   if (!ptyPath) {
     terminal.destroy();
@@ -122,7 +119,7 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
     ptyPath,
     start,
     stop,
-    dispose
+    dispose,
   };
 }
 

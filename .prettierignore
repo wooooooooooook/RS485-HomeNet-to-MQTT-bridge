@@ -1,0 +1,10 @@
+node_modules
+packages/*/node_modules
+dist
+packages/*/dist
+build
+coverage
+.svelte-kit
+*.log
+logs
+pnpm-lock.yaml

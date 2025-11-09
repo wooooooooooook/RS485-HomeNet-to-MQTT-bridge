@@ -6,10 +6,6 @@
       "$lib/*": ["src/lib/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "svelte.config.js",
-    "vite.config.ts"
-  ],
+  "include": ["src/**/*", "svelte.config.js", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -9,6 +9,7 @@
     "dev": "tsc -w -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
     "start": "node dist/index.js",
+    "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
     "test": "vitest run --runTestsByPath packages/simulator/test/simulator.test.ts"
   },
   "dependencies": {

@@ -1,3 +1,5 @@
+import { Duplex } from 'stream';
+import net from 'net';
 import dotenv from 'dotenv';
 import { SerialPort } from 'serialport';
 import mqtt from 'mqtt';
@@ -8,6 +10,8 @@ dotenv.config();
 
 const SERIAL_WAIT_INTERVAL_MS = 500;
 const DEFAULT_SERIAL_WAIT_TIMEOUT_MS = 15000;
+
+const isTcpConnection = (serialPath: string) => serialPath.includes(':');
 
 const resolveSerialWaitTimeout = () => {
   const raw = process.env.SERIAL_PATH_WAIT_TIMEOUT_MS ?? '';
@@ -67,7 +71,7 @@ export interface BridgeOptions {
 export class HomeNetBridge {
   private readonly options: BridgeOptions;
   private readonly client: mqtt.MqttClient;
-  private port?: SerialPort;
+  private port?: Duplex;
   private startPromise: Promise<void> | null = null;
 
   constructor(options: BridgeOptions) {
@@ -84,15 +88,23 @@ export class HomeNetBridge {
   }
 
   private async initialize() {
-    await waitForSerialDevice(this.options.serialPath);
+    const { serialPath, baudRate } = this.options;
 
-    this.port = new SerialPort({
-      path: this.options.serialPath,
-      baudRate: this.options.baudRate,
-      autoOpen: false,
-    });
+    if (isTcpConnection(serialPath)) {
+      const [host, port] = serialPath.split(':');
+      this.port = net.createConnection({ host, port: Number(port) });
+    } else {
+      await waitForSerialDevice(serialPath);
 
-    await openSerialPort(this.port);
+      const serialPort = new SerialPort({
+        path: serialPath,
+        baudRate: baudRate,
+        autoOpen: false,
+      });
+      this.port = serialPort;
+
+      await openSerialPort(serialPort);
+    }
 
     this.port.on('data', (data) => {
       this.client.publish('homenet/raw', data);

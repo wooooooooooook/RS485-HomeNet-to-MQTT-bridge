@@ -316,8 +316,7 @@
                 <span class="topic">{packet.topic}</span>
               </header>
               <div class="payload">
-                <span>ASCII</span>
-                <code>{toPrintableAscii(packet.payload)}</code>
+                <code>{toHexPairs(packet.payload).join(' ')}</code>
               </div>
             </article>
           {/each}

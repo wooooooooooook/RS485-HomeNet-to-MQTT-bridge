@@ -1,4 +1,4 @@
-# Commax 월패드 장치 설정
+# Commax 월패드 장치 설정 (eigger/espcomponents 참조하여 재작성)
 serial:
   baud_rate: 9600
   data_bits: 8
@@ -8,89 +8,146 @@ serial:
 devices:
   - name: "Commax Wallpad"
     packets:
-      - header: [0xAA, 0x55]
+      # ===================================================================
+      # == 조명 상태 수신 (0xB0)
+      # == Header | ON/OFF | ID | ...
+      # ===================================================================
+      - header: [0xB0]
         length: 8
         items:
-          # --- 조명 ---
-          - type: light
-            id: "light_breaker"
-            name: "조명 차단기"
-            state: { offset: 3, mask: 0x10 }
-            command:
-              topic_suffix: "set"
-              on:  { data: [0xAA, 0x55, 0x01, 0x01, 0x05, 0x01, 0x00, 0xB7] }
-              off: { data: [0xAA, 0x55, 0x01, 0x01, 0x05, 0x02, 0x00, 0xB8] }
           - type: light
             id: "light_1"
             name: "조명 1"
-            state: { offset: 3, mask: 0x01 }
-            command:
-              topic_suffix: "set"
-              on:  { data: [0xAA, 0x55, 0x01, 0x01, 0x01, 0x01, 0x00, 0xB3] }
-              off: { data: [0xAA, 0x55, 0x01, 0x01, 0x01, 0x02, 0x00, 0xB4] }
+            # CONFIG.md 포맷의 한계로 인해, ID(offset 2)가 0x01일 때만
+            # 이 item을 업데이트하는 기능은 없음.
+            # 대신, offset 1의 ON/OFF 상태만 확인함.
+            # 이 패킷 정의는 여러 조명 상태에 동시에 반응할 수 있음.
+            state: { offset: 1, mask: 0x01 }
           - type: light
             id: "light_2"
             name: "조명 2"
-            state: { offset: 3, mask: 0x02 }
+            state: { offset: 1, mask: 0x01 } # ID 0x02일때
+          - type: light
+            id: "light_3"
+            name: "조명 3"
+            state: { offset: 1, mask: 0x01 } # ID 0x03일때
+          - type: light
+            id: "light_4"
+            name: "조명 4"
+            state: { offset: 1, mask: 0x01 } # ID 0x04일때
+
+      # ===================================================================
+      # == 조명 제어 (0x31)
+      # == Header | ID | ON/OFF | ...
+      # ===================================================================
+      - header: [0x31]
+        length: 8
+        items:
+          - type: light
+            id: "light_1"
+            name: "조명 1"
             command:
               topic_suffix: "set"
-              on:  { data: [0xAA, 0x55, 0x01, 0x01, 0x02, 0x01, 0x00, 0xB4] }
-              off: { data: [0xAA, 0x55, 0x01, 0x01, 0x02, 0x02, 0x00, 0xB5] }
-          # ... (light 3, 4 생략) ...
+              on:  { data: [0x31, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x01, 0x01] }
+              off: { data: [0x31, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x00, 0x01] }
+          - type: light
+            id: "light_2"
+            name: "조명 2"
+            command:
+              topic_suffix: "set"
+              on:  { data: [0x31, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x01, 0x02] }
+              off: { data: [0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x00, 0x02] }
+          - type: light
+            id: "light_3"
+            name: "조명 3"
+            command:
+              topic_suffix: "set"
+              on:  { data: [0x31, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x01, 0x03] }
+              off: { data: [0x31, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x00, 0x03] }
+          - type: light
+            id: "light_4"
+            name: "조명 4"
+            command:
+              topic_suffix: "set"
+              on:  { data: [0x31, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x01, 0x04] }
+              off: { data: [0x31, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0xB1, 0x00, 0x04] }
 
-          # --- 난방 ---
+      # ===================================================================
+      # == 난방 상태 수신 (0x82)
+      # == Header | State | ID | CurTemp | TarTemp | ...
+      # ===================================================================
+      - header: [0x82]
+        length: 8
+        items:
           - type: climate
             id: "heater_1"
             name: "난방 1"
+            # ID가 0x01일 때만 업데이트 되어야 하나, 현재 구조상 한계
             state:
-              power: { offset: 4, mask: 0x01 }
-              current_temp: { offset: 5, transform: "bcd_decode" }
+              power: { offset: 1, mask: 0x81 } # 0x81: ON, 0x80: OFF, 0x83: HEAT
+              current_temp: { offset: 3, transform: "bcd_decode" }
               target_temp: { offset: 4, transform: "bcd_decode" }
+          # ... (heater 2, 3, 4 생략 - 위와 동일한 한계)
+
+      # ===================================================================
+      # == 난방 제어 (0x04)
+      # == Header | ID | CMD | Value | ...
+      # ===================================================================
+      - header: [0x04]
+        length: 8
+        items:
+          - type: climate
+            id: "heater_1"
+            name: "난방 1"
             command:
               power:
                 topic_suffix: "set_power"
-                on:  { data: [0xAA, 0x55, 0x02, 0x01, 0x01, 0x01, 0x00, 0xBF] }
-                off: { data: [0xAA, 0x55, 0x02, 0x01, 0x01, 0x02, 0x00, 0xC0] }
+                on:  { data: [0x04, 0x01, 0x04, 0x81, 0x00, 0x00, 0x00, 0x00], ack: [0x84, 0x81, 0x01] }
+                off: { data: [0x04, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0x84, 0x80, 0x01] }
               set_temperature:
                 topic_suffix: "set_temp"
-                data: [0xAA, 0x55, 0x02, 0x01, 0x01, 0x03, 0x00, 0x00] # 7번째 바이트에 값, 8번째에 체크섬
-                value: { offset: 6, transform: "bcd_encode" }
-          # ... (heater 2, 3, 4 생략) ...
+                data: [0x04, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00]
+                value: { offset: 3, transform: "bcd_encode" }
+          # ... (heater 2, 3, 4 제어 생략)
 
-          # --- 팬 ---
-          - type: fan
-            id: "fan_1"
-            name: "환풍기 1"
-            state:
-              power: { offset: 6, mask: 0x01 }
-              speed: { offset: 7 } # 0, 1, 2, 3
-            command:
-              power:
-                topic_suffix: "set_power"
-                on:  { data: [0xAA, 0x55, 0x03, 0x01, 0x01, 0x01, 0x00, 0xC1] }
-                off: { data: [0xAA, 0x55, 0x03, 0x01, 0x01, 0x02, 0x00, 0xC2] }
-              set_speed:
-                topic_suffix: "set_speed"
-                data: [0xAA, 0x55, 0x03, 0x01, 0x01, 0x03, 0x00, 0x00] # 7번째 바이트에 값
-                value: { offset: 6 }
-
-          # --- 가스밸브 ---
+      # ===================================================================
+      # == 가스밸브 상태 (0x90) 및 제어 (0x11)
+      # ===================================================================
+      - header: [0x90]
+        length: 8
+        items:
           - type: valve
             id: "gas_valve"
             name: "가스 밸브"
-            state: { offset: 2, mask: 0x01 }
+            state: { offset: 1, mask: 0x80 } # 0x80: Open, 0x40: Closed
+      - header: [0x11]
+        length: 8
+        items:
+          - type: valve
+            id: "gas_valve"
+            name: "가스 밸브"
             command:
               topic_suffix: "set"
-              off: { data: [0xAA, 0x55, 0x04, 0x01, 0x01, 0x01, 0x00, 0xC3] }
+              # 참고 자료에는 open 명령이 없으므로 close만 구현 (off)
+              off: { data: [0x11, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00], ack: [0x91, 0x88, 0x88] }
 
-          # --- 엘리베이터 ---
+      # ===================================================================
+      # == 엘리베이터 상태 (0x23) 및 호출 (0xA0)
+      # ===================================================================
+      - header: [0x23]
+        length: 8
+        items:
           - type: sensor
             id: "elevator_floor"
             name: "엘리베이터 층수"
-            state: { offset: 1 }
+            state: { offset: 2 }
+      - header: [0xA0]
+        length: 8
+        items:
           - type: button
             id: "elevator_call"
             name: "엘리베이터 호출"
             command:
               topic_suffix: "press"
-              on: { data: [0xAA, 0x55, 0x07, 0x01, 0x01, 0x01, 0x00, 0xC6] }
+              # 참고자료의 command_on과 동일하게 설정
+              on: { data: [0xA0, 0x01, 0x01, 0x00, 0x08, 0x15, 0x00, 0x00], ack: [0x23] }

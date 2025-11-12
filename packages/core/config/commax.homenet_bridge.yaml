@@ -179,6 +179,117 @@ homenet_bridge:
             rx_header: [0x82]
             tx_header: []
 
+        - type: climate
+          id: "heater_2"
+          name: "난방 2"
+          state:
+            data: [0x02]
+            offset: 1
+            mask: 0xFF
+          state_temperature_current:
+            offset: 2
+            length: 1
+            decode: bcd
+          state_temperature_target:
+            offset: 3
+            length: 1
+            decode: bcd
+          state_off:
+            data: [0x80]
+            offset: 0
+            mask: 0xFF
+          state_heat:
+            data: [0x81]
+            offset: 0
+            mask: 0xFF
+          command_off:
+            cmd: [0x04, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x80, 0x02]
+          command_heat:
+            cmd: [0x04, 0x02, 0x04, 0x81, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x81, 0x02]
+          command_temperature:
+            cmd: [0x04, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00]
+            value_offset: 3
+            value_encode: bcd
+          packet_parameters:
+            rx_header: [0x82]
+            tx_header: []
+
+        - type: climate
+          id: "heater_3"
+          name: "난방 3"
+          state:
+            data: [0x03]
+            offset: 1
+            mask: 0xFF
+          state_temperature_current:
+            offset: 2
+            length: 1
+            decode: bcd
+          state_temperature_target:
+            offset: 3
+            length: 1
+            decode: bcd
+          state_off:
+            data: [0x80]
+            offset: 0
+            mask: 0xFF
+          state_heat:
+            data: [0x81]
+            offset: 0
+            mask: 0xFF
+          command_off:
+            cmd: [0x04, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x80, 0x03]
+          command_heat:
+            cmd: [0x04, 0x03, 0x04, 0x81, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x81, 0x03]
+          command_temperature:
+            cmd: [0x04, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00]
+            value_offset: 3
+            value_encode: bcd
+          packet_parameters:
+            rx_header: [0x82]
+            tx_header: []
+
+        - type: climate
+          id: "heater_4"
+          name: "난방 4"
+          state:
+            data: [0x04]
+            offset: 1
+            mask: 0xFF
+          state_temperature_current:
+            offset: 2
+            length: 1
+            decode: bcd
+          state_temperature_target:
+            offset: 3
+            length: 1
+            decode: bcd
+          state_off:
+            data: [0x80]
+            offset: 0
+            mask: 0xFF
+          state_heat:
+            data: [0x81]
+            offset: 0
+            mask: 0xFF
+          command_off:
+            cmd: [0x04, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x80, 0x04]
+          command_heat:
+            cmd: [0x04, 0x04, 0x04, 0x81, 0x00, 0x00, 0x00]
+            ack: [0x84, 0x81, 0x04]
+          command_temperature:
+            cmd: [0x04, 0x04, 0x03, 0x00, 0x00, 0x00, 0x00]
+            value_offset: 3
+            value_encode: bcd
+          packet_parameters:
+            rx_header: [0x82]
+            tx_header: []
+
         - type: valve
           id: "gas_valve"
           name: "가스 밸브"
@@ -219,4 +330,35 @@ homenet_bridge:
             ack: [0x23]
           packet_parameters:
             rx_header: []
+            tx_header: []
+        - type: fan
+          id: "fan_1"
+          name: "환기 1"
+          state:
+            data: [0x01]
+            offset: 1
+            mask: 0xFF
+          state_on:
+            data: [0x00]
+            offset: 0
+            mask: 0xFF
+            inverted: True
+          state_off:
+            data: [0x00]
+            offset: 0
+            mask: 0xFF
+          state_speed:
+            offset: 2
+            length: 1
+          command_on:
+            cmd: [0x78, 0x01, 0x01, 0x04, 0x00, 0x00, 0x00]
+            ack: [0xF8, 0x04]
+          command_off:
+            cmd: [0x78, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00]
+            ack: [0xF8, 0x00]
+          command_speed:
+            cmd: [0x78, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00]
+            value_offset: 3
+          packet_parameters:
+            rx_header: [0xF6]
             tx_header: []

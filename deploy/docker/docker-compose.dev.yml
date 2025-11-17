@@ -64,8 +64,8 @@ services:
     container_name: rs485-app-dev
     # network_mode: host
     environment:
-      SERIAL_PORT: 192.168.0.83:8888
-      # SERIAL_PORT: /simshare/rs485-sim-tty
+      # SERIAL_PORT: 192.168.0.83:8888
+      SERIAL_PORT: /simshare/rs485-sim-tty
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'

@@ -123,12 +123,12 @@ export class HomeNetBridge implements EntityStateProvider {
   private config?: HomenetBridgeConfig; // Loaded configuration
   private packetProcessor?: PacketProcessor; // The new packet processor
 
-  constructor(options: BridgeOptions) {
-    this.options = options;
-    this.client = mqtt.connect(options.mqttUrl, {
-      connectTimeout: MQTT_CONNECT_TIMEOUT_MS,
-    });
-  }
+      constructor(options: BridgeOptions) {
+      this.options = options;
+      logger.debug({ mqttUrl: options.mqttUrl, connectTimeout: MQTT_CONNECT_TIMEOUT_MS }, '[core] Initializing MQTT client with options');
+      this.client = mqtt.connect(options.mqttUrl, {
+        connectTimeout: MQTT_CONNECT_TIMEOUT_MS,
+      });  }
 
   // Implement EntityStateProvider methods
   getLightState(entityId: string): { isOn: boolean } | undefined {
@@ -248,26 +248,33 @@ export class HomeNetBridge implements EntityStateProvider {
     });
 
     logger.debug('[core] Waiting for MQTT client to connect...');
-    // Wait for MQTT client to connect
-    await new Promise<void>((resolve, reject) => {
-      const connectHandler = () => {
-        logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
-        logger.debug('[core] MQTT connectHandler triggered, resolving connection promise.');
-        this.client.off('error', errorHandler); // Remove error listener once connected
-        logger.debug('[core] MQTT connection promise is about to resolve.'); // Added debug log
-        resolve();
-      };
+    // Wait for MQTT client to connect with a timeout
+    await Promise.race([
+      new Promise<void>((resolve, reject) => {
+        const connectHandler = () => {
+          logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
+          logger.debug('[core] MQTT connectHandler triggered, resolving connection promise.');
+          this.client.off('error', errorHandler); // Remove error listener once connected
+          logger.debug('[core] MQTT connection promise is about to resolve.');
+          resolve();
+        };
 
-      const errorHandler = (err: Error) => {
-        logger.error({ err }, '[core] MQTT 연결 오류');
-        logger.debug({ err }, '[core] MQTT errorHandler triggered, rejecting connection promise.');
-        this.client.off('connect', connectHandler); // Remove connect listener on error
-        reject(err);
-      };
+        const errorHandler = (err: Error) => {
+          logger.error({ err }, '[core] MQTT 연결 오류');
+          logger.debug({ err }, '[core] MQTT errorHandler triggered, rejecting connection promise.');
+          this.client.off('connect', connectHandler); // Remove connect listener on error
+          reject(err);
+        };
 
-      this.client.on('connect', connectHandler);
-      this.client.on('error', errorHandler);
-    });
+        this.client.on('connect', connectHandler);
+        this.client.on('error', errorHandler);
+      }),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => {
+          reject(new Error(`MQTT connection timed out after ${MQTT_CONNECT_TIMEOUT_MS}ms`));
+        }, MQTT_CONNECT_TIMEOUT_MS)
+      ),
+    ]);
 
     // Open serial port
     const serialPath = process.env.SERIAL_PORT || '/simshare/rs485-sim-tty'; // Use environment variable for serial path, or fallback

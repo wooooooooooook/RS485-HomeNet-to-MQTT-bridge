@@ -19,7 +19,8 @@
     "lint": "pnpm -r lint",
     "build": "pnpm -r build",
     "format": "pnpm -r --if-present format",
-    "test": "vitest run"
+    "test": "vitest run",
+    "clean": "./scripts/clean.sh"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

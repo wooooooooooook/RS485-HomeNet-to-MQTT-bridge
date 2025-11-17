@@ -1,0 +1,70 @@
+homenet_bridge:
+  serial:
+    baud_rate: 3880
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+
+  packet_defaults: # New section for global packet defaults
+    rx_timeout: 10ms
+    tx_delay: 50ms
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+
+    rx_header: [0x7F]
+    tx_header: [0x7F]
+    rx_footer: [0xEE]
+    tx_footer: [0xEE]
+
+  binary_sensor:
+    - name: "Door Bell"
+      icon: "mdi:bell-ring"
+      state:
+        data: [0xB4, 0x00, 0x00]
+        mask: [0xB4, 0xFF, 0xFF]
+      state_on:
+        offset: 0
+        data: [0xB5]
+      state_off:
+        offset: 0
+        data: [0xB6]
+
+    - name: "Door Bell Common"
+      icon: "mdi:bell-ring"
+      state:
+        data: [0x58, 0x00, 0x00]
+        mask: [0x58, 0xFF, 0xFF]
+      state_on:
+        offset: 0
+        data: [0x5A]
+      state_off:
+        offset: 0
+        data: [0x5C]
+
+  button:
+    - name: "Door Open Common"
+      icon: "mdi:door-sliding-open"
+      command_on: 
+        data: [0x61, 0x00, 0x00]
+    - name: "Door Open"
+      icon: "mdi:door-sliding-open"
+      command_on: 
+        data: [0xB4, 0x00, 0x00]
+
+  switch:
+    - name: "Door Call Common"
+      icon: "mdi:phone"
+      command_on: 
+        data: [0x5F, 0x00, 0x00]
+      command_off: 
+        data: [0x60, 0x00, 0x00]
+    - name: "Auto Opening Common"
+      icon: "mdi:door-open"
+    - name: "Door Call"
+      icon: "mdi:phone"
+      command_on: 
+        data: [0xB7, 0x00, 0x00]
+      command_off: 
+        data: [0xBB, 0x00, 0x00]
+    - name: "Auto Opening"
+      icon: "mdi:door-open"

@@ -4,10 +4,23 @@ import fs from 'node:fs/promises';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import mqtt from 'mqtt';
-import yaml from 'js-yaml';
+import yaml, { Type, Schema } from 'js-yaml';
 // Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
 import { createBridge, HomeNetBridge } from '@rs485-homenet/core';
-import { HomenetBridgeConfig } from '@rs485-homenet/core/dist/config.js'; // Import HomenetBridgeConfig for type checking
+import { HomenetBridgeConfig } from '@rs485-homenet/core/dist/config.js';
+
+// Define a custom YAML type for !homenet_logic
+const HOMENET_LOGIC_TYPE = new Type('!homenet_logic', {
+  kind: 'mapping', // It's a mapping (object), not a scalar
+  construct: function (data) {
+    // data will be the parsed object under !homenet_logic
+    // We can directly return it as it should conform to CommandLambdaConfig or StateLambdaConfig
+    return data;
+  },
+});
+
+// Create a schema that includes the custom HOMENET_LOGIC_TYPE
+const HOMENET_BRIDGE_SCHEMA = yaml.DEFAULT_SCHEMA.extend([HOMENET_LOGIC_TYPE]);
 
 dotenv.config();
 
@@ -56,7 +69,7 @@ app.get('/api/configs', async (_req, res, next) => {
   try {
     const files = await fs.readdir(CONFIG_DIR);
     // Filter for homenet_bridge.yaml files
-    const yamlFiles = files.filter((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+    const yamlFiles = files.filter((file) => /\.new\.ya?ml$/.test(file));
     res.json(yamlFiles);
   } catch (err) {
     next(err);
@@ -170,7 +183,9 @@ async function loadAndStartBridge(filename: string) {
   try {
     const configPath = path.join(CONFIG_DIR, filename);
     const fileContent = await fs.readFile(configPath, 'utf8');
-    const loadedYaml = yaml.load(fileContent) as { homenet_bridge: HomenetBridgeConfig };
+    const loadedYaml = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as {
+      homenet_bridge: HomenetBridgeConfig;
+    };
 
     if (!loadedYaml || !loadedYaml.homenet_bridge) {
       throw new Error('Invalid configuration file format. Missing "homenet_bridge" top-level key.');
@@ -208,7 +223,7 @@ app.listen(port, async () => {
     console.log('[service] Initializing bridge on startup...');
     const files = await fs.readdir(CONFIG_DIR);
     // Filter for homenet_bridge.yaml files
-    const defaultConfigFile = files.find((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+    const defaultConfigFile = files.find((file) => /\.new\.ya?ml$/.test(file));
 
     if (defaultConfigFile) {
       await loadAndStartBridge(defaultConfigFile);

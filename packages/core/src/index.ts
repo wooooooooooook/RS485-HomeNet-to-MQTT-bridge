@@ -7,13 +7,26 @@ import { SerialPort } from 'serialport';
 import mqtt from 'mqtt';
 import { access, readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import yaml from 'js-yaml'; // Import js-yaml
+import yaml, { Type, Schema } from 'js-yaml'; // Import js-yaml, Type, and Schema
+
+// Define a custom YAML type for !homenet_logic
+const HOMENET_LOGIC_TYPE = new Type('!homenet_logic', {
+  kind: 'mapping', // It's a mapping (object), not a scalar
+  construct: function (data) {
+    // data will be the parsed object under !homenet_logic
+    // We can directly return it as it should conform to CommandLambdaConfig or StateLambdaConfig
+    return data;
+  }
+});
+
+// Create a schema that includes the custom HOMENET_LOGIC_TYPE
+const HOMENET_BRIDGE_SCHEMA = yaml.DEFAULT_SCHEMA.extend([HOMENET_LOGIC_TYPE]);
 
 // Import new configuration interfaces and PacketProcessor
 import { logger } from './logger.js';
+import { handleData, stateCache } from './dataHandler.js'; // Import stateCache
 import {
   HomenetBridgeConfig,
-  DeviceConfig,
   EntityConfig,
   LightEntity,
   ClimateEntity,
@@ -23,9 +36,9 @@ import {
   FanEntity,
   SwitchEntity,
   BinarySensorEntity,
-  CommandSchema
+  CommandSchema,
 } from './config.js';
-import { PacketProcessor } from './packetProcessor.js';
+import { PacketProcessor, EntityStateProvider } from './packetProcessor.js';
 
 dotenv.config();
 
@@ -62,7 +75,7 @@ const waitForSerialDevice = async (serialPath: string) => {
       const elapsed = Date.now() - startedAt;
       if (elapsed >= SERIAL_WAIT_TIMEOUT_MS) {
         throw new Error(
-          `시리얼 포트 경로(${serialPath})를 ${SERIAL_WAIT_TIMEOUT_MS}ms 내에 찾지 못했습니다.`,
+          `시리얼 포트 경로(${serialPath})를 ${SERIAL_WAIT_TIMEOUT_MS}ms 내에 찾지 못했습니다.`
         );
       }
 
@@ -89,14 +102,11 @@ export interface BridgeOptions {
   mqttUrl: string;
 }
 
-export class HomeNetBridge {
+export class HomeNetBridge implements EntityStateProvider {
   private readonly options: BridgeOptions;
   private readonly client: mqtt.MqttClient;
   private port?: Duplex;
   private startPromise: Promise<void> | null = null;
-
-  private receiveBuffer = Buffer.alloc(0);
-  private stateCache = new Map<string, any>();
 
   private config?: HomenetBridgeConfig; // Loaded configuration
   private packetProcessor?: PacketProcessor; // The new packet processor
@@ -104,6 +114,31 @@ export class HomeNetBridge {
   constructor(options: BridgeOptions) {
     this.options = options;
     this.client = mqtt.connect(options.mqttUrl);
+  }
+
+  // Implement EntityStateProvider methods
+  getLightState(entityId: string): { isOn: boolean } | undefined {
+    const topic = `homenet/${entityId}/state`;
+    const state = stateCache.get(topic);
+    if (state) {
+      const parsedState = JSON.parse(state);
+      if (typeof parsedState.isOn === 'boolean') {
+        return { isOn: parsedState.isOn };
+      }
+    }
+    return undefined;
+  }
+
+  getClimateState(entityId: string): { targetTemperature: number } | undefined {
+    const topic = `homenet/${entityId}/state`;
+    const state = stateCache.get(topic);
+    if (state) {
+      const parsedState = JSON.parse(state);
+      if (typeof parsedState.targetTemperature === 'number') {
+        return { targetTemperature: parsedState.targetTemperature };
+      }
+    }
+    return undefined;
   }
 
   async start() {
@@ -124,38 +159,71 @@ export class HomeNetBridge {
       this.port = undefined;
     }
     this.startPromise = null;
-    this.stateCache.clear();
-    this.receiveBuffer = Buffer.alloc(0);
   }
 
   private async initialize() {
     // 1. Load configuration
     logger.info(`[core] Loading configuration from: ${this.options.configPath}`);
     const configFileContent = await readFile(this.options.configPath, 'utf8');
-    const loadedYaml = yaml.load(configFileContent);
+    const loadedYaml = yaml.load(configFileContent, { schema: HOMENET_BRIDGE_SCHEMA });
 
     if (!loadedYaml || !(loadedYaml as any).homenet_bridge) {
       throw new Error('Invalid configuration file structure. Missing "homenet_bridge" top-level key.');
     }
-    
-    this.config = (loadedYaml as any).homenet_bridge as HomenetBridgeConfig;
-    this.packetProcessor = new PacketProcessor(this.config);
 
+    const loadedConfig = (loadedYaml as any).homenet_bridge as HomenetBridgeConfig;
+    const entityTypes: (keyof HomenetBridgeConfig)[] = [
+      'light',
+      'climate',
+      'valve',
+      'button',
+      'sensor',
+      'fan',
+      'switch',
+      'binary_sensor',
+    ];
+    const hasEntities = entityTypes.some(
+      (type) => loadedConfig[type] && Array.isArray(loadedConfig[type])
+    );
+
+    if (!hasEntities) {
+      throw new Error('Configuration file must contain at least one entity (e.g., light, climate).');
+    }
+
+    this.config = loadedConfig;
+    this.packetProcessor = new PacketProcessor(this.config, this); // Pass 'this' as stateProvider
 
     const { serial: serialConfig } = this.config;
 
     this.client.on('connect', () => {
       logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
       // Subscribe to command topics for all entities
-      this.config?.devices.forEach(device => {
-        device.entities.forEach(entity => {
-          const baseTopic = `homenet/${entity.id}`;
-          this.client.subscribe(`${baseTopic}/set/#`, (err) => { // Example: homenet/light_1/set/on, homenet/climate_1/set/temperature
-            if (err) logger.error({ err, topic: `${baseTopic}/set/#` }, `[core] Failed to subscribe`);
-            else logger.info(`[core] Subscribed to ${baseTopic}/set/#`);
+      const entityTypes = [
+        'light',
+        'climate',
+        'valve',
+        'button',
+        'sensor',
+        'fan',
+        'switch',
+        'binary_sensor',
+      ];
+      for (const entityType of entityTypes) {
+        const entities = this.config![entityType as keyof HomenetBridgeConfig] as
+          | EntityConfig[]
+          | undefined;
+        if (entities) {
+          entities.forEach((entity) => {
+            const baseTopic = `homenet/${entity.id}`;
+            this.client.subscribe(`${baseTopic}/set/#`, (err) => {
+              // Example: homenet/light_1/set/on, homenet/climate_1/set/temperature
+              if (err)
+                logger.error({ err, topic: `${baseTopic}/set/#` }, `[core] Failed to subscribe`);
+              else logger.info(`[core] Subscribed to ${baseTopic}/set/#`);
+            });
           });
-        });
-      });
+        }
+      }
     });
 
     this.client.on('message', (topic, message) => this.handleMqttMessage(topic, message));
@@ -163,7 +231,7 @@ export class HomeNetBridge {
     this.client.on('error', (err) => {
       logger.error({ err }, '[core] MQTT 연결 오류');
     });
-    
+
     // Open serial port
     const serialPath = process.env.SERIAL_PORT || '/simshare/rs485-sim-tty'; // Use environment variable for serial path, or fallback
     const baudRate = serialConfig.baud_rate; // Get baud rate from config
@@ -181,73 +249,25 @@ export class HomeNetBridge {
         dataBits: serialConfig.data_bits,
         parity: serialConfig.parity,
         stopBits: serialConfig.stop_bits,
-        autoOpen: false
+        autoOpen: false,
       });
       this.port = serialPort;
       await openSerialPort(serialPort);
     }
 
-    this.port.on('data', (data) => this.handleData(data));
+    this.port.on('data', (data) => {
+      if (this.config && this.packetProcessor) {
+        handleData(data, this.config, this.packetProcessor, this.client);
+      }
+    });
     this.port.on('error', (err) => {
       logger.error({ err, serialPath }, '[core] 시리얼 포트 오류');
     });
   }
 
-  private handleData(chunk: Buffer) {
-    logger.debug({ data: chunk.toString('hex') }, '[core] Raw data received');
-    this.receiveBuffer = Buffer.concat([this.receiveBuffer, chunk]);
-
-    if (!this.config || !this.packetProcessor) {
-      logger.error("[core] Configuration or PacketProcessor not initialized.");
-      return;
-    }
-
-    const allEntities: EntityConfig[] = this.config.devices.flatMap(device => device.entities);
-    const packetLength = this.config.packet_defaults?.rx_length;
-
-    if (packetLength === undefined) {
-      logger.error("[core] 'rx_length' is not defined in packet_defaults. Using default of 8.");
-      // To prevent infinite loops, we discard the buffer if length is not specified.
-      // This should ideally not happen if config is validated, but as a fallback.
-      this.receiveBuffer = Buffer.alloc(0);
-      return;
-    }
-
-    let bufferWasProcessed = true;
-    while (this.receiveBuffer.length >= packetLength && bufferWasProcessed) {
-      bufferWasProcessed = false;
-
-      const packet = this.receiveBuffer.slice(0, packetLength);
-      const parsedStates = this.packetProcessor.parseIncomingPacket(packet.toJSON().data, allEntities);
-
-      if (parsedStates.length > 0) {
-        parsedStates.forEach(parsed => {
-          const entity = allEntities.find(e => e.id === parsed.entityId);
-          if (entity) {
-            const topic = `homenet/${entity.id}/state`;
-            const payload = JSON.stringify(parsed.state);
-            if (this.stateCache.get(topic) !== payload) {
-              this.stateCache.set(topic, payload);
-              this.client.publish(topic, payload, { retain: true });
-              logger.info({ topic, payload }, '[core] MQTT 발행');
-            }
-          }
-        });
-        // Successfully parsed a packet, remove it from buffer and try again
-        this.receiveBuffer = this.receiveBuffer.slice(packetLength);
-        bufferWasProcessed = true;
-      } else {
-        // No entity matched the packet, or checksum failed.
-        // Discard one byte from the start of the buffer and try to find the next valid packet.
-        this.receiveBuffer = this.receiveBuffer.slice(1);
-        bufferWasProcessed = true; // We did modify the buffer
-      }
-    }
-  }
-
   private handleMqttMessage(topic: string, message: Buffer) {
     if (!this.config || !this.packetProcessor || !this.port) {
-      logger.error("[core] Configuration, PacketProcessor or Serial Port not initialized.");
+      logger.error('[core] Configuration, PacketProcessor or Serial Port not initialized.');
       return;
     }
 
@@ -266,25 +286,53 @@ export class HomeNetBridge {
     let commandValue: number | string | undefined = undefined;
 
     if (['command_temperature', 'command_speed'].includes(commandName)) {
-        const num = parseFloat(payload);
-        if (!isNaN(num)) {
-            commandValue = num;
-        } else {
-            commandValue = payload;
-        }
-    } else {
+      const num = parseFloat(payload);
+      if (!isNaN(num)) {
+        commandValue = num;
+      } else {
         commandValue = payload;
+      }
+    } else {
+      commandValue = payload;
     }
 
-    const targetEntity = this.config.devices.flatMap(d => d.entities).find(e => e.id === entityId);
+    const entityTypes: (keyof HomenetBridgeConfig)[] = [
+      'light',
+      'climate',
+      'valve',
+      'button',
+      'sensor',
+      'fan',
+      'switch',
+      'binary_sensor',
+    ];
+    const targetEntity = entityTypes
+      .map((type) => this.config![type] as EntityConfig[] | undefined)
+      .filter((entities): entities is EntityConfig[] => !!entities)
+      .flat()
+      .find((e) => e.id === entityId);
 
     if (targetEntity) {
-      const commandPacket = this.packetProcessor.constructCommandPacket(targetEntity, commandName, commandValue);
+      const commandPacket = this.packetProcessor.constructCommandPacket(
+        targetEntity,
+        commandName,
+        commandValue
+      );
       if (commandPacket) {
-        logger.info({ entity: targetEntity.name, command: commandName, packet: Buffer.from(commandPacket).toString('hex') }, `[core] Sending command packet`);
+        logger.info(
+          {
+            entity: targetEntity.name,
+            command: commandName,
+            packet: Buffer.from(commandPacket).toString('hex'),
+          },
+          `[core] Sending command packet`
+        );
         this.port.write(Buffer.from(commandPacket));
       } else {
-        logger.warn({ entity: targetEntity.name, command: commandName }, `[core] Failed to construct command packet`);
+        logger.warn(
+          { entity: targetEntity.name, command: commandName },
+          `[core] Failed to construct command packet`
+        );
       }
     } else {
       logger.warn({ entityId }, `[core] Entity with ID not found`);

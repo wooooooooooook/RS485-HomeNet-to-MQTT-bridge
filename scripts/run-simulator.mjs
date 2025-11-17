@@ -25,11 +25,13 @@ const exposePty = async (ptyPath, linkPath) => {
 };
 
 async function main() {
-  const { createSimulator } = await import('../packages/simulator/dist/index.js');
+  const { createSimulator, COMMAX_TEST_PACKETS } = await import(
+    '../packages/simulator/dist/index.js'
+  );
   const intervalMs = ensureNumber(process.env.SIMULATOR_INTERVAL_MS, 1000);
   const linkPath = process.env.SIMULATOR_LINK_PATH ?? DEFAULT_LINK_PATH;
 
-  const simulator = createSimulator({ intervalMs });
+  const simulator = createSimulator({ intervalMs, packets: COMMAX_TEST_PACKETS });
   await exposePty(simulator.ptyPath, linkPath);
 
   console.log(

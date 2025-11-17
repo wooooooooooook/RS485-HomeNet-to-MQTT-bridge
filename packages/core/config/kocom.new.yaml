@@ -1,0 +1,730 @@
+homenet_bridge:
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+
+  packet_defaults: # New section for global packet defaults
+    rx_timeout: 10ms
+    tx_delay: 50ms
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+
+    rx_header: [0xAA, 0x55]
+    rx_footer: [0x0D, 0x0D]
+    tx_header: [0xAA, 0x55]
+    tx_footer: [0x0D, 0x0D]
+
+    rx_checksum: add_no_header
+    tx_checksum: add_no_header
+
+  light:
+    - name: "Room 0 Light 1"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 0 Light 2"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 1 Light 1"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 1 Light 2"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 2 Light 1"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 2 Light 2"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 3 Light 1"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_light_2
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light2
+            ack: [0x30, 0xdc]
+            valueOffset: 9 # light2 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 3 Light 2"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_light_1
+          attribute: is_on
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for light1
+            ack: [0x30, 0xdc]
+            valueOffset: 8 # light1 goes here
+            valueEncode: raw_byte
+            valueMappings:
+              - map: true
+                value: 0xff
+              - map: false
+                value: 0x00
+            length: 1
+            signed: false
+            endian: big
+
+  climate:
+    - name: "Room 0 Heater"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x36, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_heat: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_0_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 1 Heater"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x36, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_heat: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_1_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 2 Heater"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x36, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_heat: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_2_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+
+    - name: "Room 3 Heater"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x36, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_heat: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: entity_state
+          entityId: room_3_heater
+          attribute: target_temperature
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # 0x00 is placeholder for target
+            ack: [0x30, 0xdc]
+            valueOffset: 10 # target goes here
+            valueEncode: raw_byte
+            length: 1
+            signed: false
+            endian: big
+
+  valve:
+    - name: "Gas Valve"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x2c, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_open:
+        offset: 7
+        data: [0x01]
+      state_closed:
+        offset: 7
+        data: [0x02]
+      command_close:
+        data: [0x30, 0xbc, 0x00, 0x2c, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]
+
+  sensor:
+    - name: "Elevator Floors"
+      icon: "mdi:elevator"
+      unit_of_measurement: '층'
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 9
+      
+  text_sensor:
+    - name: "Elevator Direction"
+      icon: "mdi:elevator"
+      state: 
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      lambda: !homenet_logic
+        type: state_lambda
+        valueSource:
+          type: packet
+          offset: 8
+          length: 1
+        valueMappings:
+          - map: 0x00
+            value: "정지"
+          - map: 0x01
+            value: "하강"
+          - map: 0x02
+            value: "상승"
+          - map: 0x03
+            value: "도착"
+          - map: 0x04 # Default value if no other condition matches
+            value: "Unknown"
+
+  button:
+    - name: "Elevator Call"
+      icon: "mdi:elevator"
+      command_on: 
+        data: [0x30, 0xbc, 0x00, 0x01, 0x00, 0x44, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]

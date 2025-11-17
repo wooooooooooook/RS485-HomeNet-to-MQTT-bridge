@@ -1,0 +1,777 @@
+homenet_bridge:
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+
+  packet_defaults: # New section for global packet defaults
+    rx_timeout: 10ms
+    tx_delay: 50ms
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+
+    rx_header: [0xF7]
+    tx_header: [0xF7]
+    rx_checksum: xor_add
+    tx_checksum: xor_add
+
+  light:
+    - name: "light_1_0"
+      state: 
+        data: [0x0e, 0x11, 0x81]
+      state_off:
+        offset: 5
+        data: [0x00, 0x00, 0x00]
+      state_on:
+        offset: 5
+        data: [0x00, 0x00, 0x00]
+        inverted: True
+      command_on:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x0f, 0x01, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+      command_off:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x0f, 0x00, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+
+    - name: "light_1_1"
+      state: 
+        data: [0x0e, 0x11, 0x81]
+      state_on:
+        offset: 5
+        data: [0x01]
+      state_off:
+        offset: 5
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x01, 0x01, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+      command_off:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x01, 0x00, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+
+    - name: "light_1_2"
+      state: 
+        data: [0x0e, 0x11, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x02, 0x01, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+      command_off:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x02, 0x00, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+
+    - name: "light_1_3"
+      state: 
+        data: [0x0e, 0x11, 0x81]
+      state_on:
+        offset: 7
+        data: [0x01]
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x03, 0x01, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+      command_off:
+        data: [0x0e, 0x11, 0x41, 0x03, 0x03, 0x00, 0x00]
+        ack: [0x0e, 0x11, 0xC1]
+
+    - name: "light_2_0"
+      state: 
+        data: [0x0e, 0x12, 0x81]
+      state_off:
+        offset: 5
+        data: [0x00, 0x00]
+      state_on:
+        offset: 5
+        data: [0x00, 0x00]
+        inverted: True
+      command_on:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x0f, 0x01, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+      command_off:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x0f, 0x00, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+
+    - name: "light_2_1"
+      state: 
+        data: [0x0e, 0x12, 0x81]
+      state_on:
+        offset: 5
+        data: [0x01]
+      state_off:
+        offset: 5
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x01, 0x01, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+      command_off:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x01, 0x00, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+
+    - name: "light_2_2"
+      state: 
+        data: [0x0e, 0x12, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x02, 0x01, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+      command_off:
+        data: [0x0e, 0x12, 0x41, 0x03, 0x02, 0x00, 0x00]
+        ack: [0x0e, 0x12, 0xC1]
+
+    - name: "light_3_1"
+      state: 
+        data: [0x0e, 0x13, 0x81]
+      state_on:
+        offset: 5
+        data: [0x01]
+      state_off:
+        offset: 5
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x13, 0x41, 0x03, 0x01, 0x01, 0x00]
+        ack: [0x0e, 0x13, 0xC1]
+      command_off:
+        data: [0x0e, 0x13, 0x41, 0x03, 0x01, 0x00, 0x00]
+        ack: [0x0e, 0x13, 0xC1]
+
+    - name: "light_4_1"
+      state: 
+        data: [0x0e, 0x14, 0x81]
+      state_on:
+        offset: 5
+        data: [0x01]
+      state_off:
+        offset: 5
+        data: [0x00]
+      command_on:
+        data: [0x0e, 0x14, 0x41, 0x03, 0x01, 0x01, 0x00]
+        ack: [0x0e, 0x14, 0xC1]
+      command_off:
+        data: [0x0e, 0x14, 0x41, 0x03, 0x01, 0x00, 0x00]
+        ack: [0x0e, 0x14, 0xC1]
+
+  sensor:
+    - name: "Current Power Usage"
+      state: 
+        data: [0x30, 0x03, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 6
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+    - name: "Total Power Usage"
+      state: 
+        data: [0x30, 0x03, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "kWh"
+      state_number: 
+        offset: 9
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "Total Water Usage"
+      state: 
+        data: [0x30, 0x01, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: "m³"
+      command_update: [0x30, 0x01, 0x01, 0x00]
+      state_number: 
+        offset: 9
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+    - name: "Total Gas Usage"
+      state: 
+        data: [0x30, 0x02, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: "m³"
+      command_update: [0x30, 0x02, 0x01, 0x00]
+      state_number: 
+        offset: 9
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+    - name: "power_1_1"
+      state: 
+        data: [0x39, 0x1f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_1_2"
+      state: 
+        data: [0x39, 0x1f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_2_1"
+      state: 
+        data: [0x39, 0x2f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_2_2"
+      state: 
+        data: [0x39, 0x2f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_3_1"
+      state: 
+        data: [0x39, 0x3f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_3_2"
+      state: 
+        data: [0x39, 0x3f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_4_1"
+      state: 
+        data: [0x39, 0x4f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_4_2"
+      state: 
+        data: [0x39, 0x4f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_8_1"
+      state: 
+        data: [0x39, 0x8f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - name: "power_8_2"
+      state: 
+        data: [0x39, 0x8f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: "W"
+      state_number: 
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+  switch:
+    - name: "outlet_1_1"
+      state: 
+        data: [0x39, 0x1f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x11, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x11, 0xC1]
+      command_off:
+        data: [0x39, 0x11, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x11, 0xC1]
+
+    - name: "outlet_1_2"
+      state: 
+        data: [0x39, 0x1f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x12, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x12, 0xC1]
+      command_off:
+        data: [0x39, 0x12, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x12, 0xC1]
+
+    - name: "outlet_2_1"
+      state: 
+        data: [0x39, 0x2f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x21, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x21, 0xC1]
+      command_off:
+        data: [0x39, 0x21, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x21, 0xC1]
+
+    - name: "outlet_2_2"
+      state: 
+        data: [0x39, 0x2f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x22, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x22, 0xC1]
+      command_off:
+        data: [0x39, 0x22, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x22, 0xC1]
+
+    - name: "outlet_3_1"
+      state: 
+        data: [0x39, 0x3f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x31, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x31, 0xC1]
+      command_off:
+        data: [0x39, 0x31, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x31, 0xC1]
+
+    - name: "outlet_3_2"
+      state: 
+        data: [0x39, 0x3f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x32, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x32, 0xC1]
+      command_off:
+        data: [0x39, 0x32, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x32, 0xC1]
+
+    - name: "outlet_4_1"
+      state: 
+        data: [0x39, 0x4f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x41, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x41, 0xC1]
+      command_off:
+        data: [0x39, 0x41, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x41, 0xC1]
+      
+    - name: "outlet_4_2"
+      state: 
+        data: [0x39, 0x4f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x42, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x42, 0xC1]
+      command_off:
+        data: [0x39, 0x42, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x42, 0xC1]
+
+    - name: "outlet_8_1"
+      state: 
+        data: [0x39, 0x8f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x81, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x81, 0xC1]
+      command_off:
+        data: [0x39, 0x81, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x81, 0xC1]
+
+    - name: "outlet_8_2"
+      state: 
+        data: [0x39, 0x8f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x82, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x82, 0xC1]
+      command_off:
+        data: [0x39, 0x82, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x82, 0xC1]
+
+  climate:
+    - name: "thermostat 1"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state: 
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target:
+        offset: 9
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_temperature_current:
+        offset: 10
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 5
+        data: [0x01]
+        mask: [0x01]
+      state_preset_away:
+        offset: 6
+        mask: [0x01]
+        data: [0x04]
+      state_preset_none:
+        offset: 6
+        mask: [0x01]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x11, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x11, 0xc3]
+      command_heat:
+        data: [0x36, 0x11, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x11, 0xc3]
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x36, 0x11, 0x44, 0x01, 0x00]
+            ack: [0x36, 0x11, 0xc4]
+            valueOffset: 4 # target goes here
+            valueEncode: signed_byte_half_degree
+            length: 1
+            signed: false
+            endian: big
+      command_preset_away:
+        data: [0x36, 0x11, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x11, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x11, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x11, 0xc5]
+
+    - name: "thermostat 2"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state: 
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target:
+        offset: 11
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_temperature_current:
+        offset: 12
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x02]
+      state_heat:
+        offset: 5
+        data: [0x02]
+        mask: [0x02]
+      state_preset_away:
+        offset: 6
+        mask: [0x02]
+        data: [0x02]
+      state_preset_none:
+        offset: 6
+        mask: [0x02]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x12, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x12, 0xc3]
+      command_heat:
+        data: [0x36, 0x12, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x12, 0xc3]
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x36, 0x12, 0x44, 0x01, 0x00]
+            ack: [0x36, 0x12, 0xc4]
+            valueOffset: 4 # target goes here
+            valueEncode: signed_byte_half_degree
+            length: 1
+            signed: false
+            endian: big
+      command_preset_away:
+        data: [0x36, 0x12, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x12, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x12, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x12, 0xc5]
+
+    - name: "thermostat 3"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state: 
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target:
+        offset: 13
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_temperature_current:
+        offset: 14
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x04]
+      state_heat:
+        offset: 5
+        data: [0x04]
+        mask: [0x04]
+      state_preset_away:
+        offset: 6
+        mask: [0x04]
+        data: [0x04]
+      state_preset_none:
+        offset: 6
+        mask: [0x04]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x13, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x13, 0xc3]
+      command_heat:
+        data: [0x36, 0x13, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x13, 0xc3]
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x36, 0x13, 0x44, 0x01, 0x00]
+            ack: [0x36, 0x13, 0xc4]
+            valueOffset: 4 # target goes here
+            valueEncode: signed_byte_half_degree
+            length: 1
+            signed: false
+            endian: big
+      command_preset_away:
+        data: [0x36, 0x13, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x13, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x13, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x13, 0xc5]
+
+    - name: "thermostat 4"
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state: 
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target:
+        offset: 15
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_temperature_current:
+        offset: 16
+        decode: signed_byte_half_degree
+        length: 1
+        signed: false
+        endian: big
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x08]
+      state_heat:
+        offset: 5
+        data: [0x08]
+        mask: [0x08]
+      state_preset_away:
+        offset: 6
+        mask: [0x08]
+        data: [0x08]
+      state_preset_none:
+        offset: 6
+        mask: [0x08]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x14, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x14, 0xc3]
+      command_heat:
+        data: [0x36, 0x14, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x14, 0xc3]
+      command_temperature: !homenet_logic
+        type: command_lambda
+        valueSource:
+          type: input
+        packetTemplates:
+          - data: [0x36, 0x14, 0x44, 0x01, 0x00]
+            ack: [0x36, 0x14, 0xc4]
+            valueOffset: 4 # target goes here
+            valueEncode: signed_byte_half_degree
+            length: 1
+            signed: false
+            endian: big
+      command_preset_away:
+        data: [0x36, 0x14, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x14, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x14, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x14, 0xc5]
+
+  valve:
+    - name: "Gas Valve"
+      device_class: gas
+      state: 
+        data: [0x12, 0x01, 0x81]
+      state_closed:
+        offset: 5
+        data: [0x02]
+      state_open:
+        offset: 5
+        data: [0x01]
+      command_close: 
+        data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x05, 0x00]
+
+  button:
+    - name: "Elevator Call"
+      icon: "mdi:elevator"
+      command_on: 
+        data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x24, 0x00]

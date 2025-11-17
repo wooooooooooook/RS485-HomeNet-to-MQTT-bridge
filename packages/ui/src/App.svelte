@@ -553,8 +553,10 @@
   }
 
   .state-card .payload {
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: 600;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .state-card[data-state='ON'] .payload {

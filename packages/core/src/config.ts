@@ -3,7 +3,7 @@
 export type ChecksumType = 'add' | 'xor' | 'add_no_header' | 'xor_no_header' | 'custom' | 'none';
 export type ParityType = 'none' | 'even' | 'odd';
 export type EndianType = 'big' | 'little';
-export type DecodeEncodeType = 'none' | 'bcd' | 'ascii' | 'signed_byte_half_degree';
+export type DecodeEncodeType = 'none' | 'bcd' | 'ascii' | 'signed_byte_half_degree' | 'multiply' | 'add_0x80';
 
 export interface SerialConfig {
   baud_rate: number;
@@ -34,24 +34,98 @@ export interface StateSchema {
 }
 
 export interface StateNumSchema {
-  offset: number;
+  offset?: number;
   length?: number;
   precision?: number;
   signed?: boolean;
   endian?: EndianType;
   decode?: DecodeEncodeType;
   mapping?: { [byteValue: number]: number }; // Added mapping as an optional property
+  homenet_logic?: StateLambdaConfig; // New field for structured lambda
+}
+
+export interface ValueSource {
+  type: 'input' | 'entity_state' | 'packet'; // Added 'packet' type
+  entityId?: string; // Required if type is 'entity_state'
+  property?: string; // e.g., 'target_temperature', 'is_on'. Required if type is 'entity_state'
+  // For 'packet' type, offset, length, etc. are handled by the intersection type in StateLambdaConfig
+}
+
+export interface Extractor {
+  type: 'check_value' | 'offset_value';
+  offset?: number; // For offset_value and check_value
+  value?: number; // For check_value
+  length?: number; // For offset_value
+  precision?: number; // For offset_value
+  signed?: boolean; // For offset_value
+  endian?: EndianType; // For offset_value
+  decode?: DecodeEncodeType; // For offset_value
+}
+
+export interface ValueMapping {
+  map: number | string | boolean;
+  value: number | string | boolean;
+}
+
+export interface Condition {
+  entityId?: string;
+  property?: string;
+  value?: any;
+  extractor?: Extractor;
+}
+
+export interface ValueInsertion {
+  valueSource?: ValueSource;
+  valueOffset: number;
+  valueEncode?: DecodeEncodeType;
+  valueMappings?: ValueMapping[];
+  length?: number;
+  signed?: boolean;
+  endian?: EndianType;
+  value?: number | string | boolean; // For constant values
+}
+
+export interface CommandLambdaConfig {
+  type: 'command_lambda'; // Discriminator for type checking
+  valueSource?: ValueSource; // This will be for the primary value if not in valueInsertions
+  packetTemplates: {
+    data: number[];
+    ack?: number[];
+    conditions?: Condition[]; // Conditions for this specific packet template
+    valueInsertions?: ValueInsertion[]; // Array of values to insert
+  }[];
+  conditions?: { // Conditions for selecting a CommandLambdaConfig
+    entityId: string;
+    property: string; // e.g., 'is_on'
+    value: any; // The value to compare against
+    then: CommandLambdaConfig; // Nested lambda config
+    else?: CommandLambdaConfig;
+  }[];
+}
+
+export interface StateLambdaConfig {
+  type: 'state_lambda'; // Discriminator for type checking
+  valueSource?: ValueSource & { offset?: number; length?: number; precision?: number; signed?: boolean; endian?: EndianType; decode?: DecodeEncodeType; }; // Added properties for packet valueSource
+  valueMappings?: ValueMapping[]; // For enum-like values
+  conditions?: {
+    extractor?: Extractor;
+    value?: any; // The value to compare against
+    then: any; // The value to return if condition is true
+    else?: any; // The value to return if condition is false
+  }[];
 }
 
 export interface CommandSchema {
-  cmd: number[]; // Byte pattern for the command
+  cmd?: number[]; // Byte pattern for the command
   ack?: number[]; // Expected ACK packet data
   mask?: number | number[]; // Mask to apply to cmd
   value_offset?: number; // Offset for value insertion in command
   value_encode?: DecodeEncodeType; // Encoding for the value
+  multiply_factor?: number; // Factor to multiply the value by before encoding
   length?: number; // Length of the value in bytes, needed for encoding
   signed?: boolean; // Whether the value is signed, needed for encoding
   endian?: EndianType; // Byte order for the value, needed for encoding
+  homenet_logic?: CommandLambdaConfig; // New field for structured lambda
 }
 
 export interface EntityPacketParameters extends PacketDefaults {
@@ -137,7 +211,7 @@ export interface FanEntity {
   state_off: StateSchema;
   command_on: CommandSchema;
   command_off: CommandSchema;
-  command_speed?: CommandSchema & { mapping?: { [speed: number]: CommandSchema } }; // CommandSchema with optional mapping
+  command_speed?: CommandSchema;
   state_speed?: StateNumSchema; // Now StateNumSchema can have mapping
   command_update?: CommandSchema;
 }
@@ -168,14 +242,17 @@ export interface BinarySensorEntity {
 
 export type EntityConfig = LightEntity | ClimateEntity | ValveEntity | ButtonEntity | SensorEntity | FanEntity | SwitchEntity | BinarySensorEntity;
 
-export interface DeviceConfig {
-  name: string;
-  packet_parameters?: EntityPacketParameters; // Device-specific overrides
-  entities: EntityConfig[];
-}
+
 
 export interface HomenetBridgeConfig {
   serial: SerialConfig;
   packet_defaults?: PacketDefaults;
-  devices: DeviceConfig[];
+  light?: LightEntity[];
+  climate?: ClimateEntity[];
+  valve?: ValveEntity[];
+  button?: ButtonEntity[];
+  sensor?: SensorEntity[];
+  fan?: FanEntity[];
+  switch?: SwitchEntity[];
+  binary_sensor?: BinarySensorEntity[];
 }

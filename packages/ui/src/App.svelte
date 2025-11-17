@@ -19,7 +19,7 @@
     topic: string;
   };
 
-  const MAX_PACKETS = 100;
+  const MAX_PACKETS = 1000;
   const bridgeStatusLabels: Record<BridgeStatus, string> = {
     idle: '브리지를 준비하는 중입니다.',
     starting: '브리지를 시작하는 중입니다...',
@@ -36,6 +36,7 @@
   let eventSource: EventSource | null = null;
   let connectionStatus: 'idle' | 'connecting' | 'connected' | 'error' = 'idle';
   let statusMessage = '';
+  let isLogPaused = false;
 
   let configFiles: string[] = [];
   let selectedConfigFile: string | null = null;
@@ -91,12 +92,14 @@
 
     try {
       const response = await fetch('/api/bridge/info');
+
       if (!response.ok) {
         const text = await response.text();
         throw new Error(text || '브리지 정보를 가져오지 못했습니다.');
       }
 
       const data = (await response.json()) as BridgeInfo;
+
       bridgeInfo = data;
       selectedConfigFile = data.configFile;
       rawPackets = [];
@@ -152,7 +155,9 @@
       if (!data) return;
 
       if (data.topic === 'homenet/raw') {
-        rawPackets = [...rawPackets, data].slice(-MAX_PACKETS);
+        if (!isLogPaused) {
+          rawPackets = [...rawPackets, data].slice(-MAX_PACKETS);
+        }
       } else {
         deviceStates.set(data.topic, data.payload);
         deviceStates = deviceStates; // Trigger Svelte reactivity
@@ -199,20 +204,20 @@
       })
       .join('');
 
-  const currentBridgeStatusLabel = () => {
+  onDestroy(closeStream);
+
+  $: bridgeStatusState = (() => {
+    if (infoError || isSwitchingConfig) return 'error';
+    return bridgeInfo?.status ?? 'idle';
+  })();
+
+  $: currentBridgeStatusLabel = (() => {
     if (isSwitchingConfig) return '설정을 변경하는 중입니다...';
     if (infoLoading) return '브리지 정보를 불러오는 중입니다...';
     if (infoError) return infoError;
     if (!bridgeInfo) return '브리지 정보가 없습니다.';
     return bridgeStatusLabels[bridgeInfo.status];
-  };
-
-  const bridgeStatusState = () => {
-    if (infoError || isSwitchingConfig) return 'error';
-    return bridgeInfo?.status ?? 'idle';
-  };
-
-  onDestroy(closeStream);
+  })();
 </script>
 
 <main>
@@ -250,9 +255,9 @@
         </button>
       </div>
       <div class="status-column">
-        <div class="status" data-state={bridgeStatusState()}>
+        <div class="status" data-state={bridgeStatusState}>
           <span class="dot" />
-          <span>{currentBridgeStatusLabel()}</span>
+          <span>{currentBridgeStatusLabel}</span>
         </div>
         <div class="status" data-state={connectionStatus}>
           <span class="dot" />
@@ -304,7 +309,12 @@
         {/if}
       </div>
 
-      <h2 class="raw-title">Raw 패킷 로그</h2>
+      <div class="raw-title-container">
+        <h2 class="raw-title">Raw 패킷 로그</h2>
+        <button class="ghost" on:click={() => (isLogPaused = !isLogPaused)}>
+          {isLogPaused ? '로그 이어보기' : '로그 일시정지'}
+        </button>
+      </div>
       <div class="packet-list">
         {#if rawPackets.length === 0}
           <p class="empty">아직 수신된 Raw 패킷이 없습니다.</p>
@@ -569,9 +579,24 @@
 
   .raw-title {
     font-size: 1rem;
-    margin: 2rem 0 0.5rem;
+    margin: 0;
     color: rgba(226, 232, 240, 0.8);
+    padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    flex-grow: 1;
+  }
+
+  .raw-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem 0 0.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  }
+
+  .raw-title-container h2 {
+    border-bottom: none;
+    margin: 0;
     padding-bottom: 0.5rem;
   }
 

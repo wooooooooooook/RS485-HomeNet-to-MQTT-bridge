@@ -8,6 +8,8 @@ import yaml, { Type, Schema } from 'js-yaml';
 // Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
 import { createBridge, HomeNetBridge } from '@rs485-homenet/core';
 import { HomenetBridgeConfig } from '@rs485-homenet/core/dist/config.js';
+import { logger } from '@rs485-homenet/core/dist/logger.js';
+import { eventBus } from '@rs485-homenet/core/dist/eventBus.js'; // Import eventBus
 
 // Define a custom YAML type for !homenet_logic
 const HOMENET_LOGIC_TYPE = new Type('!homenet_logic', {
@@ -50,9 +52,22 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/api/bridge/info', (_req, res) => {
+app.get('/api/bridge/info', async (_req, res) => {
+  // If a startup is in progress, tell the client to wait.
+  if (bridgeStartPromise) {
+    return res.status(503).json({ error: 'Bridge is starting...' });
+  }
+
   if (!currentConfigContent) {
-    return res.status(404).json({ error: 'Bridge not configured' });
+    return res.json({
+      configFile: currentConfigFile || 'N/A',
+      serialPath: process.env.SERIAL_PORT || '/simshare/rs485-sim-tty',
+      baudRate: 0,
+      mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
+      status: 'error',
+      error: bridgeError || '브리지가 설정되지 않았거나 시작에 실패했습니다.',
+      topic: 'homenet/raw',
+    });
   }
   res.json({
     configFile: currentConfigFile,
@@ -121,6 +136,16 @@ app.get('/api/packets/stream', (req, res) => {
 
   const client = mqtt.connect(streamMqttUrl);
 
+  // Listen for raw data from the event bus
+  const handleRawData = (data: string) => {
+    sendEvent('raw-data', {
+      topic: 'homenet/raw', // Mimic MQTT topic for consistency with UI
+      payload: data,
+      receivedAt: new Date().toISOString(),
+    });
+  };
+  eventBus.on('raw-data', handleRawData);
+
   client.on('connect', () => {
     sendStatus('connected', { mqttUrl: streamMqttUrl });
     client.subscribe('homenet/#', (err) => {
@@ -137,9 +162,11 @@ app.get('/api/packets/stream', (req, res) => {
   client.on('close', () => sendStatus('error', { message: 'MQTT connection closed.' }));
 
   client.on('message', (topic, payload) => {
+    logger.debug({ topic }, '[service] MQTT message received');
+    const payloadString = topic === 'homenet/raw' ? payload.toString('hex') : payload.toString('utf8');
     sendEvent('mqtt-message', {
       topic,
-      payload: payload.toString('utf8'),
+      payload: payloadString,
       receivedAt: new Date().toISOString(),
     });
   });
@@ -148,6 +175,7 @@ app.get('/api/packets/stream', (req, res) => {
   req.on('close', () => {
     clearInterval(heartbeat);
     client.end(true);
+    eventBus.off('raw-data', handleRawData); // Remove event bus listener
   });
 });
 
@@ -157,7 +185,7 @@ app.get('*', (_req, res, next) => {
 });
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('[service] Request error:', err);
+  logger.error({ err }, '[service] Request error');
   if (res.headersSent) return;
   const message = err instanceof Error ? err.message : 'Internal Server Error';
   res.status(500).json({ error: message });
@@ -169,14 +197,14 @@ async function loadAndStartBridge(filename: string) {
     await bridgeStartPromise.catch(() => {}); // Wait for any ongoing start/stop to finish
   }
   if (bridge) {
-    console.log(`[service] Stopping existing bridge...`);
+    logger.info('[service] Stopping existing bridge...');
     bridgeStatus = 'stopped';
     await bridge.stop();
     bridge = null;
-    console.log(`[service] Bridge stopped.`);
+    logger.info('[service] Bridge stopped.');
   }
 
-  console.log(`[service] Loading configuration from '${filename}'...`);
+  logger.info(`[service] Loading configuration from '${filename}'...`);
   bridgeStatus = 'starting';
   bridgeError = null;
 
@@ -200,11 +228,11 @@ async function loadAndStartBridge(filename: string) {
     bridge = await createBridge(configPath, mqttUrl); // Await createBridge as it now starts the bridge internally
 
     bridgeStatus = 'started';
-    console.log(`[service] Bridge started successfully with '${filename}'.`);
+    logger.info(`[service] Bridge started successfully with '${filename}'.`);
   } catch (err) {
     bridgeStatus = 'error';
     bridgeError = err instanceof Error ? err.message : 'Unknown error during bridge start.';
-    console.error(`[service] Failed to start bridge with '${filename}':`, err);
+    logger.error({ err }, `[service] Failed to start bridge with '${filename}'`);
     // Don't re-throw, let the caller handle the status
   } finally {
     bridgeStartPromise = null;
@@ -218,9 +246,9 @@ function resolveMqttUrl(queryValue: unknown, defaultValue?: string) {
 
 // --- Server Initialization ---
 app.listen(port, async () => {
-  console.log(`Service listening on port ${port}`);
+  logger.info(`Service listening on port ${port}`);
   try {
-    console.log('[service] Initializing bridge on startup...');
+    logger.info('[service] Initializing bridge on startup...');
     const files = await fs.readdir(CONFIG_DIR);
     // Filter for homenet_bridge.yaml files
     const defaultConfigFile = files.find((file) => /\.new\.ya?ml$/.test(file));
@@ -231,7 +259,7 @@ app.listen(port, async () => {
       throw new Error('No homenet_bridge configuration files found in config directory.');
     }
   } catch (err) {
-    console.error('[service] Initial bridge start failed:', err);
+    logger.error({ err }, '[service] Initial bridge start failed');
     bridgeStatus = 'error';
     bridgeError = err instanceof Error ? err.message : 'Initial start failed.';
   }

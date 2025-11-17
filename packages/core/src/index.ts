@@ -44,6 +44,7 @@ dotenv.config();
 
 const SERIAL_WAIT_INTERVAL_MS = 500;
 const DEFAULT_SERIAL_WAIT_TIMEOUT_MS = 15000;
+const DEFAULT_MQTT_CONNECT_TIMEOUT_MS = 10000; // Default to 10 seconds
 
 const isTcpConnection = (serialPath: string) => serialPath.includes(':');
 
@@ -57,7 +58,18 @@ const resolveSerialWaitTimeout = () => {
   return parsed;
 };
 
+const resolveMqttConnectTimeout = () => {
+  const raw = process.env.MQTT_CONNECT_TIMEOUT_MS ?? '';
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return DEFAULT_MQTT_CONNECT_TIMEOUT_MS;
+  }
+
+  return parsed;
+};
+
 const SERIAL_WAIT_TIMEOUT_MS = resolveSerialWaitTimeout();
+const MQTT_CONNECT_TIMEOUT_MS = resolveMqttConnectTimeout();
 
 const waitForSerialDevice = async (serialPath: string) => {
   const startedAt = Date.now();
@@ -113,7 +125,9 @@ export class HomeNetBridge implements EntityStateProvider {
 
   constructor(options: BridgeOptions) {
     this.options = options;
-    this.client = mqtt.connect(options.mqttUrl);
+    this.client = mqtt.connect(options.mqttUrl, {
+      connectTimeout: MQTT_CONNECT_TIMEOUT_MS,
+    });
   }
 
   // Implement EntityStateProvider methods
@@ -192,6 +206,7 @@ export class HomeNetBridge implements EntityStateProvider {
 
     this.config = loadedConfig;
     this.packetProcessor = new PacketProcessor(this.config, this); // Pass 'this' as stateProvider
+    logger.debug('[core] PacketProcessor initialized.');
 
     const { serial: serialConfig } = this.config;
 
@@ -230,6 +245,28 @@ export class HomeNetBridge implements EntityStateProvider {
 
     this.client.on('error', (err) => {
       logger.error({ err }, '[core] MQTT 연결 오류');
+    });
+
+    logger.debug('[core] Waiting for MQTT client to connect...');
+    // Wait for MQTT client to connect
+    await new Promise<void>((resolve, reject) => {
+      const connectHandler = () => {
+        logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
+        logger.debug('[core] MQTT connectHandler triggered, resolving connection promise.');
+        this.client.off('error', errorHandler); // Remove error listener once connected
+        logger.debug('[core] MQTT connection promise is about to resolve.'); // Added debug log
+        resolve();
+      };
+
+      const errorHandler = (err: Error) => {
+        logger.error({ err }, '[core] MQTT 연결 오류');
+        logger.debug({ err }, '[core] MQTT errorHandler triggered, rejecting connection promise.');
+        this.client.off('connect', connectHandler); // Remove connect listener on error
+        reject(err);
+      };
+
+      this.client.on('connect', connectHandler);
+      this.client.on('error', errorHandler);
     });
 
     // Open serial port

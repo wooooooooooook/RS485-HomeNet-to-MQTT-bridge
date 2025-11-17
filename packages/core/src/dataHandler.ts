@@ -5,6 +5,7 @@ import { HomenetBridgeConfig, EntityConfig } from './config.js';
 import { PacketProcessor } from './packetProcessor.js';
 import { logger } from './logger.js';
 import mqtt from 'mqtt';
+import { eventBus } from './eventBus.js';
 
 let receiveBuffer = Buffer.alloc(0);
 const stateCache = new Map<string, any>();
@@ -23,7 +24,9 @@ export function handleData(
   packetProcessor: PacketProcessor,
   client: mqtt.MqttClient
 ) {
-  logger.debug({ data: chunk.toString('hex') }, '[core] Raw data received');
+  const rawDataHex = chunk.toString('hex');
+  logger.debug({ data: rawDataHex }, '[core] Raw data received');
+  eventBus.emit('raw-data', rawDataHex);
   receiveBuffer = Buffer.concat([receiveBuffer, chunk]);
 
   const packetDefaults = config.packet_defaults;

@@ -13,7 +13,9 @@
     "test": "vitest run --runTestsByPath packages/simulator/test/simulator.test.ts"
   },
   "dependencies": {
-    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1"
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

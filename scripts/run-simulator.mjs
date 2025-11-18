@@ -1,6 +1,8 @@
 import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { readFileSync } from 'node:fs';
+import yaml from 'js-yaml';
 
 const DEFAULT_LINK_PATH = '/simshare/rs485-sim-tty';
 
@@ -31,7 +33,23 @@ async function main() {
   const intervalMs = ensureNumber(process.env.SIMULATOR_INTERVAL_MS, 1000);
   const linkPath = process.env.SIMULATOR_LINK_PATH ?? DEFAULT_LINK_PATH;
 
-  const simulator = createSimulator({ intervalMs, packets: COMMAX_TEST_PACKETS });
+  const homenetLogicType = new yaml.Type('!homenet_logic', {
+    kind: 'mapping',
+    construct: function (data) {
+      return data;
+    },
+  });
+  const HOMENET_SCHEMA = yaml.DEFAULT_SCHEMA.extend([homenetLogicType]);
+
+  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.new.yaml';
+  const config = yaml.load(readFileSync(configPath, 'utf-8'), { schema: HOMENET_SCHEMA });
+  const checksumType = config.homenet_bridge.packet_defaults.tx_checksum;
+
+  const simulator = createSimulator({
+    intervalMs,
+    packets: COMMAX_TEST_PACKETS,
+    checksumType,
+  });
   await exposePty(simulator.ptyPath, linkPath);
 
   console.log(

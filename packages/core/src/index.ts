@@ -128,6 +128,7 @@ export class HomeNetBridge implements EntityStateProvider {
       logger.debug({ mqttUrl: options.mqttUrl, connectTimeout: MQTT_CONNECT_TIMEOUT_MS }, '[core] Initializing MQTT client with options');
       this.client = mqtt.connect(options.mqttUrl, {
         connectTimeout: MQTT_CONNECT_TIMEOUT_MS,
+        protocolVersion: 4, // Force MQTT v3.1.1
       });  }
 
   // Implement EntityStateProvider methods
@@ -210,37 +211,6 @@ export class HomeNetBridge implements EntityStateProvider {
 
     const { serial: serialConfig } = this.config;
 
-    this.client.on('connect', () => {
-      logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
-      // Subscribe to command topics for all entities
-      const entityTypes = [
-        'light',
-        'climate',
-        'valve',
-        'button',
-        'sensor',
-        'fan',
-        'switch',
-        'binary_sensor',
-      ];
-      for (const entityType of entityTypes) {
-        const entities = this.config![entityType as keyof HomenetBridgeConfig] as
-          | EntityConfig[]
-          | undefined;
-        if (entities) {
-          entities.forEach((entity) => {
-            const baseTopic = `homenet/${entity.id}`;
-            this.client.subscribe(`${baseTopic}/set/#`, (err) => {
-              // Example: homenet/light_1/set/on, homenet/climate_1/set/temperature
-              if (err)
-                logger.error({ err, topic: `${baseTopic}/set/#` }, `[core] Failed to subscribe`);
-              else logger.info(`[core] Subscribed to ${baseTopic}/set/#`);
-            });
-          });
-        }
-      }
-    });
-
     this.client.on('message', (topic, message) => this.handleMqttMessage(topic, message));
 
     this.client.on('error', (err) => {
@@ -249,32 +219,51 @@ export class HomeNetBridge implements EntityStateProvider {
 
     logger.debug('[core] Waiting for MQTT client to connect...');
     // Wait for MQTT client to connect with a timeout
-    await Promise.race([
-      new Promise<void>((resolve, reject) => {
-        const connectHandler = () => {
-          logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
-          logger.debug('[core] MQTT connectHandler triggered, resolving connection promise.');
-          this.client.off('error', errorHandler); // Remove error listener once connected
-          logger.debug('[core] MQTT connection promise is about to resolve.');
-          resolve();
-        };
+    await new Promise<void>((resolve, reject) => {
+              const connectHandler = () => {
+                logger.info(`[core] MQTT에 연결되었습니다: ${this.options.mqttUrl}`);
+                logger.debug('[core] MQTT connectHandler triggered, resolving connection promise.');
+                this.client.off('error', errorHandler); // Remove error listener once connected
+      
+                // Subscribe to command topics for all entities
+                const entityTypes = [
+                  'light',
+                  'climate',
+                  'valve',
+                  'button',
+                  'sensor',
+                  'fan',
+                  'switch',
+                  'binary_sensor',
+                ];
+                for (const entityType of entityTypes) {
+                  const entities = this.config![entityType as keyof HomenetBridgeConfig] as
+                    | EntityConfig[]
+                    | undefined;
+                  if (entities) {
+                    entities.forEach((entity) => {
+                      const baseTopic = `homenet/${entity.id}`;
+                      this.client.subscribe(`${baseTopic}/set/#`, (err) => {
+                        // Example: homenet/light_1/set/on, homenet/climate_1/set/temperature
+                        if (err)
+                          logger.error({ err, topic: `${baseTopic}/set/#` }, `[core] Failed to subscribe`);
+                        else logger.info(`[core] Subscribed to ${baseTopic}/set/#`);
+                      });
+                    });
+                  }
+                }
+                resolve();
+              };
+      const errorHandler = (err: Error) => {
+        logger.error({ err }, '[core] MQTT 연결 오류');
+        logger.debug({ err }, '[core] MQTT errorHandler triggered, rejecting connection promise.');
+        this.client.off('connect', connectHandler); // Remove connect listener on error
+        reject(err);
+      };
 
-        const errorHandler = (err: Error) => {
-          logger.error({ err }, '[core] MQTT 연결 오류');
-          logger.debug({ err }, '[core] MQTT errorHandler triggered, rejecting connection promise.');
-          this.client.off('connect', connectHandler); // Remove connect listener on error
-          reject(err);
-        };
-
-        this.client.on('connect', connectHandler);
-        this.client.on('error', errorHandler);
-      }),
-      new Promise<void>((_, reject) =>
-        setTimeout(() => {
-          reject(new Error(`MQTT connection timed out after ${MQTT_CONNECT_TIMEOUT_MS}ms`));
-        }, MQTT_CONNECT_TIMEOUT_MS)
-      ),
-    ]);
+      this.client.on('connect', connectHandler);
+      this.client.on('error', errorHandler);
+    });
 
     // Open serial port
     const serialPath = process.env.SERIAL_PORT || '/simshare/rs485-sim-tty'; // Use environment variable for serial path, or fallback

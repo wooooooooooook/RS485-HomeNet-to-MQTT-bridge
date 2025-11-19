@@ -29,6 +29,7 @@ export function handleData(
   eventBus.emit('raw-data', rawDataHex);
   receiveBuffer = Buffer.concat([receiveBuffer, chunk]);
 
+  
   const packetDefaults = config.packet_defaults;
   if (!packetDefaults || typeof packetDefaults.rx_length === 'undefined') {
     logger.error("[core] 'rx_length' is not defined in packet_defaults.");
@@ -36,7 +37,8 @@ export function handleData(
     return;
   }
   const packetLength = packetDefaults.rx_length;
-
+  
+  logger.debug({ receiveBufferHex: receiveBuffer.toString('hex'), currentBufferLength: receiveBuffer.length, expectedPacketLength: packetLength }, '[core] Receive buffer state before processing');
   const entityTypes: (keyof HomenetBridgeConfig)[] = [
     'light',
     'climate',
@@ -57,9 +59,11 @@ export function handleData(
     bufferWasProcessed = false;
 
     const packet = receiveBuffer.slice(0, packetLength);
+    logger.debug({ packetHex: packet.toString('hex') }, '[core] Processing packet');
     const parsedStates = packetProcessor.parseIncomingPacket(packet.toJSON().data, allEntities);
 
     if (parsedStates.length > 0) {
+      logger.debug({ parsedStates, packetLengthConsumed: packetLength }, '[core] Packet successfully parsed. Consuming full packet.');
       parsedStates.forEach((parsed) => {
         const entity = allEntities.find((e) => e.id === parsed.entityId);
         if (entity) {
@@ -67,7 +71,7 @@ export function handleData(
           const payload = JSON.stringify(parsed.state);
           if (stateCache.get(topic) !== payload) {
             stateCache.set(topic, payload);
-            client.publish(topic, payload, { retain: true });
+            client.publish(topic, payload, { retain: false });
             logger.info({ topic, payload }, '[core] MQTT 발행');
           }
         }
@@ -75,6 +79,7 @@ export function handleData(
       receiveBuffer = receiveBuffer.slice(packetLength);
       bufferWasProcessed = true;
     } else {
+      logger.debug({ reason: 'No matching entity state or checksum mismatch', byteConsumed: 1 }, '[core] Packet not parsed. Consuming 1 byte.');
       receiveBuffer = receiveBuffer.slice(1);
       bufferWasProcessed = true;
     }

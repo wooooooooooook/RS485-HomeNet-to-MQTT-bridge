@@ -42,7 +42,8 @@ homenet_bridge:
   #명령 ON   0x31, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, add checksum
   #명령 OFF  0x31, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, add checksum
   light:
-    - name: 'Light Breaker'
+    - id: 'light_breaker'
+      name: 'Light Breaker'
       state:
         data: [0xA0, 0x00, 0x01]
         mask: [0xF0, 0x00, 0xFF]
@@ -59,7 +60,8 @@ homenet_bridge:
         data: [0x22, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00]
         ack: [0xA2, 0x00, 0x01]
 
-    - name: 'Light 1'
+    - id: 'light_1'
+      name: 'Light 1'
       state:
         data: [0xB0, 0x00, 0x01]
         mask: [0xF0, 0x00, 0xFF]
@@ -76,7 +78,8 @@ homenet_bridge:
         data: [0x31, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
         ack: [0xB1, 0x00, 0x01]
 
-    - name: 'Light 2'
+    - id: 'light_2'
+      name: 'Light 2'
       state:
         data: [0xB0, 0x00, 0x02]
         mask: [0xF0, 0x00, 0xFF]
@@ -93,7 +96,8 @@ homenet_bridge:
         data: [0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00]
         ack: [0xB1, 0x00, 0x02]
 
-    - name: 'Light 3'
+    - id: 'light_3'
+      name: 'Light 3'
       state:
         data: [0xB0, 0x00, 0x03]
         mask: [0xF0, 0x00, 0xFF]
@@ -110,7 +114,8 @@ homenet_bridge:
         data: [0x31, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00]
         ack: [0xB1, 0x00, 0x03]
 
-    - name: 'Light 4'
+    - id: 'light_4'
+      name: 'Light 4'
       state:
         data: [0xB0, 0x00, 0x04]
         mask: [0xF0, 0x00, 0xFF]
@@ -141,7 +146,8 @@ homenet_bridge:
   #명령 OFF    0x04, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, add checksum
   #명령 CHANGE 0x04, 0x01, 0x03, 0xXX, 0x00, 0x00, 0x00, add checksum
   climate:
-    - name: 'Heater 1'
+    - id: 'heater_1'
+      name: 'Heater 1'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -184,7 +190,8 @@ homenet_bridge:
             signed: false
             endian: big
 
-    - name: 'Heater 2'
+    - id: 'heater_2'
+      name: 'Heater 2'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -227,7 +234,8 @@ homenet_bridge:
             signed: false
             endian: big
 
-    - name: 'Heater 3'
+    - id: 'heater_3'
+      name: 'Heater 3'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -270,7 +278,8 @@ homenet_bridge:
             signed: false
             endian: big
 
-    - name: 'Heater 4'
+    - id: 'heater_4'
+      name: 'Heater 4'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -333,7 +342,8 @@ homenet_bridge:
   #명령 MID  0x78, 0x01, 0x02, 0x02, 0x00, 0x00, 0x00, add checksum
   #명령 HIGH 0x78, 0x01, 0x02, 0x03, 0x00, 0x00, 0x00, add checksum
   fan:
-    - name: 'Fan 1'
+    - id: 'fan_1'
+      name: 'Fan 1'
       state:
         data: [0xF0, 0x00, 0x01]
         mask: [0xF1, 0x00, 0xFF]
@@ -392,7 +402,8 @@ homenet_bridge:
   #명령      Head,   ID,   On, 0x00, 0x00, 0x00, 0x00, add checksum
   #명령 OFF  0x11, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, add checksum
   valve:
-    - name: 'Gas Valve'
+    - id: 'gas_valve'
+      name: 'Gas Valve'
       state:
         data: [0x90]
       state_open:
@@ -407,7 +418,8 @@ homenet_bridge:
 
   #상태 ELV 0x23, 0x01, 0xXX, 0x00, 0x00, 0x00, 0x00, add checksum
   sensor:
-    - name: 'Elevator Floors'
+    - id: 'elevator_floors'
+      name: 'Elevator Floors'
       icon: 'mdi:elevator'
       state:
         data: [0x23]
@@ -418,14 +430,16 @@ homenet_bridge:
 
   #명령 0xA0, 0x01, 0x01, 0x00, 0x08, 0x15, 0x00, add checksum
   button:
-    - name: 'Elevator Call'
+    - id: 'elevator_call'
+      name: 'Elevator Call'
       icon: 'mdi:elevator'
       command_on:
         data: [0xA0, 0x01, 0x01, 0x00, 0x08, 0x15, 0x00]
         ack: [0x23]
 
   switch:
-    - name: 'Switch 7'
+    - id: 'switch_7'
+      name: 'Switch 7'
       state:
         data: [0xF8, 0x00, 0x07]
         mask: [0xF8, 0x00, 0xFF]

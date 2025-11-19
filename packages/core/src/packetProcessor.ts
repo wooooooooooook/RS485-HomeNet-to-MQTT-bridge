@@ -564,7 +564,7 @@ export class PacketProcessor {
           expectedChecksumBytes[0] !==
             dataWithoutHeaderAndFooter[dataWithoutHeaderAndFooter.length - 1]
         ) {
-          // console.warn('Checksum mismatch for packet:', this.bytesToHex(packet));
+          console.warn('Checksum mismatch for packet:', this.bytesToHex(packet));
           continue;
         }
         // Remove checksum byte from data for state extraction

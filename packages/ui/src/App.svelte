@@ -153,19 +153,23 @@
     const handleMqttMessage = (event: MessageEvent<string>) => {
       const data = safeParse<MqttMessageEvent>(event.data);
       if (!data) return;
+      deviceStates.set(data.topic, data.payload);
+      deviceStates = deviceStates; // Trigger Svelte reactivity
+    };
 
-      if (data.topic === 'homenet/raw') {
-        if (!isLogPaused) {
-          rawPackets = [...rawPackets, data].slice(-MAX_PACKETS);
-        }
-      } else {
-        deviceStates.set(data.topic, data.payload);
-        deviceStates = deviceStates; // Trigger Svelte reactivity
+    const handleRawPacket = (event: MessageEvent<string>) => {
+      const data = safeParse<MqttMessageEvent>(event.data);
+      if (!data) return;
+
+      if (!isLogPaused) {
+        rawPackets = [...rawPackets, data].slice(-MAX_PACKETS);
       }
     };
 
     eventSource.addEventListener('status', handleStatus);
     eventSource.addEventListener('mqtt-message', handleMqttMessage);
+    eventSource.addEventListener('raw-data', handleRawPacket);
+    eventSource.addEventListener('raw-data', handleRawPacket); // Add this listener
     eventSource.onerror = () => {
       connectionStatus = 'error';
       statusMessage = '스트림 연결이 끊어졌습니다. 잠시 후 다시 시도하세요.';
@@ -320,15 +324,10 @@
           <p class="empty">아직 수신된 Raw 패킷이 없습니다.</p>
         {:else}
           {#each [...rawPackets].reverse() as packet (packet.receivedAt + packet.topic)}
-            <article class="packet">
-              <header>
-                <span class="time">{new Date(packet.receivedAt).toLocaleTimeString()}</span>
-                <span class="topic">{packet.topic}</span>
-              </header>
-              <div class="payload">
-                <code>{toHexPairs(packet.payload).join(' ')}</code>
-              </div>
-            </article>
+            <div class="packet-line">
+              <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
+              <code class="payload">{toHexPairs(packet.payload).join(' ')}</code>
+            </div>
           {/each}
         {/if}
       </div>
@@ -603,40 +602,47 @@
   .packet-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-  }
-
-  .packet {
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.75rem;
-    padding: 1rem;
+    gap: 0.2rem; /* Reduced gap for line-based display */
+    padding: 0.5rem;
     background: rgba(15, 23, 42, 0.6);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
   }
 
-  .packet header {
+  .packet-line {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    font-size: 0.85rem;
-    color: rgba(226, 232, 240, 0.7);
-    margin-bottom: 0.75rem;
-  }
-
-  .packet .topic {
+    align-items: baseline;
     font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
-    background: rgba(148, 163, 184, 0.15);
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.35rem;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    line-height: 1.4;
+    user-select: text; /* Ensure text is selectable */
   }
 
-  .payload {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    margin-bottom: 0.5rem;
+  .packet-line .time {
+    color: rgba(226, 232, 240, 0.6);
+    margin-right: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .packet-line .topic {
+    color: rgba(226, 232, 240, 0.7);
+    margin-right: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .packet-line .payload {
+    flex-grow: 1;
+    word-break: break-all;
+    white-space: pre-wrap; /* Allow long lines to wrap */
+    background: transparent; /* Remove background from code block */
+    padding: 0; /* Remove padding from code block */
+    border-radius: 0; /* Remove border-radius from code block */
   }
 
   code {
+    /* Keep generic code styling, but make it less intrusive for .packet-line .payload */
     font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
     background: rgba(15, 23, 42, 0.9);
     padding: 0.5rem;

@@ -8,7 +8,6 @@ import {
 import { LightEntity } from '../../domain/entities/light.entity.js';
 import { ClimateEntity } from '../../domain/entities/climate.entity.js';
 import { ValveEntity } from '../../domain/entities/valve.entity.js';
-import { ButtonEntity } from '../../domain/entities/button.entity.js';
 import { SensorEntity } from '../../domain/entities/sensor.entity.js';
 import { FanEntity } from '../../domain/entities/fan.entity.js';
 import { SwitchEntity } from '../../domain/entities/switch.entity.js';
@@ -17,11 +16,9 @@ import {
   StateSchema,
   StateNumSchema,
   ChecksumType,
-  Extractor,
 } from '../types.js';
-import { logger } from '../../utils/logger.js';
-import { EntityStateProvider } from '../packet-processor.js'; // Still needs this interface
-import { bytesToHex, calculateChecksum } from '../utils/common.js'; // Import utilities
+import { bytesToHex, calculateChecksum } from '../utils/common.js';
+import { EntityStateProvider } from '../packet-processor.js';
 
 export class PacketParser {
   private config: HomenetBridgeConfig;
@@ -156,8 +153,7 @@ export class PacketParser {
 
     return undefined;
   }
-  
-  // --- Packet Parsing ---
+
   public parseIncomingPacket(
     packet: number[],
     allEntities: EntityConfig[],

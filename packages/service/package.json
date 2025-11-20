@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "pnpm --filter @rs485-homenet/ui build && node ../../scripts/sync-ui-static.mjs && tsc -p tsconfig.json",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
@@ -22,7 +22,7 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "pino-pretty": "^13.1.2",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
 }

@@ -34,7 +34,7 @@ export class PacketProcessor {
   public parseIncomingPacket(
     packet: number[],
     allEntities: EntityConfig[],
-  ): { entityId: string; state: any }[] {
+  ): { parsedStates: { entityId: string; state: any }[]; checksumValid: boolean } {
     return this.packetParser.parseIncomingPacket(packet, allEntities);
   }
 }

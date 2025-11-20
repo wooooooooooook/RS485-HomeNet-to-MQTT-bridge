@@ -83,14 +83,35 @@ services:
       bash -lc "
         set -euo pipefail
         corepack enable
-        pnpm install --filter @rs485-homenet/service... --filter @rs485-homenet/core... --filter @rs485-homenet/ui... --no-frozen-lockfile
-        pnpm service:build
-        pnpm --filter @rs485-homenet/service start | pnpm pino-pretty
+        pnpm install --filter @rs485-homenet/service... --filter @rs485-homenet/core... --no-frozen-lockfile
+        pnpm --filter @rs485-homenet/core dev | pnpm pino-pretty &
+        pnpm --filter @rs485-homenet/service dev | pnpm pino-pretty
       "
     depends_on:
       simulator:
         condition: service_started
       mq:
+        condition: service_started
+    restart: unless-stopped
+
+  ui:
+    <<: *dev-base
+    container_name: rs485-ui-dev
+    volumes:
+      - ../../:/workspace
+      - pnpm-store:/root/.local/share/pnpm
+      - ui_node_modules:/workspace/node_modules
+    ports:
+      - '5173:5173'
+    command: >
+      bash -lc "
+        set -euo pipefail
+        corepack enable
+        pnpm install --filter @rs485-homenet/ui... --no-frozen-lockfile
+        pnpm --filter @rs485-homenet/ui dev --host 0.0.0.0
+      "
+    depends_on:
+      app:
         condition: service_started
     restart: unless-stopped
 
@@ -102,3 +123,4 @@ volumes:
   pnpm-store:
   simulator_node_modules:
   app_node_modules:
+  ui_node_modules:

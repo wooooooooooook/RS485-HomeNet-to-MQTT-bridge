@@ -29,7 +29,8 @@ import {
 } from '../types.js';
 import { logger } from '../../utils/logger.js';
 import { EntityStateProvider } from '../packet-processor.js';
-import { hexToBytes, bytesToHex, calculateChecksum } from '../utils/common.js'; // Import utilities
+import { hexToBytes, bytesToHex } from '../utils/common.js'; // Import utilities
+import { calculateChecksum } from '../utils/checksum.js';
 
 export class CommandGenerator {
   private config: HomenetBridgeConfig;
@@ -339,8 +340,9 @@ export class CommandGenerator {
     const txFooter = packetDefaults.tx_footer || [];
     const txChecksum = (packetDefaults.tx_checksum || 'none') as ChecksumType;
 
-    const checksumBytes = calculateChecksum(commandData, txChecksum, txHeader, txFooter); // Use imported calculateChecksum
+    const bytesToChecksum = [...txHeader, ...commandData, ...txFooter];
+    const checksum = calculateChecksum(Buffer.from(bytesToChecksum), txChecksum);
 
-    return [...txHeader, ...commandData, ...checksumBytes, ...txFooter];
+    return [...txHeader, ...commandData, checksum, ...txFooter];
   }
 }

@@ -1,6 +1,6 @@
 // packages/core/src/domain/entities/climate.entity.ts
 
-import { EntityConfig } from './base.entity.js';
+import { EntityConfig, CommandSchema } from './base.entity.js';
 import { StateSchema, StateNumSchema } from '../../protocol/types.js';
 
 export interface ClimateEntity extends EntityConfig {
@@ -11,4 +11,9 @@ export interface ClimateEntity extends EntityConfig {
   state_cool?: StateSchema;
   state_temperature_current?: StateNumSchema;
   state_temperature_target?: StateNumSchema;
+  command_off?: CommandSchema;
+  command_heat?: CommandSchema;
+  command_cool?: CommandSchema;
+  command_temperature?: CommandSchema;
+  command_update?: CommandSchema;
 }

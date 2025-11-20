@@ -1,6 +1,6 @@
 // packages/core/src/domain/entities/light.entity.ts
 
-import { EntityConfig } from './base.entity.js';
+import { EntityConfig, CommandSchema } from './base.entity.js';
 import { StateSchema } from '../../protocol/types.js';
 
 export interface LightEntity extends EntityConfig {
@@ -8,4 +8,7 @@ export interface LightEntity extends EntityConfig {
   state: StateSchema;
   state_on?: StateSchema;
   state_off?: StateSchema;
+  command_on?: CommandSchema;
+  command_off?: CommandSchema;
+  command_update?: CommandSchema;
 }

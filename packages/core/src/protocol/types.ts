@@ -1,4 +1,4 @@
-export type ChecksumType = 'add' | 'xor' | 'add_no_header' | 'xor_no_header' | 'none';
+export type ChecksumType = 'add' | 'xor' | 'add_no_header' | 'xor_no_header' | 'xor_add' | 'samsung_rx' | 'samsung_tx' | 'none';
 export type DecodeEncodeType = 'none' | 'bcd' | 'ascii' | 'signed_byte_half_degree' | 'multiply' | 'add_0x80';
 export type EndianType = 'big' | 'little';
 

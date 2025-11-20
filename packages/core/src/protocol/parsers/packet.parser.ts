@@ -17,7 +17,8 @@ import {
   StateNumSchema,
   ChecksumType,
 } from '../types.js';
-import { bytesToHex, calculateChecksum } from '../utils/common.js';
+import { bytesToHex } from '../utils/common.js';
+import { calculateChecksum } from '../utils/checksum.js';
 import { EntityStateProvider } from '../packet-processor.js';
 
 export class PacketParser {
@@ -157,8 +158,11 @@ export class PacketParser {
   public parseIncomingPacket(
     packet: number[],
     allEntities: EntityConfig[],
-  ): { entityId: string; state: any }[] {
+  ): { parsedStates: { entityId: string; state: any }[]; checksumValid: boolean } {
     const parsedStates: { entityId: string; state: any }[] = [];
+    let checksumValid = false;
+
+    console.log(`[PacketParser] Parsing packet: [${packet.map(b => '0x' + b.toString(16).padStart(2, '0')).join(', ')}]`);
 
     for (const entity of allEntities) {
       const packetDefaults = { ...this.config.packet_defaults, ...entity.packet_parameters };
@@ -167,36 +171,48 @@ export class PacketParser {
       const rxFooter = packetDefaults.rx_footer || [];
       const rxChecksum = (packetDefaults.rx_checksum || 'none') as ChecksumType;
 
+      console.log(`[PacketParser] Checking entity: ${entity.id} (${entity.type})`);
+
       if (rxHeader.length > 0 && !this.startsWith(packet, rxHeader)) {
+        // console.log(`[PacketParser]   ✗ Header mismatch - expected: [${rxHeader.map(b => '0x' + b.toString(16).padStart(2, '0')).join(', ')}]`);
         continue;
       }
 
       const dataWithoutHeader = packet.slice(rxHeader.length);
 
       if (rxFooter.length > 0 && !this.endsWith(dataWithoutHeader, rxFooter)) {
+        // console.log(`[PacketParser]   ✗ Footer mismatch - expected: [${rxFooter.map(b => '0x' + b.toString(16).padStart(2, '0')).join(', ')}]`);
         continue;
       }
 
-      const dataWithoutHeaderAndFooter =
+      let dataWithoutHeaderAndFooter =
         rxFooter.length > 0 ? dataWithoutHeader.slice(0, -rxFooter.length) : dataWithoutHeader;
 
+      // Validate checksum if required
       if (rxChecksum !== 'none') {
-        const expectedChecksumBytes = calculateChecksum(
-          dataWithoutHeaderAndFooter.slice(0, -1),
+        const bytesToChecksum = [...rxHeader, ...dataWithoutHeaderAndFooter.slice(0, -1)];
+        const calculatedChecksum = calculateChecksum(
+          Buffer.from(bytesToChecksum),
           rxChecksum,
-          rxHeader,
-          [],
         );
+
         if (
-          expectedChecksumBytes.length > 0 &&
-          expectedChecksumBytes[0] !==
-            dataWithoutHeaderAndFooter[dataWithoutHeaderAndFooter.length - 1]
+          calculatedChecksum !==
+          dataWithoutHeaderAndFooter[dataWithoutHeaderAndFooter.length - 1]
         ) {
-          console.warn('Checksum mismatch for packet:', bytesToHex(packet));
+          console.log(`[PacketParser]   ✗ Checksum mismatch - expected: 0x${calculatedChecksum.toString(16).padStart(2, '0')}, got: 0x${dataWithoutHeaderAndFooter[dataWithoutHeaderAndFooter.length - 1].toString(16).padStart(2, '0')}`);
           continue;
         }
-        dataWithoutHeaderAndFooter.pop();
+        console.log(`[PacketParser]   ✓ Checksum valid`);
+        checksumValid = true;
+        // Remove checksum byte for state extraction (create a copy to avoid mutation)
+        dataWithoutHeaderAndFooter = dataWithoutHeaderAndFooter.slice(0, -1);
+      } else {
+        // If no checksum is required, we consider it valid in terms of checksum
+        checksumValid = true;
       }
+
+      console.log(`[PacketParser]   Data for matching: [${dataWithoutHeaderAndFooter.map((b: number) => '0x' + b.toString(16).padStart(2, '0')).join(', ')}]`);
 
       // --- State Extraction Logic ---
       let currentState: { [key: string]: any } = {};
@@ -205,6 +221,7 @@ export class PacketParser {
       if (entity.type === 'light') {
         const lightEntity = entity as LightEntity;
         if (lightEntity.state && this.matchState(dataWithoutHeaderAndFooter, lightEntity.state)) {
+          console.log(`[PacketParser]   ✓ State matched for light entity`);
           matched = true;
           if (
             lightEntity.state_on &&
@@ -217,6 +234,8 @@ export class PacketParser {
           ) {
             currentState.isOn = false;
           }
+        } else if (lightEntity.state) {
+          console.log(`[PacketParser]   ✗ State mismatch for light entity`);
         }
       } else if (entity.type === 'switch') {
         const switchEntity = entity as SwitchEntity;
@@ -365,7 +384,7 @@ export class PacketParser {
       }
     }
 
-    return parsedStates;
+    return { parsedStates, checksumValid };
   }
 
   private matchState(packetData: number[], stateSchema: StateSchema): boolean {

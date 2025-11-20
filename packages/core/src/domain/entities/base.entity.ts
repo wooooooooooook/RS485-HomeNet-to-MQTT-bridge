@@ -1,5 +1,6 @@
 import { DecodeEncodeType, EndianType, ValueSource, Extractor } from '../../protocol/types.js';
 import { StateLambdaConfig } from '../../protocol/types.js';
+export type { StateLambdaConfig };
 
 export interface CommandSchema {
     cmd?: number[];
@@ -41,8 +42,8 @@ export interface CommandLambdaConfig {
 }
 
 export interface EntityConfig {
-  id: string;
-  name: string;
-  type: string;
-  packet_parameters?: any;
+    id: string;
+    name: string;
+    type: string;
+    packet_parameters?: any;
 }

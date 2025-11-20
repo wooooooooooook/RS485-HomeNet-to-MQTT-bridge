@@ -14,6 +14,8 @@ export class StateManager {
   private config: HomenetBridgeConfig;
   private packetProcessor: PacketProcessor;
   private mqttPublisher: MqttPublisher;
+  // Timestamp of the last received chunk (ms since epoch)
+  private lastChunkTimestamp: number = 0;
 
   constructor(config: HomenetBridgeConfig, packetProcessor: PacketProcessor, mqttPublisher: MqttPublisher) {
     this.config = config;
@@ -22,6 +24,14 @@ export class StateManager {
   }
 
   public processIncomingData(chunk: Buffer): void {
+    const now = Date.now();
+    // If the gap between this chunk and the previous one exceeds 30 ms, treat it as a new packet boundary.
+    if (now - this.lastChunkTimestamp > 30) {
+      // logger.debug({ gap: now - this.lastChunkTimestamp }, '[core] Gap >30ms, resetting receive buffer');
+      this.receiveBuffer = Buffer.alloc(0);
+    }
+    this.lastChunkTimestamp = now;
+
     const rawDataHex = chunk.toString('hex');
     logger.debug({ data: rawDataHex }, '[core] Raw data received');
     eventBus.emit('raw-data', rawDataHex);
@@ -35,7 +45,7 @@ export class StateManager {
     }
     const packetLength = packetDefaults.rx_length;
 
-    logger.debug({ receiveBufferHex: this.receiveBuffer.toString('hex'), currentBufferLength: this.receiveBuffer.length, expectedPacketLength: packetLength }, '[core] Receive buffer state before processing');
+    // logger.debug({ receiveBufferHex: this.receiveBuffer.toString('hex'), currentBufferLength: this.receiveBuffer.length, expectedPacketLength: packetLength }, '[core] Receive buffer state before processing');
     const entityTypes: (keyof HomenetBridgeConfig)[] = [
       'light',
       'climate',
@@ -57,7 +67,7 @@ export class StateManager {
 
       const packet = this.receiveBuffer.slice(0, packetLength);
       logger.debug({ packetHex: packet.toString('hex') }, '[core] Processing packet');
-      const parsedStates = this.packetProcessor.parseIncomingPacket(packet.toJSON().data, allEntities);
+      const { parsedStates, checksumValid } = this.packetProcessor.parseIncomingPacket(packet.toJSON().data, allEntities);
 
       if (parsedStates.length > 0) {
         logger.debug({ parsedStates, packetLengthConsumed: packetLength }, '[core] Packet successfully parsed. Consuming full packet.');
@@ -75,11 +85,18 @@ export class StateManager {
             }
           }
         });
+        // Consume full packet when parsed successfully
         this.receiveBuffer = this.receiveBuffer.slice(packetLength);
         bufferWasProcessed = true;
-      } else {
-        logger.debug({ reason: 'No matching entity state or checksum mismatch', byteConsumed: 1 }, '[core] Packet not parsed. Consuming 1 byte.');
+      } else if (!checksumValid) {
+        // Checksum mismatch: consume one byte and continue
+        logger.debug({ reason: 'Checksum mismatch', byteConsumed: 1 }, '[core] Packet not parsed due to checksum. Consuming 1 byte.');
         this.receiveBuffer = this.receiveBuffer.slice(1);
+        bufferWasProcessed = true;
+      } else {
+        // Checksum valid but no matching entity state: discard packet without consuming extra byte
+        logger.debug({ reason: 'No matching entity state', packetLengthConsumed: packetLength }, '[core] Packet valid but no entity matched. Consuming full packet.');
+        this.receiveBuffer = this.receiveBuffer.slice(packetLength);
         bufferWasProcessed = true;
       }
     }

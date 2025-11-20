@@ -2,6 +2,7 @@ export type ChecksumType =
   | 'add'
   | 'add_no_header'
   | 'xor'
+  | 'xor_no_header'
   | 'xor_add'
   | 'samsung_rx'
   | 'samsung_tx'
@@ -15,6 +16,8 @@ export function calculateChecksum(data: Buffer, type: ChecksumType): number {
       return addNoHeader(data);
     case 'xor':
       return xor(data);
+    case 'xor_no_header':
+      return xorNoHeader(data);
     case 'xor_add':
       // This is a guess based on the name.
       // It might need to be adjusted based on device behavior.
@@ -50,6 +53,14 @@ function xor(data: Buffer): number {
   let checksum = 0;
   for (const byte of data) {
     checksum ^= byte;
+  }
+  return checksum;
+}
+
+function xorNoHeader(data: Buffer): number {
+  let checksum = 0;
+  for (let i = 1; i < data.length; i++) {
+    checksum ^= data[i];
   }
   return checksum;
 }

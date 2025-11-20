@@ -626,12 +626,6 @@
     white-space: nowrap;
   }
 
-  .packet-line .topic {
-    color: rgba(226, 232, 240, 0.7);
-    margin-right: 0.5rem;
-    white-space: nowrap;
-  }
-
   .packet-line .payload {
     flex-grow: 1;
     word-break: break-all;

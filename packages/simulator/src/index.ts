@@ -1,10 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { setInterval as createInterval, clearInterval } from 'node:timers';
 import { pathToFileURL } from 'node:url';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
-import yaml from 'js-yaml';
+import { loadYamlConfig } from '../../core/dist/config/yaml-loader.js';
 import { calculateChecksum, ChecksumType } from './checksum.js';
 
 const DEFAULT_INTERVAL_MS = 1000;
@@ -179,9 +178,10 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   };
 }
 
-function main() {
-  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.homenet_bridge.yaml';
-  const config = yaml.load(readFileSync(configPath, 'utf-8')) as {
+async function main() {
+  const configPath =
+    process.env.CONFIG_PATH ?? 'packages/core/config/commax.homenet_bridge.yaml';
+  const config = (await loadYamlConfig(configPath)) as {
     homenet_bridge: { packet_defaults: { tx_checksum: ChecksumType } };
   };
   const checksumType = config.homenet_bridge.packet_defaults.tx_checksum;

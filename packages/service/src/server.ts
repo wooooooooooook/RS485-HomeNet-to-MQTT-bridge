@@ -13,20 +13,19 @@ import {
   HomenetBridgeConfig,
   logger,
   eventBus,
+  LambdaConfig,
 } from '@rs485-homenet/core';
 
-// Define a custom YAML type for !homenet_logic
-const HOMENET_LOGIC_TYPE = new Type('!homenet_logic', {
-  kind: 'mapping', // It's a mapping (object), not a scalar
-  construct: function (data) {
-    // data will be the parsed object under !homenet_logic
-    // We can directly return it as it should conform to CommandLambdaConfig or StateLambdaConfig
-    return data;
+// Define a custom YAML type for !lambda
+const LambdaType = new Type('!lambda', {
+  kind: 'scalar',
+  construct: (data: string): LambdaConfig => {
+    return { type: 'lambda', script: data };
   },
 });
 
-// Create a schema that includes the custom HOMENET_LOGIC_TYPE
-const HOMENET_BRIDGE_SCHEMA = yaml.DEFAULT_SCHEMA.extend([HOMENET_LOGIC_TYPE]);
+// Create a schema that includes the custom LambdaType
+const HOMENET_BRIDGE_SCHEMA = yaml.DEFAULT_SCHEMA.extend([LambdaType]);
 
 dotenv.config();
 
@@ -88,7 +87,7 @@ app.get('/api/configs', async (_req, res, next) => {
   try {
     const files = await fs.readdir(CONFIG_DIR);
     // Filter for homenet_bridge.yaml files
-    const yamlFiles = files.filter((file) => /\.new\.ya?ml$/.test(file));
+    const yamlFiles = files.filter((file) => /\.homenet_bridge\.ya?ml$/.test(file));
     res.json(yamlFiles);
   } catch (err) {
     next(err);
@@ -261,7 +260,7 @@ app.listen(port, async () => {
     logger.info('[service] Initializing bridge on startup...');
     const files = await fs.readdir(CONFIG_DIR);
     // Filter for homenet_bridge.yaml files
-    const defaultConfigFile = files.find((file) => /\.new\.ya?ml$/.test(file));
+    const defaultConfigFile = files.find((file) => /\.homenet_bridge\.ya?ml$/.test(file));
 
     if (defaultConfigFile) {
       await loadAndStartBridge(defaultConfigFile);

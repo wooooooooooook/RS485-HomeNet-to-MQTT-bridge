@@ -177,18 +177,9 @@ homenet_bridge:
       command_heat:
         data: [0x04, 0x01, 0x04, 0x81, 0x00, 0x00, 0x00]
         ack: [0x84, 0x81, 0x01]
-      command_temperature: !homenet_logic
-        type: command_lambda
-        valueSource:
-          type: input
-        packetTemplates:
-          - data: [0x04, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00]
-            ack: [0x84, 0x00, 0x01]
-            valueOffset: 3 # (uint8_t)target goes here
-            valueEncode: bcd
-            length: 1
-            signed: false
-            endian: big
+      command_temperature: !lambda |-
+        var target = int_to_bcd(x);
+        return [[0x04, 0x01, 0x03, target, 0x00, 0x00, 0x00], [0x84, 0x00, 0x01]];
 
     - id: 'heater_2'
       name: 'Heater 2'
@@ -221,18 +212,9 @@ homenet_bridge:
       command_heat:
         data: [0x04, 0x02, 0x04, 0x81, 0x00, 0x00, 0x00]
         ack: [0x84, 0x81, 0x02]
-      command_temperature: !homenet_logic
-        type: command_lambda
-        valueSource:
-          type: input
-        packetTemplates:
-          - data: [0x04, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00]
-            ack: [0x84, 0x00, 0x02]
-            valueOffset: 3 # (uint8_t)target goes here
-            valueEncode: bcd
-            length: 1
-            signed: false
-            endian: big
+      command_temperature: !lambda |-
+        var target = int_to_bcd(x);
+        return [[0x04, 0x02, 0x03, target, 0x00, 0x00, 0x00], [0x84, 0x00, 0x02]];
 
     - id: 'heater_3'
       name: 'Heater 3'
@@ -265,18 +247,9 @@ homenet_bridge:
       command_heat:
         data: [0x04, 0x03, 0x04, 0x81, 0x00, 0x00, 0x00]
         ack: [0x84, 0x81, 0x03]
-      command_temperature: !homenet_logic
-        type: command_lambda
-        valueSource:
-          type: input
-        packetTemplates:
-          - data: [0x04, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00]
-            ack: [0x84, 0x00, 0x03]
-            valueOffset: 3 # (uint8_t)target goes here
-            valueEncode: bcd
-            length: 1
-            signed: false
-            endian: big
+      command_temperature: !lambda |-
+        var target = int_to_bcd(x);
+        return [[0x04, 0x03, 0x03, target, 0x00, 0x00, 0x00], [0x84, 0x00, 0x03]];
 
     - id: 'heater_4'
       name: 'Heater 4'
@@ -309,18 +282,9 @@ homenet_bridge:
       command_heat:
         data: [0x04, 0x04, 0x04, 0x81, 0x00, 0x00, 0x00]
         ack: [0x84, 0x81, 0x04]
-      command_temperature: !homenet_logic
-        type: command_lambda
-        valueSource:
-          type: input
-        packetTemplates:
-          - data: [0x04, 0x04, 0x03, 0x00, 0x00, 0x00, 0x00]
-            ack: [0x84, 0x00, 0x04]
-            valueOffset: 3 # (uint8_t)target goes here
-            valueEncode: bcd
-            length: 1
-            signed: false
-            endian: big
+      command_temperature: !lambda |-
+        var target = int_to_bcd(x);
+        return [[0x04, 0x04, 0x03, target, 0x00, 0x00, 0x00], [0x84, 0x00, 0x04]];
 
   #상태      Head,   ON,   ID,  SPD, 0x00, 0x00, 0x00, add checksum
   #상태 OFF  0xF6, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, add checksum
@@ -360,39 +324,19 @@ homenet_bridge:
       command_off:
         data: [0x78, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00]
         ack: [0xF8, 0x00]
-      command_speed: !homenet_logic
-        type: command_lambda
-        valueSource:
-          type: input
-        packetTemplates:
-          - data: [0x78, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00]
-            ack: [0xF8, 0x04]
-            valueOffset: 3 # speed goes here
-            valueEncode: none
-            length: 1
-            signed: false
-            endian: big
+      command_speed: !lambda |-
+        var speed = x;
+        return [[0x78, 0x01, 0x02, speed, 0x00, 0x00, 0x00], [0xF8, 0x04]];
       state_speed:
         offset: 3
         signed: False
       preset_modes:
         - 'Auto'
         - 'Night'
-      state_preset: !homenet_logic
-        type: state_lambda
-        conditions:
-          - extractor:
-              type: check_value
-              offset: 1
-              value: 0x02
-            then: 'Auto'
-          - extractor:
-              type: check_value
-              offset: 1
-              value: 0x06
-            then: 'Night'
-        mapping:
-          default: ''
+      state_preset: !lambda |-
+        if (data[1] === 0x02) return "Auto";
+        if (data[1] === 0x06) return "Night";
+        return "";
 
   #상태      Head,   ON,   ID, 0x00, 0x00, 0x00, 0x00, add checksum
   #상태 ON   0x90, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, add checksum

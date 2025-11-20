@@ -69,7 +69,7 @@ services:
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'
-      CONFIG_FILE: packages/core/config/commax.new.yaml
+      CONFIG_FILE: packages/core/config/commax.homenet_bridge.yaml
       LOG_LEVEL: debug
     volumes:
       - ../../:/workspace

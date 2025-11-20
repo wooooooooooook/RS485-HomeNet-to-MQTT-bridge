@@ -41,7 +41,7 @@ async function main() {
   });
   const HOMENET_SCHEMA = yaml.DEFAULT_SCHEMA.extend([homenetLogicType]);
 
-  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.new.yaml';
+  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.homenet_bridge.yaml';
   const config = yaml.load(readFileSync(configPath, 'utf-8'), { schema: HOMENET_SCHEMA });
   const checksumType = config.homenet_bridge.packet_defaults.tx_checksum;
 

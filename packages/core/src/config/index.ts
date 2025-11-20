@@ -1,13 +1,10 @@
-import { readFile } from 'node:fs/promises';
-import yaml from 'js-yaml';
 import { HomenetBridgeConfig } from './types.js';
-import { HOMENET_BRIDGE_SCHEMA } from './yaml-custom-types.js';
+import { loadYamlConfig } from './yaml-loader.js';
 import { logger } from '../utils/logger.js';
 
 export async function loadConfig(configPath: string): Promise<HomenetBridgeConfig> {
     logger.info(`[core] Loading configuration from: ${configPath}`);
-    const configFileContent = await readFile(configPath, 'utf8');
-    const loadedYaml = yaml.load(configFileContent, { schema: HOMENET_BRIDGE_SCHEMA });
+    const loadedYaml = await loadYamlConfig(configPath);
 
     if (!loadedYaml || !(loadedYaml as any).homenet_bridge) {
         throw new Error(

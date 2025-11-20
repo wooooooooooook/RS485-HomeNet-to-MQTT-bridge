@@ -3,13 +3,17 @@ export type DecodeEncodeType = 'none' | 'bcd' | 'ascii' | 'signed_byte_half_degr
 export type EndianType = 'big' | 'little';
 
 export interface PacketDefaults {
-    tx_header?: number[];
-    tx_footer?: number[];
-    tx_checksum?: ChecksumType | { type: 'custom'; algorithm: string };
     rx_header?: number[];
     rx_footer?: number[];
     rx_checksum?: ChecksumType | { type: 'custom'; algorithm: string };
     rx_length?: number;
+    tx_header?: number[];
+    tx_footer?: number[];
+    tx_checksum?: ChecksumType | { type: 'custom'; algorithm: string };
+    tx_delay?: number;
+    tx_retry_cnt?: number;
+    tx_timeout?: number;
+    rx_timeout?: number;
 }
 
 export interface StateSchema {
@@ -63,4 +67,22 @@ export interface Extractor {
     signed?: boolean;
     endian?: EndianType;
     decode?: DecodeEncodeType;
+}
+
+// New Uartex-style types
+
+export interface LambdaConfig {
+    type: 'lambda';
+    script: string;
+}
+
+export interface ProtocolConfig {
+    packet_defaults?: PacketDefaults;
+    rx_priority?: 'data' | 'loop';
+}
+
+export interface DeviceConfig {
+    id: string;
+    name: string;
+    // Add other common device properties here
 }

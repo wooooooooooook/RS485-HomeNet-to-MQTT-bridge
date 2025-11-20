@@ -1,0 +1,403 @@
+homenet_bridge:
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+
+  packet_defaults: # New section for global packet defaults
+    rx_timeout: 10ms
+    tx_delay: 50ms
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+
+    rx_header: [0xAA, 0x55]
+    rx_footer: [0x0D, 0x0D]
+    tx_header: [0xAA, 0x55]
+    tx_footer: [0x0D, 0x0D]
+
+    rx_checksum: add_no_header
+    tx_checksum: add_no_header
+
+  light:
+    - id: 'room_0_light_1'
+      name: 'Room 0 Light 1'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !lambda |-
+        const light2 = getEntityState('room_0_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0xff, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light2 = getEntityState('room_0_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, 0x00, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_0_light_2'
+      name: 'Room 0 Light 2'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !lambda |-
+        const light1 = getEntityState('room_0_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, light1_on, 0xff, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light1 = getEntityState('room_0_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, light1_on, 0x00, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_1_light_1'
+      name: 'Room 1 Light 1'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !lambda |-
+        const light2 = getEntityState('room_1_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0xff, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light2 = getEntityState('room_1_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, 0x00, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_1_light_2'
+      name: 'Room 1 Light 2'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !lambda |-
+        const light1 = getEntityState('room_1_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, light1_on, 0xff, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light1 = getEntityState('room_1_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x01, 0x01, 0x00, 0x00, light1_on, 0x00, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_2_light_1'
+      name: 'Room 2 Light 1'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !lambda |-
+        const light2 = getEntityState('room_2_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0xff, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light2 = getEntityState('room_2_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, 0x00, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_2_light_2'
+      name: 'Room 2 Light 2'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !lambda |-
+        const light1 = getEntityState('room_2_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, light1_on, 0xff, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light1 = getEntityState('room_2_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x02, 0x01, 0x00, 0x00, light1_on, 0x00, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_3_light_1'
+      name: 'Room 3 Light 1'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 8
+        data: [0xff]
+      state_off:
+        offset: 8
+        data: [0x00]
+      command_on: !lambda |-
+        const light2 = getEntityState('room_3_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0xff, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light2 = getEntityState('room_3_light_2');
+        const light2_on = light2 && light2.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, 0x00, light2_on, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+    - id: 'room_3_light_2'
+      name: 'Room 3 Light 2'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x0e, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_on:
+        offset: 9
+        data: [0xff]
+      state_off:
+        offset: 9
+        data: [0x00]
+      command_on: !lambda |-
+        const light1 = getEntityState('room_3_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, light1_on, 0xff, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+      command_off: !lambda |-
+        const light1 = getEntityState('room_3_light_1');
+        const light1_on = light1 && light1.is_on ? 0xff : 0x00;
+        return [[0x30, 0xbc, 0x00, 0x0e, 0x03, 0x01, 0x00, 0x00, light1_on, 0x00, 0, 0, 0, 0, 0, 0], [0x30, 0xdc]];
+
+  climate:
+    - id: 'room_0_heater'
+      name: 'Room 0 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x30, 0xd0, 0x00, 0x36, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_heat: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_temperature: !lambda |-
+        const target = x;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x00, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+
+    - id: 'room_1_heater'
+      name: 'Room 1 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x30, 0xd0, 0x00, 0x36, 0x01]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_heat: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_temperature: !lambda |-
+        const target = x;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x01, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+
+    - id: 'room_2_heater'
+      name: 'Room 2 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x30, 0xd0, 0x00, 0x36, 0x02]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_heat: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_temperature: !lambda |-
+        const target = x;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x02, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+
+    - id: 'room_3_heater'
+      name: 'Room 3 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x30, 0xd0, 0x00, 0x36, 0x03]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00]
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      command_off: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x01, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_heat: !lambda |-
+        const target = state.target_temperature || 0;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+      command_temperature: !lambda |-
+        const target = x;
+        return [[0x30, 0xbc, 0x00, 0x36, 0x03, 0x01, 0x00, 0x00, 0x11, 0x00, target, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]];
+
+  valve:
+    - name: 'Gas Valve'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x2c, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_open:
+        offset: 7
+        data: [0x01]
+      state_closed:
+        offset: 7
+        data: [0x02]
+      command_close:
+        data:
+          [
+            0x30,
+            0xbc,
+            0x00,
+            0x2c,
+            0x00,
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+          ]
+        ack: [0x30, 0xdc]
+
+  sensor:
+    - name: 'Elevator Floors'
+      icon: 'mdi:elevator'
+      unit_of_measurement: '층'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 9
+
+  text_sensor:
+    - name: 'Elevator Direction'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      lambda: !lambda |-
+        if (data[8] === 0x00) return "정지";
+        if (data[8] === 0x01) return "하강";
+        if (data[8] === 0x02) return "상승";
+        if (data[8] === 0x03) return "도착";
+        return "Unknown";
+
+  button:
+    - name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      command_on:
+        data:
+          [
+            0x30,
+            0xbc,
+            0x00,
+            0x01,
+            0x00,
+            0x44,
+            0x00,
+            0x01,
+            0x03,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+          ]
+        ack: [0x30, 0xdc]

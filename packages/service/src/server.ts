@@ -6,10 +6,14 @@ import { fileURLToPath } from 'node:url';
 import mqtt from 'mqtt';
 import yaml, { Type, Schema } from 'js-yaml';
 // Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
-import { createBridge, HomeNetBridge } from '@rs485-homenet/core';
-import { HomenetBridgeConfig } from '@rs485-homenet/core/dist/config.js';
-import { logger } from '@rs485-homenet/core/dist/logger.js';
-import { eventBus } from '@rs485-homenet/core/dist/eventBus.js'; // Import eventBus
+// Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
+import {
+  createBridge,
+  HomeNetBridge,
+  HomenetBridgeConfig,
+  logger,
+  eventBus,
+} from '@rs485-homenet/core';
 
 // Define a custom YAML type for !homenet_logic
 const HOMENET_LOGIC_TYPE = new Type('!homenet_logic', {
@@ -200,7 +204,7 @@ app.use(
 // --- Bridge Management ---
 async function loadAndStartBridge(filename: string) {
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {}); // Wait for any ongoing start/stop to finish
+    await bridgeStartPromise.catch(() => { }); // Wait for any ongoing start/stop to finish
   }
   if (bridge) {
     logger.info('[service] Stopping existing bridge...');

@@ -38,7 +38,7 @@ packets.forEach((packetHex, index) => {
     const calculatedChecksum = calculateChecksum(dataBytes);
     console.log(`  Checksum: 0x${checksumByte.toString(16)} (calculated: 0x${calculatedChecksum.toString(16)}) - ${checksumByte === calculatedChecksum ? 'VALID' : 'INVALID'}`);
 
-    // Analyze structure based on commax.new.yaml patterns
+    // Analyze structure based on commax.homenet_bridge.yaml patterns
     console.log(`  First byte (header): 0x${bytes[0].toString(16).padStart(2, '0')}`);
     console.log(`  Second byte: 0x${bytes[1].toString(16).padStart(2, '0')}`);
     console.log(`  Third byte (ID): 0x${bytes[2].toString(16).padStart(2, '0')}`);

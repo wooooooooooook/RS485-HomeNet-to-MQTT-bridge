@@ -180,7 +180,7 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
 }
 
 function main() {
-  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.new.yaml';
+  const configPath = process.env.CONFIG_PATH ?? 'packages/core/config/commax.homenet_bridge.yaml';
   const config = yaml.load(readFileSync(configPath, 'utf-8')) as {
     homenet_bridge: { packet_defaults: { tx_checksum: ChecksumType } };
   };

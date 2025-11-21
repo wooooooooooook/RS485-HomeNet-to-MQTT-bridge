@@ -1,12 +1,17 @@
-import { PacketDefaults, ChecksumType } from './types.js';
+import { PacketDefaults, ChecksumType, LambdaConfig } from './types.js';
+import { calculateChecksum } from './utils/checksum.js';
+import { LambdaExecutor } from './lambda-executor.js';
+import { Buffer } from 'buffer';
 
 export class PacketParser {
     private buffer: number[] = [];
     private lastRxTime: number = 0;
     private defaults: PacketDefaults;
+    private lambdaExecutor: LambdaExecutor;
 
     constructor(defaults: PacketDefaults) {
         this.defaults = defaults;
+        this.lambdaExecutor = new LambdaExecutor();
     }
 
     public parse(byte: number): number[] | null {
@@ -71,6 +76,12 @@ export class PacketParser {
 
         // 4. Check Checksum
         if (this.defaults.rx_checksum && this.defaults.rx_checksum !== 'none') {
+            // Ensure we have at least one byte of data/checksum beyond the header
+            const minLength = (this.defaults.rx_header?.length || 0) + 1;
+            if (this.buffer.length < minLength) {
+                return false;
+            }
+
             // We need to know where the packet ends to verify checksum.
             // If we have a footer, we are good.
             // If we have a fixed length, we are good.
@@ -80,10 +91,21 @@ export class PacketParser {
             if (!this.verifyChecksum(this.buffer)) {
                 // If checksum fails, and we are not fixed length, maybe we haven't received the full packet yet?
                 // But if we matched footer, it SHOULD be the packet.
-                // If checksum fails, it's likely a bad packet or collision.
-                // We drop the first byte and retry scanning.
-                this.buffer.shift();
-                return this.isPacketComplete();
+
+                const hasFixedLength = this.defaults.rx_length && this.defaults.rx_length > 0;
+                const hasFooter = this.defaults.rx_footer && this.defaults.rx_footer.length > 0;
+
+                if (hasFixedLength || hasFooter) {
+                    // If checksum fails, it's likely a bad packet or collision.
+                    // We drop the first byte and retry scanning.
+                    this.buffer.shift();
+                    return this.isPacketComplete();
+                } else {
+                    // Variable length, no footer. Checksum failed.
+                    // Could be incomplete packet.
+                    // Don't shift. Just return false (not complete).
+                    return false;
+                }
             }
         }
 
@@ -103,24 +125,37 @@ export class PacketParser {
             dataEnd = packet.length - this.defaults.rx_footer.length - 1;
         }
 
-        // Calculate checksum based on type
-        // TODO: Implement all checksum types from uartex
-        // 'add' | 'xor' | 'add_no_header' | 'xor_no_header' | 'xor_add' | 'samsung_rx' | 'samsung_tx'
+        const dataToCheck = Buffer.from(packet.slice(0, dataEnd + 1)); // Include checksum byte for some algos, or handle inside
 
-        let startIdx = 0;
-        if (this.defaults.rx_checksum === 'add_no_header' || this.defaults.rx_checksum === 'xor_no_header') {
-            startIdx = this.defaults.rx_header?.length || 0;
-        }
+        if (typeof this.defaults.rx_checksum === 'string') {
+            // Use calculateChecksum for string types
+            let dataPart = Buffer.from(packet.slice(0, dataEnd));
 
-        for (let i = startIdx; i < dataEnd; i++) {
-            if (this.defaults.rx_checksum === 'add' || this.defaults.rx_checksum === 'add_no_header') {
-                calculatedChecksum = (calculatedChecksum + packet[i]) & 0xFF;
-            } else if (this.defaults.rx_checksum === 'xor' || this.defaults.rx_checksum === 'xor_no_header') {
-                calculatedChecksum = (calculatedChecksum ^ packet[i]) & 0xFF;
+            // samsung_rx expects data without header
+            if (this.defaults.rx_checksum === 'samsung_rx') {
+                const headerLength = this.defaults.rx_header?.length || 0;
+                dataPart = Buffer.from(packet.slice(headerLength, dataEnd));
             }
-            // ... other types
+
+            calculatedChecksum = calculateChecksum(dataPart, this.defaults.rx_checksum as ChecksumType);
+
+            // console.log(`[PacketParser] Verify Checksum: Type=${this.defaults.rx_checksum}, Data=${dataPart.toString('hex')}, Calc=${calculatedChecksum.toString(16)}, Expected=${checksumByte.toString(16)}`);
+
+            return calculatedChecksum === checksumByte;
+
+        } else if ((this.defaults.rx_checksum as any).type === 'lambda') {
+            const lambda = this.defaults.rx_checksum as LambdaConfig;
+            // Execute lambda
+            // Context: data (array of bytes), len (length)
+            // Should return the calculated checksum
+            const result = this.lambdaExecutor.execute(lambda, {
+                data: packet.slice(0, dataEnd),
+                len: dataEnd
+            });
+
+            return result === checksumByte;
         }
 
-        return calculatedChecksum === checksumByte;
+        return false;
     }
 }

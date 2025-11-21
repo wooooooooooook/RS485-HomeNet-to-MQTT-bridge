@@ -5,9 +5,7 @@ homenet_bridge:
     parity: EVEN
     stop_bits: 1
 
-  device_config:
-    name: 'samsung sds door'
-
+  packet_defaults:
     rx_timeout: 10ms
     tx_delay: 0ms
     tx_timeout: 500ms

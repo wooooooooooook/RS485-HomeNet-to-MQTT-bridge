@@ -17,6 +17,7 @@ import { SelectDevice } from './devices/select.device.js';
 import { TextSensorDevice } from './devices/text-sensor.device.js';
 import { TextDevice } from './devices/text.device.js';
 import { ProtocolConfig } from './types.js';
+import { slugify } from '../utils/common.js';
 
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
@@ -71,6 +72,9 @@ export class PacketProcessor extends EventEmitter {
       const entities = config[type] as EntityConfig[] | undefined;
       if (entities) {
         for (const entity of entities) {
+          if (!entity.id && entity.name) {
+            entity.id = slugify(entity.name);
+          }
           const DeviceClass = deviceMap[type] || GenericDevice;
           const device = new DeviceClass(entity, protocolConfig);
           this.protocolManager.registerDevice(device);

@@ -258,14 +258,27 @@ app.listen(port, async () => {
   logger.info(`Service listening on port ${port}`);
   try {
     logger.info('[service] Initializing bridge on startup...');
-    const files = await fs.readdir(CONFIG_DIR);
-    // Filter for homenet_bridge.yaml files
-    const defaultConfigFile = files.find((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+    if (process.env.CONFIG_FILE) {
+      logger.info(`[service] Loading configuration from environment variable: ${process.env.CONFIG_FILE}`);
+      // Extract filename from path if needed, or just pass the path if loadAndStartBridge handles it.
+      // loadAndStartBridge expects a filename relative to CONFIG_DIR.
+      // If CONFIG_FILE is a full path like 'packages/core/config/samsung_sds.homenet_bridge.yaml',
+      // we need to handle that.
+      // However, looking at loadAndStartBridge: const configPath = path.join(CONFIG_DIR, filename);
+      // So we should pass just the basename if it's in the config dir.
 
-    if (defaultConfigFile) {
-      await loadAndStartBridge(defaultConfigFile);
+      const configBasename = path.basename(process.env.CONFIG_FILE);
+      await loadAndStartBridge(configBasename);
     } else {
-      throw new Error('No homenet_bridge configuration files found in config directory.');
+      const files = await fs.readdir(CONFIG_DIR);
+      // Filter for homenet_bridge.yaml files
+      const defaultConfigFile = files.find((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+
+      if (defaultConfigFile) {
+        await loadAndStartBridge(defaultConfigFile);
+      } else {
+        throw new Error('No homenet_bridge configuration files found in config directory.');
+      }
     }
   } catch (err) {
     logger.error({ err }, '[service] Initial bridge start failed');

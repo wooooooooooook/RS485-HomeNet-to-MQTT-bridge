@@ -5,26 +5,14 @@ homenet_bridge:
     parity: EVEN
     stop_bits: 1
 
-  device_config:
-    name: 'samsung sds'
-
+  packet_defaults:
     rx_timeout: 10ms
     tx_delay: 50ms
     tx_timeout: 500ms
     tx_retry_cnt: 3
     rx_header: [0xB0]
-    rx_checksum: !lambda |-
-      uint8_t crc = 0xB0;
-      for (size_t i = 0; i < len; i++)
-        crc ^= data[i];
-      if (data[0] < 0x7C) crc ^= 0x80;
-      return crc;
-    tx_checksum: !lambda |-
-      uint8_t crc = 0x00;
-      for (size_t i = 0; i < len; i++)
-        crc ^= data[i];
-      crc ^= 0x80;
-      return crc;
+    rx_checksum: samsung_rx
+    tx_checksum: samsung_tx
 
   button:
     - name: 'Gas Valve Close'

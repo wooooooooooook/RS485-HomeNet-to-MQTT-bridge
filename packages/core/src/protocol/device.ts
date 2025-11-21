@@ -51,7 +51,10 @@ export abstract class Device {
             return false;
         }
 
-        const offset = stateConfig.offset || 0;
+        // Adjust offset by header length if present
+        const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
+        const offset = (stateConfig.offset || 0) + headerLength;
+
         if (packet.length < offset + stateConfig.data.length) {
             return false;
         }
@@ -65,7 +68,13 @@ export abstract class Device {
                     mask = stateConfig.mask;
                 }
             }
-            if ((packet[offset + i] & mask) !== (stateConfig.data[i] & mask)) {
+
+
+            const packetByte = packet[offset + i];
+            const stateByte = stateConfig.data[i];
+
+            if ((packetByte & mask) !== (stateByte & mask)) {
+                // console.log(`[Device] Match failed at index ${i} (offset ${offset}). Packet: 0x${packetByte?.toString(16)}, State: 0x${stateByte?.toString(16)}, Mask: 0x${mask.toString(16)}`);
                 return false;
             }
         }

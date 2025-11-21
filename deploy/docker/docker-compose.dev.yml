@@ -53,6 +53,7 @@ services:
       SIMULATOR_INTERVAL_MS: '500'
       SIMULATOR_PROTOCOL: 'tcp'
       SIMULATOR_DEVICE: 'samsung_sds' # Options: commax, samsung_sds
+      CONFIG_PATH: packages/core/config/samsung_sds.homenet_bridge.yaml
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
@@ -82,7 +83,7 @@ services:
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'
-      CONFIG_FILE: packages/core/config/commax.homenet_bridge.yaml
+      CONFIG_FILE: packages/core/config/samsung_sds.homenet_bridge.yaml
       LOG_LEVEL: debug
     volumes:
       - ../../:/workspace

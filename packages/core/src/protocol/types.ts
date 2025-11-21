@@ -5,11 +5,11 @@ export type EndianType = 'big' | 'little';
 export interface PacketDefaults {
     rx_header?: number[];
     rx_footer?: number[];
-    rx_checksum?: ChecksumType | { type: 'custom'; algorithm: string };
+    rx_checksum?: ChecksumType | { type: 'custom'; algorithm: string } | LambdaConfig;
     rx_length?: number;
     tx_header?: number[];
     tx_footer?: number[];
-    tx_checksum?: ChecksumType | { type: 'custom'; algorithm: string };
+    tx_checksum?: ChecksumType | { type: 'custom'; algorithm: string } | LambdaConfig;
     tx_delay?: number;
     tx_retry_cnt?: number;
     tx_timeout?: number;

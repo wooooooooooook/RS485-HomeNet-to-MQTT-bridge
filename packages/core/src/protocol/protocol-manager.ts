@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { ProtocolConfig, PacketDefaults } from './types.js';
 import { PacketParser } from './packet-parser.js';
 import { Device } from './device.js';
+import { logger } from '../utils/logger.js';
 
 export class ProtocolManager extends EventEmitter {
     private parser: PacketParser;
@@ -19,11 +20,13 @@ export class ProtocolManager extends EventEmitter {
 
     public registerDevice(device: Device) {
         this.devices.push(device);
+        logger.debug({ deviceId: device.getId(), deviceName: device.getName() }, '[ProtocolManager] Device registered');
     }
 
     public handleIncomingByte(byte: number): void {
         const packet = this.parser.parse(byte);
         if (packet) {
+            logger.debug({ packet: packet.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ') }, '[ProtocolManager] Packet parsed');
             this.processPacket(packet);
         }
     }
@@ -61,11 +64,24 @@ export class ProtocolManager extends EventEmitter {
     }
 
     private processPacket(packet: number[]) {
+        let matchedAny = false;
         for (const device of this.devices) {
             const stateUpdates = device.parseData(packet);
             if (stateUpdates) {
+                matchedAny = true;
+                logger.debug({
+                    deviceId: device.getId(),
+                    deviceName: device.getName(),
+                    stateUpdates
+                }, '[ProtocolManager] Device matched packet');
                 this.emit('state', { deviceId: device.getId(), state: stateUpdates });
             }
+        }
+
+        if (!matchedAny) {
+            logger.debug({
+                packet: packet.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')
+            }, '[ProtocolManager] No device matched this packet');
         }
     }
 }

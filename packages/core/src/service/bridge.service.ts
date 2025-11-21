@@ -11,8 +11,9 @@ import { createSerialPortConnection } from '../transports/serial/serial.factory.
 import { MqttClient } from '../transports/mqtt/mqtt.client.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
-import { StateManager } from '../state/state-manager.js'; // New import
-import { getStateCache } from '../state/store.js'; // New import for direct state cache access
+import { StateManager } from '../state/state-manager.js';
+import { getStateCache } from '../state/store.js';
+import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
 
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
 export interface BridgeOptions {
@@ -33,10 +34,18 @@ export class HomeNetBridge implements EntityStateProvider {
   private mqttSubscriber?: MqttSubscriber; // New MQTT subscriber instance
   private mqttPublisher?: MqttPublisher; // New MQTT publisher instance
   private stateManager?: StateManager; // New StateManager instance
+  private discoveryManager?: DiscoveryManager; // DiscoveryManager instance
 
   constructor(options: BridgeOptions) {
     this.options = options;
-    this._mqttClient = new MqttClient(options.mqttUrl);
+    this._mqttClient = new MqttClient(options.mqttUrl, {
+      will: {
+        topic: 'homenet/bridge/status',
+        payload: 'offline',
+        qos: 1,
+        retain: true,
+      },
+    });
     this.client = this._mqttClient.client; // Assign the client from the new MqttClient instance
     this.connectionPromise = this._mqttClient.connectionPromise; // Assign the promise from the new MqttClient instance
   }
@@ -75,7 +84,7 @@ export class HomeNetBridge implements EntityStateProvider {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
     this._mqttClient.end();
     if (this.port) {
@@ -113,13 +122,23 @@ export class HomeNetBridge implements EntityStateProvider {
       this.packetProcessor,
       this.port,
     );
-    
+
 
     // Set up subscriptions
     if (this._mqttClient.isConnected) {
       this.mqttSubscriber.setupSubscriptions();
     } else {
       this.client.on('connect', () => this.mqttSubscriber!.setupSubscriptions());
+    }
+
+    // Initialize DiscoveryManager
+    this.discoveryManager = new DiscoveryManager(this.config, this.mqttPublisher, this.mqttSubscriber);
+    this.discoveryManager.setup();
+
+    if (this._mqttClient.isConnected) {
+      this.discoveryManager.discover();
+    } else {
+      this.client.on('connect', () => this.discoveryManager!.discover());
     }
 
     this.port.on('data', (data) => {

@@ -19,14 +19,15 @@ export class MqttClient {
   public readonly client: mqtt.MqttClient;
   public readonly connectionPromise: Promise<void>;
 
-  constructor(mqttUrl: string) {
+  constructor(mqttUrl: string, options: mqtt.IClientOptions = {}) {
     logger.debug(
-      { mqttUrl, connectTimeout: MQTT_CONNECT_TIMEOUT_MS },
+      { mqttUrl, connectTimeout: MQTT_CONNECT_TIMEOUT_MS, options },
       '[mqtt-client] Initializing MQTT client with options',
     );
 
     this.client = mqtt.connect(mqttUrl, {
       connectTimeout: MQTT_CONNECT_TIMEOUT_MS,
+      ...options,
     });
 
     this.connectionPromise = new Promise<void>((resolve, reject) => {

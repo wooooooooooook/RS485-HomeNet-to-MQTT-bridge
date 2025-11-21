@@ -7,7 +7,7 @@ import { PacketProcessor } from '../protocol/packet-processor.js';
 import { logger } from '../utils/logger.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { eventBus } from '../service/event-bus.js';
-import { stateCache } from './store.js'; // Import stateCache from store
+import { stateCache, clearStateCache } from './store.js'; // Import clearStateCache
 
 export class StateManager {
   private receiveBuffer: Buffer = Buffer.alloc(0);
@@ -21,6 +21,10 @@ export class StateManager {
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.mqttPublisher = mqttPublisher;
+
+    // Clear state cache on initialization to force re-publishing all states
+    clearStateCache();
+    logger.info('[StateManager] State cache cleared on initialization');
 
     this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
       this.handleStateUpdate(event);
@@ -37,14 +41,27 @@ export class StateManager {
 
   private handleStateUpdate(event: { deviceId: string; state: any }) {
     const { deviceId, state } = event;
+    logger.debug({ deviceId, state }, '[StateManager] Received state update event');
+
     const topic = `homenet/${deviceId}/state`;
     const payload = JSON.stringify(state);
 
+    // const cachedPayload = stateCache.get(topic);
+    // logger.debug({
+    //   topic,
+    //   newPayload: payload,
+    //   cachedPayload,
+    //   isDifferent: cachedPayload !== payload
+    // }, '[StateManager] Comparing with cache');
+
     if (stateCache.get(topic) !== payload) {
       stateCache.set(topic, payload);
-      this.mqttPublisher.publish(topic, payload, { retain: false });
+      logger.debug({ topic, payload }, '[StateManager] Publishing to MQTT');
+      this.mqttPublisher.publish(topic, payload, { retain: true });
       eventBus.emit('state:changed', { entityId: deviceId, state: state });
       eventBus.emit(`device:${deviceId}:state:changed`, state);
+    } else {
+      logger.debug({ topic }, '[StateManager] State unchanged, skipping MQTT publish');
     }
   }
 }

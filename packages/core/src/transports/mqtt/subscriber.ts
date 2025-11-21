@@ -11,6 +11,7 @@ export class MqttSubscriber {
   private config: HomenetBridgeConfig;
   private packetProcessor: PacketProcessor;
   private serialPort: Duplex;
+  private externalHandlers: Map<string, (message: Buffer) => void> = new Map();
 
   constructor(
     mqttClient: MqttClient,
@@ -56,6 +57,17 @@ export class MqttSubscriber {
     }
   }
 
+  public subscribe(topic: string, handler: (message: Buffer) => void): void {
+    this.externalHandlers.set(topic, handler);
+    this.mqttClient.client.subscribe(topic, (err) => {
+      if (err) {
+        logger.error({ err, topic }, '[mqtt-subscriber] Failed to subscribe to external topic');
+      } else {
+        logger.info({ topic }, '[mqtt-subscriber] Subscribed to external topic');
+      }
+    });
+  }
+
   private handleMqttMessage(topic: string, message: Buffer) {
     if (!this.config || !this.packetProcessor || !this.serialPort) {
       logger.error('[mqtt-subscriber] Configuration, PacketProcessor or Serial Port not initialized.');
@@ -63,6 +75,11 @@ export class MqttSubscriber {
     }
 
     logger.debug({ topic, message: message.toString() }, '[mqtt-subscriber] MQTT 메시지 수신');
+
+    if (this.externalHandlers.has(topic)) {
+      this.externalHandlers.get(topic)!(message);
+      return;
+    }
 
     const parts = topic.split('/');
     if (parts.length < 4 || parts[0] !== 'homenet' || parts[2] !== 'set') {

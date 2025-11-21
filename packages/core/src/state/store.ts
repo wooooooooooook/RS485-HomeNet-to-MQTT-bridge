@@ -9,3 +9,8 @@ export { stateCache };
 export function getStateCache() {
   return stateCache;
 }
+
+// Clear state cache (useful on restart to force re-publishing all states)
+export function clearStateCache() {
+  stateCache.clear();
+}

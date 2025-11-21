@@ -37,16 +37,29 @@ async function main() {
   const config = await loadYamlConfig(configPath);
   const checksumType = config.homenet_bridge.packet_defaults.tx_checksum;
 
-  const simulator = createSimulator({
-    intervalMs,
-    packets: COMMAX_TEST_PACKETS,
-    checksumType,
-  });
-  await exposePty(simulator.ptyPath, linkPath);
+  const simulatorProtocol = process.env.SIMULATOR_PROTOCOL || 'pty';
 
-  console.log(
-    `[simulator] PTY 노출: 실제=${simulator.ptyPath}, 링크=${linkPath} (interval=${intervalMs}ms)`
-  );
+  let simulator;
+  if (simulatorProtocol === 'tcp') {
+    const { createTcpSimulator } = await import('../packages/simulator/dist/index.js');
+    simulator = createTcpSimulator({
+      intervalMs,
+      packets: COMMAX_TEST_PACKETS,
+      checksumType,
+      port: 8888
+    });
+    console.log(`[simulator] TCP Mode started on port 8888`);
+  } else {
+    simulator = createSimulator({
+      intervalMs,
+      packets: COMMAX_TEST_PACKETS,
+      checksumType,
+    });
+    await exposePty(simulator.ptyPath, linkPath);
+    console.log(
+      `[simulator] PTY 노출: 실제=${simulator.ptyPath}, 링크=${linkPath} (interval=${intervalMs}ms)`
+    );
+  }
 
   simulator.start();
 

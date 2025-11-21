@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
 import { setInterval as createInterval, clearInterval } from 'node:timers';
 import { pathToFileURL } from 'node:url';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
@@ -104,7 +105,90 @@ function normalizePackets(
       ? packet
       : Buffer.from(packet instanceof Uint8Array ? packet : (packet as number[]));
     return addChecksum(buffer);
+    return addChecksum(buffer);
   });
+}
+
+export interface TcpSimulator extends Simulator {
+  readonly port: number;
+}
+
+export function createTcpSimulator(options: SimulatorOptions & { port?: number } = {}): TcpSimulator {
+  const { intervalMs = DEFAULT_INTERVAL_MS, packets = DEFAULT_PACKETS, checksumType, port = 8888 } = options;
+  const normalizedPackets = normalizePackets(packets, checksumType);
+
+  const clients = new Set<any>();
+
+  const server = createServer((socket: any) => {
+    console.log(`[simulator] Client connected: ${socket.remoteAddress}:${socket.remotePort}`);
+    clients.add(socket);
+
+    socket.on('close', () => {
+      console.log(`[simulator] Client disconnected: ${socket.remoteAddress}:${socket.remotePort}`);
+      clients.delete(socket);
+    });
+
+    socket.on('error', (err: Error) => {
+      console.error(`[simulator] Client error: ${err.message}`);
+      clients.delete(socket);
+    });
+  });
+
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`[simulator] TCP Server listening on 0.0.0.0:${port}`);
+  });
+
+  let timer: NodeJS.Timeout | undefined;
+  let packetIndex = 0;
+
+  const logPacket = (packet: Buffer) => {
+    const hex = Array.from(packet)
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join(' ');
+    console.log(`[simulator] TX (${packet.length} bytes): ${hex}`);
+  };
+
+  const sendNextPacket = () => {
+    const packet = normalizedPackets[packetIndex];
+    packetIndex = (packetIndex + 1) % normalizedPackets.length;
+
+    if (clients.size > 0) {
+      logPacket(packet);
+      for (const client of clients) {
+        client.write(packet);
+      }
+    }
+  };
+
+  const start = () => {
+    if (timer) return;
+    sendNextPacket();
+    timer = createInterval(sendNextPacket, intervalMs);
+  };
+
+  const stop = () => {
+    if (!timer) return;
+    clearInterval(timer);
+    timer = undefined;
+  };
+
+  const dispose = () => {
+    stop();
+    for (const client of clients) {
+      client.destroy();
+    }
+    clients.clear();
+    server.close();
+  };
+
+  return {
+    get running() { return Boolean(timer); },
+    ptyPath: `tcp://0.0.0.0:${port}`, // Pseudo path for compatibility
+    port,
+    start,
+    stop,
+    dispose,
+  };
 }
 
 export function createSimulator(options: SimulatorOptions = {}): Simulator {

@@ -98,6 +98,9 @@ importers:
       '@homebridge/node-pty-prebuilt-multiarch':
         specifier: ^0.13.1
         version: 0.13.1
+      '@rs485-homenet/core':
+        specifier: workspace:*
+        version: link:../core
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9

@@ -7,6 +7,9 @@ export class FanDevice extends GenericDevice {
     }
 
     public parseData(packet: number[]): Record<string, any> | null {
+        if (!this.matchesPacket(packet)) {
+            return null;
+        }
         const updates = super.parseData(packet) || {};
         const entityConfig = this.config as any;
 

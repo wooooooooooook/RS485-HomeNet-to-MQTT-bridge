@@ -7,6 +7,9 @@ export class ButtonDevice extends GenericDevice {
     }
 
     public parseData(packet: number[]): Record<string, any> | null {
+        if (!this.matchesPacket(packet)) {
+            return null;
+        }
         // Buttons usually don't have state, but might receive ACKs or events
         return super.parseData(packet);
     }

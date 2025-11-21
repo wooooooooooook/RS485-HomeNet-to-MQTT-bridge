@@ -40,6 +40,7 @@ services:
     environment:
       SIMULATOR_LINK_PATH: /simshare/rs485-sim-tty
       SIMULATOR_INTERVAL_MS: '1000'
+      SIMULATOR_PROTOCOL: 'tcp'
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
@@ -65,7 +66,7 @@ services:
     # network_mode: host
     environment:
       # SERIAL_PORT: 192.168.0.83:8888
-      SERIAL_PORT: /simshare/rs485-sim-tty
+      SERIAL_PORT: rs485-simulator-dev:8888
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'

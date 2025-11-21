@@ -85,4 +85,5 @@ export interface DeviceConfig {
     id: string;
     name: string;
     // Add other common device properties here
+    state?: StateSchema;
 }

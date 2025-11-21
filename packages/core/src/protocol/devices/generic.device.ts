@@ -11,6 +11,9 @@ export class GenericDevice extends Device {
     }
 
     public parseData(packet: number[]): Record<string, any> | null {
+        if (!this.matchesPacket(packet)) {
+            return null;
+        }
         const entityConfig = this.config as any;
         const updates: Record<string, any> = {};
         let hasUpdates = false;

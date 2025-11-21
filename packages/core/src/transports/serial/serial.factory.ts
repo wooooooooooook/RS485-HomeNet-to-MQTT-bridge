@@ -15,7 +15,41 @@ export async function createSerialPortConnection(
   let port: Duplex;
   if (isTcpConnection(serialPath)) {
     const [host, tcpPort] = serialPath.split(':');
-    port = net.createConnection({ host, port: Number(tcpPort) });
+    const portNumber = Number(tcpPort);
+
+    const connectTcp = async (retries = 10, delayMs = 2000): Promise<net.Socket> => {
+      return new Promise((resolve, reject) => {
+        const socket = net.createConnection({ host, port: portNumber });
+
+        const onConnect = () => {
+          socket.removeListener('error', onError);
+          resolve(socket);
+        };
+
+        const onError = async (err: Error) => {
+          socket.removeListener('connect', onConnect);
+          socket.destroy();
+
+          if (retries > 0) {
+            logger.warn({ err, remainingRetries: retries }, '[serial] TCP 연결 실패, 재시도 중...');
+            await new Promise(r => setTimeout(r, delayMs));
+            try {
+              const newSocket = await connectTcp(retries - 1, delayMs);
+              resolve(newSocket);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            reject(err);
+          }
+        };
+
+        socket.once('connect', onConnect);
+        socket.once('error', onError);
+      });
+    };
+
+    port = await connectTcp();
   } else {
     await waitForSerialDevice(serialPath);
     const serialPort = new SerialPort({

@@ -1,0 +1,13 @@
+
+homenet_bridge:
+  uart:
+    baud_rate: 9600
+  packet_defaults:
+    rx_length: 5
+  light:
+    - name: "Test Light"
+      state_on: !lambda |-
+        if (data[0] === 0x01) return "ON";
+        return "";
+      command_on: !lambda |-
+        return [0x01, 0x02, 0x03, 0x04, 0x05];

@@ -8,6 +8,11 @@ import { SwitchEntity } from '../domain/entities/switch.entity.js';
 import { BinarySensorEntity } from '../domain/entities/binary-sensor.entity.js';
 import { PacketDefaults } from '../protocol/types.js';
 
+export interface LambdaConfig {
+  type: 'lambda';
+  script: string;
+}
+
 export interface HomenetBridgeConfig {
   packet_defaults?: PacketDefaults;
   serial: {

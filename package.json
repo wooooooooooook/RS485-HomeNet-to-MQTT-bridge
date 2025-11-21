@@ -24,7 +24,7 @@
     "build": "pnpm -r build",
     "format": "pnpm -r --if-present format",
     "test": "vitest run",
-    "clean": "./scripts/clean.sh"
+    "clean": "sudo bash ./scripts/clean.sh"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

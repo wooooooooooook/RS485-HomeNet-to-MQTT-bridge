@@ -28,6 +28,10 @@ export class StateManager {
   }
 
   public processIncomingData(chunk: Buffer): void {
+    // Emit raw data for the service/UI to consume
+    const hex = chunk.toString('hex');
+    logger.debug({ hex }, '[core] Received chunk');
+    eventBus.emit('raw-data', hex);
     this.packetProcessor.processChunk(chunk);
   }
 
@@ -41,7 +45,6 @@ export class StateManager {
       this.mqttPublisher.publish(topic, payload, { retain: false });
       eventBus.emit('state:changed', { entityId: deviceId, state: state });
       eventBus.emit(`device:${deviceId}:state:changed`, state);
-      logger.info({ topic, payload }, '[core] MQTT 발행');
     }
   }
 }

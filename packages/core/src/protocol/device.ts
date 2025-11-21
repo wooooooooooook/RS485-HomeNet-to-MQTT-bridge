@@ -40,4 +40,36 @@ export abstract class Device {
         }
         return null;
     }
+
+    public matchesPacket(packet: number[]): boolean {
+        const stateConfig = this.config.state;
+        if (!stateConfig || !stateConfig.data) {
+            // If no state config, we can't match based on state pattern.
+            // However, some devices might be command-only or use other matching.
+            // But for the purpose of "state update", we usually need a match.
+            // Let's return false to be safe, preventing random updates.
+            return false;
+        }
+
+        const offset = stateConfig.offset || 0;
+        if (packet.length < offset + stateConfig.data.length) {
+            return false;
+        }
+
+        for (let i = 0; i < stateConfig.data.length; i++) {
+            let mask = 0xFF;
+            if (stateConfig.mask) {
+                if (Array.isArray(stateConfig.mask)) {
+                    mask = stateConfig.mask[i];
+                } else {
+                    mask = stateConfig.mask;
+                }
+            }
+            if ((packet[offset + i] & mask) !== (stateConfig.data[i] & mask)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

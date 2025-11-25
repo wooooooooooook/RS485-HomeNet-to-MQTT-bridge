@@ -1,0 +1,10 @@
+homenet_bridge:
+  packet_defaults:
+    protocol: 'cvnet'
+  serial:
+    baud_rate: 9600
+  light:
+    - id: 'test_light'
+      name: 'Test Light'
+      device_type: 0x01
+      sub_id: 1

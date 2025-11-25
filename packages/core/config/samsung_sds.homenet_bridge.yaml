@@ -125,6 +125,12 @@ homenet_bridge:
       command_temperature: !lambda |-
         const target = x;
         return [[0xAE, 0x7F, 0x01, target, 0x00, 0x00, 0x00],[0x7F, 0x01, target]];
+      state_action: !lambda |-
+        if (data[3] === 0x00) return 'off';
+        const target = data[4];
+        const current = data[5];
+        if (target > current) return 'heating';
+        return 'idle';
 
     - name: 'Room 1 Heater'
       visual:
@@ -156,6 +162,12 @@ homenet_bridge:
       command_temperature: !lambda |-
         const target = x;
         return [[0xAE, 0x7F, 0x02, target, 0x00, 0x00, 0x00],[0x7F, 0x02, target]];
+      state_action: !lambda |-
+        if (data[3] === 0x00) return 'off';
+        const target = data[4];
+        const current = data[5];
+        if (target > current) return 'heating';
+        return 'idle';
 
     - name: 'Room 2 Heater'
       visual:
@@ -187,6 +199,12 @@ homenet_bridge:
       command_temperature: !lambda |-
         const target = x;
         return [[0xAE, 0x7F, 0x03, target, 0x00, 0x00, 0x00],[0x7F, 0x03, target]];
+      state_action: !lambda |-
+        if (data[3] === 0x00) return 'off';
+        const target = data[4];
+        const current = data[5];
+        if (target > current) return 'heating';
+        return 'idle';
 
     - name: 'Room 3 Heater'
       visual:
@@ -218,6 +236,12 @@ homenet_bridge:
       command_temperature: !lambda |-
         const target = x;
         return [[0xAE, 0x7F, 0x04, target, 0x00, 0x00, 0x00],[0x7F, 0x04, target]];
+      state_action: !lambda |-
+        if (data[3] === 0x00) return 'off';
+        const target = data[4];
+        const current = data[5];
+        if (target > current) return 'heating';
+        return 'idle';
 
   fan:
     - name: 'Ventilator'

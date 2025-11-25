@@ -342,8 +342,28 @@ export class DiscoveryManager {
           payload.action_template = '{{ value_json.action }}';
         }
 
-        // Default modes, should be configurable via entity config
-        payload.modes = ['off', 'heat', 'cool', 'fan_only', 'dry', 'auto'];
+        // Dynamically determine available modes
+        const availableModes: string[] = [];
+        if (entity.state_off) {
+          availableModes.push('off');
+        }
+        if (entity.state_heat) {
+          availableModes.push('heat');
+        }
+        if (entity.state_cool) {
+          availableModes.push('cool');
+        }
+        if (entity.state_fan_only) {
+          availableModes.push('fan_only');
+        }
+        if (entity.state_dry) {
+          availableModes.push('dry');
+        }
+        if (entity.state_auto) { // Assuming 'state_auto' property for auto mode
+          availableModes.push('auto');
+        }
+        payload.modes = availableModes;
+
         payload.temperature_unit = 'C';
         payload.min_temp = 15;
         payload.max_temp = 30;

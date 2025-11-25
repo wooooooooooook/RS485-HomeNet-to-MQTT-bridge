@@ -74,6 +74,9 @@ export class PacketProcessor extends EventEmitter {
         for (const entity of entities) {
           if (!entity.id && entity.name) {
             entity.id = slugify(entity.name);
+            console.debug(
+              `[PacketProcessor] Generated ID for ${type}: ${entity.name} -> ${entity.id}`,
+            );
           }
           const DeviceClass = deviceMap[type] || GenericDevice;
           const device = new DeviceClass(entity, protocolConfig);

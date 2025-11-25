@@ -110,8 +110,16 @@ export class DiscoveryManager {
       state_action,
       ...rest
     } = entity;
+
+    if (!id) {
+      logger.error({ entity }, '[DiscoveryManager] Entity missing ID, skipping discovery');
+      return;
+    }
+
     const uniqueId = `homenet_${id}`;
     const topic = `${this.discoveryPrefix}/${type}/${uniqueId}/config`;
+
+    logger.debug({ id, uniqueId, topic }, '[DiscoveryManager] Preparing discovery');
 
     const payload: DiscoveryPayload = {
       name: name || null,
@@ -147,7 +155,7 @@ export class DiscoveryManager {
 
       case 'light':
         // Extract state from JSON
-        payload.value_template = '{{ value_json.state }}';
+        payload.state_value_template = '{{ value_json.state }}';
         payload.payload_on = 'ON';
         payload.payload_off = 'OFF';
 

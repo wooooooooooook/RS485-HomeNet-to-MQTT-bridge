@@ -87,14 +87,20 @@ export class ClimateDevice extends GenericDevice {
     const offset = (schema.offset || 0) + headerLength;
     if (packet.length < offset + schema.data.length) return false;
 
+    let isMatch = true;
     for (let i = 0; i < schema.data.length; i++) {
       // Handle mask if present
       const mask = schema.mask ? schema.mask[i] : 0xff;
       if ((packet[offset + i] & mask) !== (schema.data[i] & mask)) {
-        return false;
+        isMatch = false;
+        break;
       }
     }
-    return true;
+
+    if (schema.inverted) {
+      return !isMatch;
+    }
+    return isMatch;
   }
 
   public constructCommand(commandName: string, value?: any): number[] | null {

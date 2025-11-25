@@ -78,12 +78,12 @@ services:
     container_name: rs485-app-dev
     # network_mode: host
     environment:
-      # SERIAL_PORT: 192.168.0.83:8888
-      SERIAL_PORT: rs485-simulator-dev:8888
+      SERIAL_PORT: 192.168.0.83:8888
+      # SERIAL_PORT: rs485-simulator-dev:8888
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'
-      CONFIG_FILE: packages/core/config/samsung_sds.homenet_bridge.yaml
+      CONFIG_FILE: packages/core/config/commax.homenet_bridge.yaml
       LOG_LEVEL: debug
     volumes:
       - ../../:/workspace

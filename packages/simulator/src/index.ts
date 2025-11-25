@@ -8,6 +8,11 @@ import { loadYamlConfig } from '../../core/dist/config/yaml-loader.js';
 import { calculateChecksum, ChecksumType } from './checksum.js';
 import { SAMSUNG_SDS_PACKETS } from './samsung_sds.js';
 import { COMMAX_PACKETS } from './commax.js';
+import { CVNET_PACKETS } from './cvnet.js';
+import { EZVILLE_PACKETS } from './ezville.js';
+import { HYUNDAI_IMAZU_PACKETS } from './hyundai_imazu.js';
+import { KOCOM_PACKETS } from './kocom.js';
+
 const DEFAULT_INTERVAL_MS = 1000;
 
 export const DEFAULT_PACKETS: readonly Buffer[] = [
@@ -28,6 +33,14 @@ type PtyModule = typeof pty & {
   open: (options: { cols?: number; rows?: number; encoding?: string | null }) => PtyWithWrite;
 };
 
+export type DeviceType =
+  | 'commax'
+  | 'samsung_sds'
+  | 'cvnet'
+  | 'ezville'
+  | 'hyundai_imazu'
+  | 'kocom';
+
 export interface SimulatorOptions {
   /** 패킷 사이 간격 (밀리초). */
   intervalMs?: number;
@@ -36,7 +49,7 @@ export interface SimulatorOptions {
   /** 체크섬 유형. */
   checksumType?: ChecksumType;
   /** 시뮬레이션할 장치 유형. */
-  device?: 'commax' | 'samsung_sds';
+  device?: DeviceType;
 }
 
 export interface Simulator {
@@ -50,6 +63,25 @@ export interface Simulator {
   dispose(): void;
   /** 현재 주입 여부. */
   readonly running: boolean;
+}
+
+function getPacketsForDevice(device: DeviceType): readonly (Buffer | Uint8Array | number[])[] {
+  switch (device) {
+    case 'commax':
+      return COMMAX_PACKETS;
+    case 'samsung_sds':
+      return SAMSUNG_SDS_PACKETS;
+    case 'cvnet':
+      return CVNET_PACKETS;
+    case 'ezville':
+      return EZVILLE_PACKETS;
+    case 'hyundai_imazu':
+      return HYUNDAI_IMAZU_PACKETS;
+    case 'kocom':
+      return KOCOM_PACKETS;
+    default:
+      return DEFAULT_PACKETS;
+  }
 }
 
 function normalizePackets(
@@ -90,7 +122,7 @@ export function createTcpSimulator(
     port = 8888,
     device = 'commax',
   } = options;
-  const packets = userPackets ?? (device === 'samsung_sds' ? SAMSUNG_SDS_PACKETS : DEFAULT_PACKETS);
+  const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets, checksumType);
 
   const clients = new Set<any>();
@@ -176,7 +208,7 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
     checksumType,
     device = 'commax',
   } = options;
-  const packets = userPackets ?? (device === 'samsung_sds' ? SAMSUNG_SDS_PACKETS : DEFAULT_PACKETS);
+  const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets, checksumType);
   const { open: openPty } = pty as PtyModule;
   const terminal = openPty({ cols: 80, rows: 24, encoding: null });
@@ -251,11 +283,15 @@ async function main() {
   const config = (await loadYamlConfig(configPath)) as {
     homenet_bridge: { packet_defaults: { tx_checksum: ChecksumType } };
   };
-  const checksumType = config.homenet_bridge.packet_defaults.tx_checksum;
-  const device = (process.env.SIMULATOR_DEVICE as 'commax' | 'samsung_sds') || 'commax';
+  
+  const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
+  
+  // Use config checksum only for commax (which uses partial packets in simulator). 
+  // Other devices in simulator have pre-calculated full packets.
+  const checksumType = device === 'commax' ? config.homenet_bridge.packet_defaults.tx_checksum : 'none';
 
   const simulator = createSimulator({
-    packets: device === 'commax' ? COMMAX_PACKETS : undefined,
+    packets: undefined, // Let it pick based on device
     device,
     checksumType,
   });

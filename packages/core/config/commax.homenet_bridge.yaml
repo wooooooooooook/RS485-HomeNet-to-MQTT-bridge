@@ -171,6 +171,9 @@ homenet_bridge:
         data: [0x00]
         mask: [0x0F]
         inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
       state_action_idle:
         offset: 1
         data: [0x81]
@@ -212,6 +215,9 @@ homenet_bridge:
         data: [0x00]
         mask: [0x0F]
         inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
       state_action_idle:
         offset: 1
         data: [0x81]
@@ -253,6 +259,9 @@ homenet_bridge:
         data: [0x00]
         mask: [0x0F]
         inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
       state_action_idle:
         offset: 1
         data: [0x81]
@@ -294,6 +303,9 @@ homenet_bridge:
         data: [0x00]
         mask: [0x0F]
         inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
       state_action_idle:
         offset: 1
         data: [0x81]

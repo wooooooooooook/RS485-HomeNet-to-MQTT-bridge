@@ -16,7 +16,7 @@
     "dev": "tsc -w -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
-    "test": "vitest run --root ../.. packages/core/test/homeNetBridge.test.ts"
+    "test": "vitest run --root ../.."
   },
   "dependencies": {
     "dotenv": "^16.4.5",

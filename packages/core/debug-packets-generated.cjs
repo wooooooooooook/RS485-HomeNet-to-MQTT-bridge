@@ -53,7 +53,7 @@ function calculateChecksum(data, type, headerLength = 0) {
                 return crc;
             }
         case 'samsung_tx':
-             {
+            {
                 const dataPart = data.slice(headerLength);
                 let crc = 0x00;
                 for (const byte of dataPart) {
@@ -61,7 +61,7 @@ function calculateChecksum(data, type, headerLength = 0) {
                 }
                 crc ^= 0x80;
                 return crc;
-             }
+            }
         default:
             return 0;
     }
@@ -69,7 +69,7 @@ function calculateChecksum(data, type, headerLength = 0) {
 
 function getMaxOffset(deviceConfig) {
     let maxOffset = -1;
-    
+
     // Helper to check an object for offset
     const check = (obj) => {
         if (obj && typeof obj === 'object') {
@@ -94,7 +94,7 @@ function getMaxOffset(deviceConfig) {
 function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
     const packets = [];
     const deviceName = deviceConfig.name || 'Unknown';
-    
+
     // Base state packet
     let baseState = null;
     if (deviceConfig.state && Array.isArray(deviceConfig.state.data)) {
@@ -105,9 +105,27 @@ function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
 
     // Determine required length based on max offset
     const maxOffset = getMaxOffset(deviceConfig);
-    if (maxOffset >= baseState.length) {
+
+    // Calculate target body length from defaults.rx_length
+    let targetBodyLength = 0;
+    if (defaults && defaults.rx_length) {
+        const headerLength = defaults.rx_header ? defaults.rx_header.length : 0;
+        const footerLength = defaults.rx_footer ? defaults.rx_footer.length : 0;
+        const checksumLength = (defaults.rx_checksum && defaults.rx_checksum !== 'none') ? 1 : 0;
+        targetBodyLength = defaults.rx_length - headerLength - footerLength - checksumLength;
+    }
+
+    let requiredLength = baseState.length;
+    if (maxOffset >= requiredLength) {
+        requiredLength = maxOffset + 1;
+    }
+    if (targetBodyLength > requiredLength) {
+        requiredLength = targetBodyLength;
+    }
+
+    if (requiredLength > baseState.length) {
         // Pad with zeros
-        const padding = new Array(maxOffset - baseState.length + 1).fill(0);
+        const padding = new Array(requiredLength - baseState.length).fill(0);
         baseState = baseState.concat(padding);
     }
 
@@ -120,7 +138,7 @@ function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
     const applyMod = (base, modConfig) => {
         if (!modConfig) return null;
         const modified = [...base];
-        
+
         // Handle data replacement
         if (Array.isArray(modConfig.data)) {
             const offset = modConfig.offset || 0;
@@ -166,15 +184,15 @@ function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
             // If it's BCD encoded (samsung), 25 is 0x25.
             // Let's check 'decode' property.
             const isBcd = deviceConfig.state_temperature_current.decode === 'bcd';
-            tempPacket[offset] = isBcd ? 0x25 : 25; 
-            
+            tempPacket[offset] = isBcd ? 0x25 : 25;
+
             // Also set target temperature if possible to make it realistic
             if (deviceConfig.state_temperature_target && deviceConfig.state_temperature_target.offset !== undefined) {
-                 const tOffset = deviceConfig.state_temperature_target.offset;
-                 const tIsBcd = deviceConfig.state_temperature_target.decode === 'bcd';
-                 if (tOffset < baseState.length) {
-                     tempPacket[tOffset] = tIsBcd ? 0x26 : 26;
-                 }
+                const tOffset = deviceConfig.state_temperature_target.offset;
+                const tIsBcd = deviceConfig.state_temperature_target.decode === 'bcd';
+                if (tOffset < baseState.length) {
+                    tempPacket[tOffset] = tIsBcd ? 0x26 : 26;
+                }
             }
 
             packets.push({ name: `${deviceName} (Temp 25C/26C)`, body: tempPacket });
@@ -185,15 +203,15 @@ function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
     if (deviceType === 'fan' && deviceConfig.state_speed && deviceConfig.state_speed.offset !== undefined) {
         const offset = deviceConfig.state_speed.offset;
         if (offset < baseState.length) {
-             // Speed 1
-             const speed1 = [...baseState];
-             speed1[offset] = 1;
-             packets.push({ name: `${deviceName} (Speed 1)`, body: speed1 });
-             
-             // Speed 2
-             const speed2 = [...baseState];
-             speed2[offset] = 2;
-             packets.push({ name: `${deviceName} (Speed 2)`, body: speed2 });
+            // Speed 1
+            const speed1 = [...baseState];
+            speed1[offset] = 1;
+            packets.push({ name: `${deviceName} (Speed 1)`, body: speed1 });
+
+            // Speed 2
+            const speed2 = [...baseState];
+            speed2[offset] = 2;
+            packets.push({ name: `${deviceName} (Speed 2)`, body: speed2 });
         }
     }
 
@@ -203,7 +221,7 @@ function generatePacketsForDevice(deviceType, deviceConfig, defaults) {
 MANUFACTURERS.forEach(mfg => {
     console.log(`Processing ${mfg.id}...`);
     const configPath = path.join(CONFIG_DIR, mfg.file);
-    
+
     if (!fs.existsSync(configPath)) {
         console.warn(`Config file not found: ${configPath}`);
         return;
@@ -212,7 +230,7 @@ MANUFACTURERS.forEach(mfg => {
     const content = fs.readFileSync(configPath, 'utf8');
     const config = yaml.load(content, { schema: SCHEMA });
     const bridgeConfig = config.homenet_bridge;
-    
+
     if (!bridgeConfig) return;
 
     const defaults = bridgeConfig.packet_defaults || {};
@@ -223,7 +241,7 @@ MANUFACTURERS.forEach(mfg => {
     let allPackets = [];
 
     const deviceTypes = ['light', 'fan', 'climate', 'valve', 'switch', 'sensor', 'button'];
-    
+
     deviceTypes.forEach(type => {
         if (bridgeConfig[type] && Array.isArray(bridgeConfig[type])) {
             bridgeConfig[type].forEach(device => {
@@ -235,13 +253,13 @@ MANUFACTURERS.forEach(mfg => {
 
     // Generate TS file content
     let tsContent = `export const ${mfg.id.toUpperCase()}_PACKETS: readonly (Buffer | number[])[] = [\n`;
-    
+
     allPackets.forEach(pkt => {
         const data = [...header, ...pkt.body];
-        
+
         let checksumVal = 0;
         if (checksumType !== 'none') {
-             checksumVal = calculateChecksum(data, checksumType, header.length);
+            checksumVal = calculateChecksum(data, checksumType, header.length);
         }
 
         let fullPacket = [...data];

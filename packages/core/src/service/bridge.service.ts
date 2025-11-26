@@ -12,6 +12,7 @@ import { MqttClient } from '../transports/mqtt/mqtt.client.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { StateManager } from '../state/state-manager.js';
+import { CommandManager } from './command.manager.js';
 import { getStateCache } from '../state/store.js';
 import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
 
@@ -34,6 +35,7 @@ export class HomeNetBridge implements EntityStateProvider {
   private mqttSubscriber?: MqttSubscriber; // New MQTT subscriber instance
   private mqttPublisher?: MqttPublisher; // New MQTT publisher instance
   private stateManager?: StateManager; // New StateManager instance
+  private commandManager?: CommandManager;
   private discoveryManager?: DiscoveryManager; // DiscoveryManager instance
 
   constructor(options: BridgeOptions) {
@@ -109,18 +111,21 @@ export class HomeNetBridge implements EntityStateProvider {
     // Establish serial connection first
     this.port = await createSerialPortConnection(serialPath, serialConfig);
 
+    // Instantiate CommandManager
+    this.commandManager = new CommandManager(this.port, this.config);
+
     // Instantiate MqttPublisher
     this.mqttPublisher = new MqttPublisher(this._mqttClient);
 
     // Instantiate StateManager
     this.stateManager = new StateManager(this.config, this.packetProcessor, this.mqttPublisher);
 
-    // Now instantiate MqttSubscriber with the available port
+    // Now instantiate MqttSubscriber with the CommandManager
     this.mqttSubscriber = new MqttSubscriber(
       this._mqttClient,
       this.config,
       this.packetProcessor,
-      this.port,
+      this.commandManager,
     );
 
     // Set up subscriptions

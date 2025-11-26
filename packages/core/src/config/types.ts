@@ -13,6 +13,12 @@ import { TextEntity } from '../domain/entities/text.entity.js';
 import { BinarySensorEntity } from '../domain/entities/binary-sensor.entity.js';
 import { PacketDefaults } from '../protocol/types.js';
 
+export interface RetryConfig {
+  attempts: number;
+  timeout: number;
+  interval: number;
+}
+
 export interface LambdaConfig {
   type: 'lambda';
   script: string;
@@ -20,6 +26,7 @@ export interface LambdaConfig {
 
 export interface HomenetBridgeConfig {
   packet_defaults?: PacketDefaults;
+  retry?: RetryConfig;
   serial: {
     baud_rate: number;
     data_bits: 5 | 6 | 7 | 8;

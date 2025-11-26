@@ -4,26 +4,26 @@ import { HomenetBridgeConfig } from '../../config/types.js';
 import { EntityConfig } from '../../domain/entities/base.entity.js';
 import { logger } from '../../utils/logger.js';
 import { PacketProcessor } from '../../protocol/packet-processor.js';
-import { Duplex } from 'stream'; // For this.port.write
 import { eventBus } from '../../service/event-bus.js';
+import { CommandManager } from '../../service/command.manager.js';
 
 export class MqttSubscriber {
   private mqttClient: MqttClient;
   private config: HomenetBridgeConfig;
   private packetProcessor: PacketProcessor;
-  private serialPort: Duplex;
+  private commandManager: CommandManager;
   private externalHandlers: Map<string, (message: Buffer) => void> = new Map();
 
   constructor(
     mqttClient: MqttClient,
     config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
-    serialPort: Duplex,
+    commandManager: CommandManager,
   ) {
     this.mqttClient = mqttClient;
     this.config = config;
     this.packetProcessor = packetProcessor;
-    this.serialPort = serialPort;
+    this.commandManager = commandManager;
 
     this.mqttClient.client.on('message', (topic, message) =>
       this.handleMqttMessage(topic, message),
@@ -74,10 +74,10 @@ export class MqttSubscriber {
     });
   }
 
-  private handleMqttMessage(topic: string, message: Buffer) {
-    if (!this.config || !this.packetProcessor || !this.serialPort) {
+  private async handleMqttMessage(topic: string, message: Buffer) {
+    if (!this.config || !this.packetProcessor || !this.commandManager) {
       logger.error(
-        '[mqtt-subscriber] Configuration, PacketProcessor or Serial Port not initialized.',
+        '[mqtt-subscriber] Configuration, PacketProcessor or CommandManager not initialized.',
       );
       return;
     }
@@ -205,15 +205,6 @@ export class MqttSubscriber {
 
       if (commandPacket) {
         const hexPacket = Buffer.from(commandPacket).toString('hex');
-        logger.info(
-          {
-            entity: targetEntity.name,
-            command: commandName,
-            packet: hexPacket,
-          },
-          `[mqtt-subscriber] Sending command packet`,
-        );
-        this.serialPort.write(Buffer.from(commandPacket));
         eventBus.emit('command-packet', {
           entity: targetEntity.name || targetEntity.id,
           command: commandName,
@@ -221,6 +212,11 @@ export class MqttSubscriber {
           packet: hexPacket,
           timestamp: new Date().toISOString(),
         });
+        try {
+          await this.commandManager.send(targetEntity, commandPacket);
+        } catch (error) {
+          logger.error({ err: error, entity: targetEntity.name }, `[mqtt-subscriber] Command failed`);
+        }
       } else {
         logger.warn(
           { entity: targetEntity.name, command: commandName },

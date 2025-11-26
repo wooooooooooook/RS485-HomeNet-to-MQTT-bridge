@@ -289,18 +289,7 @@ export class PacketParser {
             currentState.mode = 'cool';
           }
 
-          if (climateEntity.state_temperature_current) {
-            currentState.currentTemperature = this.decodeValue(
-              dataWithoutHeaderAndFooter,
-              climateEntity.state_temperature_current,
-            );
-          }
-          if (climateEntity.state_temperature_target) {
-            currentState.targetTemperature = this.decodeValue(
-              dataWithoutHeaderAndFooter,
-              climateEntity.state_temperature_target,
-            );
-          }
+          // Temperature parsing is handled by ClimateDevice, not here
         }
       } else if (entity.type === 'sensor') {
         const sensorEntity = entity as SensorEntity;

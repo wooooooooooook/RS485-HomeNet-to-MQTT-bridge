@@ -6,8 +6,6 @@ import { logger } from '../utils/logger.js';
 interface DiscoveryPayload {
   name: string | null;
   unique_id: string;
-  state_topic: string;
-  command_topic?: string;
   availability?: { topic: string }[];
   device: {
     identifiers: string[];
@@ -16,6 +14,8 @@ interface DiscoveryPayload {
     model?: string;
     sw_version?: string;
   };
+  state_topic: string;
+  command_topic?: string;
   device_class?: string;
   unit_of_measurement?: string;
   state_class?: string;
@@ -62,7 +62,7 @@ export class DiscoveryManager {
     const entities = [
       ...(this.config.light || []).map((e) => ({ ...e, type: 'light' })),
       ...(this.config.climate || []).map((e) => ({ ...e, type: 'climate' })),
-      ...(this.config.valve || []).map((e) => ({ ...e, type: 'switch' })), // Map valve to switch for now if not supported
+      ...(this.config.valve || []).map((e) => ({ ...e, type: 'valve' })),
       ...(this.config.button || []).map((e) => ({ ...e, type: 'button' })),
       ...(this.config.sensor || []).map((e) => ({ ...e, type: 'sensor' })),
       ...(this.config.fan || []).map((e) => ({ ...e, type: 'fan' })),
@@ -81,35 +81,8 @@ export class DiscoveryManager {
   }
 
   private publishDiscovery(entity: any): void {
-    const {
-      id,
-      name,
-      type,
-      device_class,
-      unit_of_measurement,
-      state_class,
-      icon,
-      // Filter out internal configuration objects that should not be in discovery
-      state,
-      state_on,
-      state_off,
-      state_speed,
-      state_preset,
-      state_number,
-      command_on,
-      command_off,
-      command_speed,
-      command_preset,
-      command_update,
-      command_mode,
-      command_temperature,
-      command_number,
-      state_mode,
-      state_temperature,
-      state_current_temperature,
-      state_action,
-      ...rest
-    } = entity;
+    // Only extract essential identification fields
+    const { id, name, type } = entity;
 
     if (!id) {
       logger.error({ entity }, '[DiscoveryManager] Entity missing ID, skipping discovery');
@@ -121,6 +94,7 @@ export class DiscoveryManager {
 
     logger.debug({ id, uniqueId, topic }, '[DiscoveryManager] Preparing discovery');
 
+    // Base payload with mandatory fields only
     const payload: DiscoveryPayload = {
       name: name || null,
       unique_id: uniqueId,
@@ -132,14 +106,23 @@ export class DiscoveryManager {
         manufacturer: 'RS485 Bridge',
         model: 'Bridge',
       },
-      device_class,
-      unit_of_measurement,
-      state_class,
-      icon,
-      ...rest,
     };
 
-    if (['light', 'switch', 'fan', 'button', 'lock', 'number', 'select'].includes(type)) {
+    // Add optional standard fields if present
+    if (entity.device_class) {
+      payload.device_class = entity.device_class;
+    }
+    if (entity.unit_of_measurement) {
+      payload.unit_of_measurement = entity.unit_of_measurement;
+    }
+    if (entity.state_class) {
+      payload.state_class = entity.state_class;
+    }
+    if (entity.icon) {
+      payload.icon = entity.icon;
+    }
+
+    if (['light', 'switch', 'fan', 'button', 'lock', 'number', 'select', 'text'].includes(type)) {
       payload.command_topic = `homenet/${id}/set`;
     }
 
@@ -247,8 +230,9 @@ export class DiscoveryManager {
         break;
 
       case 'fan':
-        // Extract state from JSON
-        payload.value_template = '{{ value_json.state }}';
+        // Fan state extracted from JSON
+        payload.state_topic = `homenet/${id}/state`;
+        payload.state_value_template = '{{ value_json.state }}';
         payload.payload_on = 'ON';
         payload.payload_off = 'OFF';
 
@@ -286,11 +270,18 @@ export class DiscoveryManager {
         break;
 
       case 'valve':
-        // Valve state
+        // Valve state - Home Assistant expects specific state values
+        payload.state_topic = `homenet/${id}/state`;
         payload.value_template = '{{ value_json.state }}';
         payload.command_topic = `homenet/${id}/set`;
 
-        // Basic commands
+        // State values that HA expects (matching actual state values in uppercase)
+        payload.state_open = 'OPEN';
+        payload.state_opening = 'OPENING';
+        payload.state_closed = 'CLOSED';
+        payload.state_closing = 'CLOSING';
+
+        // Command payloads
         payload.payload_open = 'OPEN';
         payload.payload_close = 'CLOSE';
 
@@ -321,6 +312,19 @@ export class DiscoveryManager {
           payload.value_template = '{{ value_json.value }}';
         }
         break;
+
+      case 'binary_sensor':
+        // Binary sensors are read-only, return true/false or ON/OFF
+        payload.value_template = '{{ value_json.state }}';
+        // Optionally set payload_on/off if needed
+        if (entity.payload_on) {
+          payload.payload_on = entity.payload_on;
+        }
+        if (entity.payload_off) {
+          payload.payload_off = entity.payload_off;
+        }
+        break;
+
       case 'climate':
         // Climate entities use separate command topics but single state topic with templates
         payload.mode_command_topic = `homenet/${id}/mode/set`;

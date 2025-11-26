@@ -33,7 +33,17 @@ describe('DiscoveryManager', () => {
           state: {},
         },
       ],
-      climate: [{ id: 'climate1', name: 'Test Climate', type: 'climate', state: {} }],
+      climate: [
+        {
+          id: 'climate1',
+          name: 'Test Climate',
+          type: 'climate',
+          state: {},
+          state_off: 'off',
+          state_heat: 'heat',
+          state_cool: 'cool'
+        },
+      ],
     } as any;
 
     discoveryManager = new DiscoveryManager(mockConfig, mockPublisher, mockSubscriber);
@@ -119,7 +129,7 @@ describe('DiscoveryManager', () => {
     expect(payload.action_topic).toBeUndefined();
     expect(payload.action_template).toBeUndefined();
 
-    expect(payload.modes).toEqual(['off', 'heat', 'cool', 'fan_only', 'dry', 'auto']);
+    expect(payload.modes).toEqual(['off', 'heat', 'cool']);
     expect(payload.temperature_unit).toBe('C');
     expect(payload.min_temp).toBe(15);
     expect(payload.max_temp).toBe(30);

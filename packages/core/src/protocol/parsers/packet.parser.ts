@@ -193,8 +193,9 @@ export class PacketParser {
     // Checksum validation
     let checksumValid = false;
     if (rxChecksum !== 'none') {
-      const bytesToChecksum = [...rxHeader, ...data.slice(0, -1)];
-      const calculatedChecksum = calculateChecksum(Buffer.from(bytesToChecksum), rxChecksum);
+      const headerPart = Buffer.from(rxHeader);
+      const dataPart = Buffer.from(data.slice(0, -1));
+      const calculatedChecksum = calculateChecksum(headerPart, dataPart, rxChecksum);
 
       if (calculatedChecksum !== data[data.length - 1]) {
         return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };

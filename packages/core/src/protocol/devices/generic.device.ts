@@ -85,8 +85,11 @@ export class GenericDevice extends Device {
     }
 
     if (commandPacket && this.protocolConfig.packet_defaults?.tx_checksum) {
+      const txHeader = this.protocolConfig.packet_defaults.tx_header || [];
+      const headerPart = Buffer.from(txHeader);
+      const dataPart = Buffer.from(commandPacket);
       const checksumType = this.protocolConfig.packet_defaults.tx_checksum as ChecksumType;
-      const checksum = calculateChecksum(Buffer.from(commandPacket), checksumType);
+      const checksum = calculateChecksum(headerPart, dataPart, checksumType);
       commandPacket.push(checksum);
     }
 

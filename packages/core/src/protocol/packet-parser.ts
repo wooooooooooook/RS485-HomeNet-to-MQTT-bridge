@@ -58,6 +58,23 @@ export class PacketParser {
 
     // 3. Check Footer
     if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
+      // Calculate minimum packet length: header + checksum + footer
+      // We need at least 1 byte of data between header and checksum
+      const checksumLength = this.defaults.rx_checksum2
+        ? 2
+        : this.defaults.rx_checksum && this.defaults.rx_checksum !== 'none'
+          ? 1
+          : 0;
+      const minPacketLength =
+        (this.defaults.rx_header?.length || 0) +
+        1 + // At least 1 byte of data
+        checksumLength +
+        this.defaults.rx_footer.length;
+
+      // Don't check footer until we have minimum packet length
+      if (this.buffer.length < minPacketLength) return false;
+
+      // Now check if footer matches at the end
       if (
         this.buffer.length <
         (this.defaults.rx_header?.length || 0) + this.defaults.rx_footer.length
@@ -105,11 +122,15 @@ export class PacketParser {
         const hasFixedLength = this.defaults.rx_length && this.defaults.rx_length > 0;
         const hasFooter = this.defaults.rx_footer && this.defaults.rx_footer.length > 0;
 
-        if (hasFixedLength || hasFooter) {
-          // If checksum fails, it's likely a bad packet or collision.
-          // We drop the first byte and retry scanning.
+        if (hasFixedLength) {
+          // Fixed length with bad checksum - discard and retry
           this.buffer.shift();
           return this.isPacketComplete();
+        } else if (hasFooter) {
+          // Variable length with footer but bad checksum
+          // This could be a false footer match (e.g., checksum byte == footer byte)
+          // Continue buffering to see if we get the real footer
+          return false;
         } else {
           // Variable length, no footer. Checksum failed.
           // Could be incomplete packet.

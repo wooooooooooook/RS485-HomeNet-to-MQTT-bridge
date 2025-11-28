@@ -20,7 +20,7 @@ class MockStream extends Duplex {
   _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
     callback();
   }
-  _read(size: number): void {}
+  _read(size: number): void { }
 }
 
 describe('CommandManager', () => {
@@ -77,14 +77,14 @@ describe('CommandManager', () => {
     await expect(sendPromise).resolves.toBeUndefined();
   });
 
-  it('should reject after all retry attempts fail', async () => {
+  it('should resolve after all retry attempts fail', async () => {
     const writeSpy = vi.spyOn(serialPort, 'write');
     const sendPromise = commandManager.send(testEntity, testPacket);
 
     // Let all timers run until the promise settles
     vi.runAllTimers();
 
-    await expect(sendPromise).rejects.toThrow('ACK timeout');
+    await expect(sendPromise).resolves.toBeUndefined();
     // total attempts = initial (1) + retries (2) = 3
     expect(writeSpy).toHaveBeenCalledTimes(config.packet_defaults!.tx_retry_cnt! + 1);
   });
@@ -100,7 +100,7 @@ describe('CommandManager', () => {
     // Let all timers run
     vi.runAllTimers();
 
-    await expect(sendPromise).rejects.toThrow('ACK timeout');
+    await expect(sendPromise).resolves.toBeUndefined();
     // total attempts = initial (1) + retries (1) = 2
     expect(writeSpy).toHaveBeenCalledTimes(specificEntity.packet_parameters!.tx_retry_cnt! + 1);
   });

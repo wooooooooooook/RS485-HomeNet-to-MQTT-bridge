@@ -90,7 +90,7 @@ export class HomeNetBridge implements EntityStateProvider {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => { });
+      await this.startPromise.catch(() => {});
     }
     this._mqttClient.end();
     if (this.port) {

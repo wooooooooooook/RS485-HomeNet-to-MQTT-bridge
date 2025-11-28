@@ -41,7 +41,7 @@ describe('DiscoveryManager', () => {
           state: {},
           state_off: 'off',
           state_heat: 'heat',
-          state_cool: 'cool'
+          state_cool: 'cool',
         },
       ],
     } as any;

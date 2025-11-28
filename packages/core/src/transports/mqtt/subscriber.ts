@@ -220,7 +220,10 @@ export class MqttSubscriber {
         try {
           await this.commandManager.send(targetEntity, commandPacket);
         } catch (error) {
-          logger.error({ err: error, entity: targetEntity.name }, `[mqtt-subscriber] Command failed`);
+          logger.error(
+            { err: error, entity: targetEntity.name },
+            `[mqtt-subscriber] Command failed`,
+          );
         }
       } else {
         logger.warn(

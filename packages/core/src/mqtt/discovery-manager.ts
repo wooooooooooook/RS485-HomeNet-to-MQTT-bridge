@@ -364,7 +364,8 @@ export class DiscoveryManager {
         if (entity.state_dry) {
           availableModes.push('dry');
         }
-        if (entity.state_auto) { // Assuming 'state_auto' property for auto mode
+        if (entity.state_auto) {
+          // Assuming 'state_auto' property for auto mode
           availableModes.push('auto');
         }
         payload.modes = availableModes;

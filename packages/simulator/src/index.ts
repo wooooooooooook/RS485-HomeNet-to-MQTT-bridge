@@ -34,13 +34,7 @@ type PtyModule = typeof pty & {
   open: (options: { cols?: number; rows?: number; encoding?: string | null }) => PtyWithWrite;
 };
 
-export type DeviceType =
-  | 'commax'
-  | 'samsung_sds'
-  | 'cvnet'
-  | 'ezville'
-  | 'hyundai_imazu'
-  | 'kocom';
+export type DeviceType = 'commax' | 'samsung_sds' | 'cvnet' | 'ezville' | 'hyundai_imazu' | 'kocom';
 
 export interface SimulatorOptions {
   /** 패킷 사이 간격 (밀리초). */
@@ -287,12 +281,13 @@ async function main() {
   const config = (await loadYamlConfig(configPath)) as {
     homenet_bridge: { packet_defaults: { tx_checksum: ChecksumType } };
   };
-  
+
   const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
-  
-  // Use config checksum only for commax (which uses partial packets in simulator). 
+
+  // Use config checksum only for commax (which uses partial packets in simulator).
   // Other devices in simulator have pre-calculated full packets.
-  const checksumType = device === 'commax' ? config.homenet_bridge.packet_defaults.tx_checksum : 'none';
+  const checksumType =
+    device === 'commax' ? config.homenet_bridge.packet_defaults.tx_checksum : 'none';
 
   const simulator = createSimulator({
     packets: undefined, // Let it pick based on device

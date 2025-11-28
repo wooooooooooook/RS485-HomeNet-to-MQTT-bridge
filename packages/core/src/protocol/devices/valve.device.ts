@@ -22,9 +22,15 @@ export class ValveDevice extends GenericDevice {
         updates.state = 'OPEN';
       } else if (entityConfig.state_closed && this.matchState(payload, entityConfig.state_closed)) {
         updates.state = 'CLOSED';
-      } else if (entityConfig.state_opening && this.matchState(payload, entityConfig.state_opening)) {
+      } else if (
+        entityConfig.state_opening &&
+        this.matchState(payload, entityConfig.state_opening)
+      ) {
         updates.state = 'OPENING';
-      } else if (entityConfig.state_closing && this.matchState(payload, entityConfig.state_closing)) {
+      } else if (
+        entityConfig.state_closing &&
+        this.matchState(payload, entityConfig.state_closing)
+      ) {
         updates.state = 'CLOSING';
       }
     }

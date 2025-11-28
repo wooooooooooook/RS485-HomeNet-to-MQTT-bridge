@@ -102,11 +102,7 @@ function samsungTx(data: Buffer): number {
  * @param type Checksum type
  * @returns Array of 2 bytes [high, low]
  */
-export function calculateChecksum2(
-  header: Buffer,
-  data: Buffer,
-  type: Checksum2Type
-): number[] {
+export function calculateChecksum2(header: Buffer, data: Buffer, type: Checksum2Type): number[] {
   switch (type) {
     case 'xor_add':
       return xorAdd(header, data);

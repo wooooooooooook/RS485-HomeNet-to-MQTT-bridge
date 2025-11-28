@@ -79,7 +79,11 @@ export class PacketParser {
     }
 
     // 4. Check Checksum
-    const checksumLength = this.defaults.rx_checksum2 ? 2 : (this.defaults.rx_checksum && this.defaults.rx_checksum !== 'none' ? 1 : 0);
+    const checksumLength = this.defaults.rx_checksum2
+      ? 2
+      : this.defaults.rx_checksum && this.defaults.rx_checksum !== 'none'
+        ? 1
+        : 0;
 
     if (checksumLength > 0) {
       // Ensure we have at least checksum bytes beyond the header
@@ -140,7 +144,11 @@ export class PacketParser {
         const headerPart = Buffer.from(packet.slice(0, headerLength));
         const dataPart = Buffer.from(packet.slice(headerLength, dataEnd));
 
-        calculatedChecksum = calculateChecksum(headerPart, dataPart, this.defaults.rx_checksum as ChecksumType);
+        calculatedChecksum = calculateChecksum(
+          headerPart,
+          dataPart,
+          this.defaults.rx_checksum as ChecksumType,
+        );
 
         // console.log(`[PacketParser] Verify Checksum: Type=${this.defaults.rx_checksum}, Packet=${packet.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}, Data=${dataPart.toString('hex')}, Calc=0x${calculatedChecksum.toString(16).padStart(2, '0')}, Expected=0x${checksumByte.toString(16).padStart(2, '0')}, Match=${calculatedChecksum === checksumByte}`);
 
@@ -177,7 +185,11 @@ export class PacketParser {
       const dataPart = Buffer.from(packet.slice(headerLength, checksumStart));
 
       if (typeof this.defaults.rx_checksum2 === 'string') {
-        const calculated = calculateChecksum2(headerPart, dataPart, this.defaults.rx_checksum2 as Checksum2Type);
+        const calculated = calculateChecksum2(
+          headerPart,
+          dataPart,
+          this.defaults.rx_checksum2 as Checksum2Type,
+        );
         return calculated[0] === checksumBytes[0] && calculated[1] === checksumBytes[1];
       } else if ((this.defaults.rx_checksum2 as any).type === 'lambda') {
         const lambda = this.defaults.rx_checksum2 as LambdaConfig;

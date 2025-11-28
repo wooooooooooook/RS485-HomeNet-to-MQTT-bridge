@@ -39,7 +39,10 @@ export class FanDevice extends GenericDevice {
 
     // Handle oscillation
     if (!updates.oscillating && entityConfig.state_oscillating) {
-      if (entityConfig.state_oscillating && this.matchState(payload, entityConfig.state_oscillating)) {
+      if (
+        entityConfig.state_oscillating &&
+        this.matchState(payload, entityConfig.state_oscillating)
+      ) {
         updates.oscillating = true;
       }
     }

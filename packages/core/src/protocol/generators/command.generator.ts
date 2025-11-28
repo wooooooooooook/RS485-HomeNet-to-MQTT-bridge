@@ -343,7 +343,11 @@ export class CommandGenerator {
 
     // Check for 1-byte checksum first (more common)
     if (packetDefaults.tx_checksum && packetDefaults.tx_checksum !== 'none') {
-      const checksum = calculateChecksum(headerPart, dataPart, packetDefaults.tx_checksum as ChecksumType);
+      const checksum = calculateChecksum(
+        headerPart,
+        dataPart,
+        packetDefaults.tx_checksum as ChecksumType,
+      );
       return [...txHeader, ...commandData, checksum, ...txFooter];
     }
 
@@ -352,7 +356,11 @@ export class CommandGenerator {
       let checksum: number[];
 
       if (typeof packetDefaults.tx_checksum2 === 'string') {
-        checksum = calculateChecksum2(headerPart, dataPart, packetDefaults.tx_checksum2 as Checksum2Type);
+        checksum = calculateChecksum2(
+          headerPart,
+          dataPart,
+          packetDefaults.tx_checksum2 as Checksum2Type,
+        );
       } else {
         // Lambda checksum2 (not yet implemented)
         logger.warn('Lambda tx_checksum2 not yet implemented');

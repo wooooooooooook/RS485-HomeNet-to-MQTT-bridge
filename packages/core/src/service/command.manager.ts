@@ -108,7 +108,10 @@ export class CommandManager {
           if (job.isSettled) return;
           job.isSettled = true;
           if (job.timer) clearTimeout(job.timer);
-          logger.info({ entity: job.entity.name }, `[CommandManager] Command succeeded: ACK received`);
+          logger.info(
+            { entity: job.entity.name },
+            `[CommandManager] Command succeeded: ACK received`,
+          );
           this.removeAckListener(job.entity.id);
           resolve();
         };

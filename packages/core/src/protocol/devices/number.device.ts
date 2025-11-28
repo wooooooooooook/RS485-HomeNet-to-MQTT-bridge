@@ -28,7 +28,10 @@ export class NumberDevice extends GenericDevice {
     // Check for increment/decrement/min/max state changes
     if (entityConfig.state_increment && this.matchState(payload, entityConfig.state_increment)) {
       updates.action = 'increment';
-    } else if (entityConfig.state_decrement && this.matchState(payload, entityConfig.state_decrement)) {
+    } else if (
+      entityConfig.state_decrement &&
+      this.matchState(payload, entityConfig.state_decrement)
+    ) {
       updates.action = 'decrement';
     } else if (entityConfig.state_to_min && this.matchState(payload, entityConfig.state_to_min)) {
       updates.value = entityConfig.min_value;

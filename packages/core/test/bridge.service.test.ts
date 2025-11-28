@@ -1,4 +1,3 @@
-
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { HomeNetBridge } from '../src/service/bridge.service';
@@ -213,7 +212,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       expect.objectContaining({
         idleOccurrenceAvg: 290,
         idleOccurrenceStdDev: 0,
-      })
+      }),
     );
   });
 });

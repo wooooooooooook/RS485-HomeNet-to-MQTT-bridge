@@ -9,7 +9,13 @@ import { SensorEntity } from '../../domain/entities/sensor.entity.js';
 import { FanEntity } from '../../domain/entities/fan.entity.js';
 import { SwitchEntity } from '../../domain/entities/switch.entity.js';
 import { BinarySensorEntity } from '../../domain/entities/binary-sensor.entity.js';
-import { StateSchema, StateNumSchema, ChecksumType, Checksum2Type, ProtocolConfig } from '../types.js';
+import {
+  StateSchema,
+  StateNumSchema,
+  ChecksumType,
+  Checksum2Type,
+  ProtocolConfig,
+} from '../types.js';
 import { bytesToHex } from '../utils/common.js';
 import { calculateChecksum, calculateChecksum2 } from '../utils/checksum.js';
 import { EntityStateProvider } from '../packet-processor.js';

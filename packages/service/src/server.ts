@@ -47,27 +47,7 @@ let bridgeError: string | null = null;
 let bridgeStartPromise: Promise<void> | null = null;
 
 // --- Express Middleware & Setup ---
-app.use((req, res, next) => {
-  const ingressPath = req.headers['x-ingress-path'];
-  if (typeof ingressPath === 'string' && req.url.startsWith(ingressPath)) {
-    req.url = req.url.substring(ingressPath.length) || '/';
-    logger.debug({ originalUrl: req.originalUrl, newUrl: req.url }, '[service] Stripped Ingress path');
-  }
-  next();
-});
-
 app.use(express.json());
-app.use(
-  express.static(path.resolve(__dirname, '../static'), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      }
-    },
-  }),
-);
 
 // --- API Endpoints ---
 app.get('/api/health', (_req, res) => {
@@ -225,6 +205,20 @@ app.get('/api/packets/stream', (req, res) => {
 });
 
 // --- Static Serving & Error Handling ---
+// Serve static files AFTER API routes to prevent API requests from being served as static files
+app.use(
+  express.static(path.resolve(__dirname, '../static'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      }
+    },
+  }),
+);
+
+// Fallback to index.html for SPA routing (must be AFTER static files and API routes)
 app.get('*', (_req, res, next) => {
   res.sendFile(path.resolve(__dirname, '../static', 'index.html'), (err) => err && next());
 });

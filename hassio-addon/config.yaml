@@ -9,7 +9,7 @@ arch:
   - armv7
 startup: application
 boot: auto
-image: "woooook/homenet2mqtt"
+image: "nubiz/homenet2mqtt-{arch}"
 options:
   log_level: info
   mqtt_url: mqtt://core-mosquitto:1883

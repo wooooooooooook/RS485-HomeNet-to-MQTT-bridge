@@ -32,5 +32,38 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/homenet2mqtt:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/homenet2mqtt:${{ github.sha }}
+            nubiz/homenet2mqtt:latest
+            nubiz/homenet2mqtt:${{ github.sha }}
+
+  sync-addon-repo:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Checkout Target Repo
+        uses: actions/checkout@v4
+        with:
+          repository: wooooooooooook/HAaddons
+          token: ${{ secrets.ADDONS_REPO_TOKEN }}
+          path: target
+
+      - name: Sync Files
+        run: |
+          mkdir -p target/Homenet2MQTT
+          cp -r source/hassio-addon/* target/Homenet2MQTT/
+          
+          # Check for changes
+          cd target
+          if [[ -n $(git status -s) ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "Update Homenet2MQTT addon from source"
+            git push
+          else
+            echo "No changes to sync."
+          fi

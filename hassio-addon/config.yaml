@@ -1,5 +1,5 @@
 name: Homenet2MQTT
-version: 0.0.1
+version: 0.0.2_a
 slug: h2m
 description: Bridge between RS485 HomeNet devices and MQTT.
 url: https://github.com/woooook/RS485-HomeNet-to-MQTT-bridge
@@ -10,17 +10,29 @@ arch:
 startup: application
 boot: auto
 image: "nubiz/homenet2mqtt"
+map:
+  - type: homeassistant_config
+    read_only: false
+    path: /homeassistant
 options:
   log_level: info
-  mqtt_url: mqtt://core-mosquitto:1883
+  mqtt_url: mqtt://127.0.0.1:1883
+  mqtt_need_login: false
+  mqtt_user: ""
+  mqtt_passwd: ""
   mqtt_topic_prefix: homenet
   serial_port: 
   config_file: samsung_sds.homenet_bridge.yaml
 schema:
   log_level: list(trace|debug|info|warning|error|fatal)
   mqtt_url: str
+  mqtt_need_login: bool
+  mqtt_user: str?
+  mqtt_passwd: str?
   mqtt_topic_prefix: str
   serial_port: str
   config_file: str
-ports:
-  3000/tcp: 3000
+ingress: true
+ingress_port: 3000
+ingress_entry: /
+panel_icon: mdi:floor-plan

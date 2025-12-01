@@ -32,7 +32,7 @@ dotenv.config();
 // --- Constants ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONFIG_DIR = path.resolve(__dirname, '../../core/config');
+const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
 
 // --- Application State ---
 const app = express();
@@ -222,7 +222,7 @@ app.use(
 // --- Bridge Management ---
 async function loadAndStartBridge(filename: string) {
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {}); // Wait for any ongoing start/stop to finish
+    await bridgeStartPromise.catch(() => { }); // Wait for any ongoing start/stop to finish
   }
   if (bridge) {
     logger.info('[service] Stopping existing bridge...');
@@ -251,9 +251,11 @@ async function loadAndStartBridge(filename: string) {
     currentConfigContent = loadedYaml.homenet_bridge; // Store the actual homenet_bridge config
 
     const mqttUrl = process.env.MQTT_URL?.trim() || 'mqtt://mq:1883';
+    const mqttUsername = process.env.MQTT_USER?.trim() || undefined;
+    const mqttPassword = process.env.MQTT_PASSWD?.trim() || undefined;
 
-    // createBridge now expects configPath and mqttUrl directly
-    bridge = await createBridge(configPath, mqttUrl); // Await createBridge as it now starts the bridge internally
+    // createBridge now expects configPath, mqttUrl, and optional credentials
+    bridge = await createBridge(configPath, mqttUrl, mqttUsername, mqttPassword);
 
     bridgeStatus = 'started';
     logger.info(`[service] Bridge started successfully with '${filename}'.`);

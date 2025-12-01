@@ -17,11 +17,14 @@ import { eventBus } from './event-bus.js';
 import { CommandManager } from './command.manager.js';
 import { getStateCache } from '../state/store.js';
 import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
+import mqtt from 'mqtt';
 
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
 export interface BridgeOptions {
   configPath: string; // Path to the homenet_bridge.yaml configuration file
   mqttUrl: string;
+  mqttUsername?: string;
+  mqttPassword?: string;
 }
 
 export class HomeNetBridge implements EntityStateProvider {
@@ -44,14 +47,23 @@ export class HomeNetBridge implements EntityStateProvider {
 
   constructor(options: BridgeOptions) {
     this.options = options;
-    this._mqttClient = new MqttClient(options.mqttUrl, {
+    const mqttOptions: mqtt.IClientOptions = {
       will: {
         topic: `${MQTT_TOPIC_PREFIX}/bridge/status`,
         payload: 'offline',
         qos: 1,
         retain: true,
       },
-    });
+    };
+
+    if (options.mqttUsername) {
+      mqttOptions.username = options.mqttUsername;
+    }
+    if (options.mqttPassword) {
+      mqttOptions.password = options.mqttPassword;
+    }
+
+    this._mqttClient = new MqttClient(options.mqttUrl, mqttOptions);
     this.client = this._mqttClient.client; // Assign the client from the new MqttClient instance
     this.connectionPromise = this._mqttClient.connectionPromise; // Assign the promise from the new MqttClient instance
   }
@@ -90,7 +102,7 @@ export class HomeNetBridge implements EntityStateProvider {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
     this._mqttClient.end();
     if (this.port) {

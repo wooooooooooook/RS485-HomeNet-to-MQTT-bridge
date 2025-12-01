@@ -10,8 +10,13 @@ dotenv.config();
 
 export { HomeNetBridge, BridgeOptions, logger, eventBus, HomenetBridgeConfig, LambdaConfig };
 
-export async function createBridge(configPath: string, mqttUrl: string) {
-  const bridge = new HomeNetBridge({ configPath, mqttUrl });
+export async function createBridge(
+  configPath: string,
+  mqttUrl: string,
+  mqttUsername?: string,
+  mqttPassword?: string,
+) {
+  const bridge = new HomeNetBridge({ configPath, mqttUrl, mqttUsername, mqttPassword });
 
   await bridge.start();
   return bridge;

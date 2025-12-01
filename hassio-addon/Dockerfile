@@ -26,7 +26,7 @@ COPY . .
 RUN pnpm build
 
 # Prune dev dependencies for production
-RUN pnpm install --prod --frozen-lockfile
+RUN CI=true pnpm install --prod --frozen-lockfile
 
 # Runtime stage
 FROM node:20-alpine

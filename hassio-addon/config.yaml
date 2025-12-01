@@ -1,4 +1,4 @@
-name: homenet2mqtt
+name: Homenet2MQTT
 version: 0.0.1
 slug: h2m
 description: Bridge between RS485 HomeNet devices and MQTT.
@@ -9,7 +9,7 @@ arch:
   - armv7
 startup: application
 boot: auto
-image: "nubiz/homenet2mqtt-{arch}"
+image: "nubiz/homenet2mqtt"
 options:
   log_level: info
   mqtt_url: mqtt://core-mosquitto:1883

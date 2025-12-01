@@ -9,9 +9,15 @@ import { SensorEntity } from '../../domain/entities/sensor.entity.js';
 import { FanEntity } from '../../domain/entities/fan.entity.js';
 import { SwitchEntity } from '../../domain/entities/switch.entity.js';
 import { BinarySensorEntity } from '../../domain/entities/binary-sensor.entity.js';
-import { StateSchema, StateNumSchema, ChecksumType, ProtocolConfig } from '../types.js';
+import {
+  StateSchema,
+  StateNumSchema,
+  ChecksumType,
+  Checksum2Type,
+  ProtocolConfig,
+} from '../types.js';
 import { bytesToHex } from '../utils/common.js';
-import { calculateChecksum } from '../utils/checksum.js';
+import { calculateChecksum, calculateChecksum2 } from '../utils/checksum.js';
 import { EntityStateProvider } from '../packet-processor.js';
 import { GenericDevice } from '../devices/generic.device.js';
 import { LightDevice } from '../devices/light.device.js';
@@ -172,13 +178,11 @@ export class PacketParser {
     const packetDefaults = { ...this.config.packet_defaults, ...entity.packet_parameters };
     const rxHeader = packetDefaults.rx_header || [];
     const rxFooter = packetDefaults.rx_footer || [];
-    const rxChecksum = (packetDefaults.rx_checksum || 'none') as ChecksumType;
 
     // Header check
     if (rxHeader.length > 0 && !this.startsWith(packet, rxHeader)) {
       return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };
     }
-
     // Remove header
     let data = packet.slice(rxHeader.length);
 
@@ -186,26 +190,50 @@ export class PacketParser {
     if (rxFooter.length > 0 && !this.endsWith(data, rxFooter)) {
       return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };
     }
-
     // Remove footer
     data = rxFooter.length > 0 ? data.slice(0, -rxFooter.length) : data;
 
     // Checksum validation
-    let checksumValid = false;
-    if (rxChecksum !== 'none') {
-      const bytesToChecksum = [...rxHeader, ...data.slice(0, -1)];
-      const calculatedChecksum = calculateChecksum(Buffer.from(bytesToChecksum), rxChecksum);
+    let isChecksumValid = true;
+    const rxChecksum = packetDefaults.rx_checksum as ChecksumType | undefined;
+    const rxChecksum2 = packetDefaults.rx_checksum2 as Checksum2Type | undefined;
+    const headerPart = Buffer.from(rxHeader);
+    let checksumLength = 0;
 
-      if (calculatedChecksum !== data[data.length - 1]) {
+    if (rxChecksum2) {
+      checksumLength = 2;
+      if (data.length < checksumLength) {
         return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };
       }
-      checksumValid = true;
-      data = data.slice(0, -1); // Remove checksum byte
-    } else {
-      checksumValid = true;
+      const dataPart = Buffer.from(data.slice(0, -checksumLength));
+      const calculated = calculateChecksum2(headerPart, dataPart, rxChecksum2);
+      const received = data.slice(-checksumLength);
+      if (calculated[0] !== received[0] || calculated[1] !== received[1]) {
+        isChecksumValid = false;
+      }
+    } else if (rxChecksum && rxChecksum !== 'none') {
+      checksumLength = 1;
+      if (data.length < checksumLength) {
+        return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };
+      }
+      const dataPart = Buffer.from(data.slice(0, -checksumLength));
+      const calculated = calculateChecksum(headerPart, dataPart, rxChecksum);
+      const received = data[data.length - 1];
+      if (calculated !== received) {
+        isChecksumValid = false;
+      }
     }
 
-    return { valid: true, dataWithoutHeaderAndFooter: data, checksumValid };
+    if (!isChecksumValid) {
+      return { valid: false, dataWithoutHeaderAndFooter: [], checksumValid: false };
+    } else {
+      // Remove checksum from data
+      if (checksumLength > 0) {
+        data = data.slice(0, -checksumLength);
+      }
+    }
+
+    return { valid: true, dataWithoutHeaderAndFooter: data, checksumValid: isChecksumValid };
   }
 
   /**

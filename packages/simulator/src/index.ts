@@ -1,12 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { setInterval as createInterval, clearInterval } from 'node:timers';
-import { pathToFileURL, fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
-import { loadYamlConfig } from '@rs485-homenet/core/dist/config/yaml-loader.js';
-import { calculateChecksum, ChecksumType } from './checksum.js';
+
 import { SAMSUNG_SDS_PACKETS } from './samsung_sds.js';
 import { COMMAX_PACKETS } from './commax.js';
 import { CVNET_PACKETS } from './cvnet.js';
@@ -41,8 +39,6 @@ export interface SimulatorOptions {
   intervalMs?: number;
   /** 주입할 RS485 패킷 목록. */
   packets?: readonly (Buffer | Uint8Array | number[])[];
-  /** 체크섬 유형. */
-  checksumType?: ChecksumType;
   /** 시뮬레이션할 장치 유형. */
   device?: DeviceType;
 }
@@ -79,27 +75,16 @@ function getPacketsForDevice(device: DeviceType): readonly (Buffer | Uint8Array 
   }
 }
 
-function normalizePackets(
-  packets: readonly (Buffer | Uint8Array | number[])[],
-  checksumType: ChecksumType = 'none',
-): Buffer[] {
+function normalizePackets(packets: readonly (Buffer | Uint8Array | number[])[]): Buffer[] {
   if (packets.length === 0) {
     throw new Error('패킷 목록이 비어 있습니다. 최소 한 개 이상의 패킷이 필요합니다.');
   }
-
-  const addChecksum = (packet: Buffer): Buffer => {
-    if (checksumType === 'none') {
-      return packet;
-    }
-    const checksum = calculateChecksum(packet, checksumType);
-    return Buffer.concat([packet, Buffer.from([checksum])]);
-  };
 
   return packets.map((packet) => {
     const buffer = Buffer.isBuffer(packet)
       ? packet
       : Buffer.from(packet instanceof Uint8Array ? packet : (packet as number[]));
-    return addChecksum(buffer);
+    return buffer;
   });
 }
 
@@ -113,12 +98,11 @@ export function createTcpSimulator(
   const {
     intervalMs = DEFAULT_INTERVAL_MS,
     packets: userPackets,
-    checksumType,
     port = 8888,
     device = 'commax',
   } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
-  const normalizedPackets = normalizePackets(packets, checksumType);
+  const normalizedPackets = normalizePackets(packets);
 
   const clients = new Set<any>();
 
@@ -197,14 +181,9 @@ export function createTcpSimulator(
 }
 
 export function createSimulator(options: SimulatorOptions = {}): Simulator {
-  const {
-    intervalMs = DEFAULT_INTERVAL_MS,
-    packets: userPackets,
-    checksumType,
-    device = 'commax',
-  } = options;
+  const { intervalMs = DEFAULT_INTERVAL_MS, packets: userPackets, device = 'commax' } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
-  const normalizedPackets = normalizePackets(packets, checksumType);
+  const normalizedPackets = normalizePackets(packets);
   const { open: openPty } = pty as PtyModule;
   const terminal = openPty({ cols: 80, rows: 24, encoding: null });
   const writer = terminal as unknown as { write(data: string | Buffer): void };
@@ -274,25 +253,11 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
 }
 
 async function main() {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const configPath =
-    process.env.CONFIG_PATH ??
-    path.join(__dirname, '../../../packages/core/config/commax.homenet_bridge.yaml');
-  const config = (await loadYamlConfig(configPath)) as {
-    homenet_bridge: { packet_defaults: { tx_checksum: ChecksumType } };
-  };
-
   const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
-
-  // Use config checksum only for commax (which uses partial packets in simulator).
-  // Other devices in simulator have pre-calculated full packets.
-  const checksumType =
-    device === 'commax' ? config.homenet_bridge.packet_defaults.tx_checksum : 'none';
 
   const simulator = createSimulator({
     packets: undefined, // Let it pick based on device
     device,
-    checksumType,
   });
   console.log(JSON.stringify({ ptyPath: simulator.ptyPath }));
   simulator.start();

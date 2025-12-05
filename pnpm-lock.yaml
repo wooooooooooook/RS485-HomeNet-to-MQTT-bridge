@@ -79,6 +79,9 @@ importers:
       mqtt:
         specifier: ^5.3.4
         version: 5.14.1
+      ws:
+        specifier: ^8.18.3
+        version: 8.18.3
     devDependencies:
       '@types/express':
         specifier: ^4.17.21

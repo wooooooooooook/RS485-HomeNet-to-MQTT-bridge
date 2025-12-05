@@ -243,6 +243,55 @@
 
   const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 
+  type ParsedPayloadEntry = {
+    key: string;
+    value: string;
+  };
+
+  const formatPayloadValue = (value: unknown): string => {
+    if (value === null) return 'null';
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '[object]';
+      }
+    }
+    return String(value);
+  };
+
+  const parsePayload = (payload: string): ParsedPayloadEntry[] | null => {
+    try {
+      const parsed = JSON.parse(payload) as unknown;
+      if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed)) {
+          return parsed.map((value, index) => ({
+            key: String(index),
+            value: formatPayloadValue(value),
+          }));
+        }
+        return Object.entries(parsed).map(([key, value]) => ({
+          key,
+          value: formatPayloadValue(value),
+        }));
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  };
+
+  const isBridgeStatusTopic = (topic: string) => {
+    const normalized = topic.replace(/^homenet\//, '');
+    return normalized === 'bridge/status';
+  };
+
+  const formatTopicName = (topic: string) => {
+    const withoutPrefix = topic.replace(/^homenet\//, '');
+    return withoutPrefix.replace(/\/state$/, '');
+  };
+
   const toPrintableAscii = (value: string) =>
     value
       .split('')
@@ -331,8 +380,8 @@
   <section class="panel viewer">
     <header class="viewer-header">
       <div>
-        <p class="eyebrow">RS485 HomeNet Bridge</p>
-        <h1>실시간 상태</h1>
+        <p class="eyebrow">RS485 HomeNet to MQTT Bridge</p>
+        <h1>Homenet2MQTT</h1>
       </div>
       <div class="controls">
         <button
@@ -394,105 +443,122 @@
               <p class="empty">아직 수신된 장치 상태가 없습니다.</p>
             {:else}
               {#each Array.from(deviceStates.entries()) as [topic, payload] (topic)}
-                <article class="state-card" data-state={payload}>
-                  <span class="topic">{topic.replace('homenet/', '')}</span>
-                  <strong class="payload">{payload}</strong>
-                </article>
+                {#if !isBridgeStatusTopic(topic)}
+                  {@const parsedPayload = parsePayload(payload)}
+                  <article class="state-card" data-state={payload}>
+                    <span class="topic">{formatTopicName(topic)}</span>
+                    {#if parsedPayload}
+                      <div class="payload-list">
+                        {#each parsedPayload as entry (entry.key)}
+                          <div class="payload-row">
+                            <span class="payload-key">{entry.key}</span>
+                            <span class="payload-value">{entry.value}</span>
+                          </div>
+                        {/each}
+                      </div>
+                    {:else}
+                      <strong class="payload">{payload}</strong>
+                    {/if}
+                  </article>
+                {/if}
               {/each}
             {/if}
           </div>
         </div>
 
         <div class="column right">
-          <h2>명령 로그</h2>
-          <div class="packet-list command-list">
-            {#if commandPackets.length === 0}
-              <p class="empty">아직 전송된 명령이 없습니다.</p>
+          <!-- Command Buttons Section -->
+          <div class="commands-container">
+            <h2>명령 버튼</h2>
+            {#if commandsLoading}
+              <p class="empty">명령 목록을 불러오는 중입니다...</p>
+            {:else if commandsError}
+              <p class="error">{commandsError}</p>
+            {:else if groupedCommands.size === 0}
+              <p class="empty">사용 가능한 명령이 없습니다.</p>
             {:else}
-              {#each [...commandPackets].reverse() as packet (packet.timestamp + packet.entity + packet.command)}
-                <div class="packet-line command-line">
-                  <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
-                  <span class="entity">{packet.entity}</span>
-                  <span class="command">{packet.command}</span>
-                  <span class="value">{packet.value !== undefined ? `(${packet.value})` : ''}</span>
-                  <code class="payload">{toHexPairs(packet.packet).join(' ')}</code>
-                </div>
-              {/each}
+              <div class="command-groups">
+                {#each Array.from(groupedCommands.entries()) as [entityId, commands] (entityId)}
+                  <div class="command-group">
+                    <span class="entity-name">{commands[0].entityName}</span>
+                    <div class="command-buttons">
+                      {#each commands as cmd (cmd.commandName)}
+                        {#if cmd.inputType === 'number'}
+                          <div class="command-input-group">
+                            <input
+                              type="number"
+                              min={cmd.min}
+                              max={cmd.max}
+                              step={cmd.step}
+                              bind:value={temperatureInputs[`${cmd.entityId}_${cmd.commandName}`]}
+                              class="temp-input"
+                            />
+                            <button
+                              class="command-btn input-btn"
+                              on:click={() =>
+                                executeCommand(
+                                  cmd,
+                                  temperatureInputs[`${cmd.entityId}_${cmd.commandName}`],
+                                )}
+                              disabled={executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
+                            >
+                              {#if executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
+                                ...
+                              {:else}
+                                {cmd.commandName.replace('command_', '')}
+                              {/if}
+                            </button>
+                          </div>
+                        {:else}
+                          <button
+                            class="command-btn"
+                            class:on={cmd.commandName.includes('on') ||
+                              cmd.commandName.includes('heat') ||
+                              cmd.commandName.includes('open') ||
+                              cmd.commandName.includes('unlock')}
+                            class:off={cmd.commandName.includes('off') ||
+                              cmd.commandName.includes('close') ||
+                              cmd.commandName.includes('lock')}
+                            on:click={() => executeCommand(cmd)}
+                            disabled={executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
+                          >
+                            {#if executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
+                              ...
+                            {:else}
+                              {cmd.commandName.replace('command_', '').toUpperCase()}
+                            {/if}
+                          </button>
+                        {/if}
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
+              </div>
             {/if}
           </div>
-        </div>
-      </div>
 
-      <!-- Command Buttons Section -->
-      <div class="commands-container">
-        <h2>명령 버튼</h2>
-        {#if commandsLoading}
-          <p class="empty">명령 목록을 불러오는 중입니다...</p>
-        {:else if commandsError}
-          <p class="error">{commandsError}</p>
-        {:else if groupedCommands.size === 0}
-          <p class="empty">사용 가능한 명령이 없습니다.</p>
-        {:else}
-          <div class="command-groups">
-            {#each Array.from(groupedCommands.entries()) as [entityId, commands] (entityId)}
-              <div class="command-group">
-                <h3 class="entity-name">{commands[0].entityName}</h3>
-                <div class="command-buttons">
-                  {#each commands as cmd (cmd.commandName)}
-                    {#if cmd.inputType === 'number'}
-                      <div class="command-input-group">
-                        <input
-                          type="number"
-                          min={cmd.min}
-                          max={cmd.max}
-                          step={cmd.step}
-                          bind:value={temperatureInputs[`${cmd.entityId}_${cmd.commandName}`]}
-                          class="temp-input"
-                        />
-                        <button
-                          class="command-btn input-btn"
-                          on:click={() =>
-                            executeCommand(
-                              cmd,
-                              temperatureInputs[`${cmd.entityId}_${cmd.commandName}`],
-                            )}
-                          disabled={executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
-                        >
-                          {#if executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
-                            전송 중...
-                          {:else}
-                            {cmd.commandName
-                              .replace('command_', '')
-                              .replace('temperature', '온도 설정')}
-                          {/if}
-                        </button>
-                      </div>
-                    {:else}
-                      <button
-                        class="command-btn"
-                        class:on={cmd.commandName.includes('on') ||
-                          cmd.commandName.includes('heat') ||
-                          cmd.commandName.includes('open') ||
-                          cmd.commandName.includes('unlock')}
-                        class:off={cmd.commandName.includes('off') ||
-                          cmd.commandName.includes('close') ||
-                          cmd.commandName.includes('lock')}
-                        on:click={() => executeCommand(cmd)}
-                        disabled={executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
-                      >
-                        {#if executingCommands.has(`${cmd.entityId}_${cmd.commandName}`)}
-                          전송 중...
-                        {:else}
-                          {cmd.commandName.replace('command_', '').toUpperCase()}
-                        {/if}
-                      </button>
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/each}
+          <!-- Command Log Section -->
+          <div class="command-log-container">
+            <h2>명령 로그</h2>
+            <div class="packet-list command-list">
+              {#if commandPackets.length === 0}
+                <p class="empty">아직 전송된 명령이 없습니다.</p>
+              {:else}
+                {#each [...commandPackets].reverse() as packet (packet.timestamp + packet.entity + packet.command)}
+                  <div class="packet-line command-line">
+                    <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
+                    <span class="entity">{packet.entity}</span>
+                    <span class="command">{packet.command}</span>
+                    <span class="value"
+                      >{packet.value !== undefined ? `(${packet.value})` : ''}</span
+                    >
+                    <code class="payload">{toHexPairs(packet.packet).join(' ')}</code>
+                  </div>
+                {/each}
+              {/if}
+            </div>
           </div>
-        {/if}
+        </div>
       </div>
 
       <div class="stats-container">
@@ -620,6 +686,9 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    max-width: 95vw;
+    min-width: calc(min(1200px, 95vw));
+    margin: 0 auto;
   }
 
   .viewer-header {
@@ -722,6 +791,20 @@
     background: rgba(15, 23, 42, 0.7);
   }
 
+  .viewer-meta > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .viewer-meta .label,
+  .viewer-meta strong {
+    display: block;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .label {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -757,6 +840,32 @@
     font-weight: 600;
     white-space: normal;
     word-wrap: break-word;
+  }
+
+  .payload-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .payload-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.9);
+  }
+
+  .payload-key {
+    font-size: 0.8rem;
+    color: rgba(148, 163, 184, 0.9);
+  }
+
+  .payload-value {
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
   }
 
   .state-card[data-state='ON'] .payload {
@@ -866,7 +975,7 @@
   }
 
   .column h2 {
-    font-size: 1.2rem;
+    font-size: 1rem;
     margin: 0 0 1rem;
     color: rgba(226, 232, 240, 0.9);
     border-bottom: 1px solid rgba(148, 163, 184, 0.3);
@@ -903,7 +1012,7 @@
   }
 
   .stats-container h2 {
-    font-size: 1.2rem;
+    font-size: 1rem;
     margin: 0 0 1rem;
     color: rgba(226, 232, 240, 0.9);
     border-bottom: 1px solid rgba(148, 163, 184, 0.3);
@@ -930,102 +1039,119 @@
 
   /* Command Buttons Styles */
   .commands-container {
-    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  /* 
+  .commands-container h2 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+    color: rgba(226, 232, 240, 0.9);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding-bottom: 0.25rem;
   }
 
-  .commands-container h2 {
-    font-size: 1.2rem;
-    margin: 0 0 1rem;
+  .command-log-container h2 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
     color: rgba(226, 232, 240, 0.9);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-    padding-bottom: 0.5rem;
-  }
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding-bottom: 0.25rem;
+  } */
 
   .command-groups {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .command-group {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.75rem;
-    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    flex-wrap: wrap;
   }
 
   .command-group .entity-name {
-    font-size: 0.95rem;
-    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
     color: #60a5fa;
     font-weight: 600;
+    min-width: 100px;
+    white-space: nowrap;
   }
 
   .command-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .command-btn {
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    background: rgba(51, 65, 85, 0.8);
-    color: #e2e8f0;
+    padding: 0 0.5rem;
+    height: 24px;
+    line-height: 20px;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    background: transparent;
+    color: #94a3b8;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 500;
     transition: all 0.15s ease;
   }
 
   .command-btn:hover:enabled {
-    background: rgba(71, 85, 105, 0.9);
-    border-color: rgba(148, 163, 184, 0.6);
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.8);
+    color: #e2e8f0;
   }
 
   .command-btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
   .command-btn.on {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3));
-    border-color: rgba(34, 197, 94, 0.5);
-    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.7);
+    color: #4ade80;
+    background: transparent;
   }
 
   .command-btn.on:hover:enabled {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.5), rgba(16, 185, 129, 0.5));
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 1);
   }
 
   .command-btn.off {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.7);
+    color: #f87171;
+    background: transparent;
   }
 
   .command-btn.off:hover:enabled {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.5));
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 1);
   }
 
   .command-input-group {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0;
   }
 
   .temp-input {
-    width: 60px;
-    padding: 0.5rem;
-    border-radius: 0.5rem 0 0 0.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.4);
+    width: 40px;
+    height: 22px;
+    padding: 0 0.25rem;
+    border-radius: 0.25rem 0 0 0.25rem;
+    border: 1px solid rgba(251, 191, 36, 0.5);
     border-right: none;
-    background: rgba(15, 23, 42, 0.8);
+    background: transparent;
     color: #fbbf24;
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-align: center;
+    line-height: 20px;
   }
 
   .temp-input:focus {
@@ -1034,13 +1160,14 @@
   }
 
   .command-btn.input-btn {
-    border-radius: 0 0.5rem 0.5rem 0;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+    border-radius: 0 0.25rem 0.25rem 0;
     border-color: rgba(251, 191, 36, 0.5);
-    color: #fcd34d;
+    color: #fbbf24;
+    background: transparent;
   }
 
   .command-btn.input-btn:hover:enabled {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(245, 158, 11, 0.5));
+    background: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 1);
   }
 </style>

@@ -5,8 +5,11 @@ WORKDIR /app
 # Install jq for parsing options.json
 RUN apk add --no-cache jq
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm via corepack; custom registry 지원을 위해 NPM_REGISTRY 사용 가능
+ARG NPM_REGISTRY=https://registry.npmjs.org
+RUN corepack enable \
+  && npm config set registry "$NPM_REGISTRY" \
+  && corepack prepare pnpm@latest --activate
 
 # Copy workspace files
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./

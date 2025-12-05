@@ -16,21 +16,25 @@ export PORT=3000
 # Setup configuration directory in Home Assistant config
 HA_CONFIG_DIR="/homeassistant/homenet2mqtt"
 DEFAULT_CONFIG_DIR="packages/core/config"
+INIT_MARKER="$HA_CONFIG_DIR/.initialized"
 
 if [ ! -d "$HA_CONFIG_DIR" ]; then
   echo "Creating configuration directory at $HA_CONFIG_DIR..."
   mkdir -p "$HA_CONFIG_DIR"
 fi
 
-# Copy default config files if they don't exist
-echo "Checking for configuration files..."
-for file in "$DEFAULT_CONFIG_DIR"/*.yaml; do
-  filename=$(basename "$file")
-  if [ ! -f "$HA_CONFIG_DIR/$filename" ]; then
+if [ ! -f "$INIT_MARKER" ]; then
+  echo "First run detected, seeding configuration files..."
+  for file in "$DEFAULT_CONFIG_DIR"/*.yaml; do
+    filename=$(basename "$file")
     echo "Copying default config $filename to $HA_CONFIG_DIR..."
     cp "$file" "$HA_CONFIG_DIR/"
-  fi
-done
+  done
+  touch "$INIT_MARKER"
+  echo "기본 설정파일이 $HA_CONFIG_DIR 에 복사되었습니다."
+  echo "알맞은 설정파일을 검토 및 수정한 뒤 애드온 설정에서 config_file을 지정 하고 애드온을 다시 시작해주세요."
+  exit 0
+fi
 
 export CONFIG_ROOT="$HA_CONFIG_DIR"
 

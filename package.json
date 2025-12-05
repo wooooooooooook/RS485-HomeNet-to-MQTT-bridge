@@ -26,7 +26,9 @@
     "build": "pnpm -r build",
     "format": "pnpm -r --if-present format",
     "test": "vitest run",
-    "clean": "sudo bash ./scripts/clean.sh"
+    "clean": "sudo bash ./scripts/clean.sh",
+    "deploy-addon": "bash deploy/deploy-addon.sh",
+    "sync-addon": "bash deploy/sync-addon-repo.sh"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

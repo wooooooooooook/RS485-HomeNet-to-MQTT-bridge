@@ -152,7 +152,9 @@
     connectionStatus = 'connecting';
     statusMessage = 'MQTT 스트림을 연결하는 중입니다...';
 
-    const url = new URL('./api/packets/stream', window.location.href);
+    // document.baseURI respects the <base> tag so ingress paths remain intact
+    const baseUrl = typeof document !== 'undefined' ? document.baseURI : window.location.href;
+    const url = new URL('./api/packets/stream', baseUrl);
     if (bridgeInfo.mqttUrl.trim().length > 0) {
       url.searchParams.set('mqttUrl', bridgeInfo.mqttUrl.trim());
     }

@@ -84,7 +84,10 @@ export class MqttSubscriber {
     }
 
     logger.debug({ topic, message: message.toString() }, '[mqtt-subscriber] MQTT 메시지 수신');
-    eventBus.emit('mqtt-message', { topic, payload: message.toString() });
+    // Only emit to service if topic starts with MQTT_TOPIC_PREFIX
+    if (topic.startsWith(MQTT_TOPIC_PREFIX)) {
+      eventBus.emit('mqtt-message', { topic, payload: message.toString() });
+    }
 
     if (this.externalHandlers.has(topic)) {
       this.externalHandlers.get(topic)!(message);

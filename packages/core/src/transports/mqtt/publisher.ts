@@ -2,6 +2,7 @@
 import { MqttClient as InternalMqttClient } from './mqtt.client.js'; // To get the internal client
 import { logger } from '../../utils/logger.js';
 import { eventBus } from '../../service/event-bus.js';
+import { MQTT_TOPIC_PREFIX } from '../../utils/constants.js';
 
 export class MqttPublisher {
   private mqttClient: InternalMqttClient;
@@ -22,7 +23,10 @@ export class MqttPublisher {
           { topic, payload: payload.toString() },
           '[mqtt-publisher] Published MQTT message',
         );
-        eventBus.emit('mqtt-message', { topic, payload: payload.toString() });
+        // Only emit to service if topic starts with MQTT_TOPIC_PREFIX
+        if (topic.startsWith(MQTT_TOPIC_PREFIX)) {
+          eventBus.emit('mqtt-message', { topic, payload: payload.toString() });
+        }
       }
     });
   }

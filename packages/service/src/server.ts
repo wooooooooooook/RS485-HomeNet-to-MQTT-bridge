@@ -2,8 +2,10 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import dotenv from 'dotenv';
+import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import yaml, { Type, Schema } from 'js-yaml';
+import yaml, { Type } from 'js-yaml';
+import { WebSocket, WebSocketServer } from 'ws';
 // Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
 // Import only createBridge and HomeNetBridge, BridgeOptions is now defined in core
 import {
@@ -36,6 +38,8 @@ const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../cor
 
 // --- Application State ---
 const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({ server, path: '/api/packets/stream' });
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 let bridge: HomeNetBridge | null = null;
@@ -85,98 +89,119 @@ app.get('/api/bridge/info', async (_req, res) => {
   });
 });
 
-app.get('/api/packets/stream', (req, res) => {
-  const streamMqttUrl = resolveMqttUrl(
-    req.query.mqttUrl,
-    process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
-  );
+type StreamEvent =
+  | 'status'
+  | 'mqtt-message'
+  | 'raw-data'
+  | 'raw-data-with-interval'
+  | 'packet-interval-stats'
+  | 'command-packet';
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.setHeader('Content-Encoding', 'identity');
-  res.flushHeaders?.();
+type StreamMessage<T = unknown> = {
+  event: StreamEvent;
+  data: T;
+};
 
-  const sendEvent = (event: string, payload: unknown) => {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
+const sendStreamEvent = <T>(socket: WebSocket, event: StreamEvent, payload: T) => {
+  if (socket.readyState !== WebSocket.OPEN) return;
+  const message: StreamMessage<T> = { event, data: payload };
+  socket.send(JSON.stringify(message));
+};
 
-  const sendStatus = (state: string, extra: Record<string, unknown> = {}) => {
-    sendEvent('status', { state, ...extra });
-  };
+const getRequestUrl = (req: { url?: string; headers?: { host?: string } }) => {
+  if (!req.url) return null;
+  const host = req.headers?.host || 'localhost';
+  return new URL(req.url, `http://${host}`);
+};
 
-  // Since we are using core's connection, we assume it's connected or will connect.
-  // We can't easily track the exact connection state of core's mqtt client here without more events from core.
-  // For now, we'll send a 'connected' status to satisfy the UI.
-  sendStatus('connected', { mqttUrl: streamMqttUrl });
+const registerPacketStream = () => {
+  wss.on('connection', (socket, req) => {
+    const requestUrl = getRequestUrl(req);
+    const streamMqttUrl = resolveMqttUrl(
+      requestUrl?.searchParams.get('mqttUrl') ?? '',
+      process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
+    );
 
-  // Send cached data
-  const initialState = packetCache.getInitialState();
+    sendStreamEvent(socket, 'status', { state: 'connected', mqttUrl: streamMqttUrl });
 
-  initialState.mqttState.forEach((msg) => {
-    sendEvent('mqtt-message', msg);
-  });
+    const initialState = packetCache.getInitialState();
 
-  initialState.rawPackets.forEach((packet) => {
-    sendEvent('raw-data-with-interval', packet);
-  });
-
-  initialState.commandPackets.forEach((packet) => {
-    sendEvent('command-packet', packet);
-  });
-
-  if (initialState.packetStats) {
-    sendEvent('packet-interval-stats', initialState.packetStats);
-  }
-
-  // Listen for raw data from the event bus
-  const handleRawData = (data: string) => {
-    sendEvent('raw-data', {
-      topic: 'homenet/raw', // Mimic MQTT topic for consistency with UI
-      payload: data,
-      receivedAt: new Date().toISOString(),
+    initialState.mqttState.forEach((msg) => {
+      sendStreamEvent(socket, 'mqtt-message', msg);
     });
-  };
-  eventBus.on('raw-data', handleRawData);
 
-  const handleRawDataWithInterval = (data: unknown) => {
-    sendEvent('raw-data-with-interval', data);
-  };
-  eventBus.on('raw-data-with-interval', handleRawDataWithInterval);
-
-  const handlePacketIntervalStats = (data: unknown) => {
-    sendEvent('packet-interval-stats', data);
-  };
-  eventBus.on('packet-interval-stats', handlePacketIntervalStats);
-
-  // Listen for command packets from the event bus
-  const handleCommandPacket = (data: unknown) => {
-    sendEvent('command-packet', data);
-  };
-  eventBus.on('command-packet', handleCommandPacket);
-
-  // Listen for MQTT messages from the event bus (emitted by core's subscriber and publisher)
-  const handleMqttMessage = (data: { topic: string; payload: string }) => {
-    // logger.debug({ topic: data.topic }, '[service] MQTT message received via eventBus');
-    sendEvent('mqtt-message', {
-      topic: data.topic,
-      payload: data.payload,
-      receivedAt: new Date().toISOString(),
+    initialState.rawPackets.forEach((packet) => {
+      sendStreamEvent(socket, 'raw-data-with-interval', packet);
     });
-  };
-  eventBus.on('mqtt-message', handleMqttMessage);
 
-  const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), 15000);
-  req.on('close', () => {
-    clearInterval(heartbeat);
-    eventBus.off('raw-data', handleRawData);
-    eventBus.off('raw-data-with-interval', handleRawDataWithInterval);
-    eventBus.off('packet-interval-stats', handlePacketIntervalStats);
-    eventBus.off('command-packet', handleCommandPacket);
-    eventBus.off('mqtt-message', handleMqttMessage);
+    initialState.commandPackets.forEach((packet) => {
+      sendStreamEvent(socket, 'command-packet', packet);
+    });
+
+    if (initialState.packetStats) {
+      sendStreamEvent(socket, 'packet-interval-stats', initialState.packetStats);
+    }
+
+    const cleanupHandlers: Array<() => void> = [];
+
+    const handleRawData = (data: string) => {
+      sendStreamEvent(socket, 'raw-data', {
+        topic: 'homenet/raw',
+        payload: data,
+        receivedAt: new Date().toISOString(),
+      });
+    };
+    eventBus.on('raw-data', handleRawData);
+    cleanupHandlers.push(() => eventBus.off('raw-data', handleRawData));
+
+    const handleRawDataWithInterval = (data: unknown) => {
+      sendStreamEvent(socket, 'raw-data-with-interval', data);
+    };
+    eventBus.on('raw-data-with-interval', handleRawDataWithInterval);
+    cleanupHandlers.push(() => eventBus.off('raw-data-with-interval', handleRawDataWithInterval));
+
+    const handlePacketIntervalStats = (data: unknown) => {
+      sendStreamEvent(socket, 'packet-interval-stats', data);
+    };
+    eventBus.on('packet-interval-stats', handlePacketIntervalStats);
+    cleanupHandlers.push(() => eventBus.off('packet-interval-stats', handlePacketIntervalStats));
+
+    const handleCommandPacket = (data: unknown) => {
+      sendStreamEvent(socket, 'command-packet', data);
+    };
+    eventBus.on('command-packet', handleCommandPacket);
+    cleanupHandlers.push(() => eventBus.off('command-packet', handleCommandPacket));
+
+    const handleMqttMessage = (data: { topic: string; payload: string }) => {
+      sendStreamEvent(socket, 'mqtt-message', {
+        topic: data.topic,
+        payload: data.payload,
+        receivedAt: new Date().toISOString(),
+      });
+    };
+    eventBus.on('mqtt-message', handleMqttMessage);
+    cleanupHandlers.push(() => eventBus.off('mqtt-message', handleMqttMessage));
+
+    const heartbeat = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.ping();
+      }
+    }, 15000);
+    cleanupHandlers.push(() => clearInterval(heartbeat));
+
+    const cleanup = () => {
+      cleanupHandlers.forEach((handler) => handler());
+    };
+
+    socket.on('close', cleanup);
+    socket.on('error', cleanup);
   });
+};
+
+registerPacketStream();
+
+app.get('/api/packets/stream', (_req, res) => {
+  res.status(426).json({ error: '이 엔드포인트는 WebSocket 전용입니다.' });
 });
 
 // --- Command API Endpoints ---
@@ -414,7 +439,7 @@ function resolveMqttUrl(queryValue: unknown, defaultValue?: string) {
 }
 
 // --- Server Initialization ---
-app.listen(port, async () => {
+server.listen(port, async () => {
   logger.info(`Service listening on port ${port}`);
   try {
     logger.info('[service] Initializing bridge on startup...');

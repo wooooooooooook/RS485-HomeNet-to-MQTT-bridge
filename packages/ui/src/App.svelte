@@ -53,7 +53,7 @@
   let infoError = '';
   let commandPackets: CommandPacket[] = [];
   let deviceStates = new Map<string, string>();
-  let eventSource: EventSource | null = null;
+  let socket: WebSocket | null = null;
   let connectionStatus: 'idle' | 'connecting' | 'connected' | 'error' = 'idle';
   let statusMessage = '';
   let isLogPaused = false;
@@ -77,6 +77,19 @@
     idleOccurrenceAvg: number;
     idleOccurrenceStdDev: number;
     sampleSize: number;
+  };
+
+  type StreamEvent =
+    | 'status'
+    | 'mqtt-message'
+    | 'raw-data'
+    | 'raw-data-with-interval'
+    | 'packet-interval-stats'
+    | 'command-packet';
+
+  type StreamMessage<T = unknown> = {
+    event: StreamEvent;
+    data: T;
   };
 
   let rawPackets: RawPacketWithInterval[] = [];
@@ -144,6 +157,9 @@
     }
   }
 
+  let socketCloseHandler: (() => void) | null = null;
+  let socketErrorHandler: (() => void) | null = null;
+
   function startMqttStream() {
     if (typeof window === 'undefined' || !bridgeInfo) return;
 
@@ -158,13 +174,11 @@
     if (bridgeInfo.mqttUrl.trim().length > 0) {
       url.searchParams.set('mqttUrl', bridgeInfo.mqttUrl.trim());
     }
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    eventSource = new EventSource(url.toString());
+    socket = new WebSocket(url.toString());
 
-    const handleStatus = (event: MessageEvent<string>) => {
-      const data = safeParse<Record<string, unknown>>(event.data);
-      if (!data) return;
-
+    const handleStatus = (data: Record<string, unknown>) => {
       const state = data.state;
       if (state === 'connected') {
         connectionStatus = 'connected';
@@ -182,53 +196,78 @@
       }
     };
 
-    const handleMqttMessage = (event: MessageEvent<string>) => {
-      const data = safeParse<MqttMessageEvent>(event.data);
-      if (!data) return;
+    const handleMqttMessage = (data: MqttMessageEvent) => {
       deviceStates.set(data.topic, data.payload);
       deviceStates = deviceStates; // Trigger Svelte reactivity
     };
 
-    const handleRawPacketWithInterval = (event: MessageEvent<string>) => {
-      const data = safeParse<RawPacketWithInterval>(event.data);
-      if (!data) return;
-
+    const handleRawPacketWithInterval = (data: RawPacketWithInterval) => {
       if (!isLogPaused) {
         rawPackets = [...rawPackets, data].slice(-MAX_PACKETS);
       }
     };
 
-    const handlePacketStats = (event: MessageEvent<string>) => {
-      const data = safeParse<PacketStats>(event.data);
+    const handlePacketStats = (data: PacketStats) => {
       if (data) {
         packetStats = data;
       }
     };
 
-    const handleCommandPacket = (event: MessageEvent<string>) => {
-      const data = safeParse<CommandPacket>(event.data);
-      if (!data) return;
-
+    const handleCommandPacket = (data: CommandPacket) => {
       if (!isLogPaused) {
         commandPackets = [...commandPackets, data].slice(-MAX_PACKETS);
       }
     };
 
-    eventSource.addEventListener('status', handleStatus);
-    eventSource.addEventListener('mqtt-message', handleMqttMessage);
-    eventSource.addEventListener('raw-data-with-interval', handleRawPacketWithInterval);
-    eventSource.addEventListener('packet-interval-stats', handlePacketStats);
-    eventSource.addEventListener('command-packet', handleCommandPacket);
-    eventSource.onerror = () => {
+    const messageHandlers: Partial<Record<StreamEvent, (data: any) => void>> = {
+      status: handleStatus,
+      'mqtt-message': handleMqttMessage,
+      'raw-data-with-interval': handleRawPacketWithInterval,
+      'packet-interval-stats': handlePacketStats,
+      'command-packet': handleCommandPacket,
+    };
+
+    socket.addEventListener('open', () => {
+      connectionStatus = 'connected';
+      statusMessage = 'MQTT 스트림 연결 완료';
+    });
+
+    socket.addEventListener('message', (event) => {
+      const message = safeParse<StreamMessage>(event.data);
+      if (!message) return;
+
+      const handler = messageHandlers[message.event];
+      if (handler) {
+        handler(message.data);
+      }
+    });
+
+    const handleDisconnect = () => {
       connectionStatus = 'error';
       statusMessage = '스트림 연결이 끊어졌습니다. 잠시 후 다시 시도하세요.';
+      socket = null;
+      socketCloseHandler = null;
+      socketErrorHandler = null;
     };
+
+    socketCloseHandler = handleDisconnect;
+    socketErrorHandler = handleDisconnect;
+    socket.addEventListener('close', handleDisconnect);
+    socket.addEventListener('error', handleDisconnect);
   }
 
   function closeStream() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
+    if (socket) {
+      if (socketCloseHandler) {
+        socket.removeEventListener('close', socketCloseHandler);
+      }
+      if (socketErrorHandler) {
+        socket.removeEventListener('error', socketErrorHandler);
+      }
+      socket.close();
+      socket = null;
+      socketCloseHandler = null;
+      socketErrorHandler = null;
     }
     connectionStatus = 'idle';
     statusMessage = '';

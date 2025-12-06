@@ -51,4 +51,6 @@ export interface EntityConfig {
   unit_of_measurement?: string;
   state_class?: string;
   icon?: string;
+  discovery_always?: boolean;
+  discovery_linked_id?: string;
 }

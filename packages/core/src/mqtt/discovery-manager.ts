@@ -3,6 +3,8 @@ import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { logger } from '../utils/logger.js';
 import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
+import { eventBus } from '../service/event-bus.js';
+import { EntityConfig } from '../domain/entities/base.entity.js';
 
 interface DiscoveryPayload {
   name: string | null;
@@ -35,11 +37,15 @@ export class DiscoveryManager {
   private subscriber: MqttSubscriber;
   private readonly discoveryPrefix = 'homeassistant';
   private readonly bridgeStatusTopic = `${MQTT_TOPIC_PREFIX}/bridge/status`;
+  private readonly entities: Array<EntityConfig & { type: string }>;
+  private readonly stateReceived = new Set<string>();
+  private readonly discoveryPublished = new Set<string>();
 
   constructor(config: HomenetBridgeConfig, publisher: MqttPublisher, subscriber: MqttSubscriber) {
     this.config = config;
     this.publisher = publisher;
     this.subscriber = subscriber;
+    this.entities = this.collectEntities();
   }
 
   public setup(): void {
@@ -48,8 +54,12 @@ export class DiscoveryManager {
       const status = message.toString();
       if (status === 'online') {
         logger.info('[DiscoveryManager] Home Assistant is online, republishing discovery configs');
-        this.discover();
+        this.republishDiscovered();
       }
+    });
+
+    eventBus.on('state:changed', ({ entityId }) => {
+      this.handleStateReceived(entityId);
     });
 
     // Publish bridge online status
@@ -58,9 +68,15 @@ export class DiscoveryManager {
   }
 
   public discover(): void {
-    logger.info('[DiscoveryManager] Starting discovery process');
+    logger.info('[DiscoveryManager] Checking discovery eligibility for configured entities');
 
-    const entities = [
+    for (const entity of this.entities) {
+      this.publishDiscoveryIfEligible(entity);
+    }
+  }
+
+  private collectEntities(): Array<EntityConfig & { type: string }> {
+    return [
       ...(this.config.light || []).map((e) => ({ ...e, type: 'light' })),
       ...(this.config.climate || []).map((e) => ({ ...e, type: 'climate' })),
       ...(this.config.valve || []).map((e) => ({ ...e, type: 'valve' })),
@@ -75,9 +91,60 @@ export class DiscoveryManager {
       ...(this.config.text || []).map((e) => ({ ...e, type: 'text' })),
       ...(this.config.binary_sensor || []).map((e) => ({ ...e, type: 'binary_sensor' })),
     ];
+  }
 
-    for (const entity of entities) {
-      this.publishDiscovery(entity);
+  private handleStateReceived(entityId: string): void {
+    this.stateReceived.add(entityId);
+
+    for (const entity of this.entities) {
+      if (entity.id === entityId || entity.discovery_linked_id === entityId) {
+        this.publishDiscoveryIfEligible(entity);
+      }
+    }
+  }
+
+  private publishDiscoveryIfEligible(entity: EntityConfig & { type: string }, force = false): void {
+    if (!entity.id) {
+      logger.error({ entity }, '[DiscoveryManager] Entity missing ID, skipping discovery');
+      return;
+    }
+
+    if (this.discoveryPublished.has(entity.id) && !force) {
+      return;
+    }
+
+    const hasState = this.stateReceived.has(entity.id);
+    const alwaysPublish = entity.discovery_always === true;
+    const linkedReady =
+      typeof entity.discovery_linked_id === 'string'
+        ? this.stateReceived.has(entity.discovery_linked_id)
+        : false;
+
+    if (!alwaysPublish && !hasState && !linkedReady && !force) {
+      logger.debug({ id: entity.id }, '[DiscoveryManager] Discovery deferred until state packet received');
+      return;
+    }
+
+    if (linkedReady && !this.discoveryPublished.has(entity.discovery_linked_id || '')) {
+      logger.debug(
+        {
+          id: entity.id,
+          discovery_linked_id: entity.discovery_linked_id,
+        },
+        '[DiscoveryManager] Publishing discovery linked to another entity state',
+      );
+    }
+
+    this.publishDiscovery(entity);
+    this.discoveryPublished.add(entity.id);
+  }
+
+  private republishDiscovered(): void {
+    for (const entityId of this.discoveryPublished) {
+      const entity = this.entities.find((candidate) => candidate.id === entityId);
+      if (entity) {
+        this.publishDiscoveryIfEligible(entity, true);
+      }
     }
   }
 

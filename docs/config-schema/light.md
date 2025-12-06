@@ -1,40 +1,32 @@
 # Light 스키마 작성법
 
-조명 스위치는 `light` 엔티티로 정의하며, 켜짐/꺼짐 상태와 명령 패킷을 지정합니다. 다채널 조명은 한 패킷에서 여러 비트를 읽거나, 람다 명령으로 다른 채널 상태를 참조할 수 있습니다.
+조명은 `light` 엔티티로 정의합니다. `type`은 `light`이며 공통 필드(`id`, `name`, `packet_parameters`, `device_class`, `icon`)를 함께 사용할 수 있습니다.
 
 ## 필수 필드
-- `id`, `name`
-- `state`: 상태 패킷 서명. `data`와 `mask`로 채널 구분.
-- `state_on`, `state_off`: 전원 상태 판단용 오프셋/데이터.
-- `command_on`, `command_off`: 전송 패킷. 고정 배열 또는 `!lambda`.
+- `state`: 이 조명의 상태를 식별하는 기본 서명.
+- 전원 상태 판단용 `state_on`, `state_off` 중 하나 이상.
 
-## 옵션 필드
-- `command_update`: 상태 재요청 패킷.
-- `packet_defaults`: 특정 조명만 다른 헤더/체크섬을 사용할 때 덮어쓰기.
+## 옵션 필드 (상태)
+- 밝기: `state_brightness` — [`StateNumSchema`](./lambda.md#stateschema와-statenumschema-필드).
+- 색온도(미레드): `state_color_temp` + `min_mireds`, `max_mireds`.
+- RGB: `state_red`, `state_green`, `state_blue` — 각각 `StateNumSchema`.
+- 화이트 채널: `state_white`.
+- 색상 모드: `state_color_mode` (`rgb`, `color_temp`, `white`).
+- 효과: `effect_list`(문자열 배열), `state_effect`.
 
-## 기본 예제 (단일 채널)
-`cvnet.homenet_bridge.yaml`은 각 조명을 별도 패킷으로 제어합니다. `state_on/off`는 동일 오프셋에서 비트만 바뀝니다.
+## 옵션 필드 (명령)
+- 전원: `command_on`, `command_off`, `command_update`.
+- 밝기: `command_brightness`.
+- 색온도: `command_color_temp`.
+- RGB: `command_red`, `command_green`, `command_blue`.
+- 화이트 채널: `command_white`.
+- 효과: `command_effect`.
+- 전환 시간: `default_transition_length`(초 단위 기본 페이드 값).
 
-```yaml
-light:
-  - id: living_light_1
-    name: "거실 메인등"
-    state:
-      data: [0xf7, 0x02, 0x25, 0x00, 0x00]
-    state_on:
-      offset: 8
-      data: [0x10]
-    state_off:
-      offset: 8
-      data: [0x00]
-    command_on:
-      data: [0xaa, 0x25, 0x10]
-    command_off:
-      data: [0xaa, 0x25, 0x00]
-```
+모든 `command_*`는 [`CommandSchema`](./lambda.md#commandschema-필드) 또는 람다로 작성할 수 있습니다.
 
-## 고급 예제 (상호 참조 람다)
-`kocom.homenet_bridge.yaml`에서는 두 개의 조명을 한 패킷에서 제어합니다. 람다에서 다른 채널 상태를 읽어 함께 전송해 일관성을 유지합니다.
+## 예제: 두 채널 동시 제어 람다
+`kocom.homenet_bridge.yaml`에서는 한 패킷으로 두 채널을 제어하기 위해 람다에서 다른 조명 상태를 함께 실어 보냅니다.【F:packages/core/config/kocom.homenet_bridge.yaml†L22-L41】
 
 ```yaml
 light:
@@ -60,6 +52,6 @@ light:
 ```
 
 ## 작성 체크리스트
-1. 다채널 장비는 `mask`로 채널 비트를 고정한 뒤 `offset`만 변경해 재사용합니다.
-2. 조명 그룹을 동시에 전송해야 하면 `command_on/off` 안에 여러 패킷 배열을 반환하거나, 람다에서 다른 엔티티 상태를 읽어 일관성을 맞춥니다.
-3. 상태 패킷 길이가 길 경우 오프셋을 헷갈리기 쉬우니 주석으로 바이트 인덱스를 명시합니다.
+1. 장치가 지원하지 않는 기능(밝기/색온도/RGB)은 필드를 생략해 Home Assistant에서 불필요한 UI를 숨깁니다.
+2. `state_color_mode`를 지정하면 상태 패킷에 따라 현재 모드를 정확히 표기할 수 있습니다.
+3. 다채널·다기능 조명은 `effect_list`와 람다 명령을 조합해 필요한 패킷을 한 번에 보내도록 설계합니다.

@@ -1,54 +1,31 @@
 # Sensor 스키마 작성법
 
-전력, 온도, 습도 등 수치 데이터를 노출할 때는 `sensor` 엔티티를 사용합니다.
+온도·층수 등 수치 또는 텍스트 값을 읽는 장치는 `sensor` 엔티티를 사용합니다. `type`은 `sensor`이며 공통 필드(`id`, `name`, `packet_parameters`, `device_class`, `unit_of_measurement`, `state_class`, `icon`)를 지정할 수 있습니다.
 
 ## 필수 필드
-- `id`, `name`
-- `state`: 패킷 서명.
-- `state_value`: 센서 값 위치. `offset`, `length`, `precision`, `endian`을 설정합니다.
+- `state`: 이 센서 값이 포함된 패킷을 식별하는 서명.
 
 ## 옵션 필드
-- `device_class`, `unit_of_measurement`: Home Assistant 표현을 위한 단위/클래스.
-- `icon`: 커스텀 아이콘.
-- `filters`: 값 보정(`multiply`, `add`)이 필요할 때 사용.
+- `state_number`: 수치를 추출하기 위한 [`StateNumSchema`](./lambda.md#stateschema와-statenumschema-필드).
+- `command_update`: 값을 새로 요청하는 명령.
 
-## 기본 예제 (전력 측정)
-`hyundai_imazu.homenet_bridge.yaml`에서는 실시간 전력량을 2바이트 정수로 읽습니다.
-
-```yaml
-sensor:
-  - id: power_usage_w
-    name: "전력 사용량"
-    device_class: power
-    unit_of_measurement: W
-    state:
-      data: [0x6f, 0x01, 0x02, 0x00, 0x00]
-    state_value:
-      offset: 8
-      length: 2
-      endian: big
-```
-
-## 필터 예제 (소수점 보정)
-`ezville.homenet_bridge.yaml`에서는 일부 값이 0.1 단위로 제공되어 `precision`과 `filters`를 함께 사용합니다.
+## 예제: 엘리베이터 층수 표시
+`commax.homenet_bridge.yaml`은 `state_number`로 오프셋 2 바이트를 정수로 읽어 현재 층수를 노출합니다.【F:packages/core/config/commax.homenet_bridge.yaml†L400-L408】
 
 ```yaml
 sensor:
-  - id: floor_temperature
-    name: "바닥 온도"
-    device_class: temperature
-    unit_of_measurement: "°C"
+  - id: elevator_floors
+    name: "Elevator Floors"
+    icon: mdi:elevator
     state:
-      data: [0x0d, 0x10, 0x01, 0x00, 0x00]
-    state_value:
-      offset: 10
+      data: [0x23]
+    state_number:
+      offset: 2
       length: 1
-      precision: 1
-    filters:
-      - multiply: 0.5
+      precision: 0
 ```
 
 ## 작성 체크리스트
-1. 센서 값이 부호 있는 정수인지 확인하고 필요하면 `signed: true`를 추가합니다.
-2. 길이가 2바이트 이상이면 `endian`을 지정하지 않을 때 기본은 big endian임을 기억하세요.
-3. 값이 비트 필드일 경우 `mask`를 사용하거나 `mapping`을 통해 텍스트 센서로 분리하는 것이 더 적절한지 검토합니다.
+1. 데이터가 부호 있는 값이면 `signed: true`를, 소수면 `precision`을 설정합니다.
+2. 바이트 직렬화 규칙이 BCD/ASCII라면 `decode`를 지정해 올바르게 파싱합니다.
+3. 수집 주기가 긴 장비는 `command_update`를 별도로 두어 사용자 요청 시 값을 재요청하도록 합니다.

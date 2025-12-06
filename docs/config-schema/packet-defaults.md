@@ -2,17 +2,16 @@
 
 `homenet_bridge.packet_defaults`는 모든 엔티티가 공통으로 사용하는 패킷 프레임 규칙과 시간 제어 값을 정의합니다. 헤더/푸터, 체크섬, 타임아웃을 한 번에 지정해 중복을 줄이고, 개별 엔티티 블록에서 필요할 때만 오버라이드합니다.
 
-## 필수 필드
-- `rx_timeout`: 상태 패킷 수신 대기 시간. `10ms`처럼 시간 단위 문자열을 권장합니다.
-- `tx_timeout`: 명령 패킷 송신 완료까지 기다리는 최대 시간.
+## 필드 목록
+- `rx_header` / `tx_header`: 수신·송신 패킷 앞부분 식별 바이트 배열.
+- `rx_footer` / `tx_footer`: 패킷 종료 시그널.
+- `rx_checksum` / `tx_checksum`: 기본 체크섬 계산기. `add`, `xor`, `add_no_header`, `samsung_rx` 등 문자열 또는 `!lambda`/커스텀 알고리즘 객체.
+- `rx_checksum2` / `tx_checksum2`: 이중 체크섬(`xor_add` 혹은 `!lambda`).
+- `rx_length`: 고정 길이 패킷일 때 전체 길이를 명시.
 - `tx_delay`: 연속 송신 시 두 패킷 사이의 지연.
 - `tx_retry_cnt`: 재전송 횟수.
-- `rx_header` / `tx_header`: 수신·송신 패킷 앞부분 식별 바이트 배열.
-- `rx_checksum` / `tx_checksum`: 기본 체크섬 계산기. `add_no_header`, `samsung_rx` 등 사전 정의된 이름을 사용합니다.
-
-## 옵션 필드
-- `rx_footer` / `tx_footer`: 패킷 종료 시그널이 있는 프로토콜에서 사용.
-- `rx_checksum2` / `tx_checksum2`: 보조 체크섬이 필요한 경우(예: XOR + 합산 이중 계산).
+- `tx_timeout`: 명령 패킷 송신 완료 대기 시간.
+- `rx_timeout`: 상태 패킷 수신 대기 시간.
 
 ## 기본 예제 (양방향 동일 헤더/푸터)
 `kocom.homenet_bridge.yaml`은 동일한 헤더·푸터와 단순 합산 체크섬을 사용합니다.

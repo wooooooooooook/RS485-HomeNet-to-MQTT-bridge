@@ -1,69 +1,41 @@
 # Valve 스키마 작성법
 
-가스 밸브나 온수 밸브처럼 열림/닫힘을 제어하는 장치는 `valve` 엔티티로 정의합니다.
+가스 밸브 등 개폐 밸브는 `valve` 엔티티로 정의합니다. `type`은 `valve`이며 공통 필드(`id`, `name`, `packet_parameters`, `device_class`, `icon`)를 함께 사용할 수 있습니다.
 
 ## 필수 필드
-- `id`, `name`
-- `state`: 상태 패킷 서명.
-- `state_open`, `state_closed`: 밸브 상태 판별.
-- `command_open`, `command_close`: 제어 패킷.
+- `state`: 밸브 상태를 식별하는 기본 패킷 서명.
 
-## 옵션 필드
-- `command_stop`: 열림/닫힘 중지 명령.
-- `state_opening`, `state_closing`: 진행 중 상태 표현.
-- `command_update`: 상태 재요청.
+## 옵션 필드 (상태)
+- 상태 비트: `state_open`, `state_closed`, `state_opening`, `state_closing` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- 위치(0~100): `state_position` — `StateNumSchema`로 현재 열림 정도를 표현.
+- `reports_position`: 장치가 이동 중 위치를 주기적으로 보고하는지 여부(Boolean).
 
-## 기본 예제 (가스 밸브)
-`commax.homenet_bridge.yaml`은 단일 바이트로 열림/닫힘을 구분합니다.
+## 옵션 필드 (명령)
+- 개폐 제어: `command_open`, `command_close`, `command_stop`.
+- 위치 제어: `command_position` — 입력 퍼센트 값을 바이트에 삽입.
+- 상태 재요청: `command_update`.
 
-```yaml
-valve:
-  - id: gas_valve
-    name: "가스 밸브"
-    state:
-      data: [0xf7, 0x02, 0x26, 0x00, 0x00]
-    state_open:
-      offset: 8
-      data: [0x00]
-    state_closed:
-      offset: 8
-      data: [0x01]
-    command_open:
-      data: [0xaa, 0x26, 0x00]
-    command_close:
-      data: [0xaa, 0x26, 0x01]
-```
-
-## 확장 예제 (업데이트/중간 상태)
-`kocom.homenet_bridge.yaml`에서는 업데이트 요청과 진행 상태를 함께 정의합니다.
+## 예제: 가스 밸브 닫기 명령
+`cvnet.homenet_bridge.yaml`에서는 `state_open/closed`로 상태를 구분하고, 닫기 명령을 전송합니다.【F:packages/core/config/cvnet.homenet_bridge.yaml†L110-L123】
 
 ```yaml
 valve:
   - id: gas_valve
-    name: "가스 밸브"
+    name: "Gas Valve"
+    device_class: gas
     state:
-      data: [0x30, 0xd0, 0x00, 0x5b, 0x00]
-    state_open:
-      offset: 8
-      data: [0x00]
+      data: [0x20, 0x01, 0x11]
     state_closed:
-      offset: 8
+      offset: 4
+      data: [0x00]
+    state_open:
+      offset: 4
       data: [0x01]
-    state_opening:
-      offset: 8
-      data: [0x02]
-    state_closing:
-      offset: 8
-      data: [0x03]
-    command_open:
-      data: [0x30, 0xb7, 0x00, 0x5b, 0x00, 0x00]
     command_close:
-      data: [0x30, 0xb7, 0x00, 0x5b, 0x00, 0x01]
-    command_update:
-      data: [0x30, 0xdc]
+      data: [0x20, 0x11, 0x01, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 ```
 
 ## 작성 체크리스트
-1. 밸브가 물리적으로 움직이는 시간이 길다면 `state_opening`/`state_closing`을 설정해 사용자가 진행 상황을 알 수 있게 합니다.
-2. 안전을 위해 `command_stop`이 지원되는지 확인하고, 지원한다면 별도 버튼이나 자동화에 연동하세요.
-3. 가스 밸브처럼 치명적 제어인 경우 MQTT 주제를 별도로 분리하거나 인증을 강화하는 것을 권장합니다.
+1. 위치 보고가 없는 장치는 `reports_position: false`로 두고 `state_open/closed`만 채워 단순 제어로 유지합니다.
+2. 이동 중 패킷이 별도로 오면 `state_opening/closing`을 사용해 UI 표시를 정확히 합니다.
+3. 안전을 위해 닫기 명령 후 `command_update`를 호출하거나 ACK를 확인하는 람다를 추가하는 것이 좋습니다.

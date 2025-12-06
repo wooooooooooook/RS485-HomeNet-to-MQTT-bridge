@@ -4,9 +4,9 @@
 
 ## 필수 필드
 - `baud_rate`: 통신 속도(bps). 보통 9600/19200/38400 등.
-- `data_bits`: 데이터 비트 길이. 대부분 8.
-- `parity`: 패리티 검사 방식. `NONE`, `EVEN`, `ODD` 중 하나.
-- `stop_bits`: 스톱 비트 개수. 일반적으로 1.
+- `data_bits`: 데이터 비트 길이. `5 | 6 | 7 | 8` 중 선택.
+- `parity`: 패리티 검사 방식. `none` | `even` | `mark` | `odd` | `space`.
+- `stop_bits`: 스톱 비트 개수. `1 | 1.5 | 2` 중 선택.
 
 ## 기본 예제 (8N1)
 `cvnet.homenet_bridge.yaml`처럼 9600bps, 패리티 없는 8N1 조합입니다.

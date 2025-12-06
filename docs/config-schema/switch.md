@@ -1,63 +1,37 @@
 # Switch 스키마 작성법
 
-전원이나 모드 토글처럼 단순 On/Off 제어는 `switch` 엔티티로 정의합니다.
+On/Off 토글 장치는 `switch` 엔티티를 사용합니다. `type`은 `switch`이며 공통 필드(`id`, `name`, `packet_parameters`, `device_class`, `icon`)를 함께 지정합니다.
 
 ## 필수 필드
-- `id`, `name`
-- `state`: 상태 패킷 서명.
-- `state_on`, `state_off`: 전원 상태 판단용 패턴.
-- `command_on`, `command_off`: 제어 패킷.
+- `state`: 이 스위치가 포함된 패킷을 구분하는 서명.
 
 ## 옵션 필드
-- `icon`, `device_class`: UI 표시용 설정.
-- `state_delay`: 중복 이벤트 필터링.
-- `packet_defaults`: 특정 스위치의 헤더/체크섬 오버라이드.
+- 전원 상태: `state_on`, `state_off` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- 명령: `command_on`, `command_off`(필요 시 `value_offset`/`homenet_logic` 사용), `command_update`(상태 재요청).
 
-## 기본 예제 (콘센트 스위치)
-`hyundai_imazu.homenet_bridge.yaml`에서는 콘센트 스위치를 아래와 같이 정의합니다.
-
-```yaml
-switch:
-  - id: outlet_1
-    name: "콘센트 1"
-    icon: mdi:power-socket
-    state:
-      data: [0x6f, 0x01, 0x01, 0x00, 0x00]
-    state_on:
-      offset: 8
-      data: [0x01]
-    state_off:
-      offset: 8
-      data: [0x00]
-    command_on:
-      data: [0x6f, 0x81, 0x01, 0x01]
-    command_off:
-      data: [0x6f, 0x81, 0x01, 0x00]
-```
-
-## 고급 예제 (도어폰 호출 제어)
-`hyundai_door.homenet_bridge.yaml`에서는 도어폰 호출을 스위치로 표현하고, `state_delay`로 중복 호출을 줄입니다.
+## 예제: 도어 호출 스위치
+`hyundai_door.homenet_bridge.yaml`은 호출 스위치에 온/오프 패킷을 배치하고 상태 비트로 켜짐 여부를 확인합니다.【F:packages/core/config/hyundai_door.homenet_bridge.yaml†L52-L69】
 
 ```yaml
 switch:
-  - id: lobby_call
-    name: "공동현관 호출"
+  - id: door_call_common
+    name: "Door Call Common"
+    icon: mdi:phone
     state:
-      data: [0x7f, 0x00, 0x00, 0x00, 0x00]
+      data: [0x5F, 0x00, 0x00]
     state_on:
-      offset: 1
-      data: [0x01]
+      offset: 0
+      data: [0x5F]
     state_off:
-      offset: 1
-      data: [0x00]
-    state_delay: 3s
+      offset: 0
+      data: [0x60]
     command_on:
-      data: [0x7f, 0x81, 0x01]
+      data: [0x5F, 0x00, 0x00]
     command_off:
-      data: [0x7f, 0x81, 0x00]
+      data: [0x60, 0x00, 0x00]
 ```
 
 ## 작성 체크리스트
-1. 스위치 상태가 `mask`를 필요로 하는 경우가 많으니 패킷 덤프를 보고 필요한 비트만 잡아냅니다.
-2. 스위치가 순간동작(예: 리모컨 호출)이라면 `state_delay`를 짧게 두어 튀는 값을 방지합니다.
-3. 동일한 `state` 서명을 공유하는 여러 스위치가 있으면 `data` 내 장치 인덱스(예: `0x01`, `0x02`)를 주석으로 관리하세요.
+1. 상태 패킷과 명령 패킷의 헤더/체크섬 규칙이 다르면 엔티티별 `packet_parameters`를 사용해 상위 기본값을 덮어씁니다.
+2. 전원 비트 외에 추가 상태가 있을 경우 `state`에 `mask`를 걸어 노이즈를 제거합니다.
+3. 토글 시 다른 엔티티 상태를 함께 맞춰야 한다면 `command_on/off`를 람다로 작성해 여러 패킷을 동시에 반환합니다.

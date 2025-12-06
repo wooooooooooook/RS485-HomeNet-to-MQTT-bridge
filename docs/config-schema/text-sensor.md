@@ -1,48 +1,31 @@
 # Text Sensor 스키마 작성법
 
-문자열 데이터(예: 도어폰 메시지, 상태 코드)를 전송할 때는 `text_sensor` 엔티티를 사용합니다.
+엘리베이터 방향 등 문자열 상태를 노출하려면 `text_sensor` 엔티티를 사용합니다. `type`은 `text_sensor`이며 공통 필드(`id`, `name`, `packet_parameters`, `icon`)를 함께 지정합니다.
 
-## 필수 필드
-- `id`, `name`
-- `state`: 패킷 서명.
-- `state_text`: 문자열을 읽을 위치. `offset`과 `length` 지정.
+## 필수/옵션 필드
+- `state`: 이 엔티티에 해당하는 패킷 서명. 생략하면 람다만으로 값을 추출할 때 사용합니다.
+- `state_text`: 문자열을 추출하는 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
 
-## 옵션 필드
-- `encoding`: 기본 UTF-8 외 다른 인코딩이 필요할 때 설정.
-- `filters`: 문자열 치환(`replace`) 등에 사용.
-
-## 기본 예제 (문자 센서)
-`samsung_sds_door.homenet_bridge.yaml`에서는 도어폰 상태 문자열을 그대로 노출합니다.
+## 예제: 엘리베이터 방향 해석
+`kocom_thinks.homenet_bridge.yaml`은 패킷 오프셋 8 바이트를 확인해 방향을 한글 문자열로 치환합니다.【F:packages/core/config/kocom_thinks.homenet_bridge.yaml†L717-L728】
 
 ```yaml
 text_sensor:
-  - id: door_status
-    name: "도어폰 상태"
+  - id: elevator_direction
+    name: "Elevator Direction"
+    icon: mdi:elevator
     state:
-      data: [0x7f, 0x00, 0x00, 0x00]
-    state_text:
-      offset: 4
-      length: 8
-```
-
-## 매핑 예제 (상태 코드 → 문자열)
-`kocom_thinks.homenet_bridge.yaml`처럼 코드값을 사람이 읽기 쉬운 텍스트로 변환하려면 `mapping`을 사용합니다.
-
-```yaml
-text_sensor:
-  - id: valve_state_text
-    name: "밸브 상태 텍스트"
-    state:
-      data: [0x30, 0xd0, 0x00, 0x5b, 0x00]
-    state_text:
-      offset: 8
-      mapping:
-        0x00: "닫힘"
-        0x01: "열림"
-        0x02: "오류"
+      data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+      mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+    state_text: !lambda |-
+      if (data[8] === 0x00) return "정지";
+      if (data[8] === 0x01) return "하강";
+      if (data[8] === 0x02) return "상승";
+      if (data[8] === 0x03) return "도착";
+      return "Unknown";
 ```
 
 ## 작성 체크리스트
-1. 텍스트 길이가 가변이면 `length` 대신 `until` 옵션으로 종료 바이트(예: `0x00`)를 지정합니다.
-2. 장치가 EUC-KR 등 다른 인코딩을 사용하면 `encoding`을 맞춰야 글자가 깨지지 않습니다.
-3. 숫자 코드를 문자열로 바꿀 수 있다면 `mapping`이 더 간결하며, Home Assistant 자동화에서도 편리합니다.
+1. 문자열 매핑이 단순할 경우 `valueMappings`가 포함된 [`StateLambdaConfig`](./lambda.md#statelambdaconfig)를 활용해 가독성을 높입니다.
+2. 디스플레이용 내부 센서는 `internal: true`와 함께 사용해 MQTT 발표를 제한할 수 있습니다.
+3. 길이가 긴 메시지를 다룰 땐 `state_text` 대신 `text` 엔티티를 검토해 입력/출력 모두 지원하도록 합니다.

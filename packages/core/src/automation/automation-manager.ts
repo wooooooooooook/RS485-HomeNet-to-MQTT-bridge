@@ -15,8 +15,8 @@ import type {
   AutomationTriggerState,
   HomenetBridgeConfig,
   LambdaConfig,
-  StateSchema,
 } from '../config/types.js';
+import type { StateSchema } from '../protocol/types.js';
 import { PacketProcessor } from '../protocol/packet-processor.js';
 import { LambdaExecutor } from '../protocol/lambda-executor.js';
 import { CommandManager } from '../service/command.manager.js';

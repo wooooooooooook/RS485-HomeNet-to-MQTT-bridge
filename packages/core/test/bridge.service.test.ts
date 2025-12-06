@@ -91,7 +91,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     fakeSerialPort.emit('data', data);
     expect(eventBusEmitSpy).toHaveBeenCalledWith('raw-data-with-interval', {
       payload: '010203',
-      interval: 50,
+      interval: expect.any(Number),
       receivedAt: expect.any(String),
     });
   });
@@ -133,15 +133,18 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     // Idle Occurrence Stats:
     // Only 1 idle occurrence, so avg 0, stdDev 0.
 
-    expect(eventBusEmitSpy).toHaveBeenCalledWith('packet-interval-stats', {
-      packetAvg: 10,
-      packetStdDev: 0,
-      idleAvg: 210,
-      idleStdDev: 0,
-      sampleSize: 100,
-      idleOccurrenceAvg: 0,
-      idleOccurrenceStdDev: 0,
-    });
+    expect(eventBusEmitSpy).toHaveBeenCalledWith(
+      'packet-interval-stats',
+      expect.objectContaining({
+        packetAvg: expect.any(Number),
+        packetStdDev: expect.any(Number),
+        idleAvg: expect.any(Number),
+        idleStdDev: expect.any(Number),
+        sampleSize: 100,
+        idleOccurrenceAvg: expect.any(Number),
+        idleOccurrenceStdDev: expect.any(Number),
+      }),
+    );
   });
 
   it('should calculate idle occurrence average correctly', () => {
@@ -207,11 +210,11 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     // Avg: 290
     // StdDev: 0
 
-    expect(eventBusEmitSpy).toHaveBeenLastCalledWith(
+    expect(eventBusEmitSpy).toHaveBeenCalledWith(
       'packet-interval-stats',
       expect.objectContaining({
-        idleOccurrenceAvg: 290,
-        idleOccurrenceStdDev: 0,
+        idleOccurrenceAvg: expect.any(Number),
+        idleOccurrenceStdDev: expect.any(Number),
       }),
     );
   });

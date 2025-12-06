@@ -43,6 +43,9 @@ homenet_bridge:
     rx_checksum: 'none'
   serial:
     baud_rate: 115200
+    data_bits: 8
+    parity: 'none'
+    stop_bits: 1
   light:
     - id: 'test_light'
       name: 'Test Light'
@@ -126,6 +129,9 @@ homenet_bridge:
   packet_defaults: {}
   serial:
     baud_rate: 57600
+    data_bits: 8
+    parity: 'none'
+    stop_bits: 1
   light:
     - id: 'test_light'
       name: 'Test Light'

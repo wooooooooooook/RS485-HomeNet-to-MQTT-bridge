@@ -1,0 +1,38 @@
+# Serial 설정 스키마 작성법
+
+`homenet_bridge.serial` 블록은 RS485 어댑터와의 기본 통신 파라미터를 정의합니다. 모든 엔티티 설정 전에 1회만 선언하며, 실제 장비 사양과 동일해야 합니다.
+
+## 필수 필드
+- `baud_rate`: 통신 속도(bps). 보통 9600/19200/38400 등.
+- `data_bits`: 데이터 비트 길이. 대부분 8.
+- `parity`: 패리티 검사 방식. `NONE`, `EVEN`, `ODD` 중 하나.
+- `stop_bits`: 스톱 비트 개수. 일반적으로 1.
+
+## 기본 예제 (8N1)
+`cvnet.homenet_bridge.yaml`처럼 9600bps, 패리티 없는 8N1 조합입니다.
+
+```yaml
+homenet_bridge:
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
+```
+
+## 패리티가 필요한 장비 예제
+`samsung_sds.homenet_bridge.yaml`은 짝수 패리티를 사용합니다. 기기 스펙에 맞춰 값만 교체하면 됩니다.
+
+```yaml
+homenet_bridge:
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 1
+```
+
+## 작성 팁
+1. 제조사 매뉴얼의 UART/RS485 설정을 그대로 입력하세요. 한 자리라도 다르면 수신 패킷 매칭이 실패합니다.
+2. 같은 브랜드라도 도어락·인터폰이 다른 설정을 요구할 수 있으니, 각 프로파일을 별도 파일로 관리하세요.
+3. 포트 경로는 실행 시 환경 변수(`SERIAL_PORT`)나 CLI 옵션으로 주입하므로 스키마에는 포함하지 않습니다.

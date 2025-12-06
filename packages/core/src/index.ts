@@ -7,10 +7,21 @@ import { eventBus } from './service/event-bus.js';
 import type { HomenetBridgeConfig, LambdaConfig } from './config/types.js';
 import { CommandGenerator } from './protocol/generators/command.generator.js';
 import type { EntityConfig } from './domain/entities/base.entity.js';
+import { normalizeConfig, validateConfig } from './config/index.js';
 
 dotenv.config();
 
-export { HomeNetBridge, BridgeOptions, logger, eventBus, HomenetBridgeConfig, LambdaConfig, CommandGenerator };
+export {
+  HomeNetBridge,
+  BridgeOptions,
+  logger,
+  eventBus,
+  HomenetBridgeConfig,
+  LambdaConfig,
+  CommandGenerator,
+  normalizeConfig,
+  validateConfig,
+};
 export type { EntityConfig };
 
 export async function createBridge(

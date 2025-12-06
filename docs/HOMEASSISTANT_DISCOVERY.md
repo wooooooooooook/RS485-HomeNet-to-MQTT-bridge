@@ -18,6 +18,10 @@
 - **`id`**: (필수) 장치의 고유 식별자입니다 (MQTT 토픽에 사용됨).
 - **`type`**: (필수) 엔티티 유형입니다 (예: `switch`, `sensor`, `climate`).
 - **`icon`**: (선택) Home Assistant에서 사용할 Material Design 아이콘입니다 (예: `mdi:thermometer`).
+- **`discovery_always`**: (선택) `true`일 경우 실제 상태 패킷을 받지 않아도 Discovery를 즉시 발행합니다. 상태 패킷이 없는 버튼/센서 등에 사용합니다.
+- **`discovery_linked_id`**: (선택) 지정한 다른 엔티티 ID의 상태를 처음 수신할 때 함께 Discovery를 발행합니다. 같은 장치에 묶인 여러 엔티티를 동시에 노출할 때 활용합니다.
+
+> 기본적으로 각 엔티티는 자신의 상태 패킷을 처음 받을 때까지 Discovery가 지연됩니다. 위 옵션으로 예외를 정의할 수 있습니다.
 
 ### 센서 (Sensor) 설정
 

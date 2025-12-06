@@ -18,6 +18,8 @@ import { CommandManager } from './command.manager.js';
 import { getStateCache } from '../state/store.js';
 import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
 import mqtt from 'mqtt';
+import { findEntityById } from '../utils/entities.js';
+import { AutomationManager } from '../automation/automation-manager.js';
 
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
 export interface BridgeOptions {
@@ -45,6 +47,7 @@ export class HomeNetBridge implements EntityStateProvider {
   private lastPacketTimestamp: number | null = null;
   private packetIntervals: number[] = [];
   private hrtimeBase: bigint = process.hrtime.bigint(); // Base time for monotonic clock
+  private automationManager?: AutomationManager;
 
   constructor(options: BridgeOptions) {
     this.options = options;
@@ -105,6 +108,7 @@ export class HomeNetBridge implements EntityStateProvider {
     if (this.startPromise) {
       await this.startPromise.catch(() => { });
     }
+    this.automationManager?.stop();
     this._mqttClient.end();
     if (this.port) {
       this.port.removeAllListeners();
@@ -148,34 +152,7 @@ export class HomeNetBridge implements EntityStateProvider {
     }
 
     // Find entity in config (same logic as subscriber)
-    const entityTypes: (keyof HomenetBridgeConfig)[] = [
-      'light',
-      'climate',
-      'valve',
-      'button',
-      'sensor',
-      'fan',
-      'switch',
-      'binary_sensor',
-      'lock',
-      'number',
-      'select',
-      'text',
-      'text_sensor',
-    ];
-
-    let targetEntity: (EntityConfig & { type: string }) | undefined;
-
-    for (const type of entityTypes) {
-      const entities = this.config[type] as EntityConfig[] | undefined;
-      if (entities) {
-        const found = entities.find((e) => e.id === entityId);
-        if (found) {
-          targetEntity = { ...found, type };
-          break;
-        }
-      }
-    }
+    const targetEntity = findEntityById(this.config, entityId);
 
     if (!targetEntity) {
       return { success: false, error: `Entity ${entityId} not found` };
@@ -264,6 +241,14 @@ export class HomeNetBridge implements EntityStateProvider {
     } else {
       this.client.on('connect', () => this.discoveryManager!.discover());
     }
+
+    this.automationManager = new AutomationManager(
+      this.config,
+      this.packetProcessor,
+      this.commandManager,
+      this.mqttPublisher,
+    );
+    this.automationManager.start();
 
     this.port.on('data', (data) => {
       // Use high-resolution monotonic clock for accurate intervals

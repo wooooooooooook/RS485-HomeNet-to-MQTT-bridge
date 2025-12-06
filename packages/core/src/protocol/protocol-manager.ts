@@ -69,6 +69,8 @@ export class ProtocolManager extends EventEmitter {
     const packetHex = packet.map((b) => '0x' + b.toString(16).padStart(2, '0')).join(' ');
     let matchedAny = false;
 
+    this.emit('packet', packet);
+
     for (const device of this.devices) {
       const stateUpdates = device.parseData(packet);
       if (stateUpdates) {

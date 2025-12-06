@@ -7,6 +7,7 @@ import { PacketProcessor } from '../../protocol/packet-processor.js';
 import { eventBus } from '../../service/event-bus.js';
 import { CommandManager } from '../../service/command.manager.js';
 import { MQTT_TOPIC_PREFIX } from '../../utils/constants.js';
+import { ENTITY_TYPE_KEYS, findEntityById } from '../../utils/entities.js';
 
 export class MqttSubscriber {
   private mqttClient: MqttClient;
@@ -32,17 +33,7 @@ export class MqttSubscriber {
   }
 
   public setupSubscriptions(): void {
-    const allEntityTypes = [
-      'light',
-      'climate',
-      'valve',
-      'button',
-      'sensor',
-      'fan',
-      'switch',
-      'binary_sensor',
-    ];
-    for (const entityType of allEntityTypes) {
+    for (const entityType of ENTITY_TYPE_KEYS) {
       const entities = this.config[entityType as keyof HomenetBridgeConfig] as
         | EntityConfig[]
         | undefined;
@@ -143,34 +134,7 @@ export class MqttSubscriber {
       }
     }
 
-    const entityTypes: (keyof HomenetBridgeConfig)[] = [
-      'light',
-      'climate',
-      'valve',
-      'button',
-      'sensor',
-      'fan',
-      'switch',
-      'binary_sensor',
-      'lock',
-      'number',
-      'select',
-      'text',
-      'text_sensor',
-    ];
-
-    let targetEntity: (EntityConfig & { type: string }) | undefined;
-
-    for (const type of entityTypes) {
-      const entities = this.config[type] as EntityConfig[] | undefined;
-      if (entities) {
-        const found = entities.find((e) => e.id === entityId);
-        if (found) {
-          targetEntity = { ...found, type };
-          break;
-        }
-      }
-    }
+    const targetEntity = findEntityById(this.config, entityId);
 
     if (targetEntity) {
       // Refine commandName based on entity type and payload

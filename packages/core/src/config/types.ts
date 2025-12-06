@@ -11,7 +11,88 @@ import { SelectEntity } from '../domain/entities/select.entity.js';
 import { TextSensorEntity } from '../domain/entities/text-sensor.entity.js';
 import { TextEntity } from '../domain/entities/text.entity.js';
 import { BinarySensorEntity } from '../domain/entities/binary-sensor.entity.js';
-import { PacketDefaults } from '../protocol/types.js';
+import { PacketDefaults, StateSchema } from '../protocol/types.js';
+
+export type AutomationGuard = string | LambdaConfig;
+
+export interface AutomationTriggerState {
+  type: 'state';
+  entity_id: string;
+  property?: string;
+  match?: any;
+  debounce_ms?: number | string;
+  guard?: AutomationGuard;
+}
+
+export interface AutomationTriggerPacket {
+  type: 'packet';
+  match: StateSchema;
+  guard?: AutomationGuard;
+}
+
+export interface AutomationTriggerSchedule {
+  type: 'schedule';
+  every_ms?: number | string;
+  cron?: string;
+  guard?: AutomationGuard;
+}
+
+export interface AutomationTriggerStartup {
+  type: 'startup';
+  guard?: AutomationGuard;
+}
+
+export type AutomationTrigger =
+  | AutomationTriggerState
+  | AutomationTriggerPacket
+  | AutomationTriggerSchedule
+  | AutomationTriggerStartup;
+
+export interface AutomationActionCommand {
+  action: 'command';
+  target: string;
+  input?: any;
+}
+
+export interface AutomationActionPublish {
+  action: 'publish';
+  topic: string;
+  payload: any;
+  retain?: boolean;
+}
+
+export interface AutomationActionLog {
+  action: 'log';
+  level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+}
+
+export interface AutomationActionDelay {
+  action: 'delay';
+  milliseconds: number | string;
+}
+
+export interface AutomationActionScript {
+  action: 'script';
+  code: AutomationGuard;
+}
+
+export type AutomationAction =
+  | AutomationActionCommand
+  | AutomationActionPublish
+  | AutomationActionLog
+  | AutomationActionDelay
+  | AutomationActionScript;
+
+export interface AutomationConfig {
+  id: string;
+  name?: string;
+  description?: string;
+  trigger: AutomationTrigger[];
+  then: AutomationAction[];
+  else?: AutomationAction[];
+  enabled?: boolean;
+}
 
 export interface LambdaConfig {
   type: 'lambda';
@@ -39,4 +120,5 @@ export interface HomenetBridgeConfig {
   text_sensor?: TextSensorEntity[];
   text?: TextEntity[];
   binary_sensor?: BinarySensorEntity[];
+  automation?: AutomationConfig[];
 }

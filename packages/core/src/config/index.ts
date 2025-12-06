@@ -2,6 +2,7 @@ import { HomenetBridgeConfig } from './types.js';
 import { loadYamlConfig } from './yaml-loader.js';
 import { logger } from '../utils/logger.js';
 import { parseDuration } from '../utils/duration.js';
+import { ENTITY_TYPE_KEYS } from '../utils/entities.js';
 
 export async function loadConfig(configPath: string): Promise<HomenetBridgeConfig> {
   logger.info(`[core] Loading configuration from: ${configPath}`);
@@ -30,19 +31,7 @@ export async function loadConfig(configPath: string): Promise<HomenetBridgeConfi
     logger.debug({ packet_defaults: pd }, '[config] Normalized packet_defaults');
   }
 
-  const entityTypes: (keyof HomenetBridgeConfig)[] = [
-    'light',
-    'climate',
-    'valve',
-    'button',
-    'sensor',
-    'fan',
-    'switch',
-    'binary_sensor',
-  ];
-  const hasEntities = entityTypes.some(
-    (type) => loadedConfig[type] && Array.isArray(loadedConfig[type]),
-  );
+  const hasEntities = ENTITY_TYPE_KEYS.some((type) => loadedConfig[type] && Array.isArray(loadedConfig[type]));
 
   if (!hasEntities) {
     throw new Error('Configuration file must contain at least one entity (e.g., light, climate).');

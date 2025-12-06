@@ -7,6 +7,7 @@
 - [Serial](./serial.md)
 - [Packet Defaults](./packet-defaults.md)
 - [Lambda 작성법](./lambda.md)
+- [Automation](../AUTOMATION.md)
 
 ### 엔티티별
 - [Binary Sensor](./binary-sensor.md)

@@ -23,6 +23,7 @@
     "test": "vitest run --root ../.."
   },
   "dependencies": {
+    "cron-parser": "^4.9.0",
     "dotenv": "^16.4.5",
     "js-yaml": "^4.1.0",
     "mqtt": "^5.3.4",

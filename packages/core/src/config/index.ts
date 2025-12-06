@@ -5,6 +5,24 @@ import { parseDuration } from '../utils/duration.js';
 import { ENTITY_TYPE_KEYS } from '../utils/entities.js';
 
 export function normalizeConfig(config: HomenetBridgeConfig) {
+  ENTITY_TYPE_KEYS.forEach((type) => {
+    const entities = config[type] as Array<Record<string, unknown>> | undefined;
+    if (!entities) return;
+
+    entities.forEach((entity) => {
+      if (entity && typeof entity === 'object' && !('id' in entity) && 'name' in entity && typeof entity.name === 'string') {
+        const slug = entity.name
+          .toString()
+          .toLowerCase()
+          .trim()
+          .replace(/[_\s-]+/g, '_')
+          .replace(/[^a-z0-9_]/g, '');
+        entity.id = slug;
+        logger.trace({ entity: entity.name, id: slug }, '[config] Generated entity ID from name');
+      }
+    });
+  });
+
   if (config.packet_defaults) {
     const pd = config.packet_defaults;
     if (pd.rx_timeout !== undefined) {

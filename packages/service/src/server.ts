@@ -13,6 +13,8 @@ import {
   logger,
   eventBus,
   LambdaConfig,
+  normalizeConfig,
+  validateConfig,
 } from '@rs485-homenet/core';
 import { PacketCache } from './cache.js';
 
@@ -426,7 +428,9 @@ async function loadAndStartBridge(filename: string) {
     }
 
     currentConfigFile = filename;
-    currentConfigContent = loadedYaml.homenet_bridge; // Store the actual homenet_bridge config
+    currentConfigContent = normalizeConfig(loadedYaml.homenet_bridge); // Store the normalized config
+
+    validateConfig(currentConfigContent);
 
     const mqttUrl = process.env.MQTT_URL?.trim() || 'mqtt://mq:1883';
     const mqttUsername = process.env.MQTT_USER?.trim() || undefined;

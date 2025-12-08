@@ -276,6 +276,12 @@
   let socketCloseHandler: (() => void) | null = null;
   let socketErrorHandler: (() => void) | null = null;
 
+  const sendStreamCommand = (command: 'start' | 'stop') => {
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ command }));
+    }
+  };
+
   function startMqttStream() {
     if (typeof window === 'undefined' || !bridgeInfo) return;
 
@@ -293,12 +299,6 @@
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 
     socket = new WebSocket(url.toString());
-
-    const sendStreamCommand = (command: 'start' | 'stop') => {
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ command }));
-      }
-    };
 
     const handleStatus = (data: Record<string, unknown>) => {
       const state = data.state;

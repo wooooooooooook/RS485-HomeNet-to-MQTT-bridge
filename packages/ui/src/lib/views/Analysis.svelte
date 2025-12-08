@@ -5,10 +5,10 @@
     PacketStats as PacketStatsType,
     RawPacketWithInterval,
     ParsedPacket,
-  } from '../types';
-  import PacketStats from '../components/PacketStats.svelte';
-  import PacketLog from '../components/PacketLog.svelte';
-  import Button from '../components/shared/Button.svelte';
+  } from '$lib/types';
+  import PacketStats from '$lib/components/PacketStats.svelte';
+  import PacketLog from '$lib/components/PacketLog.svelte';
+  import Button from '$lib/components/shared/Button.svelte';
 
   export let stats: PacketStatsType | null;
   export let commandPackets: CommandPacket[];

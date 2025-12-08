@@ -8,7 +8,7 @@
   } from '../types';
   import PacketStats from '../components/PacketStats.svelte';
   import PacketLog from '../components/PacketLog.svelte';
-  import Button from '../components/shared/Button.svelte';
+  import Button from '../components/Button.svelte';
 
   export let stats: PacketStatsType | null;
   export let commandPackets: CommandPacket[];

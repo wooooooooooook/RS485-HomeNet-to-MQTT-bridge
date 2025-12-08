@@ -1,5 +1,5 @@
 name: Homenet2MQTT
-version: 0.0.9
+version: 0.0.10
 slug: h2m
 description: Bridge between RS485 HomeNet devices and MQTT.
 url: https://github.com/woooook/RS485-HomeNet-to-MQTT-bridge

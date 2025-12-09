@@ -28,6 +28,7 @@
   let activeView: 'dashboard' | 'analysis' | 'settings' = 'dashboard';
   let selectedEntityId: string | null = null;
   let isSidebarOpen = false;
+  let showInactiveEntities = false;
 
   let bridgeInfo: BridgeInfo | null = null;
   let infoLoading = false;
@@ -557,9 +558,11 @@
     }
 
     // Convert to array, filter only those with state, and sort
-    return Array.from(entities.values())
-      .filter((entity) => entity.statePayload) // Only show entities with state
-      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    const allEntities = Array.from(entities.values());
+    const filtered = showInactiveEntities
+      ? allEntities
+      : allEntities.filter((entity) => entity.statePayload);
+    return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   })();
 
   // --- Entity Detail Logic ---
@@ -601,7 +604,9 @@
         {unifiedEntities}
         {deviceStates}
         {availableCommands}
+        showInactive={showInactiveEntities}
         on:select={(e) => (selectedEntityId = e.detail.entityId)}
+        on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
       />
     {:else if activeView === 'analysis'}
       <Analysis

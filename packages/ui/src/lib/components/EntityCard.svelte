@@ -44,6 +44,7 @@
 
 <button
   class="entity-card"
+  class:inactive={!entity.statePayload}
   on:click={() => dispatch('select')}
   on:keydown={(e) => ['Enter', ' '].includes(e.key) && dispatch('select')}
 >
@@ -88,6 +89,14 @@
   .entity-card:hover {
     border-color: rgba(148, 163, 184, 0.2);
     background: rgba(30, 41, 59, 0.7);
+  }
+  .entity-card.inactive {
+    opacity: 0.5;
+  }
+
+  .entity-card.inactive:hover {
+    border-color: rgba(148, 163, 184, 0.1);
+    background: rgba(30, 41, 59, 0.5);
   }
 
   .card-header {

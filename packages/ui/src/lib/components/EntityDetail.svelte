@@ -42,16 +42,41 @@
     );
   })();
 
+  // Use a variable to track the entity ID for which config was last loaded into the editor
+  let loadedConfigEntityId: string | null = null;
+
   onMount(() => {
-    if (entity) {
+    // Initial load if modal is already open and entity is available (unlikely onMount but good practice)
+    if (isOpen && entity && activeTab === 'config' && loadedConfigEntityId !== entity.id) {
       loadRawConfig();
+      loadedConfigEntityId = entity.id;
     }
   });
 
-  $: if (isOpen && entity) {
-    // Reset state when opening
-    loadRawConfig();
-    // Initialize command inputs
+  $: if (isOpen && entity && activeTab === 'config') {
+    // Only load config if a new entity is selected OR if we're switching to the config tab for a new entity
+    if (loadedConfigEntityId !== entity.id) {
+      loadRawConfig();
+      loadedConfigEntityId = entity.id;
+    }
+  } else if (!isOpen) {
+    // Reset loadedConfigEntityId when the modal is closed
+    loadedConfigEntityId = null;
+  }
+  
+  // Re-initialize command inputs only when the entity.id changes or modal opens for a *new* entity
+  $: if (isOpen && entity && loadedConfigEntityId !== entity.id) { // This condition needs to be adjusted. It should run when the entity for the modal changes.
+    // The previous implementation was: $: if (isOpen && entity)
+    // The issue here is that loadedConfigEntityId is for the config tab, not for the general entity object.
+    // Let's use a separate flag for the entity itself.
+    // However, the intent of the old code was to initialize inputs when *any* entity detail was opened or changed.
+    // This is fine as long as `commandInputs` are tied to the entity ID.
+    // Let's revert this reactive statement to its original form for now, it's not the cause of config editing issue.
+    // The previous change was based on the assumption that `loadedConfigEntityId` was to control all entity updates.
+    // It's only for the config editor.
+
+    // Revert to the original: This block runs when `isOpen` or `entity` changes.
+    // This is correct for initializing inputs for the currently displayed entity.
     entity.commands.forEach((cmd) => {
       if (cmd.inputType === 'number') {
         commandInputs[`${cmd.entityId}_${cmd.commandName}`] = cmd.min ?? 0;

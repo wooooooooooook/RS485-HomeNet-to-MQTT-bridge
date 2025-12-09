@@ -504,7 +504,7 @@ app.get('/api/config/raw/:entityId', (req, res) => {
   }
 
   if (foundEntity) {
-    res.json({ yaml: yaml.dump(foundEntity, { styles: { '!!int': 'hexadecimal' } }) });
+    res.json({ yaml: yaml.dump(foundEntity, { styles: { '!!int': 'hexadecimal' } }).replace(/\b0x([0-9a-fA-F])\b/g, '0x0$1') });
   } else {
     res.status(404).json({ error: 'Entity not found in config' });
   }
@@ -527,48 +527,57 @@ app.post('/api/config/update', async (req, res) => {
     }
 
     if (!newEntity || typeof newEntity !== 'object') {
-       return res.status(400).json({ error: 'Invalid YAML content' });
+      return res.status(400).json({ error: 'Invalid YAML content' });
     }
-    
+
     // Ensure ID matches or at least exists
     if (newEntity.id && newEntity.id !== entityId) {
-        // Warning: ID changed. This might duplicate if we just push, 
-        // but here we are replacing the *found* index.
-        // So effectively we are renaming the entity in the config.
-        logger.warn(`[service] Entity ID changed from ${entityId} to ${newEntity.id} during update`);
+      // Warning: ID changed. This might duplicate if we just push, 
+      // but here we are replacing the *found* index.
+      // So effectively we are renaming the entity in the config.
+      logger.warn(`[service] Entity ID changed from ${entityId} to ${newEntity.id} during update`);
     }
 
     // 2. Read full config
     const configPath = path.join(CONFIG_DIR, currentConfigFile);
     const fileContent = await fs.readFile(configPath, 'utf8');
-    const fullConfig = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as { homenet_bridge: HomenetBridgeConfig };
+    const loadedYamlFromFile = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as { homenet_bridge: HomenetBridgeConfig };
 
-    if (!fullConfig.homenet_bridge) {
-        throw new Error('Invalid config file structure');
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
     }
+
+    // Normalize the loaded config to ensure IDs are present
+    const normalizedFullConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge);
 
     // 3. Find and update entity
     let found = false;
     const entityTypeKeys: (keyof HomenetBridgeConfig)[] = [
-        'light', 'climate', 'valve', 'button', 'sensor', 'fan', 'switch',
-        'lock', 'number', 'select', 'text_sensor', 'text', 'binary_sensor'
+      'light', 'climate', 'valve', 'button', 'sensor', 'fan', 'switch',
+      'lock', 'number', 'select', 'text_sensor', 'text', 'binary_sensor'
     ];
 
     for (const type of entityTypeKeys) {
-        const list = fullConfig.homenet_bridge[type] as any[];
-        if (Array.isArray(list)) {
-            const index = list.findIndex(e => e.id === entityId);
-            if (index !== -1) {
-                list[index] = newEntity;
-                found = true;
-                break;
-            }
+      const list = normalizedFullConfig[type] as any[]; // Use normalizedFullConfig here
+      if (Array.isArray(list)) {
+        const index = list.findIndex(e => e.id === entityId);
+        if (index !== -1) {
+          list[index] = newEntity;
+          found = true;
+          break;
         }
+      }
     }
 
     if (!found) {
-        return res.status(404).json({ error: 'Entity not found in current config' });
+      return res.status(404).json({ error: 'Entity not found in current config' });
     }
+
+    // After updating normalizedFullConfig, we need to dump it back to YAML.
+    // However, the original structure of `loadedYamlFromFile` (with `homenet_bridge` key)
+    // needs to be preserved for dumping. So we will update the `loadedYamlFromFile.homenet_bridge`
+    // with the content of `normalizedFullConfig` before dumping.
+    loadedYamlFromFile.homenet_bridge = normalizedFullConfig; // Update the original object with normalized content
 
     // 4. Backup
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -577,21 +586,21 @@ app.post('/api/config/update', async (req, res) => {
 
     // 5. Write new config
     // Note: This will strip comments and might alter formatting.
-    const newFileContent = yaml.dump(fullConfig, { 
-        schema: HOMENET_BRIDGE_SCHEMA, 
-        styles: { '!!int': 'hexadecimal' },
-        noRefs: true,
-        lineWidth: -1 // Try to avoid wrapping lines excessively
+    const newFileContent = yaml.dump(loadedYamlFromFile, { // Dump the full object
+      schema: HOMENET_BRIDGE_SCHEMA,
+      styles: { '!!int': 'hexadecimal' },
+      noRefs: true,
+      lineWidth: -1 // Try to avoid wrapping lines excessively
     });
-    
+
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
-    // 6. Update in-memory raw config
-    currentRawConfig = fullConfig.homenet_bridge;
+    // 6. Update in-memory raw config (this also needs to be normalized)
+    currentRawConfig = normalizedFullConfig; // Update with normalized config
+    currentConfigContent = normalizedFullConfig; // Ensure bridge uses normalized config
 
     logger.info(`[service] Config updated for entity ${entityId}. Backup created at ${path.basename(backupPath)}`);
     res.json({ success: true, backup: path.basename(backupPath) });
-
   } catch (err) {
     logger.error({ err }, '[service] Failed to update config');
     res.status(500).json({ error: err instanceof Error ? err.message : 'Update failed' });

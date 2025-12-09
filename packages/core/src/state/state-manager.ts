@@ -39,7 +39,7 @@ export class StateManager {
   public processIncomingData(chunk: Buffer): void {
     // Emit raw data for the service/UI to consume
     const hex = chunk.toString('hex');
-    logger.debug({ hex }, '[core] Received chunk');
+    logger.trace({ hex }, '[core] Received chunk');
     eventBus.emit('raw-data', hex);
     this.packetProcessor.processChunk(chunk);
   }

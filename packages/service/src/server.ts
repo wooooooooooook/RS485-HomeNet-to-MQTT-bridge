@@ -42,6 +42,25 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/packets/stream' });
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
+// --- Packet History Cache ---
+const commandPacketHistory: unknown[] = [];
+const parsedPacketHistory: unknown[] = [];
+const MAX_PACKET_HISTORY = 1000;
+
+eventBus.on('command-packet', (packet) => {
+  commandPacketHistory.push(packet);
+  if (commandPacketHistory.length > MAX_PACKET_HISTORY) {
+    commandPacketHistory.shift();
+  }
+});
+
+eventBus.on('parsed-packet', (packet) => {
+  parsedPacketHistory.push(packet);
+  if (parsedPacketHistory.length > MAX_PACKET_HISTORY) {
+    parsedPacketHistory.shift();
+  }
+});
+
 let bridge: HomeNetBridge | null = null;
 // bridgeOptions will now be derived from the loaded HomenetBridgeConfig
 let currentConfigFile: string | null = null;
@@ -108,6 +127,14 @@ const loadFrontendSettings = async (): Promise<FrontendSettings> => {
 app.use(express.json());
 
 // --- API Endpoints ---
+app.get('/api/packets/command/history', (_req, res) => {
+  res.json(commandPacketHistory);
+});
+
+app.get('/api/packets/parsed/history', (_req, res) => {
+  res.json(parsedPacketHistory);
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });

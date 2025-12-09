@@ -206,16 +206,29 @@
 
       bridgeInfo = data;
       rawPackets = [];
-      commandPackets = [];
       deviceStates.clear();
       startMqttStream();
       loadCommands();
+      loadPacketHistory();
     } catch (err) {
       bridgeInfo = null;
       closeStream();
       infoError = err instanceof Error ? err.message : '브리지 정보를 불러오지 못했습니다.';
     } finally {
       infoLoading = false;
+    }
+  }
+
+  async function loadPacketHistory() {
+    try {
+      const [cmds, parsed] = await Promise.all([
+        apiRequest<CommandPacket[]>('./api/packets/command/history'),
+        apiRequest<ParsedPacket[]>('./api/packets/parsed/history'),
+      ]);
+      commandPackets = cmds;
+      parsedPackets = parsed;
+    } catch (err) {
+      console.error('Failed to load packet history:', err);
     }
   }
 

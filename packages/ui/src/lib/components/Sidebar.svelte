@@ -1,8 +1,22 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+
   export let activeView: 'dashboard' | 'analysis' | 'settings';
+  export let isOpen = false;
+
+  const dispatch = createEventDispatcher();
+
+  function handleNavClick(view: typeof activeView) {
+    activeView = view;
+    dispatch('close');
+  }
 </script>
 
-<aside class="sidebar">
+{#if isOpen}
+  <div class="sidebar-backdrop" on:click={() => dispatch('close')} />
+{/if}
+
+<aside class="sidebar" class:open={isOpen}>
   <div class="logo">
     <span class="logo-icon">H</span>
     <span class="logo-text">Homenet2MQTT</span>
@@ -12,7 +26,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'dashboard'}
-      on:click={() => (activeView = 'dashboard')}
+      on:click={() => handleNavClick('dashboard')}
     >
       <span class="icon">📊</span>
       <span class="label">대시보드</span>
@@ -20,7 +34,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'analysis'}
-      on:click={() => (activeView = 'analysis')}
+      on:click={() => handleNavClick('analysis')}
     >
       <span class="icon">📈</span>
       <span class="label">분석</span>
@@ -28,7 +42,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'settings'}
-      on:click={() => (activeView = 'settings')}
+      on:click={() => handleNavClick('settings')}
     >
       <span class="icon">⚙️</span>
       <span class="label">설정</span>
@@ -49,6 +63,20 @@
     position: fixed;
     left: 0;
     top: 0;
+    z-index: 50;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    backdrop-filter: blur(2px);
   }
 
   .logo {
@@ -112,5 +140,20 @@
 
   .icon {
     font-size: 1.2rem;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-backdrop {
+      display: block;
+    }
   }
 </style>

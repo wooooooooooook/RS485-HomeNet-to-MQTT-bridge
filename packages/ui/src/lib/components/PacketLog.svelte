@@ -1,12 +1,8 @@
 <script lang="ts">
-  import type { CommandPacket, RawPacketWithInterval, ParsedPacket } from '../types';
+  import type { CommandPacket, ParsedPacket } from '../types';
 
   export let parsedPackets: ParsedPacket[] = [];
   export let commandPackets: CommandPacket[] = [];
-  export let rawPackets: RawPacketWithInterval[] = [];
-  export let isLogPaused = false;
-  export let togglePause: () => void;
-  export let isStreaming: boolean;
 
   let showRx = true;
   let showTx = true;
@@ -27,8 +23,6 @@
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   })();
-
-  const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 </script>
 
 <!-- Unified Packet Log Section -->
@@ -70,37 +64,6 @@
               {#if packet.value !== undefined}<span class="value">({packet.value})</span>{/if}
             </span>
           {/if}
-        </div>
-      {/each}
-    {/if}
-  </div>
-</div>
-
-<!-- Raw Packet Log -->
-<div class="log-section">
-  <div class="log-header">
-    <h2>Raw 패킷 로그</h2>
-    <div class="header-right">
-      <button class="ghost-sm" on:click={togglePause}>
-        {isLogPaused ? '▶ 로그 이어보기' : '⏸ 로그 일시정지'}
-      </button>
-    </div>
-  </div>
-  <div class="log-list raw-list">
-    {#if !isStreaming}
-      <p class="empty">Raw 패킷 로깅이 중지되었습니다.</p>
-    {:else if rawPackets.length === 0}
-      <p class="empty">아직 수신된 Raw 패킷이 없습니다. (로깅 대기중...)</p>
-    {:else}
-      {#each [...rawPackets].reverse() as packet (packet.receivedAt + packet.topic)}
-        <div class="log-item">
-          <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
-          <span class="interval"
-            >{packet.interval !== null
-              ? `${packet.interval >= 0 ? '+' : ''}${packet.interval}ms`
-              : ''}</span
-          >
-          <code class="payload">{toHexPairs(packet.payload).join(' ')}</code>
         </div>
       {/each}
     {/if}
@@ -207,13 +170,6 @@
     font-weight: 600;
   }
 
-  .interval {
-    color: #f59e0b;
-    width: 60px;
-    text-align: right;
-    font-size: 0.8rem;
-  }
-
   .payload {
     color: #10b981;
     font-weight: 600;
@@ -241,21 +197,5 @@
     text-align: center;
     color: #64748b;
     font-style: italic;
-  }
-
-  .ghost-sm {
-    background: transparent;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    color: #94a3b8;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .ghost-sm:hover {
-    background: rgba(148, 163, 184, 0.1);
-    color: #e2e8f0;
   }
 </style>

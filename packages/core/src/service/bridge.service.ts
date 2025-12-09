@@ -178,7 +178,7 @@ export class HomeNetBridge implements EntityStateProvider {
         receivedAt: new Date().toISOString(),
       });
 
-      if (this.packetIntervals.length >= 100) {
+      if (this.packetIntervals.length >= 10) {
         this.analyzeAndEmitPacketStats();
       }
 

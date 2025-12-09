@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import type { BridgeStatus } from '../types';
 
   export let bridgeStatus: BridgeStatus = 'idle';
@@ -6,6 +7,8 @@
   export let statusMessage: string;
   export let onRefresh: () => void;
   export let isRefreshing: boolean = false;
+
+  const dispatch = createEventDispatcher();
 
   const bridgeStatusLabels: Record<BridgeStatus, string> = {
     idle: '브리지를 준비하는 중입니다.',
@@ -17,17 +20,28 @@
 </script>
 
 <header class="header">
-  <div class="status-container">
-    <div class="status-item">
-      <div class="status-indicator" data-state={bridgeStatus}>
-        <span class="dot" />
-        <span class="label">{bridgeStatusLabels[bridgeStatus]}</span>
+  <div class="left-section">
+    <button
+      class="ghost mobile-menu-btn"
+      type="button"
+      on:click={() => dispatch('toggleSidebar')}
+      aria-label="메뉴 열기"
+    >
+      <span class="icon">☰</span>
+    </button>
+
+    <div class="status-container">
+      <div class="status-item">
+        <div class="status-indicator" data-state={bridgeStatus}>
+          <span class="dot" />
+          <span class="label">{bridgeStatusLabels[bridgeStatus]}</span>
+        </div>
       </div>
-    </div>
-    <div class="status-item">
-      <div class="status-indicator" data-state={connectionStatus}>
-        <span class="dot" />
-        <span class="label">{statusMessage || 'MQTT 스트림을 기다리는 중입니다.'}</span>
+      <div class="status-item">
+        <div class="status-indicator" data-state={connectionStatus}>
+          <span class="dot" />
+          <span class="label">{statusMessage || 'MQTT 스트림을 기다리는 중입니다.'}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -47,6 +61,19 @@
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .left-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+    font-size: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
   }
 
   .status-container {
@@ -121,6 +148,12 @@
     }
     100% {
       opacity: 1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: block;
     }
   }
 </style>

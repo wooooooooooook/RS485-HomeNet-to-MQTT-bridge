@@ -27,6 +27,7 @@
   // -- State --
   let activeView: 'dashboard' | 'analysis' | 'settings' = 'dashboard';
   let selectedEntityId: string | null = null;
+  let isSidebarOpen = false;
 
   let bridgeInfo: BridgeInfo | null = null;
   let infoLoading = false;
@@ -228,8 +229,7 @@
       const data = await apiRequest<{ settings: FrontendSettings }>('./api/frontend-settings');
       frontendSettings = data.settings;
     } catch (err) {
-      settingsError =
-        err instanceof Error ? err.message : '프론트 설정을 불러오지 못했습니다.';
+      settingsError = err instanceof Error ? err.message : '프론트 설정을 불러오지 못했습니다.';
       frontendSettings = DEFAULT_FRONTEND_SETTINGS;
     } finally {
       settingsLoading = false;
@@ -240,17 +240,13 @@
     settingsSaving = true;
     settingsError = '';
     try {
-      const data = await apiRequest<{ settings: FrontendSettings }>(
-        './api/frontend-settings',
-        {
-          method: 'PUT',
-          body: JSON.stringify({ settings: next }),
-        },
-      );
+      const data = await apiRequest<{ settings: FrontendSettings }>('./api/frontend-settings', {
+        method: 'PUT',
+        body: JSON.stringify({ settings: next }),
+      });
       frontendSettings = data.settings;
     } catch (err) {
-      settingsError =
-        err instanceof Error ? err.message : '프론트 설정을 저장하지 못했습니다.';
+      settingsError = err instanceof Error ? err.message : '프론트 설정을 저장하지 못했습니다.';
       throw err;
     } finally {
       settingsSaving = false;
@@ -358,7 +354,9 @@
         type: 'command',
         title: `${data.entity || data.entityId} 명령 전송`,
         message:
-          data.value !== undefined ? `${data.command} → ${formatToastValue(data.value)}` : data.command,
+          data.value !== undefined
+            ? `${data.command} → ${formatToastValue(data.value)}`
+            : data.command,
         timestamp: data.timestamp,
       });
     };
@@ -419,6 +417,12 @@
     socketErrorHandler = handleDisconnect;
     socket.addEventListener('close', handleDisconnect);
     socket.addEventListener('error', handleDisconnect);
+  }
+
+  function sendStreamCommand(command: 'start' | 'stop') {
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ command }));
+    }
   }
 
   function closeStream() {
@@ -571,7 +575,7 @@
 </script>
 
 <main class="app-container">
-  <Sidebar bind:activeView />
+  <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
 
   <section class="main-content">
     <Header
@@ -580,6 +584,7 @@
       {statusMessage}
       onRefresh={() => loadBridgeInfo(true)}
       isRefreshing={infoLoading}
+      on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)}
     />
 
     {#if activeView === 'dashboard'}
@@ -598,9 +603,7 @@
         {commandPackets}
         {parsedPackets}
         {rawPackets}
-        {isLogPaused}
         {isStreaming}
-        togglePause={() => (isLogPaused = !isLogPaused)}
         on:start={() => {
           sendStreamCommand('start');
           isStreaming = true;

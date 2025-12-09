@@ -8,6 +8,8 @@
 
 [] 활성화 안된 엔티티카드도 볼 수 있게.
 
-[] 실시간 raw 패킷 로그는 볼때만 켜지게해서 부하줄이기.
+[v] 실시간 raw 패킷 로그는 볼때만 켜지게해서 부하줄이기.
 
 [] subdevices, areas 설정 = esphome core configuration 참조. 문서도 업데이트
+
+[v] 모바일화면최적화 

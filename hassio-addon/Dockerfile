@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install jq for parsing options.json
-RUN apk add --no-cache jq
+# Install jq for parsing options.json and bash for run.sh
+RUN apk add --no-cache bash jq
 
 # Install pnpm via corepack; custom registry 지원을 위해 NPM_REGISTRY 사용 가능
 ARG NPM_REGISTRY=https://registry.npmjs.org

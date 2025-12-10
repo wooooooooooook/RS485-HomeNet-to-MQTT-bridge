@@ -1,6 +1,8 @@
 v0.0.14
-- fix: 패킷 간격 통계 최소 샘플을 10개로 조정
-- chore: addon 버전 및 설정 반영
+- feat: 엔티티 이름변경 및 ha반영
+
+v0.0.13
+- feat: device, area지정 추가 (esphome의 설정과 유사)
 
 v0.0.12
 - feat: 비활성화엔티티보기 토글 추가

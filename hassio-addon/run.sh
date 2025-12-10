@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Parse options from /data/options.json
 CONFIG_PATH=/data/options.json

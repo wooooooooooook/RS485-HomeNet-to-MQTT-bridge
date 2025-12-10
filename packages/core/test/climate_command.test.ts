@@ -38,7 +38,9 @@ describe('Climate Command Packet Generation', () => {
 
     // Mock config with climate entity
     mockConfig = {
-      serial: { port: '/dev/ttyUSB0', baudRate: 9600 } as any,
+      serials: [
+        { portId: 'main', path: '/dev/ttyUSB0', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 },
+      ] as any,
       mqtt: { brokerUrl: 'mqtt://localhost' },
       packet_defaults: {
         rx_timeout: '10ms',
@@ -122,27 +124,23 @@ describe('Climate Command Packet Generation', () => {
       capturedCommands.push(data);
     });
 
-    commandManager = new CommandManager(mockSerialPort, mockConfig);
+    commandManager = new CommandManager(mockSerialPort, mockConfig, 'main');
 
     mqttSubscriber = new MqttSubscriber(
       mockMqttClient,
+      'main',
       mockConfig,
       mockPacketProcessor,
       commandManager,
     );
   });
 
-  it('should generate command packet for climate mode set to off', () => {
-    const topic = 'homenet/room_0_heater/mode/set';
+  it('should generate command packet for climate mode set to off', async () => {
+    const topic = 'homenet/main/room_0_heater/mode/set';
     const message = Buffer.from('off');
 
     // Simulate MQTT message reception
-    const messageHandler = mockMqttClient.client.on.mock.calls.find(
-      (call: any[]) => call[0] === 'message',
-    )?.[1];
-
-    expect(messageHandler).toBeDefined();
-    messageHandler(topic, message);
+    await (mqttSubscriber as any).handleMqttMessage(topic, message);
 
     // Verify packet processor was called
     // Note: subscriber converts 'mode' -> 'off' and passes 'off' as both commandName AND value
@@ -163,17 +161,12 @@ describe('Climate Command Packet Generation', () => {
     });
   });
 
-  it('should generate command packet for climate temperature set', () => {
-    const topic = 'homenet/room_0_heater/temperature/set';
+  it('should generate command packet for climate temperature set', async () => {
+    const topic = 'homenet/main/room_0_heater/temperature/set';
     const message = Buffer.from('18');
 
     // Simulate MQTT message reception
-    const messageHandler = mockMqttClient.client.on.mock.calls.find(
-      (call: any[]) => call[0] === 'message',
-    )?.[1];
-
-    expect(messageHandler).toBeDefined();
-    messageHandler(topic, message);
+    await (mqttSubscriber as any).handleMqttMessage(topic, message);
 
     // Verify packet processor was called with value 18
     expect(mockPacketProcessor.constructCommandPacket).toHaveBeenCalledWith(
@@ -194,16 +187,18 @@ describe('Climate Command Packet Generation', () => {
     });
   });
 
-  it('should handle multiple command topics correctly', () => {
-    const messageHandler = mockMqttClient.client.on.mock.calls.find(
-      (call: any[]) => call[0] === 'message',
-    )?.[1];
-
+  it('should handle multiple command topics correctly', async () => {
     // Send mode command
-    messageHandler('homenet/room_0_heater/mode/set', Buffer.from('heat'));
+    await (mqttSubscriber as any).handleMqttMessage(
+      'homenet/main/room_0_heater/mode/set',
+      Buffer.from('heat'),
+    );
 
     // Send temperature command
-    messageHandler('homenet/room_0_heater/temperature/set', Buffer.from('22.5'));
+    await (mqttSubscriber as any).handleMqttMessage(
+      'homenet/main/room_0_heater/temperature/set',
+      Buffer.from('22.5'),
+    );
 
     expect(mockPacketProcessor.constructCommandPacket).toHaveBeenCalledTimes(2);
     expect(capturedCommands).toHaveLength(2);

@@ -11,7 +11,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     processPacket(stateManager, EZVILLE_PACKETS[4]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/light_1_1/state',
+      'homenet/default/light_1_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -19,7 +19,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     // thermostat 1 (HEAT) - Index 29
     processPacket(stateManager, EZVILLE_PACKETS[29]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/thermostat_1/state',
+      'homenet/default/thermostat_1/state',
       expect.stringMatching(/"mode":"heat"/),
       expect.objectContaining({ retain: true }),
     );
@@ -27,7 +27,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     // Gas Valve (OPEN) - Index 40
     processPacket(stateManager, EZVILLE_PACKETS[40]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/gas_valve/state',
+      'homenet/default/gas_valve/state',
       JSON.stringify({ state: 'OPEN' }),
       expect.objectContaining({ retain: true }),
     );
@@ -35,7 +35,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     // outlet_1_1 (ON) - Index 43
     processPacket(stateManager, EZVILLE_PACKETS[43]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/outlet_1_1/state',
+      'homenet/default/outlet_1_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );

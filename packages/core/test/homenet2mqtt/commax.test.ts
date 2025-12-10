@@ -10,7 +10,7 @@ describe('HomeNet to MQTT - Commax Protocol', () => {
     processPacket(stateManager, COMMAX_PACKETS[4]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/light_1/state',
+      'homenet/default/light_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -19,7 +19,7 @@ describe('HomeNet to MQTT - Commax Protocol', () => {
     if (COMMAX_PACKETS[5]) {
       processPacket(stateManager, COMMAX_PACKETS[5]);
       expect(publishMock).toHaveBeenCalledWith(
-        'homenet/light_1/state',
+        'homenet/default/light_1/state',
         JSON.stringify({ state: 'OFF' }),
         expect.objectContaining({ retain: true }),
       );

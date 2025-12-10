@@ -1,8 +1,18 @@
-import { HomenetBridgeConfig } from './types.js';
+import { HomenetBridgeConfig, SerialConfig } from './types.js';
 import { loadYamlConfig } from './yaml-loader.js';
 import { logger } from '../utils/logger.js';
 import { parseDuration } from '../utils/duration.js';
 import { ENTITY_TYPE_KEYS } from '../utils/entities.js';
+
+function normalizeSerialConfig(serial: SerialConfig): SerialConfig {
+  const normalized = { ...serial };
+
+  if (normalized.parity) {
+    normalized.parity = normalized.parity.toString().toLowerCase() as SerialConfig['parity'];
+  }
+
+  return normalized;
+}
 
 export function normalizeConfig(config: HomenetBridgeConfig) {
   ENTITY_TYPE_KEYS.forEach((type) => {
@@ -49,8 +59,20 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
     logger.debug({ packet_defaults: pd }, '[config] Normalized packet_defaults');
   }
 
-  if (config.serial?.parity) {
-    config.serial.parity = config.serial.parity.toString().toLowerCase() as HomenetBridgeConfig['serial']['parity'];
+  if (!Array.isArray(config.serials) || config.serials.length === 0) {
+    if (config.serial) {
+      logger.warn(
+        '[config] "serial" 설정이 감지되었습니다. "serials" 배열로 마이그레이션합니다. portId를 "default"로 설정합니다.',
+      );
+      config.serials = [
+        normalizeSerialConfig({
+          ...config.serial,
+          portId: config.serial.portId || 'default',
+        } as SerialConfig),
+      ];
+    }
+  } else {
+    config.serials = config.serials.map(normalizeSerialConfig);
   }
 
   return config;
@@ -59,26 +81,31 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
 export function validateConfig(config: HomenetBridgeConfig): void {
   const errors: string[] = [];
 
-  if (!config.serial) {
-    errors.push('serial 설정이 누락되었습니다.');
+  if (!config.serials || !Array.isArray(config.serials) || config.serials.length === 0) {
+    errors.push('serials 설정에 최소 1개 이상의 포트가 필요합니다.');
   } else {
-    const { baud_rate, data_bits, parity, stop_bits } = config.serial;
     const allowedDataBits = [5, 6, 7, 8];
     const allowedParity = ['none', 'even', 'mark', 'odd', 'space'];
     const allowedStopBits = [1, 1.5, 2];
 
-    if (typeof baud_rate !== 'number' || Number.isNaN(baud_rate)) {
-      errors.push('serial.baud_rate는 숫자여야 합니다.');
-    }
-    if (!allowedDataBits.includes(data_bits)) {
-      errors.push(`serial.data_bits는 ${allowedDataBits.join(', ')} 중 하나여야 합니다.`);
-    }
-    if (!allowedParity.includes(parity as string)) {
-      errors.push(`serial.parity는 ${allowedParity.join(', ')} 중 하나여야 합니다.`);
-    }
-    if (!allowedStopBits.includes(stop_bits)) {
-      errors.push(`serial.stop_bits는 ${allowedStopBits.join(', ')} 중 하나여야 합니다.`);
-    }
+    config.serials.forEach((serial, index) => {
+      if (!serial.portId || typeof serial.portId !== 'string') {
+        errors.push(`serials[${index}].portId는 필수 문자열입니다.`);
+      }
+
+      if (typeof serial.baud_rate !== 'number' || Number.isNaN(serial.baud_rate)) {
+        errors.push(`serials[${index}].baud_rate는 숫자여야 합니다.`);
+      }
+      if (!allowedDataBits.includes(serial.data_bits)) {
+        errors.push(`serials[${index}].data_bits는 ${allowedDataBits.join(', ')} 중 하나여야 합니다.`);
+      }
+      if (!allowedParity.includes(serial.parity as string)) {
+        errors.push(`serials[${index}].parity는 ${allowedParity.join(', ')} 중 하나여야 합니다.`);
+      }
+      if (!allowedStopBits.includes(serial.stop_bits)) {
+        errors.push(`serials[${index}].stop_bits는 ${allowedStopBits.join(', ')} 중 하나여야 합니다.`);
+      }
+    });
   }
 
   if (config.packet_defaults) {

@@ -21,13 +21,16 @@ export class CommandManager {
   private serialPort: Duplex;
   private config: HomenetBridgeConfig;
   private ackListeners: Map<string, () => void> = new Map();
+  private portId: string;
 
-  constructor(serialPort: Duplex, config: HomenetBridgeConfig) {
+  constructor(serialPort: Duplex, config: HomenetBridgeConfig, portId: string) {
     this.serialPort = serialPort;
     this.config = config;
+    this.portId = portId;
 
     // Listen for state updates to resolve pending commands
-    eventBus.on('state:changed', ({ entityId }) => {
+    eventBus.on('state:changed', ({ entityId, portId }) => {
+      if (portId && portId !== this.portId) return;
       this.handleAck(entityId);
     });
   }

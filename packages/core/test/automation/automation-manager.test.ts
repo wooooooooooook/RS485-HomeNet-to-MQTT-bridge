@@ -6,7 +6,7 @@ import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 
 const baseConfig: HomenetBridgeConfig = {
-  serial: { baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 },
+  serials: [{ portId: 'main', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 }],
   light: [{ id: 'light_1', name: 'Light 1', type: 'light' }],
 };
 

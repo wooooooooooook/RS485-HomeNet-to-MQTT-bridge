@@ -5,6 +5,7 @@ import { loadConfig } from '../../src/config';
 import { PacketProcessor } from '../../src/protocol/packet-processor';
 import { StateManager } from '../../src/state/state-manager';
 import { MqttPublisher } from '../../src/transports/mqtt/publisher';
+import { clearStateCache } from '../../src/state/store';
 
 // Mock MqttPublisher
 export const publishMock = vi.fn();
@@ -21,17 +22,20 @@ export const bridgeMock = {
 export interface TestContext {
   packetProcessor: PacketProcessor;
   stateManager: StateManager;
+  portId: string;
 }
 
 export async function setupTest(configPath: string): Promise<TestContext> {
   vi.clearAllMocks();
   const absolutePath = path.resolve(__dirname, '../../config', configPath);
   const config = await loadConfig(absolutePath);
+  const portId = config.serials[0]?.portId || 'default';
+  clearStateCache();
 
   const packetProcessor = new PacketProcessor(config, bridgeMock);
-  const stateManager = new StateManager(config, packetProcessor, mqttPublisherMock);
+  const stateManager = new StateManager(portId, config, packetProcessor, mqttPublisherMock);
 
-  return { packetProcessor, stateManager };
+  return { packetProcessor, stateManager, portId };
 }
 
 export function processPacket(stateManager: StateManager, packet: Buffer | number[]) {

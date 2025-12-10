@@ -23,7 +23,9 @@ describe('DiscoveryManager', () => {
     } as unknown as MqttSubscriber;
 
     mockConfig = {
-      serial: { port: '/dev/ttyUSB0', baudRate: 9600 } as any,
+      serials: [
+        { portId: 'main', path: '/dev/ttyUSB0', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 },
+      ] as any,
       mqtt: { brokerUrl: 'mqtt://localhost' },
       switch: [{ id: 'switch1', name: 'Test Switch', type: 'switch', state: {} }],
       devices: [
@@ -84,49 +86,49 @@ describe('DiscoveryManager', () => {
       ],
     } as any;
 
-    discoveryManager = new DiscoveryManager(mockConfig, mockPublisher, mockSubscriber);
+    discoveryManager = new DiscoveryManager('main', mockConfig, mockPublisher, mockSubscriber);
     discoveryManager.setup();
   });
 
   it('상태 패킷 수신 후에만 스위치 디스커버리를 발행한다', () => {
     discoveryManager.discover();
 
-    const switchTopic = 'homeassistant/switch/homenet_switch1/config';
+    const switchTopic = 'homeassistant/switch/homenet_main_switch1/config';
     expect(
       mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === switchTopic).length,
     ).toBe(0);
 
-    eventBus.emit('state:changed', { entityId: 'switch1', state: {} });
+    eventBus.emit('state:changed', { entityId: 'switch1', state: {}, portId: 'main' });
 
     const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === switchTopic);
     expect(call).toBeDefined();
 
     const payload = JSON.parse(call[1]);
-    expect(payload.unique_id).toBe('homenet_switch1');
+    expect(payload.unique_id).toBe('homenet_main_switch1');
     expect(payload.object_id).toBe('test_switch');
-    expect(payload.device.identifiers).toEqual(['homenet_bridge_device']);
-    expect(payload.device.name).toBe('Homenet Bridge');
+    expect(payload.device.identifiers).toEqual(['homenet_bridge_device_main']);
+    expect(payload.device.name).toBe('Homenet Bridge (main)');
     expect(payload.value_template).toBe('{{ value_json.state }}');
     expect(payload.payload_on).toBe('ON');
     expect(payload.payload_off).toBe('OFF');
-    expect(payload.command_topic).toBe('homenet/switch1/set');
+    expect(payload.command_topic).toBe('homenet/main/switch1/set');
   });
 
   it('연결된 엔티티 상태를 받은 경우 링크된 센서까지 함께 발행한다', () => {
     discoveryManager.discover();
 
-    const sensorTopic = 'homeassistant/sensor/homenet_linked_sensor/config';
+    const sensorTopic = 'homeassistant/sensor/homenet_main_linked_sensor/config';
     expect(
       mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === sensorTopic).length,
     ).toBe(0);
 
-    eventBus.emit('state:changed', { entityId: 'switch1', state: {} });
+    eventBus.emit('state:changed', { entityId: 'switch1', state: {}, portId: 'main' });
 
     const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === sensorTopic);
     expect(call).toBeDefined();
     const payload = JSON.parse(call[1]);
 
-    expect(payload.unique_id).toBe('homenet_linked_sensor');
+    expect(payload.unique_id).toBe('homenet_main_linked_sensor');
     expect(payload.object_id).toBe('linked_sensor');
     expect(payload.value_template).toBe('{{ value_json.value }}');
   });
@@ -134,13 +136,13 @@ describe('DiscoveryManager', () => {
   it('discovery_always 플래그가 있으면 상태 없이 즉시 발행한다', () => {
     discoveryManager.discover();
 
-    const lightTopic = 'homeassistant/light/homenet_always_on_light/config';
+    const lightTopic = 'homeassistant/light/homenet_main_always_on_light/config';
     const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === lightTopic);
     expect(call).toBeDefined();
 
     const payload = JSON.parse(call[1]);
-    expect(payload.unique_id).toBe('homenet_always_on_light');
-    expect(payload.command_topic).toBe('homenet/always_on_light/set');
+    expect(payload.unique_id).toBe('homenet_main_always_on_light');
+    expect(payload.command_topic).toBe('homenet/main/always_on_light/set');
     expect(payload.suggested_area).toBe('Living Room');
     expect(payload.device.suggested_area).toBeUndefined();
   });
@@ -148,16 +150,16 @@ describe('DiscoveryManager', () => {
   it('디바이스 메타데이터와 영역 정보를 Discovery에 반영한다', () => {
     discoveryManager.discover();
 
-    const sensorTopic = 'homeassistant/sensor/homenet_device_sensor/config';
-    eventBus.emit('state:changed', { entityId: 'device_sensor', state: {} });
+    const sensorTopic = 'homeassistant/sensor/homenet_main_device_sensor/config';
+    eventBus.emit('state:changed', { entityId: 'device_sensor', state: {}, portId: 'main' });
 
     const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === sensorTopic);
     expect(call).toBeDefined();
 
     const payload = JSON.parse(call[1]);
-    expect(payload.unique_id).toBe('homenet_device_sensor');
+    expect(payload.unique_id).toBe('homenet_main_device_sensor');
     expect(payload.device).toEqual({
-      identifiers: ['homenet_device_subpanel'],
+      identifiers: ['homenet_device_main_subpanel'],
       name: 'Subpanel',
       manufacturer: 'Homenet',
       model: 'Panel V2',
@@ -171,10 +173,10 @@ describe('DiscoveryManager', () => {
     vi.useFakeTimers();
 
     discoveryManager.discover();
-    eventBus.emit('state:changed', { entityId: 'switch1', state: {} });
+    eventBus.emit('state:changed', { entityId: 'switch1', state: {}, portId: 'main' });
     mockPublisher.publish.mockClear();
 
-    const topic = 'homeassistant/switch/homenet_switch1/config';
+    const topic = 'homeassistant/switch/homenet_main_switch1/config';
 
     eventBus.emit('entity:renamed', { entityId: 'switch1', newName: 'Renamed Switch' });
 

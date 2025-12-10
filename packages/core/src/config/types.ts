@@ -108,14 +108,19 @@ export interface LambdaConfig {
   script: string;
 }
 
+export interface SerialConfig {
+  portId: string;
+  path?: string;
+  baud_rate: number;
+  data_bits: 5 | 6 | 7 | 8;
+  parity: 'none' | 'even' | 'mark' | 'odd' | 'space';
+  stop_bits: 1 | 1.5 | 2;
+}
+
 export interface HomenetBridgeConfig {
   packet_defaults?: PacketDefaults;
-  serial: {
-    baud_rate: number;
-    data_bits: 5 | 6 | 7 | 8;
-    parity: 'none' | 'even' | 'mark' | 'odd' | 'space';
-    stop_bits: 1 | 1.5 | 2;
-  };
+  serials: SerialConfig[];
+  serial?: SerialConfig;
   devices?: DeviceConfig[];
   light?: LightEntity[];
   climate?: ClimateEntity[];

@@ -15,14 +15,17 @@ export class MqttSubscriber {
   private packetProcessor: PacketProcessor;
   private commandManager: CommandManager;
   private externalHandlers: Map<string, (message: Buffer) => void> = new Map();
+  private portId: string;
 
   constructor(
     mqttClient: MqttClient,
+    portId: string,
     config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     commandManager: CommandManager,
   ) {
     this.mqttClient = mqttClient;
+    this.portId = portId;
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
@@ -39,7 +42,7 @@ export class MqttSubscriber {
         | undefined;
       if (entities) {
         entities.forEach((entity) => {
-          const baseTopic = `${MQTT_TOPIC_PREFIX}/${entity.id}`;
+          const baseTopic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${entity.id}`;
           // Subscribe to all subtopics under the entity's base topic
           // This matches /set, /mode/set, /temperature/set, /brightness/set, etc.
           this.mqttClient.client.subscribe(`${baseTopic}/#`, (err) => {
@@ -77,7 +80,7 @@ export class MqttSubscriber {
     logger.debug({ topic, message: message.toString() }, '[mqtt-subscriber] MQTT 메시지 수신');
     // Only emit to service if topic starts with MQTT_TOPIC_PREFIX
     if (topic.startsWith(MQTT_TOPIC_PREFIX)) {
-      eventBus.emit('mqtt-message', { topic, payload: message.toString() });
+      eventBus.emit('mqtt-message', { topic, payload: message.toString(), portId: this.portId });
     }
 
     if (this.externalHandlers.has(topic)) {
@@ -88,7 +91,12 @@ export class MqttSubscriber {
     const parts = topic.split('/');
 
     // Validate topic format: {prefix}/{id}/.../set
-    if (parts.length < 3 || parts[0] !== MQTT_TOPIC_PREFIX || parts[parts.length - 1] !== 'set') {
+    if (
+      parts.length < 4 ||
+      parts[0] !== MQTT_TOPIC_PREFIX ||
+      parts[1] !== this.portId ||
+      parts[parts.length - 1] !== 'set'
+    ) {
       // Silently ignore known system topics (state, availability, etc.)
       if (parts[0] === MQTT_TOPIC_PREFIX && parts.length >= 3) {
         const lastPart = parts[parts.length - 1];
@@ -100,13 +108,13 @@ export class MqttSubscriber {
       return;
     }
 
-    const entityId = parts[1];
+    const entityId = parts[2];
     let commandName = '';
     const payload = message.toString();
     let commandValue: number | string | undefined = undefined;
 
     // Case 1: homenet/{id}/set (General command)
-    if (parts.length === 3) {
+    if (parts.length === 4) {
       if (payload === 'ON') commandName = 'on';
       else if (payload === 'OFF') commandName = 'off';
       else if (payload === 'OPEN') commandName = 'open';
@@ -122,8 +130,8 @@ export class MqttSubscriber {
       }
     }
     // Case 2: homenet/{id}/{attribute}/set (Specific attribute command)
-    else if (parts.length === 4) {
-      commandName = parts[2]; // e.g. temperature, mode, percentage, brightness, color_temp
+    else if (parts.length === 5) {
+      commandName = parts[3]; // e.g. temperature, mode, percentage, brightness, color_temp
 
       // Parse value
       const num = parseFloat(payload);

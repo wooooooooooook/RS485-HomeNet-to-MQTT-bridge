@@ -1,10 +1,11 @@
 // packages/core/src/service/bridge.service.ts
 
 import { Duplex } from 'stream';
+import mqtt from 'mqtt';
 
 import { logger } from '../utils/logger.js';
 import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
-import { HomenetBridgeConfig } from '../config/types.js';
+import { HomenetBridgeConfig, SerialConfig } from '../config/types.js';
 import { loadConfig } from '../config/index.js';
 import { EntityConfig } from '../domain/entities/base.entity.js';
 import { PacketProcessor, EntityStateProvider } from '../protocol/packet-processor.js';
@@ -15,11 +16,26 @@ import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { StateManager } from '../state/state-manager.js';
 import { eventBus } from './event-bus.js';
 import { CommandManager } from './command.manager.js';
-import { getStateCache } from '../state/store.js';
-import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
-import mqtt from 'mqtt';
+import { clearStateCache } from '../state/store.js';
+import { DiscoveryManager } from '../mqtt/discovery-manager.js';
 import { ENTITY_TYPE_KEYS, findEntityById } from '../utils/entities.js';
 import { AutomationManager } from '../automation/automation-manager.js';
+
+interface PortContext {
+  serialConfig: SerialConfig;
+  serialPath: string;
+  port: Duplex;
+  packetProcessor: PacketProcessor;
+  mqttSubscriber: MqttSubscriber;
+  mqttPublisher: MqttPublisher;
+  stateManager: StateManager;
+  commandManager: CommandManager;
+  discoveryManager: DiscoveryManager;
+  automationManager: AutomationManager;
+  rawPacketListener: ((data: Buffer) => void) | null;
+  lastPacketTimestamp: number | null;
+  packetIntervals: number[];
+}
 
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
 export interface BridgeOptions {
@@ -29,27 +45,16 @@ export interface BridgeOptions {
   mqttPassword?: string;
 }
 
-export class HomeNetBridge implements EntityStateProvider {
+export class HomeNetBridge {
   private readonly minPacketIntervalsForStats = 10;
   private readonly options: BridgeOptions;
   private readonly _mqttClient: MqttClient; // New internal instance
   private readonly client: MqttClient['client']; // Reference to the actual mqtt client
-  private port?: Duplex;
   private startPromise: Promise<void> | null = null;
-  private connectionPromise: Promise<void>;
 
   private config?: HomenetBridgeConfig; // Loaded configuration
-  private packetProcessor?: PacketProcessor; // The new packet processor
-  private mqttSubscriber?: MqttSubscriber; // New MQTT subscriber instance
-  private mqttPublisher?: MqttPublisher; // New MQTT publisher instance
-  private stateManager?: StateManager; // New StateManager instance
-  private commandManager?: CommandManager;
-  private discoveryManager?: DiscoveryManager; // DiscoveryManager instance
-  private lastPacketTimestamp: number | null = null;
-  private packetIntervals: number[] = [];
+  private readonly portContexts = new Map<string, PortContext>();
   private hrtimeBase: bigint = process.hrtime.bigint(); // Base time for monotonic clock
-  private automationManager?: AutomationManager;
-  private rawPacketListener: ((data: Buffer) => void) | null = null;
 
   constructor(options: BridgeOptions) {
     this.options = options;
@@ -71,32 +76,6 @@ export class HomeNetBridge implements EntityStateProvider {
 
     this._mqttClient = new MqttClient(options.mqttUrl, mqttOptions);
     this.client = this._mqttClient.client; // Assign the client from the new MqttClient instance
-    this.connectionPromise = this._mqttClient.connectionPromise; // Assign the promise from the new MqttClient instance
-  }
-
-  // Implement EntityStateProvider methods
-  getLightState(entityId: string): { isOn: boolean } | undefined {
-    const topic = `${MQTT_TOPIC_PREFIX}/${entityId}/state`;
-    const state = getStateCache().get(topic); // Use getStateCache()
-    if (state) {
-      const parsedState = JSON.parse(state);
-      if (typeof parsedState.isOn === 'boolean') {
-        return { isOn: parsedState.isOn };
-      }
-    }
-    return undefined;
-  }
-
-  getClimateState(entityId: string): { targetTemperature: number } | undefined {
-    const topic = `${MQTT_TOPIC_PREFIX}/${entityId}/state`;
-    const state = getStateCache().get(topic); // Use getStateCache()
-    if (state) {
-      const parsedState = JSON.parse(state);
-      if (typeof parsedState.targetTemperature === 'number') {
-        return { targetTemperature: parsedState.targetTemperature };
-      }
-    }
-    return undefined;
   }
 
   async start() {
@@ -110,27 +89,35 @@ export class HomeNetBridge implements EntityStateProvider {
     if (this.startPromise) {
       await this.startPromise.catch(() => { });
     }
-    this.stopRawPacketListener();
-    this.automationManager?.stop();
-    this._mqttClient.end();
-    if (this.port) {
-      this.port.removeAllListeners();
-      this.port.destroy();
-      this.port = undefined;
+
+    for (const context of this.portContexts.values()) {
+      context.automationManager.stop();
+      if (context.rawPacketListener) {
+        context.port.off('data', context.rawPacketListener);
+      }
+      context.port.removeAllListeners();
+      context.port.destroy();
     }
+    this.portContexts.clear();
+
+    this._mqttClient.end();
     this.startPromise = null;
   }
 
   /**
    * Send a raw packet directly to the serial port without ACK waiting
    */
-  sendRawPacket(packet: number[]): boolean {
-    if (!this.port) {
+  sendRawPacket(portId: string, packet: number[]): boolean {
+    const context = this.portContexts.get(portId) || this.getDefaultContext();
+    if (!context) {
       logger.warn('[core] Cannot send packet: serial port not initialized');
       return false;
     }
-    this.port.write(Buffer.from(packet));
-    logger.info({ packet: packet.map(b => b.toString(16).padStart(2, '0')).join(' ') }, '[core] Raw packet sent');
+    context.port.write(Buffer.from(packet));
+    logger.info({
+      portId: context.serialConfig.portId,
+      packet: packet.map((b) => b.toString(16).padStart(2, '0')).join(' '),
+    }, '[core] Raw packet sent');
     return true;
   }
 
@@ -169,77 +156,32 @@ export class HomeNetBridge implements EntityStateProvider {
     return { success: true };
   }
 
-  /**
-   * Execute a command by mocking subscriber behavior
-   * This mimics what handleMqttMessage does when receiving a set topic
-   */
-  /**
-   * Starts listening for raw packets from the serial port and emitting events.
-   */
-  startRawPacketListener(): void {
-    if (!this.port || this.rawPacketListener) {
-      return;
-    }
-
-    logger.info('[core] Starting raw packet listener.');
-
-    this.rawPacketListener = (data: Buffer) => {
-      // Use high-resolution monotonic clock for accurate intervals
-      const hrNow = process.hrtime.bigint();
-      const now = Number((hrNow - this.hrtimeBase) / 1000000n); // Convert to ms
-
-      let interval: number | null = null;
-
-      if (this.lastPacketTimestamp !== null) {
-        interval = now - this.lastPacketTimestamp;
-        this.packetIntervals.push(interval);
-        if (this.packetIntervals.length > 1000) {
-          this.packetIntervals.shift();
-        }
-      }
-
-      this.lastPacketTimestamp = now;
-
-      const hexData = data.toString('hex');
-      eventBus.emit('raw-data-with-interval', {
-        payload: hexData,
-        interval,
-        receivedAt: new Date().toISOString(),
-      });
-
-      if (this.packetIntervals.length >= this.minPacketIntervalsForStats) {
-        this.analyzeAndEmitPacketStats();
-      }
-
-      if (this.stateManager) {
-        this.stateManager.processIncomingData(data);
-      }
-    };
-
-    this.port.on('data', this.rawPacketListener);
+  startRawPacketListener(portId?: string): void {
+    const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
+    targets.forEach((context) => this.attachRawListener(context));
   }
 
-  /**
-   * Stops listening for raw packets.
-   */
-  stopRawPacketListener(): void {
-    if (this.port && this.rawPacketListener) {
-      logger.info('[core] Stopping raw packet listener.');
-      this.port.off('data', this.rawPacketListener);
-      this.rawPacketListener = null;
-
-      // Reset stats
-      this.packetIntervals = [];
-      this.lastPacketTimestamp = null;
-    }
+  stopRawPacketListener(portId?: string): void {
+    const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
+    targets.forEach((context) => {
+      if (context.rawPacketListener) {
+        logger.info({ portId: context.serialConfig.portId }, '[core] Stopping raw packet listener.');
+        context.port.off('data', context.rawPacketListener);
+        context.rawPacketListener = null;
+        context.packetIntervals = [];
+        context.lastPacketTimestamp = null;
+      }
+    });
   }
 
   async executeCommand(
     entityId: string,
     commandName: string,
     value?: number | string,
+    portId?: string,
   ): Promise<{ success: boolean; packet?: string; error?: string }> {
-    if (!this.config || !this.packetProcessor || !this.commandManager) {
+    const context = this.getDefaultContext(portId);
+    if (!this.config || !context) {
       return { success: false, error: 'Bridge not initialized' };
     }
 
@@ -251,7 +193,7 @@ export class HomeNetBridge implements EntityStateProvider {
     }
 
     // Construct command packet using packetProcessor (same as subscriber)
-    const commandPacket = this.packetProcessor.constructCommandPacket(
+    const commandPacket = context.packetProcessor.constructCommandPacket(
       targetEntity,
       commandName,
       value,
@@ -270,12 +212,13 @@ export class HomeNetBridge implements EntityStateProvider {
       command: commandName,
       value: value,
       packet: hexPacket,
+      portId: context.serialConfig.portId,
       timestamp: new Date().toISOString(),
     });
 
     // Send command via commandManager (same as subscriber)
     try {
-      await this.commandManager.send(targetEntity, commandPacket);
+      await context.commandManager.send(targetEntity, commandPacket);
       return { success: true, packet: hexPacket };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -283,90 +226,171 @@ export class HomeNetBridge implements EntityStateProvider {
     }
   }
 
-  private async initialize() {
-    this.config = await loadConfig(this.options.configPath);
-    this.packetProcessor = new PacketProcessor(this.config, this);
-    logger.debug('[core] PacketProcessor initialized.');
-
-    this.packetProcessor.on('parsed-packet', (data) => {
-      const { deviceId, packet, state } = data;
-      const hexPacket = packet.map((b: number) => b.toString(16).padStart(2, '0')).join('');
-      eventBus.emit('parsed-packet', {
-        entityId: deviceId,
-        packet: hexPacket,
-        state,
-        timestamp: new Date().toISOString(),
-      });
-    });
-
-    const { serial: serialConfig } = this.config;
-
-    logger.info('[core] MQTT 연결을 백그라운드에서 대기하며 시리얼 포트 연결을 진행합니다.');
-
-    const serialPath = process.env.SERIAL_PORT || '/simshare/rs485-sim-tty';
-
-    // Establish serial connection first
-    this.port = await createSerialPortConnection(serialPath, serialConfig);
-
-    // Instantiate CommandManager
-    this.commandManager = new CommandManager(this.port, this.config);
-
-    // Instantiate MqttPublisher
-    this.mqttPublisher = new MqttPublisher(this._mqttClient);
-
-    // Instantiate StateManager
-    this.stateManager = new StateManager(this.config, this.packetProcessor, this.mqttPublisher);
-
-    // Now instantiate MqttSubscriber with the CommandManager
-    this.mqttSubscriber = new MqttSubscriber(
-      this._mqttClient,
-      this.config,
-      this.packetProcessor,
-      this.commandManager,
-    );
-
-    // Set up subscriptions
-    if (this._mqttClient.isConnected) {
-      this.mqttSubscriber.setupSubscriptions();
-    } else {
-      this.client.on('connect', () => this.mqttSubscriber!.setupSubscriptions());
-    }
-
-    // Initialize DiscoveryManager
-    this.discoveryManager = new DiscoveryManager(
-      this.config,
-      this.mqttPublisher,
-      this.mqttSubscriber,
-    );
-    this.discoveryManager.setup();
-
-    if (this._mqttClient.isConnected) {
-      this.discoveryManager.discover();
-    } else {
-      this.client.on('connect', () => this.discoveryManager!.discover());
-    }
-
-    this.automationManager = new AutomationManager(
-      this.config,
-      this.packetProcessor,
-      this.commandManager,
-      this.mqttPublisher,
-    );
-    this.automationManager.start();
-
-    this.port.on('data', (data) => {
-      if (!this.rawPacketListener) {
-        this.stateManager?.processIncomingData(data);
-      }
-    });
-
-    this.port.on('error', (err) => {
-      logger.error({ err, serialPath }, '[core] 시리얼 포트 오류');
-    });
+  private buildStateProvider(portId: string): EntityStateProvider {
+    return {
+      getLightState: (entityId: string) => this.portContexts.get(portId)?.stateManager.getLightState(entityId),
+      getClimateState: (entityId: string) => this.portContexts.get(portId)?.stateManager.getClimateState(entityId),
+    };
   }
 
-  private analyzeAndEmitPacketStats() {
-    const intervals = [...this.packetIntervals];
+  private getDefaultContext(portId?: string): PortContext | undefined {
+    if (portId) {
+      return this.portContexts.get(portId);
+    }
+    const first = this.portContexts.values().next();
+    return first.done ? undefined : first.value;
+  }
+
+  private resolveSerialPath(serialConfig: SerialConfig): string {
+    const envKey = `SERIAL_PORT_${serialConfig.portId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+    const envValue = process.env[envKey];
+    if (serialConfig.path) return serialConfig.path;
+    if (envValue) {
+      logger.info({ envKey, portId: serialConfig.portId, serialPath: envValue }, '[core] Using port-specific SERIAL_PORT override');
+      return envValue;
+    }
+    if (process.env.SERIAL_PORT) return process.env.SERIAL_PORT;
+    return '/simshare/rs485-sim-tty';
+  }
+
+  private async initialize() {
+    this.config = await loadConfig(this.options.configPath);
+    clearStateCache();
+    logger.info('[core] MQTT 연결을 백그라운드에서 대기하며 시리얼 포트 연결을 진행합니다.');
+
+    for (const serialConfig of this.config.serials) {
+      const serialPath = this.resolveSerialPath(serialConfig);
+      const port = await createSerialPortConnection(serialPath, serialConfig);
+      const stateProvider = this.buildStateProvider(serialConfig.portId);
+      const packetProcessor = new PacketProcessor(this.config, stateProvider);
+      logger.debug({ portId: serialConfig.portId }, '[core] PacketProcessor initialized.');
+
+      packetProcessor.on('parsed-packet', (data) => {
+        const { deviceId, packet, state } = data;
+        const hexPacket = packet.map((b: number) => b.toString(16).padStart(2, '0')).join('');
+        eventBus.emit('parsed-packet', {
+          portId: serialConfig.portId,
+          entityId: deviceId,
+          packet: hexPacket,
+          state,
+          timestamp: new Date().toISOString(),
+        });
+      });
+
+      const mqttPublisher = new MqttPublisher(this._mqttClient);
+      const stateManager = new StateManager(serialConfig.portId, this.config, packetProcessor, mqttPublisher);
+      const commandManager = new CommandManager(port, this.config, serialConfig.portId);
+      const mqttSubscriber = new MqttSubscriber(
+        this._mqttClient,
+        serialConfig.portId,
+        this.config,
+        packetProcessor,
+        commandManager,
+      );
+
+      // Set up subscriptions
+      if (this._mqttClient.isConnected) {
+        mqttSubscriber.setupSubscriptions();
+      } else {
+        this.client.on('connect', () => mqttSubscriber.setupSubscriptions());
+      }
+
+      // Initialize DiscoveryManager
+      const discoveryManager = new DiscoveryManager(
+        serialConfig.portId,
+        this.config,
+        mqttPublisher,
+        mqttSubscriber,
+      );
+      discoveryManager.setup();
+
+      if (this._mqttClient.isConnected) {
+        discoveryManager.discover();
+      } else {
+        this.client.on('connect', () => discoveryManager.discover());
+      }
+
+      const automationManager = new AutomationManager(
+        this.config,
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      );
+      automationManager.start();
+
+      const context: PortContext = {
+        serialConfig,
+        serialPath,
+        port,
+        packetProcessor,
+        mqttSubscriber,
+        mqttPublisher,
+        stateManager,
+        commandManager,
+        discoveryManager,
+        automationManager,
+        rawPacketListener: null,
+        lastPacketTimestamp: null,
+        packetIntervals: [],
+      };
+
+      port.on('data', (data) => {
+        if (!context.rawPacketListener) {
+          context.stateManager.processIncomingData(data);
+        }
+      });
+
+      port.on('error', (err) => {
+        logger.error({ err, serialPath, portId: serialConfig.portId }, '[core] 시리얼 포트 오류');
+      });
+
+      this.portContexts.set(serialConfig.portId, context);
+    }
+  }
+
+  private attachRawListener(context: PortContext): void {
+    if (context.rawPacketListener) {
+      return;
+    }
+
+    logger.info({ portId: context.serialConfig.portId }, '[core] Starting raw packet listener.');
+
+    context.rawPacketListener = (data: Buffer) => {
+      const hrNow = process.hrtime.bigint();
+      const now = Number((hrNow - this.hrtimeBase) / 1000000n); // Convert to ms
+
+      let interval: number | null = null;
+
+      if (context.lastPacketTimestamp !== null) {
+        interval = now - context.lastPacketTimestamp;
+        context.packetIntervals.push(interval);
+        if (context.packetIntervals.length > 1000) {
+          context.packetIntervals.shift();
+        }
+      }
+
+      context.lastPacketTimestamp = now;
+
+      const hexData = data.toString('hex');
+      eventBus.emit('raw-data-with-interval', {
+        portId: context.serialConfig.portId,
+        payload: hexData,
+        interval,
+        receivedAt: new Date().toISOString(),
+      });
+
+      if (context.packetIntervals.length >= this.minPacketIntervalsForStats) {
+        this.analyzeAndEmitPacketStats(context);
+      }
+
+      context.stateManager.processIncomingData(data);
+    };
+
+    context.port.on('data', context.rawPacketListener);
+  }
+
+  private analyzeAndEmitPacketStats(context: PortContext) {
+    const intervals = [...context.packetIntervals];
 
     const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
     const stdDev = Math.sqrt(
@@ -400,52 +424,28 @@ export class HomeNetBridge implements EntityStateProvider {
     const packetStats = calculateStats(packetIntervals);
     const idleStats = calculateStats(idleIntervals);
 
-    // Calculate average interval between idle occurrences
-    const idleOccurrenceIntervals: number[] = [];
-    if (idleIndices.length > 1) {
-      for (let i = 1; i < idleIndices.length; i++) {
-        let durationBetweenIdles = 0;
-        for (let j = idleIndices[i - 1] + 1; j <= idleIndices[i]; j++) {
-          durationBetweenIdles += intervals[j];
-        }
-        idleOccurrenceIntervals.push(durationBetweenIdles);
-      }
-    }
-    const idleOccurrenceStats = calculateStats(idleOccurrenceIntervals);
-
-    const stats = {
-      packetAvg: Math.round(packetStats.avg),
-      packetStdDev: parseFloat(packetStats.stdDev.toFixed(2)),
-      idleAvg: Math.round(idleStats.avg),
-      idleStdDev: parseFloat(idleStats.stdDev.toFixed(2)),
-      sampleSize: intervals.length,
-      idleOccurrenceAvg: Math.round(idleOccurrenceStats.avg),
-      idleOccurrenceStdDev: parseFloat(idleOccurrenceStats.stdDev.toFixed(2)),
-    };
-
-    // Debug: Check for invalid stats
-    if (stats.packetAvg < 0 || isNaN(stats.packetAvg)) {
-      logger.warn({ stats, packetIntervals, intervals: intervals.slice(0, 10) }, '[core] Invalid packet stats detected');
-    }
-
-    eventBus.emit('packet-interval-stats', stats);
+    eventBus.emit('packet-stats', {
+      portId: context.serialConfig.portId,
+      stats: {
+        packet: packetStats,
+        idle: idleStats,
+        idleIndices,
+      },
+    });
   }
 
-  private findEntityConfig(entityId: string): { entity: EntityConfig; type: string } | null {
-    if (!this.config) {
-      return null;
-    }
-
+  private findEntityConfig(
+    entityId: string,
+  ): { type: keyof HomenetBridgeConfig; entity: EntityConfig } | undefined {
     for (const type of ENTITY_TYPE_KEYS) {
-      const entities = this.config[type] as EntityConfig[] | undefined;
+      const entities = this.config?.[type];
       if (!entities) continue;
 
-      const entity = entities.find((candidate) => candidate.id === entityId);
+      const entity = (entities as EntityConfig[]).find((e) => e.id === entityId);
       if (entity) {
-        return { entity, type: String(type) };
+        return { type, entity };
       }
     }
-
-    return null;
+    return undefined;
   }
 }

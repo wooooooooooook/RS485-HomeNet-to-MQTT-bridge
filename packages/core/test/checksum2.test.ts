@@ -101,7 +101,9 @@ describe('2-Byte Checksum', () => {
       };
 
       const mockConfig = {
-        serial: { baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const },
+        serials: [
+          { portId: 'main', baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const },
+        ],
         packet_defaults: {
           tx_header: [0xf7],
           tx_checksum2: lambdaConfig,
@@ -138,7 +140,9 @@ describe('2-Byte Checksum', () => {
       };
 
       const mockConfig = {
-        serial: { baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const },
+      serials: [
+        { portId: 'main', baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const },
+      ],
         packet_defaults: {
           tx_header: [0xf7],
           tx_checksum2: lambdaConfig,

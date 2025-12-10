@@ -41,7 +41,7 @@ vi.mock('../src/state/state-manager.js', () => ({
 vi.mock('../src/config/index.js', () => ({
   loadConfig: () =>
     Promise.resolve({
-      serial: { baud_rate: 9600 },
+      serials: [{ portId: 'main', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 }],
     }),
 }));
 
@@ -81,20 +81,28 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
 
     // First packet
     fakeSerialPort.emit('data', data);
-    expect(eventBusEmitSpy).toHaveBeenCalledWith('raw-data-with-interval', {
-      payload: '010203',
-      interval: null,
-      receivedAt: expect.any(String),
-    });
+    expect(eventBusEmitSpy).toHaveBeenCalledWith(
+      'raw-data-with-interval',
+      expect.objectContaining({
+        payload: '010203',
+        interval: null,
+        portId: 'main',
+        receivedAt: expect.any(String),
+      }),
+    );
 
     // Second packet after 50ms
     vi.advanceTimersByTime(50);
     fakeSerialPort.emit('data', data);
-    expect(eventBusEmitSpy).toHaveBeenCalledWith('raw-data-with-interval', {
-      payload: '010203',
-      interval: expect.any(Number),
-      receivedAt: expect.any(String),
-    });
+    expect(eventBusEmitSpy).toHaveBeenCalledWith(
+      'raw-data-with-interval',
+      expect.objectContaining({
+        payload: '010203',
+        interval: expect.any(Number),
+        portId: 'main',
+        receivedAt: expect.any(String),
+      }),
+    );
   });
 
   it('should not emit stats if fewer than 10 packets have been received', () => {
@@ -103,7 +111,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       fakeSerialPort.emit('data', Buffer.from([i]));
       vi.advanceTimersByTime(10);
     }
-    expect(eventBusEmitSpy).not.toHaveBeenCalledWith('packet-interval-stats', expect.any(Object));
+    expect(eventBusEmitSpy).not.toHaveBeenCalledWith('packet-stats', expect.any(Object));
   });
 
   it('should calculate and emit packet interval stats after 11 packets', () => {
@@ -121,15 +129,14 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     fakeSerialPort.emit('data', Buffer.from([10]));
 
     expect(eventBusEmitSpy).toHaveBeenCalledWith(
-      'packet-interval-stats',
+      'packet-stats',
       expect.objectContaining({
-        packetAvg: expect.any(Number),
-        packetStdDev: expect.any(Number),
-        idleAvg: expect.any(Number),
-        idleStdDev: expect.any(Number),
-        sampleSize: 10,
-        idleOccurrenceAvg: expect.any(Number),
-        idleOccurrenceStdDev: expect.any(Number),
+        portId: 'main',
+        stats: expect.objectContaining({
+          packet: expect.objectContaining({ avg: expect.any(Number), stdDev: expect.any(Number) }),
+          idle: expect.objectContaining({ avg: expect.any(Number), stdDev: expect.any(Number) }),
+          idleIndices: expect.any(Array),
+        }),
       }),
     );
   });
@@ -147,12 +154,14 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     });
 
     expect(eventBusEmitSpy).toHaveBeenCalledWith(
-      'packet-interval-stats',
+      'packet-stats',
       expect.objectContaining({
-        packetAvg: expect.any(Number),
-        idleAvg: expect.any(Number),
-        idleOccurrenceAvg: expect.any(Number),
-        idleOccurrenceStdDev: expect.any(Number),
+        portId: 'main',
+        stats: expect.objectContaining({
+          packet: expect.any(Object),
+          idle: expect.any(Object),
+          idleIndices: expect.any(Array),
+        }),
       }),
     );
   });

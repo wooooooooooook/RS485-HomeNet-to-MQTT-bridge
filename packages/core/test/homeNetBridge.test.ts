@@ -41,11 +41,12 @@ homenet_bridge:
     rx_header: [0x02]
     rx_footer: [0x03]
     rx_checksum: 'none'
-  serial:
-    baud_rate: 115200
-    data_bits: 8
-    parity: 'none'
-    stop_bits: 1
+  serials:
+    - portId: main
+      baud_rate: 115200
+      data_bits: 8
+      parity: 'none'
+      stop_bits: 1
   light:
     - id: 'test_light'
       name: 'Test Light'
@@ -127,11 +128,12 @@ describe('HomeNetBridge', () => {
     readFileMock.mockResolvedValue(`
 homenet_bridge:
   packet_defaults: {}
-  serial:
-    baud_rate: 57600
-    data_bits: 8
-    parity: 'none'
-    stop_bits: 1
+  serials:
+    - portId: main
+      baud_rate: 57600
+      data_bits: 8
+      parity: 'none'
+      stop_bits: 1
   light:
     - id: 'test_light'
       name: 'Test Light'

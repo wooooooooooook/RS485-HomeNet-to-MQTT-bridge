@@ -35,13 +35,13 @@ pnpm dev:down       # 개발용 컨테이너 정리
 
 | 변수 | 설명 | 기본값 |
 | --- | --- | --- |
-| `SERIAL_PORT` | 실제 RS485 장치 경로 혹은 TCP 터널 (`/dev/ttyUSB0`, `192.168.0.83:8888` 등) | `/simshare/rs485-sim-tty` |
+| `SERIAL_PORTS` (`SERIAL_PORT` 호환) | 쉼표로 구분된 RS485 장치 경로 목록 (`/dev/ttyUSB0,/dev/ttyUSB1` 또는 `192.168.0.83:8888,192.168.0.84:8888`). 단일 값도 허용되지만 경고 로그가 출력됩니다. `CONFIG_FILES`와 개수가 맞아야 합니다. | `/simshare/rs485-sim-tty` |
 | `SERIAL_PATH_WAIT_TIMEOUT_MS` | 시작 시 시리얼 경로를 기다리는 최대 시간 | `15000` |
 | `MQTT_URL` | MQTT 브로커 URL | `mqtt://mq:1883` |
 | `MQTT_USER`/`MQTT_PASSWD` | 브로커 인증 정보 | unset |
-| `MQTT_TOPIC_PREFIX` | 모든 상태/명령 토픽 접두사 | `homenet` |
+| `MQTT_TOPIC_PREFIXES` (`MQTT_TOPIC_PREFIX` 호환) | 상태/명령 토픽 접두사 배열. 항목이 1개면 모든 포트에 공통 적용, 2개 이상이면 `serials` 순서와 길이가 같아야 합니다. | `homenet` |
 | `MQTT_CONNECT_TIMEOUT_MS` | MQTT 연결 타임아웃(ms) | `10000` |
-| `CONFIG_FILE` | 사용할 `homenet_bridge.yaml` 절대/상대 경로 | `packages/core/config/${SYSTEM_TYPE}.homenet_bridge.yaml` |
+| `CONFIG_FILES` (`CONFIG_FILE` 호환) | 사용할 `homenet_bridge.yaml` 절대/상대 경로를 쉼표로 나열합니다. 첫 번째 항목이 기본값으로 사용되며 `SERIAL_PORTS` 길이와 일치해야 합니다. | `packages/core/config/${SYSTEM_TYPE}.homenet_bridge.yaml` |
 | `SYSTEM_TYPE` | Docker 개발 환경에서 참조할 기기 타입 식별자 | unset |
 | `LOG_LEVEL` | `pino` 로거 레벨 (`trace`~`fatal`) | `info` |
 | `PORT` | Express API 및 UI 프록시 포트 | `3000` |
@@ -52,15 +52,17 @@ pnpm dev:down       # 개발용 컨테이너 정리
 
 ### 예시 `.env`
 ```env
-SERIAL_PORT=/dev/ttyUSB0
+SERIAL_PORTS=/dev/ttyUSB0,/dev/ttyUSB1
+CONFIG_FILES=packages/core/config/kocom.homenet_bridge.yaml,packages/core/config/samsung_sds.homenet_bridge.yaml
 MQTT_URL=mqtt://192.168.1.2:1883
 MQTT_USER=homenet
 MQTT_PASSWD=super-secret
 SYSTEM_TYPE=kocom
-CONFIG_FILE=packages/core/config/kocom.homenet_bridge.yaml
-MQTT_TOPIC_PREFIX=apartment
+MQTT_TOPIC_PREFIXES=apt_a,apt_b
 LOG_LEVEL=debug
 ```
+
+`SERIAL_PORTS`와 `CONFIG_FILES`의 순서는 1:1로 대응하며, `MQTT_TOPIC_PREFIXES`는 1개 또는 `serials` 길이에 맞춰 나열해야 포트-토픽 매핑이 올바르게 동작합니다. 단일 값 입력은 기존 변수(`SERIAL_PORT`, `CONFIG_FILE`, `MQTT_TOPIC_PREFIX`)를 통해서도 유지되지만 향후 복수 포트를 대비해 배열 형식을 권장합니다.
 
 ### 기기 타입별 설정
 장비 프로토콜마다 별도의 YAML이 필요합니다. 지원 목록과 시리얼 파라미터, 엔티티 구성을 [docs/DEVICE_SETTINGS.md](docs/DEVICE_SETTINGS.md)에서 확인한 뒤 `SYSTEM_TYPE` 또는 `CONFIG_FILE`을 맞춰 주세요. 새 타입을 추가한다면 동일 문서와 설정 디렉터리에 함께 반영합니다.

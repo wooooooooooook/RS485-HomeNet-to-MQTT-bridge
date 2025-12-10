@@ -11,7 +11,7 @@ describe('HomeNet to MQTT - Samsung SDS Protocol', () => {
     processPacket(stateManager, SAMSUNG_SDS_PACKETS[1]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/light_1/state',
+      'homenet/default/light_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -19,7 +19,7 @@ describe('HomeNet to MQTT - Samsung SDS Protocol', () => {
     // Light OFF - Index 2
     processPacket(stateManager, SAMSUNG_SDS_PACKETS[2]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/light_1/state',
+      'homenet/default/light_1/state',
       JSON.stringify({ state: 'OFF' }),
       expect.objectContaining({ retain: true }),
     );
@@ -32,7 +32,7 @@ describe('HomeNet to MQTT - Samsung SDS Protocol', () => {
     // 참고: C2 4E 00 00 00 PT -> B0 4E XX MM YY PT 형태
     processPacket(stateManager, SAMSUNG_SDS_PACKETS[14]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/ventilator/state',
+      'homenet/default/ventilator/state',
       JSON.stringify({ speed: 0, state: 'OFF' }),
       expect.objectContaining({ retain: true }),
     );
@@ -49,7 +49,7 @@ describe('HomeNet to MQTT - Samsung SDS Protocol', () => {
     processPacket(stateManager, SAMSUNG_SDS_PACKETS[18]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/room_0_heater/state',
+      'homenet/default/room_0_heater/state',
       JSON.stringify({
         action: 'off',
         current_temperature: 25,

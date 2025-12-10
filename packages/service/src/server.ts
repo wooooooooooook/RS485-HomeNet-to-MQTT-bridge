@@ -36,6 +36,44 @@ const __dirname = path.dirname(__filename);
 const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
 const FRONTEND_SETTINGS_FILE = path.join(CONFIG_DIR, 'frontend-setting.json');
 
+const parseEnvList = (
+  primaryKey: string,
+  legacyKey: string,
+  label: string,
+): { source: string | null; values: string[] } => {
+  const raw = process.env[primaryKey] ?? process.env[legacyKey];
+  const source = process.env[primaryKey] ? primaryKey : process.env[legacyKey] ? legacyKey : null;
+
+  if (!raw) return { source, values: [] };
+
+  const values = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (values.length === 0) {
+    throw new Error(`[service] ${source}에 최소 1개 이상의 ${label}을 지정하세요.`);
+  }
+
+  if (!raw.includes(',')) {
+    logger.warn(
+      `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
+        ' 사용을 권장합니다.',
+    );
+  }
+
+  if (source === legacyKey && primaryKey !== legacyKey) {
+    logger.warn(`[service] ${legacyKey} 대신 ${primaryKey} 환경 변수를 사용하도록 전환해주세요.`);
+  }
+
+  return { source, values };
+};
+
+const envSerialPorts = parseEnvList('SERIAL_PORTS', 'SERIAL_PORT', '시리얼 포트 경로');
+const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+const envMqttTopicPrefixes = parseEnvList('MQTT_TOPIC_PREFIXES', 'MQTT_TOPIC_PREFIX', 'MQTT 토픽 prefix');
+const defaultMqttTopicPrefix = envMqttTopicPrefixes.values[0] || 'homenet';
+
 // --- Application State ---
 const app = express();
 const server = createServer(app);
@@ -164,22 +202,24 @@ app.get('/api/bridge/info', async (_req, res) => {
   if (!currentConfigContent) {
     return res.json({
       configFile: currentConfigFile || 'N/A',
-      serialPath: process.env.SERIAL_PORT || '/simshare/rs485-sim-tty',
+      serialPath: envSerialPorts.values[0] || '/simshare/rs485-sim-tty',
       baudRate: 0,
       mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
       status: 'error',
       error: bridgeError || '브리지가 설정되지 않았거나 시작에 실패했습니다.',
-      topic: 'homenet/raw',
+      topic: `${defaultMqttTopicPrefix}/raw`,
     });
   }
   res.json({
     configFile: currentConfigFile,
-    serialPath: process.env.SERIAL_PORT || '/simshare/rs485-sim-tty', // Serial path is now from env or default
-    baudRate: currentConfigContent.serial.baud_rate, // From new config structure
+    serialPath: envSerialPorts.values[0] || '/simshare/rs485-sim-tty', // Serial path is now from env or default
+    baudRate: currentConfigContent.serials?.[0]?.baud_rate
+      ?? currentConfigContent.serial?.baud_rate
+      ?? 0,
     mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
     status: bridgeStatus,
     error: bridgeError,
-    topic: 'homenet/raw', // This might become dynamic later
+    topic: `${defaultMqttTopicPrefix}/raw`, // This might become dynamic later
   });
 });
 
@@ -808,18 +848,29 @@ server.listen(port, async () => {
   logger.info(`Service listening on port ${port}`);
   try {
     logger.info('[service] Initializing bridge on startup...');
-    if (process.env.CONFIG_FILE) {
-      logger.info(
-        `[service] Loading configuration from environment variable: ${process.env.CONFIG_FILE}`,
+    if (
+      envSerialPorts.values.length > 0 &&
+      envConfigFiles.values.length > 0 &&
+      envSerialPorts.values.length !== envConfigFiles.values.length
+    ) {
+      throw new Error(
+        `[service] SERIAL_PORTS(${envSerialPorts.values.length})와 CONFIG_FILES(${envConfigFiles.values.length}) 개수가 일치하지 않습니다. 포트-설정 파일 매핑을 다시 확인하세요.`,
       );
-      // Extract filename from path if needed, or just pass the path if loadAndStartBridge handles it.
-      // loadAndStartBridge expects a filename relative to CONFIG_DIR.
-      // If CONFIG_FILE is a full path like 'packages/core/config/samsung_sds.homenet_bridge.yaml',
-      // we need to handle that.
-      // However, looking at loadAndStartBridge: const configPath = path.join(CONFIG_DIR, filename);
-      // So we should pass just the basename if it's in the config dir.
+    }
 
-      const configBasename = path.basename(process.env.CONFIG_FILE);
+    if (envSerialPorts.values.length > 0 && envConfigFiles.values.length > 0) {
+      envSerialPorts.values.forEach((serialPath, index) => {
+        logger.info(
+          { serialPath, configFile: envConfigFiles.values[index] },
+          '[service] 환경 변수 포트-설정 파일 매핑',
+        );
+      });
+    }
+
+    const configFromEnv = envConfigFiles.values[0];
+    if (configFromEnv) {
+      logger.info(`[service] Loading configuration from environment variable: ${configFromEnv}`);
+      const configBasename = path.basename(configFromEnv);
       await loadAndStartBridge(configBasename);
     } else {
       const files = await fs.readdir(CONFIG_DIR);

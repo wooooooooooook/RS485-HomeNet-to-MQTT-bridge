@@ -20,11 +20,20 @@ describe('StateManager Merging', () => {
     mockPacketProcessor.processChunk = vi.fn();
 
     mockConfig = {
-      serial: { port: '/dev/ttyUSB0', baudRate: 9600 } as any,
+      serials: [
+        {
+          portId: 'main',
+          path: '/dev/ttyUSB0',
+          baud_rate: 9600,
+          data_bits: 8,
+          parity: 'none',
+          stop_bits: 1,
+        },
+      ],
       mqtt: { brokerUrl: 'mqtt://localhost' },
     } as any;
 
-    stateManager = new StateManager(mockConfig, mockPacketProcessor, mockPublisher);
+    stateManager = new StateManager('main', mockConfig, mockPacketProcessor as any, mockPublisher, 'homenet');
   });
 
   it('should merge partial state updates', () => {
@@ -37,7 +46,7 @@ describe('StateManager Merging', () => {
     });
 
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/${deviceId}/state`,
+      `homenet/main/${deviceId}/state`,
       JSON.stringify({ current_temperature: 24 }),
       { retain: true },
     );
@@ -50,7 +59,7 @@ describe('StateManager Merging', () => {
 
     // Expect merged state
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/${deviceId}/state`,
+      `homenet/main/${deviceId}/state`,
       JSON.stringify({ current_temperature: 24, target_temperature: 26 }),
       { retain: true },
     );
@@ -63,7 +72,7 @@ describe('StateManager Merging', () => {
 
     // Expect merged state with updated value
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/${deviceId}/state`,
+      `homenet/main/${deviceId}/state`,
       JSON.stringify({ current_temperature: 25, target_temperature: 26 }),
       { retain: true },
     );

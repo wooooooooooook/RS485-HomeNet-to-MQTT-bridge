@@ -2,38 +2,42 @@
 
 import { Buffer } from 'buffer';
 import { HomenetBridgeConfig } from '../config/types.js';
-import { EntityConfig } from '../domain/entities/base.entity.js';
 import { PacketProcessor } from '../protocol/packet-processor.js';
 import { logger } from '../utils/logger.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { eventBus } from '../service/event-bus.js';
-import { stateCache, clearStateCache } from './store.js'; // Import clearStateCache
-import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
+import { stateCache } from './store.js';
 
 export class StateManager {
   private receiveBuffer: Buffer = Buffer.alloc(0);
   private config: HomenetBridgeConfig;
   private packetProcessor: PacketProcessor;
   private mqttPublisher: MqttPublisher;
+  private portId: string;
+  private mqttTopicPrefix: string;
   // Timestamp of the last received chunk (ms since epoch)
   private lastChunkTimestamp: number = 0;
 
   constructor(
+    portId: string,
     config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     mqttPublisher: MqttPublisher,
+    mqttTopicPrefix: string,
   ) {
+    this.portId = portId;
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.mqttPublisher = mqttPublisher;
+    this.mqttTopicPrefix = mqttTopicPrefix;
 
-    // Clear state cache on initialization to force re-publishing all states
-    clearStateCache();
-    logger.info('[StateManager] State cache cleared on initialization');
-
-    this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
-      this.handleStateUpdate(event);
-    });
+    if (typeof (this.packetProcessor as any).on === 'function') {
+      this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
+        this.handleStateUpdate(event);
+      });
+    } else {
+      logger.warn('[StateManager] PacketProcessor does not support events; state updates will not be processed automatically');
+    }
   }
 
   public processIncomingData(chunk: Buffer): void {
@@ -46,6 +50,22 @@ export class StateManager {
 
   private deviceStates = new Map<string, any>();
 
+  public getLightState(entityId: string): { isOn: boolean } | undefined {
+    const state = this.deviceStates.get(entityId);
+    if (state && typeof state.isOn === 'boolean') {
+      return { isOn: state.isOn };
+    }
+    return undefined;
+  }
+
+  public getClimateState(entityId: string): { targetTemperature: number } | undefined {
+    const state = this.deviceStates.get(entityId);
+    if (state && typeof state.targetTemperature === 'number') {
+      return { targetTemperature: state.targetTemperature };
+    }
+    return undefined;
+  }
+
   private handleStateUpdate(event: { deviceId: string; state: any }) {
     const { deviceId, state } = event;
 
@@ -53,7 +73,7 @@ export class StateManager {
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
 
-    const topic = `${MQTT_TOPIC_PREFIX}/${deviceId}/state`;
+    const topic = `${this.mqttTopicPrefix}/${this.portId}/${deviceId}/state`;
     const payload = JSON.stringify(newState);
 
     if (stateCache.get(topic) !== payload) {
@@ -63,6 +83,7 @@ export class StateManager {
       this.mqttPublisher.publish(topic, payload, { retain: true });
       const timestamp = new Date().toISOString();
       eventBus.emit('state:changed', {
+        portId: this.portId,
         entityId: deviceId,
         topic,
         payload,

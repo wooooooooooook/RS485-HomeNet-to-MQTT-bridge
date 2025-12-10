@@ -11,11 +11,12 @@ describe('DSL Integration', () => {
   it('should load YAML with !lambda and execute logic in GenericDevice', async () => {
     const yamlContent = `
 homenet_bridge:
-  serial:
-    baud_rate: 9600
-    data_bits: 8
-    parity: 'none'
-    stop_bits: 1
+  serials:
+    - portId: main
+      baud_rate: 9600
+      data_bits: 8
+      parity: 'none'
+      stop_bits: 1
   packet_defaults:
     rx_length: 5
   light:

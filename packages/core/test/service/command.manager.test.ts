@@ -32,14 +32,14 @@ describe('CommandManager', () => {
     vi.useFakeTimers();
     serialPort = new MockStream();
     config = {
-      serial: { baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 },
+      serials: [{ portId: 'main', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 }],
       packet_defaults: {
         tx_retry_cnt: 2,
         tx_timeout: 100,
         tx_delay: 50,
       },
     };
-    commandManager = new CommandManager(serialPort, config);
+    commandManager = new CommandManager(serialPort, config, 'main');
   });
 
   afterEach(() => {

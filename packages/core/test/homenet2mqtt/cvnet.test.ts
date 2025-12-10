@@ -10,7 +10,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     processPacket(stateManager, CVNET_PACKETS[1]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/room_0_light_1/state',
+      'homenet/default/room_0_light_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -19,7 +19,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     processPacket(stateManager, CVNET_PACKETS[2]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/room_0_light_1/state',
+      'homenet/default/room_0_light_1/state',
       JSON.stringify({ state: 'OFF' }),
       expect.objectContaining({ retain: true }),
     );
@@ -27,7 +27,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     // Fan 1 (ON) - Index 13
     processPacket(stateManager, CVNET_PACKETS[13]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/fan_1/state',
+      'homenet/default/fan_1/state',
       expect.stringMatching(/"state":"ON"/),
       expect.objectContaining({ retain: true }),
     );
@@ -35,7 +35,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     // Fan 1 (Speed 1) - Index 15
     processPacket(stateManager, CVNET_PACKETS[15]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/fan_1/state',
+      'homenet/default/fan_1/state',
       expect.stringMatching(/\"speed\":1/),
       expect.objectContaining({ retain: true }),
     );
@@ -43,7 +43,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     // Heater 1 (HEAT) - Index 19
     processPacket(stateManager, CVNET_PACKETS[19]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/heater_1/state',
+      'homenet/default/heater_1/state',
       expect.stringMatching(/"mode":"heat"/),
       expect.objectContaining({ retain: true }),
     );
@@ -51,7 +51,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     // Heater 1 (Temp 25C/26C) - Index 20
     processPacket(stateManager, CVNET_PACKETS[20]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/heater_1/state',
+      'homenet/default/heater_1/state',
       expect.stringMatching(/\"current_temperature\":25/),
       expect.objectContaining({ retain: true }),
     );
@@ -59,7 +59,7 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     // Gas Valve (OPEN) - Index 34
     processPacket(stateManager, CVNET_PACKETS[34]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/gas_valve/state',
+      'homenet/default/gas_valve/state',
       expect.stringMatching(/\"state\":\"OPEN\"/),
       expect.objectContaining({ retain: true }),
     );

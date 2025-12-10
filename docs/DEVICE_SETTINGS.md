@@ -1,6 +1,6 @@
 # 기기 타입별 설정
 
-아래 목록은 `SYSTEM_TYPE` 또는 `CONFIG_FILE` 환경변수로 선택할 수 있는 HomeNet 기기 타입과 해당 YAML 설정 파일을 정리한 것입니다. 공통적으로 설정 파일은 `packages/core/config/*.homenet_bridge.yaml`에 존재하며, `pnpm dev:up` 실행 시 `CONFIG_FILE`과 `SYSTEM_TYPE`을 통해 도커 서비스가 올바른 구성을 주입합니다.
+아래 목록은 `SYSTEM_TYPE` 또는 `CONFIG_FILE`/`CONFIG_FILES` 환경변수로 선택할 수 있는 HomeNet 기기 타입과 해당 YAML 설정 파일을 정리한 것입니다. 공통적으로 설정 파일은 `packages/core/config/*.homenet_bridge.yaml`에 존재하며, `pnpm dev:up` 실행 시 `CONFIG_FILES`(첫 번째 항목)와 `SYSTEM_TYPE`을 통해 도커 서비스가 올바른 구성을 주입합니다.
 
 | 시스템 타입 (`SYSTEM_TYPE`) | 설정 파일 경로 | 시리얼 기본값 | 주 엔티티 구성 | 비고 |
 | --- | --- | --- | --- | --- |
@@ -19,7 +19,7 @@
 ## 설정 선택 가이드
 
 1. **도커 개발 환경**: `.env` 또는 쉘에 `SYSTEM_TYPE=<타입>`을 지정하면 `CONFIG_FILE=packages/core/config/<타입>.homenet_bridge.yaml`이 자동으로 주입됩니다.
-2. **직접 실행**: `CONFIG_FILE` 환경변수에 절대경로나 상대경로를 지정하면 동일한 구성이 적용됩니다.
+2. **직접 실행**: `CONFIG_FILES`(혹은 호환 키 `CONFIG_FILE`) 환경변수에 절대경로나 상대경로를 쉼표로 나열하면 동일한 구성이 적용됩니다. `SERIAL_PORTS`와 1:1 개수가 맞아야 합니다.
 3. **새 기기 추가**: 기존 YAML을 복사해 시리얼 파라미터와 엔티티 블록을 맞춘 뒤, `docs/ENTITY_EXAMPLES.md`에 정의된 엔티티 스키마를 따라 항목을 추가하세요.
 
 각 기기 타입의 세부 엔티티 구조는 설정 파일 자체에 주석으로 서술되어 있으니, 커스텀 로직을 작성하기 전 반드시 참고하십시오.

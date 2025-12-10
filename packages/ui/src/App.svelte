@@ -69,6 +69,8 @@
   let settingsLoading = false;
   let settingsError = '';
   let settingsSaving = false;
+  let renamingEntityId: string | null = null;
+  let renameError = '';
 
   type StreamEvent =
     | 'status'
@@ -518,6 +520,40 @@
     }
   }
 
+  async function renameEntityRequest(entityId: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      renameError = '새 이름을 입력해주세요.';
+      return;
+    }
+
+    renameError = '';
+    renamingEntityId = entityId;
+
+    try {
+      await apiRequest('./api/entities/rename', {
+        method: 'POST',
+        body: JSON.stringify({ entityId, newName: trimmed }),
+      });
+
+      availableCommands = availableCommands.map((cmd) =>
+        cmd.entityId === entityId ? { ...cmd, entityName: trimmed } : cmd,
+      );
+      await loadCommands();
+
+      addToast({
+        type: 'state',
+        title: '엔티티 이름 변경',
+        message: `${trimmed} 으로 이름이 변경되었습니다.`,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      renameError = err instanceof Error ? err.message : '이름 변경에 실패했습니다.';
+    } finally {
+      renamingEntityId = null;
+    }
+  }
+
   // --- Entity Unification Logic ---
 
   $: unifiedEntities = (() => {
@@ -581,6 +617,11 @@
     selectedEntity && commandPackets
       ? commandPackets.filter((p) => p.entityId === selectedEntityId).slice(-20)
       : [];
+
+  $: if (!selectedEntityId) {
+    renameError = '';
+    renamingEntityId = null;
+  }
 </script>
 
 <main class="app-container">
@@ -645,6 +686,9 @@
       commandPackets={selectedEntityCommandPackets}
       on:close={() => (selectedEntityId = null)}
       on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
+      isRenaming={renamingEntityId === selectedEntityId}
+      renameError={renameError}
+      on:rename={(e) => selectedEntityId && renameEntityRequest(selectedEntityId, e.detail.newName)}
     />
   {/if}
 </main>

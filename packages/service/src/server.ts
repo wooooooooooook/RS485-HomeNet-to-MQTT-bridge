@@ -84,6 +84,22 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
   },
 };
 
+const ENTITY_TYPE_KEYS: (keyof HomenetBridgeConfig)[] = [
+  'light',
+  'climate',
+  'valve',
+  'button',
+  'sensor',
+  'fan',
+  'switch',
+  'lock',
+  'number',
+  'select',
+  'text_sensor',
+  'text',
+  'binary_sensor',
+];
+
 const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | undefined) => {
   return {
     toast: {
@@ -478,24 +494,7 @@ app.get('/api/config/raw/:entityId', (req, res) => {
   const { entityId } = req.params;
   let foundEntity: any = null;
 
-  // All entity types (same as discovery-manager)
-  const entityTypeKeys: (keyof HomenetBridgeConfig)[] = [
-    'light',
-    'climate',
-    'valve',
-    'button',
-    'sensor',
-    'fan',
-    'switch',
-    'lock',
-    'number',
-    'select',
-    'text_sensor',
-    'text',
-    'binary_sensor',
-  ];
-
-  for (const type of entityTypeKeys) {
+  for (const type of ENTITY_TYPE_KEYS) {
     const entities = currentRawConfig[type] as Array<any> | undefined;
     if (Array.isArray(entities)) {
       foundEntity = entities.find((e) => e.id === entityId);
@@ -552,12 +551,7 @@ app.post('/api/config/update', async (req, res) => {
 
     // 3. Find and update entity
     let found = false;
-    const entityTypeKeys: (keyof HomenetBridgeConfig)[] = [
-      'light', 'climate', 'valve', 'button', 'sensor', 'fan', 'switch',
-      'lock', 'number', 'select', 'text_sensor', 'text', 'binary_sensor'
-    ];
-
-    for (const type of entityTypeKeys) {
+    for (const type of ENTITY_TYPE_KEYS) {
       const list = normalizedFullConfig[type] as any[]; // Use normalizedFullConfig here
       if (Array.isArray(list)) {
         const index = list.findIndex(e => e.id === entityId);
@@ -604,6 +598,89 @@ app.post('/api/config/update', async (req, res) => {
   } catch (err) {
     logger.error({ err }, '[service] Failed to update config');
     res.status(500).json({ error: err instanceof Error ? err.message : 'Update failed' });
+  }
+});
+
+app.post('/api/entities/rename', async (req, res) => {
+  const { entityId, newName } = req.body as { entityId?: string; newName?: string };
+
+  if (!entityId || typeof entityId !== 'string') {
+    return res.status(400).json({ error: 'entityId가 필요합니다.' });
+  }
+
+  if (!newName || typeof newName !== 'string' || !newName.trim()) {
+    return res.status(400).json({ error: '새 이름을 입력해주세요.' });
+  }
+
+  if (!currentConfigFile) {
+    return res.status(500).json({ error: 'No config file loaded' });
+  }
+
+  try {
+    const configPath = path.join(CONFIG_DIR, currentConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as {
+      homenet_bridge: HomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
+    }
+
+    const normalizedConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge);
+
+    let targetEntity: any | null = null;
+    for (const type of ENTITY_TYPE_KEYS) {
+      const list = normalizedConfig[type] as any[] | undefined;
+      if (!Array.isArray(list)) continue;
+      const found = list.find((entry) => entry.id === entityId);
+      if (found) {
+        targetEntity = found;
+        break;
+      }
+    }
+
+    if (!targetEntity) {
+      return res.status(404).json({ error: 'Entity not found in current config' });
+    }
+
+    const trimmedName = newName.trim();
+    const uniqueId = targetEntity.unique_id || `homenet_${entityId}`;
+    targetEntity.name = trimmedName;
+    if (!targetEntity.unique_id) {
+      targetEntity.unique_id = uniqueId;
+    }
+
+    loadedYamlFromFile.homenet_bridge = normalizedConfig;
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${configPath}.${timestamp}.bak`;
+    await fs.copyFile(configPath, backupPath);
+
+    const newFileContent = yaml.dump(loadedYamlFromFile, {
+      schema: HOMENET_BRIDGE_SCHEMA,
+      styles: { '!!int': 'hexadecimal' },
+      noRefs: true,
+      lineWidth: -1,
+    });
+
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    currentRawConfig = normalizedConfig;
+    currentConfigContent = normalizedConfig;
+
+    if (bridge) {
+      bridge.renameEntity(entityId, trimmedName, uniqueId);
+    }
+
+    logger.info(
+      `[service] Entity ${entityId} renamed to '${trimmedName}'. Backup created at ${path.basename(backupPath)}`,
+    );
+
+    res.json({ success: true, entityId, newName: trimmedName, uniqueId, backup: path.basename(backupPath) });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to rename entity');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Rename failed' });
   }
 });
 

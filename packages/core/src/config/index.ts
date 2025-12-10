@@ -20,6 +20,18 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
         entity.id = slug;
         logger.trace({ entity: entity.name, id: slug }, '[config] Generated entity ID from name');
       }
+
+      if (entity && typeof entity === 'object') {
+        const idValue = (entity as any).id;
+        const uniqueIdValue = (entity as any).unique_id;
+        const needsUniqueId =
+          typeof uniqueIdValue !== 'string' || uniqueIdValue.trim().length === 0;
+
+        if (needsUniqueId && typeof idValue === 'string' && idValue.trim()) {
+          (entity as any).unique_id = `homenet_${idValue}`;
+          logger.trace({ entity: idValue, unique_id: (entity as any).unique_id }, '[config] Added default unique_id');
+        }
+      }
     });
   });
 

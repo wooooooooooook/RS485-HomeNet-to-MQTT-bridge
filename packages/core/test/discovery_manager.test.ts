@@ -85,6 +85,7 @@ describe('DiscoveryManager', () => {
 
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_switch1');
+    expect(payload.object_id).toBe('test_switch');
     expect(payload.device.identifiers).toEqual(['homenet_bridge_device']);
     expect(payload.device.name).toBe('Homenet Bridge');
     expect(payload.value_template).toBe('{{ value_json.state }}');
@@ -108,6 +109,7 @@ describe('DiscoveryManager', () => {
     const payload = JSON.parse(call[1]);
 
     expect(payload.unique_id).toBe('homenet_linked_sensor');
+    expect(payload.object_id).toBe('linked_sensor');
     expect(payload.value_template).toBe('{{ value_json.value }}');
   });
 
@@ -121,5 +123,35 @@ describe('DiscoveryManager', () => {
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_always_on_light');
     expect(payload.command_topic).toBe('homenet/always_on_light/set');
+  });
+
+  it('엔티티 이름 변경 시 새 이름으로 디스커버리를 재발행한다', () => {
+    vi.useFakeTimers();
+
+    discoveryManager.discover();
+    eventBus.emit('state:changed', { entityId: 'switch1', state: {} });
+    mockPublisher.publish.mockClear();
+
+    const topic = 'homeassistant/switch/homenet_switch1/config';
+
+    eventBus.emit('entity:renamed', { entityId: 'switch1', newName: 'Renamed Switch' });
+
+    expect(mockPublisher.publish).toHaveBeenCalledWith(topic, '', { retain: true });
+
+    const publishesBeforeDelay = mockPublisher.publish.mock.calls.filter(
+      (args: any[]) => args[0] === topic && args[1],
+    );
+    expect(publishesBeforeDelay.length).toBe(0);
+
+    vi.advanceTimersByTime(2000);
+
+    const publishCalls = mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === topic && args[1]);
+    expect(publishCalls.length).toBeGreaterThan(0);
+
+    const payload = JSON.parse(publishCalls[publishCalls.length - 1][1]);
+    expect(payload.name).toBe('Renamed Switch');
+    expect(payload.object_id).toBe('renamed_switch');
+
+    vi.useRealTimers();
   });
 });

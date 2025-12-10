@@ -7,10 +7,13 @@
   export let parsedPackets: ParsedPacket[] = [];
   export let commandPackets: CommandPacket[] = [];
   export let isOpen: boolean;
+  export let isRenaming = false;
+  export let renameError: string | null = null;
 
   const dispatch = createEventDispatcher<{
     close: void;
     execute: { cmd: CommandInfo; value?: any };
+    rename: { newName: string };
   }>();
 
   let activeTab: 'status' | 'config' | 'packets' = 'status';
@@ -19,6 +22,10 @@
   let configError: string | null = null;
   let isSaving = false;
   let saveMessage = '';
+  let renameInput = '';
+  let renameLocalError: string | null = null;
+  let renameEntityId: string | null = null;
+  let effectiveRenameError = '';
 
   let commandInputs: Record<string, any> = {};
 
@@ -44,6 +51,31 @@
 
   // Use a variable to track the entity ID for which config was last loaded into the editor
   let loadedConfigEntityId: string | null = null;
+
+  $: if (entity && entity.id !== renameEntityId) {
+    renameInput = entity.displayName;
+    renameEntityId = entity.id;
+    renameLocalError = null;
+  }
+
+  $: effectiveRenameError = renameLocalError || renameError || '';
+
+  function handleRename() {
+    const trimmed = renameInput.trim();
+
+    if (!trimmed) {
+      renameLocalError = '새 이름을 입력해주세요.';
+      return;
+    }
+
+    if (trimmed === entity.displayName) {
+      renameLocalError = '변경된 내용이 없습니다.';
+      return;
+    }
+
+    renameLocalError = null;
+    dispatch('rename', { newName: trimmed });
+  }
 
   onMount(() => {
     // Initial load if modal is already open and entity is available (unlikely onMount but good practice)
@@ -195,6 +227,28 @@
 
       <div class="modal-body">
         {#if activeTab === 'status'}
+          <div class="section rename-section">
+            <div>
+              <h3>이름 변경</h3>
+              <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
+            </div>
+            <div class="rename-form">
+              <input
+                type="text"
+                bind:value={renameInput}
+                placeholder="새 이름"
+                aria-label="새 엔티티 이름"
+                on:input={() => (renameLocalError = null)}
+              />
+              <button class="save-btn" on:click={handleRename} disabled={isRenaming}>
+                {isRenaming ? '변경 중...' : '저장'}
+              </button>
+            </div>
+            {#if effectiveRenameError}
+              <div class="rename-error">{effectiveRenameError}</div>
+            {/if}
+          </div>
+
           <div class="section status-section">
             <h3>현재 상태</h3>
             <div class="payload-list">
@@ -437,6 +491,47 @@
     color: #e2e8f0;
     font-size: 1.1rem;
     font-weight: 600;
+  }
+
+  .subtle {
+    margin: 0.25rem 0 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .rename-section {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .rename-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .rename-form input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0b1220;
+    color: #e2e8f0;
+    font-size: 1rem;
+  }
+
+  .rename-form input:focus {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+  }
+
+  .rename-error {
+    margin-top: 0.5rem;
+    color: #f87171;
+    font-size: 0.9rem;
   }
 
   .payload-list {

@@ -18,7 +18,7 @@ import { CommandManager } from './command.manager.js';
 import { getStateCache } from '../state/store.js';
 import { DiscoveryManager } from '../mqtt/discovery-manager.js'; // Import DiscoveryManager
 import mqtt from 'mqtt';
-import { findEntityById } from '../utils/entities.js';
+import { ENTITY_TYPE_KEYS, findEntityById } from '../utils/entities.js';
 import { AutomationManager } from '../automation/automation-manager.js';
 
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
@@ -30,6 +30,7 @@ export interface BridgeOptions {
 }
 
 export class HomeNetBridge implements EntityStateProvider {
+  private readonly minPacketIntervalsForStats = 10;
   private readonly options: BridgeOptions;
   private readonly _mqttClient: MqttClient; // New internal instance
   private readonly client: MqttClient['client']; // Reference to the actual mqtt client
@@ -140,6 +141,34 @@ export class HomeNetBridge implements EntityStateProvider {
     return this.config;
   }
 
+  renameEntity(entityId: string, newName: string, uniqueId?: string): { success: boolean; error?: string } {
+    if (!this.config) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    const entityEntry = this.findEntityConfig(entityId);
+
+    if (!entityEntry) {
+      logger.warn({ entityId }, '[core] Rename requested for unknown entity');
+      return { success: false, error: 'Entity not found' };
+    }
+
+    const { entity } = entityEntry;
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      return { success: false, error: 'New name must not be empty' };
+    }
+    const ensuredUniqueId = uniqueId || entity.unique_id || `homenet_${entity.id}`;
+
+    entity.name = trimmedName;
+    if (!entity.unique_id) {
+      entity.unique_id = ensuredUniqueId;
+    }
+
+    eventBus.emit('entity:renamed', { entityId, newName: trimmedName, uniqueId: ensuredUniqueId });
+    return { success: true };
+  }
+
   /**
    * Execute a command by mocking subscriber behavior
    * This mimics what handleMqttMessage does when receiving a set topic
@@ -178,7 +207,7 @@ export class HomeNetBridge implements EntityStateProvider {
         receivedAt: new Date().toISOString(),
       });
 
-      if (this.packetIntervals.length >= 10) {
+      if (this.packetIntervals.length >= this.minPacketIntervalsForStats) {
         this.analyzeAndEmitPacketStats();
       }
 
@@ -400,5 +429,23 @@ export class HomeNetBridge implements EntityStateProvider {
     }
 
     eventBus.emit('packet-interval-stats', stats);
+  }
+
+  private findEntityConfig(entityId: string): { entity: EntityConfig; type: string } | null {
+    if (!this.config) {
+      return null;
+    }
+
+    for (const type of ENTITY_TYPE_KEYS) {
+      const entities = this.config[type] as EntityConfig[] | undefined;
+      if (!entities) continue;
+
+      const entity = entities.find((candidate) => candidate.id === entityId);
+      if (entity) {
+        return { entity, type: String(type) };
+      }
+    }
+
+    return null;
   }
 }

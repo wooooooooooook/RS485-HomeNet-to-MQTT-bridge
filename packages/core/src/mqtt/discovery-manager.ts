@@ -8,6 +8,7 @@ import { EntityConfig } from '../domain/entities/base.entity.js';
 
 interface DiscoveryPayload {
   name: string | null;
+  object_id?: string;
   unique_id: string;
   availability?: { topic: string }[];
   device: {
@@ -37,6 +38,7 @@ export class DiscoveryManager {
   private subscriber: MqttSubscriber;
   private readonly discoveryPrefix = 'homeassistant';
   private readonly bridgeStatusTopic = `${MQTT_TOPIC_PREFIX}/bridge/status`;
+  private readonly rediscoveryDelayMs = 2000;
   private readonly entities: Array<EntityConfig & { type: string }>;
   private readonly stateReceived = new Set<string>();
   private readonly discoveryPublished = new Set<string>();
@@ -60,6 +62,10 @@ export class DiscoveryManager {
 
     eventBus.on('state:changed', ({ entityId }) => {
       this.handleStateReceived(entityId);
+    });
+
+    eventBus.on('entity:renamed', ({ entityId, newName }: { entityId: string; newName: string }) => {
+      this.handleEntityRenamed(entityId, newName);
     });
 
     // Publish bridge online status
@@ -101,6 +107,45 @@ export class DiscoveryManager {
         this.publishDiscoveryIfEligible(entity);
       }
     }
+  }
+
+  private handleEntityRenamed(entityId: string, newName: string): void {
+    const entity = this.entities.find((candidate) => candidate.id === entityId);
+
+    if (!entity) {
+      logger.warn({ entityId }, '[DiscoveryManager] Attempted to rename unknown entity');
+      return;
+    }
+
+    const uniqueId = this.ensureUniqueId(entity);
+    const topic = `${this.discoveryPrefix}/${entity.type}/${uniqueId}/config`;
+
+    this.publisher.publish(topic, '', { retain: true });
+    logger.debug({ topic }, '[DiscoveryManager] Cleared retained discovery for renamed entity');
+
+    setTimeout(() => {
+      entity.name = newName;
+      entity.unique_id = uniqueId;
+      this.publishDiscoveryIfEligible(entity, true);
+    }, this.rediscoveryDelayMs);
+  }
+
+  private ensureUniqueId(entity: EntityConfig): string {
+    if (!entity.unique_id) {
+      entity.unique_id = `homenet_${entity.id}`;
+    }
+    return entity.unique_id;
+  }
+
+  private buildObjectId(entity: EntityConfig): string {
+    const source = entity.name || entity.id;
+    return source
+      .toString()
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_\-]/g, '_')
+      .replace(/_+/g, '_')
+      .toLowerCase();
   }
 
   private publishDiscoveryIfEligible(entity: EntityConfig & { type: string }, force = false): void {
@@ -157,7 +202,8 @@ export class DiscoveryManager {
       return;
     }
 
-    const uniqueId = `homenet_${id}`;
+    const uniqueId = this.ensureUniqueId(entity);
+    const objectId = this.buildObjectId(entity);
     const topic = `${this.discoveryPrefix}/${type}/${uniqueId}/config`;
 
     logger.debug({ id, uniqueId, topic }, '[DiscoveryManager] Preparing discovery');
@@ -165,6 +211,7 @@ export class DiscoveryManager {
     // Base payload with mandatory fields only
     const payload: DiscoveryPayload = {
       name: name || null,
+      object_id: objectId,
       unique_id: uniqueId,
       state_topic: `${MQTT_TOPIC_PREFIX}/${id}/state`,
       availability: [{ topic: this.bridgeStatusTopic }],

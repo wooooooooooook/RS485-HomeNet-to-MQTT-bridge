@@ -14,11 +14,11 @@
 
     - 이 부분이 가장 난관으로 예상됩니다. 월패드 파일을 chatGPT 등에 넣고 본인 집 월패드에 등록된 디바이스들 갯수를 설명해주면 AI가 작성해주지않을까.. 싶습니다. 추후에 설명 문서작성이 완료된다면 AI에게 문서를 같이 제공해주면 더 잘 작성해줄겁니다.
 
-4. 애드온 구성에서 serial_port와 config_file을 설정해주세요
+4. 애드온 구성에서 `serial_ports`와 `config_files` 배열을 설정해주세요 (최소 1개, 개수 동일 필수)
 
-   - serial_port는 USB인 경우 /dev/ttyUSB0 같은.. 디바이스 주소를, 소켓방식인경우(EW11) 192.168.0.83:8899 와 같이 ip주소:포트번호 를 입력
+   - `serial_ports`: USB라면 `/dev/ttyUSB0` 형식, 소켓(EW11)이라면 `192.168.0.83:8899`처럼 `ip:포트` 값을 순서대로 입력
 
-    - config_file에는 3. 에서 수정한 config_file 이름(예: commax.homenet_bridge.yaml)을 입력
+   - `config_files`: 3번에서 수정한 설정 파일 이름을 `serial_ports`와 동일한 순서로 나열 (예: `commax.homenet_bridge.yaml`)
 
 5. 애드온을 재시작하면 설정파일에 등록된 엔티티들이 MQTT discovery를 통해 HA에 자동으로 등록됩니다.
 

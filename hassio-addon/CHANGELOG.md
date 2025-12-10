@@ -1,3 +1,6 @@
+v0.0.13
+- feat: device, area지정 추가 (esphome의 설정과 유사)
+
 v0.0.12
 - feat: 비활성화엔티티보기 토글 추가
 

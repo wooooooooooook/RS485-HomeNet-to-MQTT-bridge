@@ -1,4 +1,4 @@
-import { HomenetBridgeConfig } from '../config/types.js';
+import { DeviceConfig, HomenetBridgeConfig } from '../config/types.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { logger } from '../utils/logger.js';
@@ -16,6 +16,7 @@ interface DiscoveryPayload {
     manufacturer: string;
     model?: string;
     sw_version?: string;
+    suggested_area?: string;
   };
   state_topic: string;
   command_topic?: string;
@@ -28,6 +29,7 @@ interface DiscoveryPayload {
   payload_off?: string;
   state_on?: string;
   state_off?: string;
+  suggested_area?: string;
   [key: string]: any;
 }
 
@@ -38,6 +40,7 @@ export class DiscoveryManager {
   private readonly discoveryPrefix = 'homeassistant';
   private readonly bridgeStatusTopic = `${MQTT_TOPIC_PREFIX}/bridge/status`;
   private readonly entities: Array<EntityConfig & { type: string }>;
+  private readonly devicesById = new Map<string, DeviceConfig>();
   private readonly stateReceived = new Set<string>();
   private readonly discoveryPublished = new Set<string>();
 
@@ -45,6 +48,7 @@ export class DiscoveryManager {
     this.config = config;
     this.publisher = publisher;
     this.subscriber = subscriber;
+    this.registerDevices();
     this.entities = this.collectEntities();
   }
 
@@ -91,6 +95,46 @@ export class DiscoveryManager {
       ...(this.config.text || []).map((e) => ({ ...e, type: 'text' })),
       ...(this.config.binary_sensor || []).map((e) => ({ ...e, type: 'binary_sensor' })),
     ];
+  }
+
+  private registerDevices(): void {
+    for (const device of this.config.devices || []) {
+      if (!device.id) {
+        logger.warn('[DiscoveryManager] Skipping device without id in config');
+        continue;
+      }
+      this.devicesById.set(device.id, device);
+    }
+  }
+
+  private defaultBridgeDevice(): DiscoveryPayload['device'] {
+    return {
+      identifiers: ['homenet_bridge_device'],
+      name: 'Homenet Bridge',
+      manufacturer: 'RS485 Bridge',
+      model: 'Bridge',
+    };
+  }
+
+  private buildDevicePayload(deviceId?: string): DiscoveryPayload['device'] {
+    if (!deviceId) {
+      return this.defaultBridgeDevice();
+    }
+
+    const device = this.devicesById.get(deviceId);
+    if (!device) {
+      logger.warn({ deviceId }, '[DiscoveryManager] Referenced device not found, using bridge device info');
+      return this.defaultBridgeDevice();
+    }
+
+    return {
+      identifiers: [`homenet_device_${device.id}`],
+      name: device.name || device.id,
+      manufacturer: device.manufacturer || 'RS485 Bridge',
+      model: device.model,
+      sw_version: device.sw_version,
+      suggested_area: device.area,
+    };
   }
 
   private handleStateReceived(entityId: string): void {
@@ -168,13 +212,12 @@ export class DiscoveryManager {
       unique_id: uniqueId,
       state_topic: `${MQTT_TOPIC_PREFIX}/${id}/state`,
       availability: [{ topic: this.bridgeStatusTopic }],
-      device: {
-        identifiers: ['homenet_bridge_device'],
-        name: 'Homenet Bridge',
-        manufacturer: 'RS485 Bridge',
-        model: 'Bridge',
-      },
+      device: this.buildDevicePayload(entity.device),
     };
+
+    if (entity.area) {
+      payload.suggested_area = entity.area;
+    }
 
     // Add optional standard fields if present
     if (entity.device_class) {

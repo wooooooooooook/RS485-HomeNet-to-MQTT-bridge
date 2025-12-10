@@ -20,6 +20,8 @@
 - **`icon`**: (선택) Home Assistant에서 사용할 Material Design 아이콘입니다 (예: `mdi:thermometer`).
 - **`discovery_always`**: (선택) `true`일 경우 실제 상태 패킷을 받지 않아도 Discovery를 즉시 발행합니다. 상태 패킷이 없는 버튼/센서 등에 사용합니다.
 - **`discovery_linked_id`**: (선택) 지정한 다른 엔티티 ID의 상태를 처음 수신할 때 함께 Discovery를 발행합니다. 같은 장치에 묶인 여러 엔티티를 동시에 노출할 때 활용합니다.
+- **`device`**: (선택) 아래 `devices` 블록에 정의한 장치 ID를 지정하면 Discovery `device` 메타데이터를 해당 장치 정보로 채웁니다. 미지정 시 브리지 장치가 기본값입니다.
+- **`area`**: (선택) Home Assistant의 Area에 매핑할 이름입니다. 지정하면 Discovery 페이로드의 `suggested_area`로 전달됩니다.
 
 > 기본적으로 각 엔티티는 자신의 상태 패킷을 처음 받을 때까지 Discovery가 지연됩니다. 위 옵션으로 예외를 정의할 수 있습니다.
 
@@ -43,6 +45,29 @@ sensor:
     state_class: measurement
     icon: mdi:thermometer
 ```
+
+### 디바이스 정의 및 영역 매핑
+
+엔티티별로 다른 디바이스 메타데이터를 사용하거나 영역을 미리 지정하려면 최상위 `devices` 블록과 엔티티의 `device`, `area` 필드를 함께 사용합니다.
+
+```yaml
+devices:
+  - id: subpanel
+    name: "현관 서브패널"
+    manufacturer: "Homenet"
+    model: "Subpanel V2"
+    sw_version: "1.0.3"
+    area: "Entrance"
+
+switch:
+  - id: entrance_light
+    name: "현관 조명"
+    type: switch
+    device: subpanel
+    area: "Hallway"
+```
+
+위 예시는 `entrance_light` 엔티티의 Discovery `device` 필드를 `subpanel` 정의로 채우고, 엔티티 자체의 `suggested_area`는 `Hallway`로 노출합니다. 엔티티에 `area`를 지정하지 않으면 디바이스에 정의한 `area`가 Home Assistant 장치 영역에 우선 적용됩니다.
 
 ### 스위치 / 조명 / 팬 (Switch / Light / Fan) 설정
 

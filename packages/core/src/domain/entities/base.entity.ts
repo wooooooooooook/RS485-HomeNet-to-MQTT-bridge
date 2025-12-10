@@ -46,6 +46,8 @@ export interface EntityConfig {
   id: string;
   name: string;
   type: string;
+  device?: string;
+  area?: string;
   packet_parameters?: any;
   device_class?: string;
   unit_of_measurement?: string;

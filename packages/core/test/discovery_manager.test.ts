@@ -26,6 +26,16 @@ describe('DiscoveryManager', () => {
       serial: { port: '/dev/ttyUSB0', baudRate: 9600 } as any,
       mqtt: { brokerUrl: 'mqtt://localhost' },
       switch: [{ id: 'switch1', name: 'Test Switch', type: 'switch', state: {} }],
+      devices: [
+        {
+          id: 'subpanel',
+          name: 'Subpanel',
+          manufacturer: 'Homenet',
+          model: 'Panel V2',
+          sw_version: '1.2.3',
+          area: 'Entrance',
+        },
+      ],
       sensor: [
         {
           id: 'sensor1',
@@ -41,6 +51,13 @@ describe('DiscoveryManager', () => {
           name: 'Linked Sensor',
           type: 'sensor',
           discovery_linked_id: 'switch1',
+          state: {},
+        },
+        {
+          id: 'device_sensor',
+          name: 'Device Sensor',
+          type: 'sensor',
+          device: 'subpanel',
           state: {},
         },
       ],
@@ -61,6 +78,7 @@ describe('DiscoveryManager', () => {
           name: 'Always Light',
           type: 'light',
           discovery_always: true,
+          area: 'Living Room',
           state: {},
         },
       ],
@@ -121,5 +139,29 @@ describe('DiscoveryManager', () => {
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_always_on_light');
     expect(payload.command_topic).toBe('homenet/always_on_light/set');
+    expect(payload.suggested_area).toBe('Living Room');
+    expect(payload.device.suggested_area).toBeUndefined();
+  });
+
+  it('디바이스 메타데이터와 영역 정보를 Discovery에 반영한다', () => {
+    discoveryManager.discover();
+
+    const sensorTopic = 'homeassistant/sensor/homenet_device_sensor/config';
+    eventBus.emit('state:changed', { entityId: 'device_sensor', state: {} });
+
+    const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === sensorTopic);
+    expect(call).toBeDefined();
+
+    const payload = JSON.parse(call[1]);
+    expect(payload.unique_id).toBe('homenet_device_sensor');
+    expect(payload.device).toEqual({
+      identifiers: ['homenet_device_subpanel'],
+      name: 'Subpanel',
+      manufacturer: 'Homenet',
+      model: 'Panel V2',
+      sw_version: '1.2.3',
+      suggested_area: 'Entrance',
+    });
+    expect(payload.suggested_area).toBeUndefined();
   });
 });

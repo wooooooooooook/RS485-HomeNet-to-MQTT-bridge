@@ -13,6 +13,15 @@ import { TextEntity } from '../domain/entities/text.entity.js';
 import { BinarySensorEntity } from '../domain/entities/binary-sensor.entity.js';
 import { PacketDefaults, StateSchema } from '../protocol/types.js';
 
+export interface DeviceConfig {
+  id: string;
+  name?: string;
+  manufacturer?: string;
+  model?: string;
+  sw_version?: string;
+  area?: string;
+}
+
 export type AutomationGuard = string | LambdaConfig;
 
 export interface AutomationTriggerState {
@@ -107,6 +116,7 @@ export interface HomenetBridgeConfig {
     parity: 'none' | 'even' | 'mark' | 'odd' | 'space';
     stop_bits: 1 | 1.5 | 2;
   };
+  devices?: DeviceConfig[];
   light?: LightEntity[];
   climate?: ClimateEntity[];
   valve?: ValveEntity[];

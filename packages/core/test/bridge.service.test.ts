@@ -97,9 +97,9 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     });
   });
 
-  it('should not emit stats if fewer than 100 packets have been received', () => {
+  it('should not emit stats if fewer than 10 packets have been received', () => {
     bridge.startRawPacketListener();
-    for (let i = 0; i < 99; i++) {
+    for (let i = 0; i < 9; i++) {
       fakeSerialPort.emit('data', Buffer.from([i]));
       vi.advanceTimersByTime(10);
     }

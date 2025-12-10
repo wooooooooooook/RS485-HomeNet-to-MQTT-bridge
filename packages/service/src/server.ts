@@ -71,6 +71,8 @@ const parseEnvList = (
 
 const envSerialPorts = parseEnvList('SERIAL_PORTS', 'SERIAL_PORT', '시리얼 포트 경로');
 const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+const envMqttTopicPrefixes = parseEnvList('MQTT_TOPIC_PREFIXES', 'MQTT_TOPIC_PREFIX', 'MQTT 토픽 prefix');
+const defaultMqttTopicPrefix = envMqttTopicPrefixes.values[0] || 'homenet';
 
 // --- Application State ---
 const app = express();
@@ -205,17 +207,17 @@ app.get('/api/bridge/info', async (_req, res) => {
       mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
       status: 'error',
       error: bridgeError || '브리지가 설정되지 않았거나 시작에 실패했습니다.',
-      topic: 'homenet/raw',
+      topic: `${defaultMqttTopicPrefix}/raw`,
     });
   }
   res.json({
     configFile: currentConfigFile,
     serialPath: envSerialPorts.values[0] || '/simshare/rs485-sim-tty', // Serial path is now from env or default
-    baudRate: currentConfigContent.serial.baud_rate, // From new config structure
+    baudRate: currentConfigContent.serial?.baud_rate ?? 0, // From new config structure
     mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
     status: bridgeStatus,
     error: bridgeError,
-    topic: 'homenet/raw', // This might become dynamic later
+    topic: `${defaultMqttTopicPrefix}/raw`, // This might become dynamic later
   });
 });
 

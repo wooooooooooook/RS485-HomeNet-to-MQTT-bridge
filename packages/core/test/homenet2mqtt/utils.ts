@@ -33,7 +33,7 @@ export async function setupTest(configPath: string): Promise<TestContext> {
   clearStateCache();
 
   const packetProcessor = new PacketProcessor(config, bridgeMock);
-  const stateManager = new StateManager(portId, config, packetProcessor, mqttPublisherMock);
+  const stateManager = new StateManager(portId, config, packetProcessor, mqttPublisherMock, 'homenet');
 
   return { packetProcessor, stateManager, portId };
 }

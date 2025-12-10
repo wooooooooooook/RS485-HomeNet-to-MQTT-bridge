@@ -7,7 +7,6 @@ import { logger } from '../utils/logger.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { eventBus } from '../service/event-bus.js';
 import { stateCache } from './store.js';
-import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
 
 export class StateManager {
   private receiveBuffer: Buffer = Buffer.alloc(0);
@@ -15,6 +14,7 @@ export class StateManager {
   private packetProcessor: PacketProcessor;
   private mqttPublisher: MqttPublisher;
   private portId: string;
+  private mqttTopicPrefix: string;
   // Timestamp of the last received chunk (ms since epoch)
   private lastChunkTimestamp: number = 0;
 
@@ -23,11 +23,13 @@ export class StateManager {
     config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     mqttPublisher: MqttPublisher,
+    mqttTopicPrefix: string,
   ) {
     this.portId = portId;
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.mqttPublisher = mqttPublisher;
+    this.mqttTopicPrefix = mqttTopicPrefix;
 
     if (typeof (this.packetProcessor as any).on === 'function') {
       this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
@@ -71,7 +73,7 @@ export class StateManager {
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
 
-    const topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${deviceId}/state`;
+    const topic = `${this.mqttTopicPrefix}/${this.portId}/${deviceId}/state`;
     const payload = JSON.stringify(newState);
 
     if (stateCache.get(topic) !== payload) {

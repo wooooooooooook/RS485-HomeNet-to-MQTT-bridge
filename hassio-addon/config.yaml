@@ -1,7 +1,7 @@
 name: Homenet2MQTT
 version: 0.0.14
 slug: h2m
-description: Bridge between RS485 HomeNet devices and MQTT (supports multi-port mapping).
+description: Bridge between RS485 HomeNet devices and MQTT (supports multi-port/topic mapping).
 url: https://github.com/woooook/RS485-HomeNet-to-MQTT-bridge
 arch:
   - aarch64
@@ -20,7 +20,8 @@ options:
   mqtt_need_login: true
   mqtt_user: "addons"
   mqtt_passwd: ""
-  mqtt_topic_prefix: homenet
+  mqtt_topic_prefixes:
+    - homenet
   serial_ports:
     - /dev/ttyUSB0
   config_files:
@@ -35,7 +36,9 @@ schema:
   mqtt_need_login: bool
   mqtt_user: str?
   mqtt_passwd: str?
-  mqtt_topic_prefix: str
+  mqtt_topic_prefixes:
+    - str
+  mqtt_topic_prefix: str?
   serial_ports:
     - str
   config_files:

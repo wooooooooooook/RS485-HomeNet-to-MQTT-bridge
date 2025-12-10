@@ -2,7 +2,6 @@ import { DeviceConfig, HomenetBridgeConfig } from '../config/types.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { logger } from '../utils/logger.js';
-import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
 import { eventBus } from '../service/event-bus.js';
 import { EntityConfig } from '../domain/entities/base.entity.js';
 
@@ -39,6 +38,7 @@ export class DiscoveryManager {
   private config: HomenetBridgeConfig;
   private publisher: MqttPublisher;
   private subscriber: MqttSubscriber;
+  private mqttTopicPrefix: string;
   private readonly discoveryPrefix = 'homeassistant';
   private readonly bridgeStatusTopic: string;
   private readonly rediscoveryDelayMs = 2000;
@@ -47,12 +47,19 @@ export class DiscoveryManager {
   private readonly stateReceived = new Set<string>();
   private readonly discoveryPublished = new Set<string>();
 
-  constructor(portId: string, config: HomenetBridgeConfig, publisher: MqttPublisher, subscriber: MqttSubscriber) {
+  constructor(
+    portId: string,
+    config: HomenetBridgeConfig,
+    publisher: MqttPublisher,
+    subscriber: MqttSubscriber,
+    mqttTopicPrefix: string,
+  ) {
     this.portId = portId;
     this.config = config;
     this.publisher = publisher;
     this.subscriber = subscriber;
-    this.bridgeStatusTopic = `${MQTT_TOPIC_PREFIX}/${this.portId}/bridge/status`;
+    this.mqttTopicPrefix = mqttTopicPrefix;
+    this.bridgeStatusTopic = `${this.mqttTopicPrefix}/${this.portId}/bridge/status`;
     this.registerDevices();
     this.entities = this.collectEntities();
   }
@@ -264,7 +271,7 @@ export class DiscoveryManager {
       name: name || null,
       object_id: objectId,
       unique_id: uniqueId,
-      state_topic: `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`,
+      state_topic: `${this.mqttTopicPrefix}/${this.portId}/${id}/state`,
       availability: [{ topic: this.bridgeStatusTopic }],
       device: this.buildDevicePayload(entity.device),
     };
@@ -288,7 +295,7 @@ export class DiscoveryManager {
     }
 
     if (['light', 'switch', 'fan', 'button', 'lock', 'number', 'select', 'text'].includes(type)) {
-      payload.command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/set`;
+      payload.command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/set`;
     }
 
     // Entity specific configurations
@@ -309,24 +316,24 @@ export class DiscoveryManager {
 
         // Brightness support
         if (entity.state_brightness || entity.command_brightness) {
-          payload.brightness_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.brightness_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/brightness/set`;
+          payload.brightness_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.brightness_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/brightness/set`;
           payload.brightness_scale = 255;
           payload.brightness_value_template = '{{ value_json.brightness }}';
         }
 
         // RGB color support
         if (entity.state_red || entity.state_green || entity.state_blue) {
-          payload.rgb_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.rgb_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/rgb/set`;
+          payload.rgb_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.rgb_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/rgb/set`;
           payload.rgb_value_template =
             '{{ value_json.red }},{{ value_json.green }},{{ value_json.blue }}';
         }
 
         // Color temperature support (mireds)
         if (entity.state_color_temp || entity.command_color_temp) {
-          payload.color_temp_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.color_temp_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/color_temp/set`;
+          payload.color_temp_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.color_temp_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/color_temp/set`;
           payload.color_temp_value_template = '{{ value_json.color_temp }}';
 
           if (entity.min_mireds !== undefined) {
@@ -340,8 +347,8 @@ export class DiscoveryManager {
         // Effect support
         if (entity.effect_list && entity.effect_list.length > 0) {
           payload.effect_list = entity.effect_list;
-          payload.effect_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.effect_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/effect/set`;
+          payload.effect_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.effect_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/effect/set`;
           payload.effect_value_template = '{{ value_json.effect }}';
         }
         break;
@@ -360,8 +367,8 @@ export class DiscoveryManager {
 
       case 'number':
         // Number entity configuration
-        payload.command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/set`;
-        payload.state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/set`;
+        payload.state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.value_template = '{{ value_json.value }}';
 
         // Set min, max, step from entity config
@@ -381,8 +388,8 @@ export class DiscoveryManager {
 
       case 'select':
         // Select entity configuration
-        payload.command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/set`;
-        payload.state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/set`;
+        payload.state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.value_template = '{{ value_json.option }}';
 
         // Options list is required for select
@@ -396,15 +403,15 @@ export class DiscoveryManager {
 
       case 'fan':
         // Fan state extracted from JSON
-        payload.state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.state_value_template = '{{ value_json.state }}';
         payload.payload_on = 'ON';
         payload.payload_off = 'OFF';
 
         // Percentage/Speed support (1-100)
         if (entity.state_percentage || entity.state_speed) {
-          payload.percentage_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.percentage_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/percentage/set`;
+          payload.percentage_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.percentage_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/percentage/set`;
           payload.percentage_value_template =
             '{{ value_json.percentage | default(value_json.speed) }}';
           payload.speed_range_min = 1;
@@ -414,31 +421,31 @@ export class DiscoveryManager {
         // Preset modes support
         if (entity.preset_modes && entity.preset_modes.length > 0) {
           payload.preset_modes = entity.preset_modes;
-          payload.preset_mode_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/preset/set`;
-          payload.preset_mode_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+          payload.preset_mode_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/preset/set`;
+          payload.preset_mode_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
           payload.preset_mode_value_template = '{{ value_json.preset_mode }}';
         }
 
         // Oscillation support
         if (entity.state_oscillating || entity.command_oscillating) {
-          payload.oscillation_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.oscillation_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/oscillation/set`;
+          payload.oscillation_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.oscillation_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/oscillation/set`;
           payload.oscillation_value_template = '{{ value_json.oscillating }}';
         }
 
         // Direction support
         if (entity.state_direction || entity.command_direction) {
-          payload.direction_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.direction_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/direction/set`;
+          payload.direction_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.direction_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/direction/set`;
           payload.direction_value_template = '{{ value_json.direction }}';
         }
         break;
 
       case 'valve':
         // Valve state - Home Assistant expects specific state values
-        payload.state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.value_template = '{{ value_json.state }}';
-        payload.command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/set`;
+        payload.command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/set`;
 
         // State values that HA expects (matching actual state values in uppercase)
         payload.state_open = 'OPEN';
@@ -457,8 +464,8 @@ export class DiscoveryManager {
 
         // Position support (0-100%)
         if (entity.state_position || entity.command_position) {
-          payload.position_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
-          payload.set_position_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/position/set`;
+          payload.position_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
+          payload.set_position_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/position/set`;
           payload.position_template = '{{ value_json.position }}';
           payload.position_open = 100;
           payload.position_closed = 0;
@@ -492,22 +499,22 @@ export class DiscoveryManager {
 
       case 'climate':
         // Climate entities use separate command topics but single state topic with templates
-        payload.mode_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/mode/set`;
-        payload.temperature_command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/temperature/set`;
+        payload.mode_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/mode/set`;
+        payload.temperature_command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/temperature/set`;
 
         // Use single state_topic with templates to extract values from JSON
-        payload.mode_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.mode_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.mode_state_template = '{{ value_json.mode }}';
 
-        payload.temperature_state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.temperature_state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.temperature_state_template = '{{ value_json.target_temperature }}';
 
-        payload.current_temperature_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.current_temperature_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.current_temperature_template = '{{ value_json.current_temperature }}';
 
         // Only include action template if the entity has state_action configured
         if (entity.state_action) {
-          payload.action_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+          payload.action_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
           payload.action_template = '{{ value_json.action }}';
         }
 
@@ -548,8 +555,8 @@ export class DiscoveryManager {
         break;
       case 'text':
         // Text entity with input
-        payload.command_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/set`;
-        payload.state_topic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${id}/state`;
+        payload.command_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/set`;
+        payload.state_topic = `${this.mqttTopicPrefix}/${this.portId}/${id}/state`;
         payload.value_template = '{{ value_json.text }}';
 
         // Set min, max length from entity config

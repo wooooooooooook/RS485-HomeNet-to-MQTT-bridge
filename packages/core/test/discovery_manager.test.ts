@@ -86,7 +86,7 @@ describe('DiscoveryManager', () => {
       ],
     } as any;
 
-    discoveryManager = new DiscoveryManager('main', mockConfig, mockPublisher, mockSubscriber);
+    discoveryManager = new DiscoveryManager('main', mockConfig, mockPublisher, mockSubscriber, 'homenet');
     discoveryManager.setup();
   });
 

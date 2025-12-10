@@ -132,6 +132,7 @@ describe('Climate Command Packet Generation', () => {
       mockConfig,
       mockPacketProcessor,
       commandManager,
+      'homenet',
     );
   });
 

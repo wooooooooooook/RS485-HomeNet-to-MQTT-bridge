@@ -19,7 +19,7 @@ const mockMqttPublisher = {
 } as any;
 
 const packetProcessor = new MockPacketProcessor();
-const stateManager = new StateManager(mockConfig, packetProcessor as any, mockMqttPublisher);
+const stateManager = new StateManager('verify-fix', mockConfig, packetProcessor as any, mockMqttPublisher, 'homenet');
 
 // Verification
 const testChunk = Buffer.from('AA55', 'hex');

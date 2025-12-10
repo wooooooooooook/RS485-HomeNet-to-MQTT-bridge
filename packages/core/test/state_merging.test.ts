@@ -33,7 +33,7 @@ describe('StateManager Merging', () => {
       mqtt: { brokerUrl: 'mqtt://localhost' },
     } as any;
 
-    stateManager = new StateManager('main', mockConfig, mockPacketProcessor as any, mockPublisher);
+    stateManager = new StateManager('main', mockConfig, mockPacketProcessor as any, mockPublisher, 'homenet');
   });
 
   it('should merge partial state updates', () => {

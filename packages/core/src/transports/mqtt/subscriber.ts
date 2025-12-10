@@ -6,7 +6,6 @@ import { logger } from '../../utils/logger.js';
 import { PacketProcessor } from '../../protocol/packet-processor.js';
 import { eventBus } from '../../service/event-bus.js';
 import { CommandManager } from '../../service/command.manager.js';
-import { MQTT_TOPIC_PREFIX } from '../../utils/constants.js';
 import { ENTITY_TYPE_KEYS, findEntityById } from '../../utils/entities.js';
 
 export class MqttSubscriber {
@@ -16,6 +15,7 @@ export class MqttSubscriber {
   private commandManager: CommandManager;
   private externalHandlers: Map<string, (message: Buffer) => void> = new Map();
   private portId: string;
+  private topicPrefix: string;
 
   constructor(
     mqttClient: MqttClient,
@@ -23,12 +23,14 @@ export class MqttSubscriber {
     config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     commandManager: CommandManager,
+    topicPrefix: string,
   ) {
     this.mqttClient = mqttClient;
     this.portId = portId;
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
+    this.topicPrefix = topicPrefix;
 
     this.mqttClient.client.on('message', (topic, message) =>
       this.handleMqttMessage(topic, message),
@@ -42,7 +44,7 @@ export class MqttSubscriber {
         | undefined;
       if (entities) {
         entities.forEach((entity) => {
-          const baseTopic = `${MQTT_TOPIC_PREFIX}/${this.portId}/${entity.id}`;
+          const baseTopic = `${this.topicPrefix}/${this.portId}/${entity.id}`;
           // Subscribe to all subtopics under the entity's base topic
           // This matches /set, /mode/set, /temperature/set, /brightness/set, etc.
           this.mqttClient.client.subscribe(`${baseTopic}/#`, (err) => {
@@ -78,8 +80,8 @@ export class MqttSubscriber {
     }
 
     logger.debug({ topic, message: message.toString() }, '[mqtt-subscriber] MQTT 메시지 수신');
-    // Only emit to service if topic starts with MQTT_TOPIC_PREFIX
-    if (topic.startsWith(MQTT_TOPIC_PREFIX)) {
+    // Only emit to service if topic starts with configured MQTT topic prefix
+    if (topic.startsWith(this.topicPrefix)) {
       eventBus.emit('mqtt-message', { topic, payload: message.toString(), portId: this.portId });
     }
 
@@ -93,12 +95,12 @@ export class MqttSubscriber {
     // Validate topic format: {prefix}/{id}/.../set
     if (
       parts.length < 4 ||
-      parts[0] !== MQTT_TOPIC_PREFIX ||
+      parts[0] !== this.topicPrefix ||
       parts[1] !== this.portId ||
       parts[parts.length - 1] !== 'set'
     ) {
       // Silently ignore known system topics (state, availability, etc.)
-      if (parts[0] === MQTT_TOPIC_PREFIX && parts.length >= 3) {
+      if (parts[0] === this.topicPrefix && parts.length >= 3) {
         const lastPart = parts[parts.length - 1];
         // Only warn if it's not a known system topic
         if (!['state', 'availability', 'attributes'].includes(lastPart)) {

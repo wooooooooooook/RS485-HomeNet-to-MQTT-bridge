@@ -25,6 +25,8 @@ export interface TestContext {
   portId: string;
 }
 
+const DEFAULT_TOPIC_PREFIX = 'homenet2mqtt/homedevice1';
+
 export async function setupTest(configPath: string): Promise<TestContext> {
   vi.clearAllMocks();
   const absolutePath = path.resolve(__dirname, '../../config', configPath);
@@ -33,7 +35,13 @@ export async function setupTest(configPath: string): Promise<TestContext> {
   clearStateCache();
 
   const packetProcessor = new PacketProcessor(config, bridgeMock);
-  const stateManager = new StateManager(portId, config, packetProcessor, mqttPublisherMock, 'homenet');
+  const stateManager = new StateManager(
+    portId,
+    config,
+    packetProcessor,
+    mqttPublisherMock,
+    DEFAULT_TOPIC_PREFIX,
+  );
 
   return { packetProcessor, stateManager, portId };
 }

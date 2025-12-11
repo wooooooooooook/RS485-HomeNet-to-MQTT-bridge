@@ -73,7 +73,7 @@ export class StateManager {
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
 
-    const topic = `${this.mqttTopicPrefix}/${this.portId}/${deviceId}/state`;
+    const topic = `${this.mqttTopicPrefix}/${deviceId}/state`;
     const payload = JSON.stringify(newState);
 
     if (stateCache.get(topic) !== payload) {

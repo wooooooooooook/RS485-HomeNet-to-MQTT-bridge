@@ -44,7 +44,7 @@ export class MqttSubscriber {
         | undefined;
       if (entities) {
         entities.forEach((entity) => {
-          const baseTopic = `${this.topicPrefix}/${this.portId}/${entity.id}`;
+          const baseTopic = `${this.topicPrefix}/${entity.id}`;
           // Subscribe to all subtopics under the entity's base topic
           // This matches /set, /mode/set, /temperature/set, /brightness/set, etc.
           this.mqttClient.client.subscribe(`${baseTopic}/#`, (err) => {
@@ -80,8 +80,10 @@ export class MqttSubscriber {
     }
 
     logger.debug({ topic, message: message.toString() }, '[mqtt-subscriber] MQTT 메시지 수신');
+    const normalizedPrefix = `${this.topicPrefix}/`;
+
     // Only emit to service if topic starts with configured MQTT topic prefix
-    if (topic.startsWith(this.topicPrefix)) {
+    if (topic.startsWith(normalizedPrefix)) {
       eventBus.emit('mqtt-message', { topic, payload: message.toString(), portId: this.portId });
     }
 
@@ -90,33 +92,30 @@ export class MqttSubscriber {
       return;
     }
 
-    const parts = topic.split('/');
+    if (!topic.startsWith(normalizedPrefix)) {
+      return;
+    }
 
-    // Validate topic format: {prefix}/{id}/.../set
-    if (
-      parts.length < 4 ||
-      parts[0] !== this.topicPrefix ||
-      parts[1] !== this.portId ||
-      parts[parts.length - 1] !== 'set'
-    ) {
+    const parts = topic.slice(normalizedPrefix.length).split('/');
+
+    // Validate topic format: {prefix}/{entityId}/.../set
+    if (parts.length < 2 || parts[parts.length - 1] !== 'set') {
       // Silently ignore known system topics (state, availability, etc.)
-      if (parts[0] === this.topicPrefix && parts.length >= 3) {
-        const lastPart = parts[parts.length - 1];
-        // Only warn if it's not a known system topic
-        if (!['state', 'availability', 'attributes'].includes(lastPart)) {
-          logger.warn({ topic }, `[mqtt-subscriber] Unhandled MQTT topic format`);
-        }
+      const lastPart = parts[parts.length - 1];
+      // Only warn if it's not a known system topic
+      if (!['state', 'availability', 'attributes', 'status'].includes(lastPart)) {
+        logger.warn({ topic }, `[mqtt-subscriber] Unhandled MQTT topic format`);
       }
       return;
     }
 
-    const entityId = parts[2];
+    const entityId = parts[0];
     let commandName = '';
     const payload = message.toString();
     let commandValue: number | string | undefined = undefined;
 
-    // Case 1: homenet/{id}/set (General command)
-    if (parts.length === 4) {
+    // Case 1: homenet/{entityId}/set (General command)
+    if (parts.length === 2) {
       if (payload === 'ON') commandName = 'on';
       else if (payload === 'OFF') commandName = 'off';
       else if (payload === 'OPEN') commandName = 'open';
@@ -131,9 +130,9 @@ export class MqttSubscriber {
         commandValue = payload;
       }
     }
-    // Case 2: homenet/{id}/{attribute}/set (Specific attribute command)
-    else if (parts.length === 5) {
-      commandName = parts[3]; // e.g. temperature, mode, percentage, brightness, color_temp
+    // Case 2: homenet/{entityId}/{attribute}/set (Specific attribute command)
+    else if (parts.length === 3) {
+      commandName = parts[1]; // e.g. temperature, mode, percentage, brightness, color_temp
 
       // Parse value
       const num = parseFloat(payload);

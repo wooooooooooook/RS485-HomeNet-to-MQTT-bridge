@@ -86,7 +86,15 @@ describe('DiscoveryManager', () => {
       ],
     } as any;
 
-    discoveryManager = new DiscoveryManager('main', mockConfig, mockPublisher, mockSubscriber, 'homenet');
+    const mqttTopicPrefix = 'homenet2mqtt/homedevice1';
+
+    discoveryManager = new DiscoveryManager(
+      'main',
+      mockConfig,
+      mockPublisher,
+      mockSubscriber,
+      mqttTopicPrefix,
+    );
     discoveryManager.setup();
   });
 
@@ -111,7 +119,7 @@ describe('DiscoveryManager', () => {
     expect(payload.value_template).toBe('{{ value_json.state }}');
     expect(payload.payload_on).toBe('ON');
     expect(payload.payload_off).toBe('OFF');
-    expect(payload.command_topic).toBe('homenet/main/switch1/set');
+    expect(payload.command_topic).toBe('homenet2mqtt/homedevice1/switch1/set');
   });
 
   it('연결된 엔티티 상태를 받은 경우 링크된 센서까지 함께 발행한다', () => {
@@ -142,7 +150,7 @@ describe('DiscoveryManager', () => {
 
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_main_always_on_light');
-    expect(payload.command_topic).toBe('homenet/main/always_on_light/set');
+    expect(payload.command_topic).toBe('homenet2mqtt/homedevice1/always_on_light/set');
     expect(payload.suggested_area).toBe('Living Room');
     expect(payload.device.suggested_area).toBeUndefined();
   });

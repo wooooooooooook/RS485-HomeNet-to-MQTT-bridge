@@ -72,7 +72,9 @@ const parseEnvList = (
 const envSerialPorts = parseEnvList('SERIAL_PORTS', 'SERIAL_PORT', '시리얼 포트 경로');
 const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
 const envMqttTopicPrefixes = parseEnvList('MQTT_TOPIC_PREFIXES', 'MQTT_TOPIC_PREFIX', 'MQTT 토픽 prefix');
-const defaultMqttTopicPrefix = envMqttTopicPrefixes.values[0] || 'homenet';
+const commonMqttPrefix = (process.env.MQTT_COMMON_PREFIX ?? '').trim() || 'homenet2mqtt';
+const defaultPortPrefix = envMqttTopicPrefixes.values[0] || 'homedevice1';
+const defaultMqttTopicPrefix = `${commonMqttPrefix}/${defaultPortPrefix}`;
 
 // --- Application State ---
 const app = express();

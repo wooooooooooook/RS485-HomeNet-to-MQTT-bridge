@@ -10,7 +10,7 @@ describe('HomeNet to MQTT - Hyundai Imazu Protocol', () => {
     processPacket(stateManager, HYUNDAI_IMAZU_PACKETS[4]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/default/room_1_light_2/state',
+      'homenet2mqtt/homedevice1/room_1_light_2/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -19,7 +19,7 @@ describe('HomeNet to MQTT - Hyundai Imazu Protocol', () => {
     if (HYUNDAI_IMAZU_PACKETS[5]) {
       processPacket(stateManager, HYUNDAI_IMAZU_PACKETS[5]);
       expect(publishMock).toHaveBeenCalledWith(
-        'homenet/default/room_1_light_2/state',
+        'homenet2mqtt/homedevice1/room_1_light_2/state',
         JSON.stringify({ state: 'OFF' }),
         expect.objectContaining({ retain: true }),
       );

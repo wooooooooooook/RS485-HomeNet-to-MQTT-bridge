@@ -33,7 +33,13 @@ describe('StateManager Merging', () => {
       mqtt: { brokerUrl: 'mqtt://localhost' },
     } as any;
 
-    stateManager = new StateManager('main', mockConfig, mockPacketProcessor as any, mockPublisher, 'homenet');
+    stateManager = new StateManager(
+      'main',
+      mockConfig,
+      mockPacketProcessor as any,
+      mockPublisher,
+      'homenet2mqtt/homedevice1',
+    );
   });
 
   it('should merge partial state updates', () => {
@@ -46,7 +52,7 @@ describe('StateManager Merging', () => {
     });
 
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/main/${deviceId}/state`,
+      `homenet2mqtt/homedevice1/${deviceId}/state`,
       JSON.stringify({ current_temperature: 24 }),
       { retain: true },
     );
@@ -59,7 +65,7 @@ describe('StateManager Merging', () => {
 
     // Expect merged state
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/main/${deviceId}/state`,
+      `homenet2mqtt/homedevice1/${deviceId}/state`,
       JSON.stringify({ current_temperature: 24, target_temperature: 26 }),
       { retain: true },
     );
@@ -72,7 +78,7 @@ describe('StateManager Merging', () => {
 
     // Expect merged state with updated value
     expect(mockPublisher.publish).toHaveBeenLastCalledWith(
-      `homenet/main/${deviceId}/state`,
+      `homenet2mqtt/homedevice1/${deviceId}/state`,
       JSON.stringify({ current_temperature: 25, target_temperature: 26 }),
       { retain: true },
     );

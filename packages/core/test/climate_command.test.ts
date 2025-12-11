@@ -126,18 +126,20 @@ describe('Climate Command Packet Generation', () => {
 
     commandManager = new CommandManager(mockSerialPort, mockConfig, 'main');
 
+    const topicPrefix = 'homenet2mqtt/homedevice1';
+
     mqttSubscriber = new MqttSubscriber(
       mockMqttClient,
       'main',
       mockConfig,
       mockPacketProcessor,
       commandManager,
-      'homenet',
+      topicPrefix,
     );
   });
 
   it('should generate command packet for climate mode set to off', async () => {
-    const topic = 'homenet/main/room_0_heater/mode/set';
+    const topic = 'homenet2mqtt/homedevice1/room_0_heater/mode/set';
     const message = Buffer.from('off');
 
     // Simulate MQTT message reception
@@ -163,7 +165,7 @@ describe('Climate Command Packet Generation', () => {
   });
 
   it('should generate command packet for climate temperature set', async () => {
-    const topic = 'homenet/main/room_0_heater/temperature/set';
+    const topic = 'homenet2mqtt/homedevice1/room_0_heater/temperature/set';
     const message = Buffer.from('18');
 
     // Simulate MQTT message reception
@@ -191,13 +193,13 @@ describe('Climate Command Packet Generation', () => {
   it('should handle multiple command topics correctly', async () => {
     // Send mode command
     await (mqttSubscriber as any).handleMqttMessage(
-      'homenet/main/room_0_heater/mode/set',
+      'homenet2mqtt/homedevice1/room_0_heater/mode/set',
       Buffer.from('heat'),
     );
 
     // Send temperature command
     await (mqttSubscriber as any).handleMqttMessage(
-      'homenet/main/room_0_heater/temperature/set',
+      'homenet2mqtt/homedevice1/room_0_heater/temperature/set',
       Buffer.from('22.5'),
     );
 

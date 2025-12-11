@@ -10,7 +10,7 @@ describe('HomeNet to MQTT - Kocom Protocol', () => {
     processPacket(stateManager, KOCOM_PACKETS[1]);
 
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/default/room_0_light_1/state',
+      'homenet2mqtt/homedevice1/room_0_light_1/state',
       JSON.stringify({ state: 'ON' }),
       expect.objectContaining({ retain: true }),
     );
@@ -18,7 +18,7 @@ describe('HomeNet to MQTT - Kocom Protocol', () => {
     // Room 0 Heater (HEAT) - Index 26
     processPacket(stateManager, KOCOM_PACKETS[26]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/default/room_0_heater/state',
+      'homenet2mqtt/homedevice1/room_0_heater/state',
       expect.stringMatching(/\"mode\":\"heat\"/),
       expect.objectContaining({ retain: true }),
     );
@@ -26,7 +26,7 @@ describe('HomeNet to MQTT - Kocom Protocol', () => {
     // Room 0 Heater (Temp 25C/26C) - Index 27
     processPacket(stateManager, KOCOM_PACKETS[27]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/default/room_0_heater/state',
+      'homenet2mqtt/homedevice1/room_0_heater/state',
       expect.stringMatching(/"current_temperature":25.*"target_temperature":26/),
       expect.objectContaining({ retain: true }),
     );
@@ -34,7 +34,7 @@ describe('HomeNet to MQTT - Kocom Protocol', () => {
     // Gas Valve (OPEN) - Index 41
     processPacket(stateManager, KOCOM_PACKETS[41]);
     expect(publishMock).toHaveBeenCalledWith(
-      'homenet/default/gas_valve/state',
+      'homenet2mqtt/homedevice1/gas_valve/state',
       JSON.stringify({ state: 'OPEN' }),
       expect.objectContaining({ retain: true }),
     );

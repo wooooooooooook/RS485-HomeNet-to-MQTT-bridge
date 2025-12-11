@@ -90,7 +90,7 @@
   const normalizeRawPacket = (
     data: Partial<RawPacketWithInterval> & { payload?: string },
   ): RawPacketWithInterval => ({
-    topic: data.topic ?? 'homenet/raw',
+    topic: data.topic ?? 'homenet2mqtt/raw',
     payload: data.payload ?? '',
     receivedAt: data.receivedAt ?? new Date().toISOString(),
     interval: typeof data.interval === 'number' ? data.interval : null,
@@ -328,6 +328,7 @@
     };
 
     const handleMqttMessage = (data: MqttMessageEvent) => {
+      if (!isStateTopic(data.topic)) return;
       deviceStates.set(data.topic, data.payload);
       deviceStates = deviceStates; // Trigger Svelte reactivity
     };
@@ -462,18 +463,34 @@
     }
   }
 
+  const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
+
   const isBridgeStatusTopic = (topic: string) => {
-    const normalized = topic.replace(/^homenet\//, '');
-    return normalized === 'bridge/status';
+    const parts = normalizeTopicParts(topic);
+    return parts.slice(-2).join('/') === 'bridge/status';
   };
 
-  const formatTopicName = (topic: string) => {
-    const withoutPrefix = topic.replace(/^homenet\//, '');
-    return withoutPrefix.replace(/\/state$/, '');
+  const isStateTopic = (topic: string) => {
+    const parts = normalizeTopicParts(topic);
+    return parts.length >= 3 && parts[parts.length - 1] === 'state';
   };
 
   const extractEntityIdFromTopic = (topic: string) => {
-    return formatTopicName(topic);
+    const parts = normalizeTopicParts(topic);
+
+    if (parts.length >= 3) {
+      const [, , ...rest] = parts;
+      const [entityId] = rest;
+      if (entityId) {
+        return entityId;
+      }
+    }
+
+    if (parts.length >= 2 && ['state', 'set', 'availability', 'attributes'].includes(parts.at(-1) || '')) {
+      return parts[parts.length - 2];
+    }
+
+    return parts[parts.length - 1] ?? topic;
   };
 
   onDestroy(() => {

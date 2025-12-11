@@ -59,7 +59,8 @@ export class HomeNetBridge {
   private envMqttTopicPrefixes: string[] = [];
   private serialPortOverrides = new Map<string, string>();
   private mqttTopicPrefixOverrides = new Map<string, string>();
-  private defaultMqttTopicPrefix = this.peekDefaultMqttTopicPrefix();
+  private resolvedPortTopicPrefixes = new Map<string, string>();
+  private commonMqttTopicPrefix = this.peekCommonMqttTopicPrefix();
 
   constructor(options: BridgeOptions) {
     this.options = options;
@@ -220,14 +221,11 @@ export class HomeNetBridge {
     };
   }
 
-  private peekDefaultMqttTopicPrefix(): string {
-    const raw = process.env.MQTT_TOPIC_PREFIXES || process.env.MQTT_TOPIC_PREFIX || '';
-    const prefix = raw
-      .split(',')
-      .map((value) => value.trim())
-      .find((value) => value.length > 0);
+  private peekCommonMqttTopicPrefix(): string {
+    const raw = process.env.MQTT_COMMON_PREFIX || '';
+    const prefix = raw.trim();
 
-    return prefix || 'homenet';
+    return prefix || 'homenet2mqtt';
   }
 
   private parseEnvList(primaryKey: string, legacyKey: string, label: string): string[] {
@@ -281,18 +279,25 @@ export class HomeNetBridge {
   }
 
   private getMqttTopicPrefix(portId: string): string {
-    return this.mqttTopicPrefixOverrides.get(portId) ?? this.defaultMqttTopicPrefix;
+    const portPrefix = this.resolvedPortTopicPrefixes.get(portId);
+    const fallbackPortPrefix = this.resolvedPortTopicPrefixes.values().next().value || 'homedevice1';
+    const effectivePortPrefix = portPrefix || fallbackPortPrefix;
+
+    return `${this.commonMqttTopicPrefix}/${effectivePortPrefix}`;
   }
 
   private async initialize() {
     this.serialPortOverrides.clear();
     this.mqttTopicPrefixOverrides.clear();
+    this.resolvedPortTopicPrefixes.clear();
+    this.commonMqttTopicPrefix = this.peekCommonMqttTopicPrefix();
     this.envSerialPorts = this.parseEnvList('SERIAL_PORTS', 'SERIAL_PORT', '시리얼 포트 경로');
     this.envConfigFiles = this.parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
-    this.envMqttTopicPrefixes = this.parseEnvList('MQTT_TOPIC_PREFIXES', 'MQTT_TOPIC_PREFIX', 'MQTT 토픽 prefix');
-    if (this.envMqttTopicPrefixes.length > 0) {
-      this.defaultMqttTopicPrefix = this.envMqttTopicPrefixes[0];
-    }
+    this.envMqttTopicPrefixes = this.parseEnvList(
+      'MQTT_TOPIC_PREFIXES',
+      'MQTT_TOPIC_PREFIX',
+      '포트별 MQTT 토픽 프리픽스',
+    );
 
     if (
       this.envSerialPorts.length > 0 &&
@@ -348,10 +353,17 @@ export class HomeNetBridge {
       });
     }
 
+    this.resolvedPortTopicPrefixes.clear();
+    this.config.serials.forEach((serial, index) => {
+      const fallbackPrefix = `homedevice${index + 1}`;
+      const portPrefix = this.mqttTopicPrefixOverrides.get(serial.portId) ?? fallbackPrefix;
+      this.resolvedPortTopicPrefixes.set(serial.portId, portPrefix);
+    });
+
     const defaultWillPortId = this.config.serials[0]?.portId ?? 'default';
     const mqttOptions: mqtt.IClientOptions = {
       will: {
-        topic: `${this.getMqttTopicPrefix(defaultWillPortId)}/${defaultWillPortId}/bridge/status`,
+        topic: `${this.getMqttTopicPrefix(defaultWillPortId)}/bridge/status`,
         payload: 'offline',
         qos: 1,
         retain: true,

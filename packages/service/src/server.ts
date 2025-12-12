@@ -90,14 +90,14 @@ const commandPacketHistory: unknown[] = [];
 const parsedPacketHistory: unknown[] = [];
 const MAX_PACKET_HISTORY = 1000;
 
-eventBus.on('command-packet', (packet) => {
+eventBus.on('command-packet', (packet: unknown) => {
   commandPacketHistory.push(packet);
   if (commandPacketHistory.length > MAX_PACKET_HISTORY) {
     commandPacketHistory.shift();
   }
 });
 
-eventBus.on('parsed-packet', (packet) => {
+eventBus.on('parsed-packet', (packet: unknown) => {
   parsedPacketHistory.push(packet);
   if (parsedPacketHistory.length > MAX_PACKET_HISTORY) {
     parsedPacketHistory.shift();
@@ -224,7 +224,7 @@ app.get('/api/bridge/info', async (_req, res) => {
   }
 
   const bridgesInfo = currentConfigs.map((config, configIndex) => {
-    const serialTopics = config.serials?.map((serial, index) => ({
+    const serialTopics = config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => ({
       portId: serial.portId,
       path: serial.path,
       baudRate: serial.baud_rate,
@@ -291,6 +291,8 @@ type RawPacketPayload = {
   payload?: string;
   interval?: number | null;
   receivedAt?: string;
+  portId?: string;
+  topic?: string;
 };
 
 type RawPacketEvent = {
@@ -298,6 +300,7 @@ type RawPacketEvent = {
   payload: string;
   receivedAt: string;
   interval: number | null;
+  portId?: string;
 };
 
 type StateChangeEvent = {
@@ -306,14 +309,24 @@ type StateChangeEvent = {
   payload: string;
   state: Record<string, unknown>;
   timestamp: string;
+  portId?: string;
 };
 
-const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => ({
-  topic: 'homenet/raw',
-  payload: typeof data.payload === 'string' ? data.payload : '',
-  receivedAt: data.receivedAt ?? new Date().toISOString(),
-  interval: typeof data.interval === 'number' ? data.interval : null,
-});
+// 최근 상태를 UI에 재전송하기 위한 캐시
+const latestStates = new Map<string, StateChangeEvent>();
+
+const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => {
+  const portId = data.portId ?? 'raw';
+  const topic = data.topic ?? `${BASE_MQTT_PREFIX}/${portId}/raw`;
+
+  return {
+    topic,
+    payload: typeof data.payload === 'string' ? data.payload : '',
+    receivedAt: data.receivedAt ?? new Date().toISOString(),
+    interval: typeof data.interval === 'number' ? data.interval : null,
+    portId,
+  };
+};
 
 const stopAllRawPacketListeners = () => {
   bridges.forEach((instance) => instance.bridge.stopRawPacketListener());
@@ -403,10 +416,14 @@ const registerPacketStream = () => {
     cleanupHandlers.push(() => eventBus.off('parsed-packet', handleParsedPacket));
 
     const handleStateChange = (data: StateChangeEvent) => {
+      latestStates.set(data.topic, data);
       sendStreamEvent(socket, 'state-change', data);
     };
     eventBus.on('state:changed', handleStateChange);
     cleanupHandlers.push(() => eventBus.off('state:changed', handleStateChange));
+
+    // 초기 연결 시 캐시된 상태를 먼저 전송하여 대시보드가 즉시 활성화됨
+    latestStates.forEach((state) => sendStreamEvent(socket, 'state-change', state));
 
     socket.on('message', (message: string) => {
       try {
@@ -462,7 +479,7 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
   const commands: CommandInfo[] = [];
 
   // All entity types (same as discovery-manager)
-  const entityTypeKeys: (keyof HomenetBridgeConfig)[] = [
+  const entityTypeKeys: (keyof HomenetBridgeConfig & string)[] = [
     'light',
     'climate',
     'valve',
@@ -902,6 +919,7 @@ async function loadAndStartBridges(filenames: string[]) {
 
   bridgeStartPromise = (async () => {
     await stopAllBridges();
+    latestStates.clear();
 
     bridgeStatus = 'starting';
     bridgeError = null;

@@ -1,3 +1,6 @@
+v0.0.20
+- chore: 애드온 버전 번호 갱신
+
 v0.0.19
 - feat: MQTT 공통 접두사(mqtt_common_prefix) 설정 추가
 

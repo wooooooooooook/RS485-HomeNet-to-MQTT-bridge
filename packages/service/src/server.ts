@@ -90,14 +90,14 @@ const commandPacketHistory: unknown[] = [];
 const parsedPacketHistory: unknown[] = [];
 const MAX_PACKET_HISTORY = 1000;
 
-eventBus.on('command-packet', (packet) => {
+eventBus.on('command-packet', (packet: unknown) => {
   commandPacketHistory.push(packet);
   if (commandPacketHistory.length > MAX_PACKET_HISTORY) {
     commandPacketHistory.shift();
   }
 });
 
-eventBus.on('parsed-packet', (packet) => {
+eventBus.on('parsed-packet', (packet: unknown) => {
   parsedPacketHistory.push(packet);
   if (parsedPacketHistory.length > MAX_PACKET_HISTORY) {
     parsedPacketHistory.shift();
@@ -224,7 +224,7 @@ app.get('/api/bridge/info', async (_req, res) => {
   }
 
   const bridgesInfo = currentConfigs.map((config, configIndex) => {
-    const serialTopics = config.serials?.map((serial, index) => ({
+    const serialTopics = config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => ({
       portId: serial.portId,
       path: serial.path,
       baudRate: serial.baud_rate,
@@ -291,6 +291,8 @@ type RawPacketPayload = {
   payload?: string;
   interval?: number | null;
   receivedAt?: string;
+  portId?: string;
+  topic?: string;
 };
 
 type RawPacketEvent = {
@@ -298,6 +300,7 @@ type RawPacketEvent = {
   payload: string;
   receivedAt: string;
   interval: number | null;
+  portId?: string;
 };
 
 type StateChangeEvent = {
@@ -308,12 +311,18 @@ type StateChangeEvent = {
   timestamp: string;
 };
 
-const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => ({
-  topic: 'homenet/raw',
-  payload: typeof data.payload === 'string' ? data.payload : '',
-  receivedAt: data.receivedAt ?? new Date().toISOString(),
-  interval: typeof data.interval === 'number' ? data.interval : null,
-});
+const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => {
+  const portId = data.portId ?? 'raw';
+  const topic = data.topic ?? `${BASE_MQTT_PREFIX}/${portId}/raw`;
+
+  return {
+    topic,
+    payload: typeof data.payload === 'string' ? data.payload : '',
+    receivedAt: data.receivedAt ?? new Date().toISOString(),
+    interval: typeof data.interval === 'number' ? data.interval : null,
+    portId,
+  };
+};
 
 const stopAllRawPacketListeners = () => {
   bridges.forEach((instance) => instance.bridge.stopRawPacketListener());
@@ -462,7 +471,7 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
   const commands: CommandInfo[] = [];
 
   // All entity types (same as discovery-manager)
-  const entityTypeKeys: (keyof HomenetBridgeConfig)[] = [
+  const entityTypeKeys: (keyof HomenetBridgeConfig & string)[] = [
     'light',
     'climate',
     'valve',

@@ -398,7 +398,7 @@
 
       if (!isStateTopic(data.topic)) return;
       deviceStates.set(data.topic, data.payload);
-      deviceStates = deviceStates; // Trigger Svelte reactivity
+      deviceStates = new Map(deviceStates);
     };
 
     const handleRawPacketWithInterval = (data: RawPacketWithInterval) => {
@@ -457,6 +457,9 @@
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
+      deviceStates.set(data.topic, data.payload);
+      deviceStates = new Map(deviceStates);
+
       if (!isToastEnabled('state')) return;
       const summary = formatStateSummary(data.state);
       addToast({

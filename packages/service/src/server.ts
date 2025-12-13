@@ -14,6 +14,7 @@ import {
   eventBus,
   LambdaConfig,
   normalizeConfig,
+  normalizePortId,
   validateConfig,
 } from '@rs485-homenet/core';
 
@@ -78,6 +79,8 @@ const parseEnvList = (
 };
 
 const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+
+const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
 
 // --- Application State ---
 const app = express();
@@ -150,6 +153,7 @@ const ENTITY_TYPE_KEYS: (keyof HomenetBridgeConfig)[] = [
 ];
 
 const BASE_MQTT_PREFIX = (process.env.MQTT_TOPIC_PREFIX || 'homenet2mqtt').toString().trim();
+const BASE_PREFIX_PARTS = normalizeTopicParts(BASE_MQTT_PREFIX);
 
 const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | undefined) => {
   return {
@@ -224,12 +228,15 @@ app.get('/api/bridge/info', async (_req, res) => {
   }
 
   const bridgesInfo = currentConfigs.map((config, configIndex) => {
-    const serialTopics = config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => ({
-      portId: serial.portId,
-      path: serial.path,
-      baudRate: serial.baud_rate,
-      topic: `${BASE_MQTT_PREFIX}/${serial.portId?.trim() || `homedevice${index + 1}`}`,
-    })) ?? [];
+    const serialTopics = config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => {
+      const portId = normalizePortId(serial.portId, index);
+      return {
+        portId,
+        path: serial.path,
+        baudRate: serial.baud_rate,
+        topic: `${BASE_MQTT_PREFIX}/${portId}`,
+      };
+    }) ?? [];
 
     return {
       configFile: currentConfigFiles[configIndex],
@@ -314,8 +321,20 @@ type StateChangeEvent = {
 
 // 최근 상태를 UI에 재전송하기 위한 캐시
 const latestStates = new Map<string, StateChangeEvent>();
+let topicPrefixToPortId = new Map<string, string>();
 
-const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
+const rebuildPortMappings = () => {
+  const nextMap = new Map<string, string>();
+
+  currentConfigs.forEach((config) => {
+    config.serials?.forEach((serial, index) => {
+      const portId = normalizePortId(serial.portId, index);
+      nextMap.set(portId, portId);
+    });
+  });
+
+  topicPrefixToPortId = nextMap;
+};
 
 const extractEntityIdFromTopic = (topic: string) => {
   const parts = normalizeTopicParts(topic);
@@ -327,8 +346,19 @@ const extractEntityIdFromTopic = (topic: string) => {
 
 const extractPortIdFromTopic = (topic: string) => {
   const parts = normalizeTopicParts(topic);
+
+  const hasBasePrefix =
+    BASE_PREFIX_PARTS.length > 0 &&
+    BASE_PREFIX_PARTS.every((segment, index) => parts[index] === segment);
+
+  if (hasBasePrefix && parts.length > BASE_PREFIX_PARTS.length) {
+    const inferred = parts[BASE_PREFIX_PARTS.length];
+    return topicPrefixToPortId.get(inferred) ?? inferred;
+  }
+
   if (parts.length >= 2) {
-    return parts[1];
+    const inferred = parts[1];
+    return topicPrefixToPortId.get(inferred) ?? inferred;
   }
   return undefined;
 };
@@ -755,6 +785,7 @@ app.post('/api/config/update', async (req, res) => {
     // 6. Update in-memory raw config (this also needs to be normalized)
     currentRawConfigs = [normalizedFullConfig]; // Update with normalized config
     currentConfigs = [normalizedFullConfig]; // Ensure bridge uses normalized config
+    rebuildPortMappings();
 
     logger.info(`[service] Config updated for entity ${entityId}. Backup created at ${path.basename(backupPath)}`);
     res.json({ success: true, backup: path.basename(backupPath) });
@@ -831,6 +862,7 @@ app.post('/api/entities/rename', async (req, res) => {
 
     currentRawConfigs = [normalizedConfig];
     currentConfigs = [normalizedConfig];
+    rebuildPortMappings();
 
     const targetBridge = bridges.find((instance) => instance.configFile === currentConfigFiles[0]);
     targetBridge?.bridge.renameEntity(entityId, trimmedName, uniqueId);
@@ -980,6 +1012,7 @@ async function loadAndStartBridges(filenames: string[]) {
       currentConfigFiles = filenames;
       currentRawConfigs = loadedConfigs;
       currentConfigs = loadedConfigs;
+      rebuildPortMappings();
 
       const mqttUrl = process.env.MQTT_URL?.trim() || 'mqtt://mq:1883';
       const mqttUsername = process.env.MQTT_USER?.trim() || undefined;

@@ -401,6 +401,57 @@ const getRequestUrl = (req?: IncomingMessage) => {
   return new URL(req.url, `http://${host}`);
 };
 
+const broadcastStreamEvent = <T>(event: StreamEvent, payload: T) => {
+  wss.clients.forEach((client) => {
+    sendStreamEvent(client, event, payload);
+  });
+};
+const registerGlobalEventHandlers = () => {
+  const broadcastStateChange = (stateChangeEvent: StateChangeEvent) => {
+    latestStates.set(stateChangeEvent.topic, stateChangeEvent);
+    broadcastStreamEvent('state-change', stateChangeEvent);
+  };
+  eventBus.on('state:changed', broadcastStateChange);
+  eventBus.on('mqtt-message', (data: { topic: string; payload: string; portId?: string }) => {
+    const receivedAt = new Date().toISOString();
+    const portId = data.portId ?? extractPortIdFromTopic(data.topic);
+    broadcastStreamEvent('mqtt-message', {
+      topic: data.topic,
+      payload: data.payload,
+      receivedAt,
+      portId,
+    });
+    if (isStateTopic(data.topic)) {
+      let parsedState: Record<string, unknown> = {};
+      try {
+        parsedState = JSON.parse(data.payload) as Record<string, unknown>;
+      } catch {
+        parsedState = {};
+      }
+      const stateChangeEvent: StateChangeEvent = {
+        entityId: extractEntityIdFromTopic(data.topic),
+        topic: data.topic,
+        payload: data.payload,
+        state: parsedState,
+        timestamp: receivedAt,
+        portId,
+      };
+      broadcastStateChange(stateChangeEvent);
+    }
+  });
+  eventBus.on('command-packet', (data: unknown) => {
+    broadcastStreamEvent('command-packet', data);
+  });
+  eventBus.on('parsed-packet', (data: unknown) => {
+    broadcastStreamEvent('parsed-packet', data);
+  });
+  eventBus.on('raw-data-with-interval', (data: RawPacketPayload) => {
+    broadcastStreamEvent('raw-data-with-interval', normalizeRawPacket(data));
+  });
+  eventBus.on('packet-interval-stats', (data: unknown) => {
+    broadcastStreamEvent('packet-interval-stats', data);
+  });
+};
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
     const requestUrl = getRequestUrl(req);
@@ -408,127 +459,47 @@ const registerPacketStream = () => {
       requestUrl?.searchParams.get('mqttUrl') ?? '',
       process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
     );
-
-    sendStreamEvent(socket, 'status', { state: 'connected', mqttUrl: streamMqttUrl });
-
-    let isStreaming = false;
-    const streamEventHandlers: Array<() => void> = [];
-
-    const stopStreaming = () => {
-      if (!isStreaming) return;
-      logger.info('[service] UI requested to stop streaming raw packets.');
-      stopAllRawPacketListeners();
-      streamEventHandlers.forEach(handler => handler());
-      streamEventHandlers.length = 0;
-      isStreaming = false;
-    };
-
-    const startStreaming = () => {
-      if (isStreaming) return;
-      logger.info('[service] UI requested to start streaming raw packets.');
-
-      const handleRawDataWithInterval = (data: RawPacketPayload) => {
-        sendStreamEvent(socket, 'raw-data-with-interval', normalizeRawPacket(data));
-      };
-      eventBus.on('raw-data-with-interval', handleRawDataWithInterval);
-      streamEventHandlers.push(() => eventBus.off('raw-data-with-interval', handleRawDataWithInterval));
-
-      const handlePacketIntervalStats = (data: unknown) => {
-        sendStreamEvent(socket, 'packet-interval-stats', data);
-      };
-      eventBus.on('packet-interval-stats', handlePacketIntervalStats);
-      streamEventHandlers.push(() => eventBus.off('packet-interval-stats', handlePacketIntervalStats));
-
-      startAllRawPacketListeners();
-      isStreaming = true;
-    };
-
-    // These events are always on, regardless of streaming state
-    const cleanupHandlers: Array<() => void> = [];
-
-    const handleCommandPacket = (data: unknown) => {
-      sendStreamEvent(socket, 'command-packet', data);
-    };
-    eventBus.on('command-packet', handleCommandPacket);
-    cleanupHandlers.push(() => eventBus.off('command-packet', handleCommandPacket));
-
-    const handleMqttMessage = (data: { topic: string; payload: string; portId?: string }) => {
-      const receivedAt = new Date().toISOString();
-      const portId = data.portId ?? extractPortIdFromTopic(data.topic);
-      sendStreamEvent(socket, 'mqtt-message', {
-        topic: data.topic,
-        payload: data.payload,
-        receivedAt,
-        portId,
-      });
-
-      if (isStateTopic(data.topic)) {
-        let parsedState: Record<string, unknown> = {};
-        try {
-          parsedState = JSON.parse(data.payload) as Record<string, unknown>;
-        } catch {
-          parsedState = {};
-        }
-
-        latestStates.set(data.topic, {
-          entityId: extractEntityIdFromTopic(data.topic),
-          topic: data.topic,
-          payload: data.payload,
-          state: parsedState,
-          timestamp: receivedAt,
-          portId,
-        });
-      }
-    };
-    eventBus.on('mqtt-message', handleMqttMessage);
-    cleanupHandlers.push(() => eventBus.off('mqtt-message', handleMqttMessage));
-
-    const handleParsedPacket = (data: unknown) => {
-      sendStreamEvent(socket, 'parsed-packet', data);
-    };
-    eventBus.on('parsed-packet', handleParsedPacket);
-    cleanupHandlers.push(() => eventBus.off('parsed-packet', handleParsedPacket));
-
-    const handleStateChange = (data: StateChangeEvent) => {
-      latestStates.set(data.topic, data);
-      sendStreamEvent(socket, 'state-change', data);
-    };
-    eventBus.on('state:changed', handleStateChange);
-    cleanupHandlers.push(() => eventBus.off('state:changed', handleStateChange));
-
-    // 초기 연결 시 캐시된 상태를 먼저 전송하여 대시보드가 즉시 활성화됨
+    sendStreamEvent(socket, 'status', {
+      state: 'connected',
+      mqttUrl: streamMqttUrl
+    });
     latestStates.forEach((state) => sendStreamEvent(socket, 'state-change', state));
-
     socket.on('message', (message: string) => {
       try {
         const parsed = JSON.parse(message);
         if (parsed.command === 'start') {
-          startStreaming();
+          logger.info('[service] UI requested to start streaming raw packets.');
+          startAllRawPacketListeners();
         } else if (parsed.command === 'stop') {
-          stopStreaming();
+          logger.info('[service] UI requested to stop streaming raw packets.');
+          stopAllRawPacketListeners();
         }
       } catch (error) {
-        logger.warn({ err: error }, '[service] Invalid WebSocket message received');
+        logger.warn({
+          err: error
+        }, '[service] Invalid WebSocket message received');
       }
     });
-
     const heartbeat = setInterval(() => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.ping();
       }
     }, 15000);
-    cleanupHandlers.push(() => clearInterval(heartbeat));
-
-    const cleanup = () => {
-      stopStreaming();
-      cleanupHandlers.forEach((handler) => handler());
-    };
-
-    socket.on('close', cleanup);
-    socket.on('error', cleanup);
+    socket.on('close', () => {
+      clearInterval(heartbeat);
+      if (wss.clients.size === 0) {
+        stopAllRawPacketListeners();
+      }
+    });
+    socket.on('error', () => {
+      clearInterval(heartbeat);
+      if (wss.clients.size === 0) {
+        stopAllRawPacketListeners();
+      }
+    });
   });
 };
-
+registerGlobalEventHandlers();
 registerPacketStream();
 
 app.get('/api/packets/stream', (_req, res) => {

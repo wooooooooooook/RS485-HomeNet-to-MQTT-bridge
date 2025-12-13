@@ -39,7 +39,8 @@
   let bridgeStatusByPort = $state(new Map<string, string>());
 
   let commandPackets = $state<CommandPacket[]>([]);
-  let deviceStates = $state(new Map<string, string>());
+  type DeviceStateEntry = { payload: string; portId?: string };
+  let deviceStates = $state(new Map<string, DeviceStateEntry>());
   let socket = $state<WebSocket | null>(null);
   let connectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle');
   let statusMessage = $state('');
@@ -92,15 +93,31 @@
   };
 
   const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
+  const getBasePrefixParts = () => normalizeTopicParts(bridgeInfo?.bridges?.[0]?.mqttTopicPrefix ?? '');
 
   const getKnownPortIds = () => bridgeInfo?.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
   const getDefaultPortId = () => selectedPortId ?? getKnownPortIds()[0] ?? null;
 
-  const inferPortId = (topic?: string, explicit?: string | null) =>
-    explicit ?? extractPortIdFromTopic(topic || '') ?? getDefaultPortId() ?? undefined;
+  const inferPortId = (topic?: string, explicit?: string | null) => {
+    const knownPorts = getKnownPortIds();
+    const candidate = explicit ?? extractPortIdFromTopic(topic || '');
+
+    if (candidate && (!knownPorts.length || knownPorts.includes(candidate))) {
+      return candidate;
+    }
+
+    return getDefaultPortId() ?? candidate ?? undefined;
+  };
 
   const extractPortIdFromTopic = (topic: string) => {
     const parts = normalizeTopicParts(topic);
+    const basePrefix = getBasePrefixParts();
+    const hasBasePrefix = basePrefix.length > 0 && basePrefix.every((segment, index) => parts[index] === segment);
+
+    if (hasBasePrefix && parts.length > basePrefix.length) {
+      return parts[basePrefix.length];
+    }
+
     if (parts.length >= 2) {
       return parts[1];
     }
@@ -397,7 +414,7 @@
       }
 
       if (!isStateTopic(data.topic)) return;
-      deviceStates.set(data.topic, data.payload);
+      deviceStates.set(data.topic, { payload: data.payload, portId });
       deviceStates = new Map(deviceStates);
     };
 
@@ -457,7 +474,7 @@
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
-      deviceStates.set(data.topic, data.payload);
+      deviceStates.set(data.topic, { payload: data.payload, portId: data.portId ?? inferPortId(data.topic) ?? undefined });
       deviceStates = new Map(deviceStates);
 
       if (!isToastEnabled('state')) return;
@@ -665,11 +682,12 @@
     }
 
     // 2. Merge States
-    for (const [topic, payload] of deviceStates.entries()) {
+    for (const [topic, entry] of deviceStates.entries()) {
       if (isBridgeStatusTopic(topic)) continue; // Skip bridge status
 
       const entityId = extractEntityIdFromTopic(topic);
-      const portId = extractPortIdFromTopic(topic) ?? getDefaultPortId() ?? undefined;
+      const payload = entry?.payload ?? '';
+      const portId = entry?.portId ?? inferPortId(topic);
 
       if (!entities.has(entityId)) {
         // Unknown entity (read-only or no commands configured)

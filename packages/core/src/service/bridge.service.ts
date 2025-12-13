@@ -20,8 +20,10 @@ import { DiscoveryManager } from '../mqtt/discovery-manager.js';
 import { ENTITY_TYPE_KEYS, findEntityById } from '../utils/entities.js';
 import { AutomationManager } from '../automation/automation-manager.js';
 import { MQTT_TOPIC_PREFIX } from '../utils/constants.js';
+import { normalizePortId } from '../utils/port.js';
 
 interface PortContext {
+  portId: string;
   serialConfig: SerialConfig;
   serialPath: string;
   port: Duplex;
@@ -101,7 +103,7 @@ export class HomeNetBridge {
     }
     context.port.write(Buffer.from(packet));
     logger.info({
-      portId: context.serialConfig.portId,
+      portId: context.portId,
       packet: packet.map((b) => b.toString(16).padStart(2, '0')).join(' '),
     }, '[core] Raw packet sent');
     return true;
@@ -151,7 +153,7 @@ export class HomeNetBridge {
     const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
     targets.forEach((context) => {
       if (context.rawPacketListener) {
-        logger.info({ portId: context.serialConfig.portId }, '[core] Stopping raw packet listener.');
+      logger.info({ portId: context.portId }, '[core] Stopping raw packet listener.');
         context.port.off('data', context.rawPacketListener);
         context.rawPacketListener = null;
         context.packetIntervals = [];
@@ -198,7 +200,7 @@ export class HomeNetBridge {
       command: commandName,
       value: value,
       packet: hexPacket,
-      portId: context.serialConfig.portId,
+      portId: context.portId,
       timestamp: new Date().toISOString(),
     });
 
@@ -220,8 +222,7 @@ export class HomeNetBridge {
   }
 
   private resolvePortTopicPrefix(serialConfig: SerialConfig, index: number): string {
-    const fallbackPrefix = serialConfig.portId?.trim() || `homedevice${index + 1}`;
-    return fallbackPrefix;
+    return normalizePortId(serialConfig.portId, index);
   }
 
   private getDefaultContext(portId?: string): PortContext | undefined {
@@ -257,11 +258,12 @@ export class HomeNetBridge {
     logger.info('[core] MQTT 연결을 백그라운드에서 대기하며 시리얼 포트 연결을 진행합니다.');
 
     this.config.serials.forEach((serial, index) => {
+      const normalizedPortId = normalizePortId(serial.portId, index);
       const portPrefix = this.resolvePortTopicPrefix(serial, index);
-      this.resolvedPortTopicPrefixes.set(serial.portId, portPrefix);
+      this.resolvedPortTopicPrefixes.set(normalizedPortId, portPrefix);
     });
 
-    const defaultWillPortId = this.config.serials[0]?.portId ?? 'default';
+    const defaultWillPortId = normalizePortId(this.config.serials[0]?.portId, 0);
     const mqttOptions: mqtt.IClientOptions = {
       will: {
         topic: `${this.getMqttTopicPrefix(defaultWillPortId)}/bridge/status`,
@@ -281,18 +283,20 @@ export class HomeNetBridge {
     this._mqttClient = new MqttClient(this.options.mqttUrl, mqttOptions);
     this.client = this._mqttClient.client; // Assign the client from the new MqttClient instance
 
-    for (const serialConfig of this.config.serials) {
+    for (let index = 0; index < this.config.serials.length; index += 1) {
+      const serialConfig = this.config.serials[index];
+      const normalizedPortId = normalizePortId(serialConfig.portId, index);
       const serialPath = this.resolveSerialPath(serialConfig);
       const port = await createSerialPortConnection(serialPath, serialConfig);
-      const stateProvider = this.buildStateProvider(serialConfig.portId);
+      const stateProvider = this.buildStateProvider(normalizedPortId);
       const packetProcessor = new PacketProcessor(this.config, stateProvider);
-      logger.debug({ portId: serialConfig.portId }, '[core] PacketProcessor initialized.');
+      logger.debug({ portId: normalizedPortId }, '[core] PacketProcessor initialized.');
 
       packetProcessor.on('parsed-packet', (data) => {
         const { deviceId, packet, state } = data;
         const hexPacket = packet.map((b: number) => b.toString(16).padStart(2, '0')).join('');
         eventBus.emit('parsed-packet', {
-          portId: serialConfig.portId,
+          portId: normalizedPortId,
           entityId: deviceId,
           packet: hexPacket,
           state,
@@ -300,19 +304,19 @@ export class HomeNetBridge {
         });
       });
 
-      const mqttTopicPrefix = this.getMqttTopicPrefix(serialConfig.portId);
+      const mqttTopicPrefix = this.getMqttTopicPrefix(normalizedPortId);
       const mqttPublisher = new MqttPublisher(this._mqttClient, mqttTopicPrefix);
       const stateManager = new StateManager(
-        serialConfig.portId,
+        normalizedPortId,
         this.config,
         packetProcessor,
         mqttPublisher,
         mqttTopicPrefix,
       );
-      const commandManager = new CommandManager(port, this.config, serialConfig.portId);
+      const commandManager = new CommandManager(port, this.config, normalizedPortId);
       const mqttSubscriber = new MqttSubscriber(
         this._mqttClient,
-        serialConfig.portId,
+        normalizedPortId,
         this.config,
         packetProcessor,
         commandManager,
@@ -328,7 +332,7 @@ export class HomeNetBridge {
 
       // Initialize DiscoveryManager
       const discoveryManager = new DiscoveryManager(
-        serialConfig.portId,
+        normalizedPortId,
         this.config,
         mqttPublisher,
         mqttSubscriber,
@@ -351,6 +355,7 @@ export class HomeNetBridge {
       automationManager.start();
 
       const context: PortContext = {
+        portId: normalizedPortId,
         serialConfig,
         serialPath,
         port,
@@ -373,10 +378,10 @@ export class HomeNetBridge {
       });
 
       port.on('error', (err) => {
-        logger.error({ err, serialPath, portId: serialConfig.portId }, '[core] 시리얼 포트 오류');
+        logger.error({ err, serialPath, portId: normalizedPortId }, '[core] 시리얼 포트 오류');
       });
 
-      this.portContexts.set(serialConfig.portId, context);
+      this.portContexts.set(normalizedPortId, context);
     }
   }
 
@@ -385,7 +390,7 @@ export class HomeNetBridge {
       return;
     }
 
-    logger.info({ portId: context.serialConfig.portId }, '[core] Starting raw packet listener.');
+    logger.info({ portId: context.portId }, '[core] Starting raw packet listener.');
 
     context.rawPacketListener = (data: Buffer) => {
       const hrNow = process.hrtime.bigint();
@@ -405,7 +410,7 @@ export class HomeNetBridge {
 
       const hexData = data.toString('hex');
       eventBus.emit('raw-data-with-interval', {
-        portId: context.serialConfig.portId,
+        portId: context.portId,
         payload: hexData,
         interval,
         receivedAt: new Date().toISOString(),
@@ -457,7 +462,7 @@ export class HomeNetBridge {
     const idleStats = calculateStats(idleIntervals);
 
     eventBus.emit('packet-stats', {
-      portId: context.serialConfig.portId,
+      portId: context.portId,
       stats: {
         packet: packetStats,
         idle: idleStats,

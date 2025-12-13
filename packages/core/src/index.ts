@@ -8,6 +8,7 @@ import type { HomenetBridgeConfig, LambdaConfig } from './config/types.js';
 import { CommandGenerator } from './protocol/generators/command.generator.js';
 import type { EntityConfig } from './domain/entities/base.entity.js';
 import { normalizeConfig, validateConfig } from './config/index.js';
+import { normalizePortId } from './utils/port.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ export {
   LambdaConfig,
   CommandGenerator,
   normalizeConfig,
+  normalizePortId,
   validateConfig,
 };
 export type { EntityConfig };

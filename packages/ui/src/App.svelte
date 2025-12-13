@@ -30,7 +30,7 @@
   let activeView = $state<'dashboard' | 'analysis' | 'settings'>('dashboard');
   let selectedEntityId = $state<string | null>(null);
   let isSidebarOpen = $state(false);
-  let showInactiveEntities = $state(false);
+  let showInactiveEntities = $state(true);
 
   let bridgeInfo = $state<BridgeInfo | null>(null);
   let infoLoading = $state(false);
@@ -711,7 +711,7 @@
     const allEntities = Array.from(entities.values());
     const filtered = showInactiveEntities
       ? allEntities
-      : allEntities.filter((entity) => entity.statePayload);
+      : allEntities.filter((entity) => typeof entity.statePayload !== 'undefined');
     return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   });
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BridgeInfo, UnifiedEntity, BridgeSerialInfo } from '../types';
+  import type { BridgeInfo, UnifiedEntity, BridgeSerialInfo, ActivityLog } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
   import { createEventDispatcher } from 'svelte';
@@ -13,6 +13,7 @@
     entities,
     selectedPortId,
     showInactive,
+    activityLogs,
   } = $props<{
     bridgeInfo: BridgeInfo | null;
     infoLoading: boolean;
@@ -22,6 +23,7 @@
     entities: UnifiedEntity[];
     selectedPortId: string | null;
     showInactive: boolean;
+    activityLogs: ActivityLog[];
   }>();
 
   const dispatch = createEventDispatcher<{
@@ -106,7 +108,7 @@
         {/each}
 
         <!-- Recent Activity Section -->
-        <RecentActivity />
+        <RecentActivity activities={activityLogs} />
       {/if}
     </div>
 

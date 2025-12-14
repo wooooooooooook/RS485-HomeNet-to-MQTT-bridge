@@ -14,6 +14,7 @@
     StateChangeEvent,
     ToastMessage,
     FrontendSettings,
+    ActivityLog,
   } from './lib/types';
   import Sidebar from './lib/components/Sidebar.svelte';
   import Header from './lib/components/Header.svelte';
@@ -76,6 +77,10 @@
   let settingsSaving = $state(false);
   let renamingEntityId = $state<string | null>(null);
   let renameError = $state('');
+
+  let activityLogs = $state<ActivityLog[]>([]);
+  let activityLoading = $state(true);
+  let activityError = $state('');
 
   type StreamEvent =
     | 'status'
@@ -225,6 +230,7 @@
   onMount(() => {
     loadBridgeInfo(true);
     loadFrontendSettings();
+    loadActivityLogs();
   });
 
   // API 요청 helper 함수
@@ -310,6 +316,19 @@
       }));
     } catch (err) {
       console.error('Failed to load packet history:', err);
+    }
+  }
+
+  async function loadActivityLogs() {
+    activityLoading = true;
+    activityError = '';
+    try {
+      const data = await apiRequest<ActivityLog[]>('./api/activity/recent');
+      activityLogs = data;
+    } catch (err) {
+      activityError = err instanceof Error ? err.message : '최근 활동을 불러오지 못했습니다.';
+    } finally {
+      activityLoading = false;
     }
   }
 
@@ -456,6 +475,14 @@
       const portId = data.portId ?? getDefaultPortId() ?? undefined;
       const packetWithPort = { ...data, portId };
       commandPackets = [...commandPackets, packetWithPort].slice(-MAX_PACKETS);
+
+      const newLog: ActivityLog = {
+        timestamp: new Date(data.timestamp).getTime(),
+        message: `명령 전송: ${data.entityId}`,
+        details: { command: data.command, value: data.value },
+      };
+      activityLogs = [newLog, ...activityLogs];
+
       if (!isToastEnabled('command')) return;
 
       const eventTimestamp = new Date(data.timestamp).getTime();
@@ -481,6 +508,14 @@
     const handleStateChange = (data: StateChangeEvent) => {
       deviceStates.set(data.topic, { payload: data.payload, portId: data.portId ?? inferPortId(data.topic) ?? undefined });
       deviceStates = new Map(deviceStates);
+
+      const entityId = extractEntityIdFromTopic(data.topic);
+      const newLog: ActivityLog = {
+        timestamp: new Date(data.timestamp).getTime(),
+        message: `상태 변경: ${entityId}`,
+        details: data.state,
+      };
+      activityLogs = [newLog, ...activityLogs];
 
       if (!isToastEnabled('state')) return;
 
@@ -869,6 +904,7 @@
           entities={dashboardEntities}
           selectedPortId={activePortId}
           showInactive={showInactiveEntities}
+          activityLogs={activityLogs}
           on:select={(e) => (selectedEntityId = e.detail.entityId)}
           on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
           on:portChange={(event) => (selectedPortId = event.detail.portId)}

@@ -31,6 +31,12 @@ export type FrontendSettings = {
     };
 };
 
+export interface ActivityLog {
+  timestamp: number;
+  message: string;
+  details?: any;
+}
+
 export type BridgeStatus = 'idle' | 'starting' | 'started' | 'stopped' | 'error';
 
 export type BridgeSerialInfo = {

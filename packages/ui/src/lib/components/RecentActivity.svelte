@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { sineOut } from 'svelte/easing';
   import { fade } from 'svelte/transition';
 
@@ -9,23 +8,9 @@
     details?: any;
   }
 
-  let activities: ActivityLog[] = [];
-  let error: string | null = null;
-  let loading = true;
-
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/activity/recent');
-      if (!res.ok) {
-        throw new Error('최근 활동을 불러오는데 실패했습니다.');
-      }
-      activities = await res.json();
-    } catch (err) {
-      error = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
-    } finally {
-      loading = false;
-    }
-  });
+  let { activities = [] } = $props<{
+    activities: ActivityLog[];
+  }>();
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -39,11 +24,7 @@
 
 <div class="recent-activity-container">
   <h4>최근 활동</h4>
-  {#if loading}
-    <p>불러오는 중...</p>
-  {:else if error}
-    <p class="error">{error}</p>
-  {:else if activities.length === 0}
+  {#if activities.length === 0}
     <p>최근 활동이 없습니다.</p>
   {:else}
     <ul>

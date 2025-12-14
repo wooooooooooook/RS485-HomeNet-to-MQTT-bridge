@@ -33,10 +33,11 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.12.7",
+    "pino-pretty": "^13.1.2",
     "prettier": "^3.2.5",
     "prettier-plugin-svelte": "^3.1.2",
-    "vitest": "^1.5.0",
-    "pino-pretty": "^13.1.2"
+    "ts-node": "^10.9.2",
+    "vitest": "^1.5.0"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"

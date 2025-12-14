@@ -428,6 +428,7 @@ export class HomeNetBridge {
 
   private analyzeAndEmitPacketStats(context: PortContext) {
     const intervals = [...context.packetIntervals];
+    context.packetIntervals = [];
 
     const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
     const stdDev = Math.sqrt(

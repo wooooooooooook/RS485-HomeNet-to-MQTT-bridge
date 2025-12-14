@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
-    "test": "echo \"No tests yet\""
+    "test": "vitest run --root ../.."
   },
   "dependencies": {
     "@rs485-homenet/core": "workspace:*",

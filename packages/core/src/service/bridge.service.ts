@@ -461,7 +461,7 @@ export class HomeNetBridge {
     const packetStats = calculateStats(packetIntervals);
     const idleStats = calculateStats(idleIntervals);
 
-    eventBus.emit('packet-stats', {
+    eventBus.emit('packet-interval-stats', {
       portId: context.portId,
       stats: {
         packet: packetStats,

@@ -121,7 +121,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       fakeSerialPort.emit('data', Buffer.from([i]));
       vi.advanceTimersByTime(10);
     }
-    expect(eventBusEmitSpy).not.toHaveBeenCalledWith('packet-stats', expect.any(Object));
+    expect(eventBusEmitSpy).not.toHaveBeenCalledWith('packet-interval-stats', expect.any(Object));
   });
 
   it('should calculate and emit packet interval stats after 11 packets', () => {
@@ -139,7 +139,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     fakeSerialPort.emit('data', Buffer.from([10]));
 
     expect(eventBusEmitSpy).toHaveBeenCalledWith(
-      'packet-stats',
+      'packet-interval-stats',
       expect.objectContaining({
         portId: 'main',
         stats: expect.objectContaining({
@@ -164,7 +164,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     });
 
     expect(eventBusEmitSpy).toHaveBeenCalledWith(
-      'packet-stats',
+      'packet-interval-stats',
       expect.objectContaining({
         portId: 'main',
         stats: expect.objectContaining({

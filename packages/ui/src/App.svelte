@@ -90,7 +90,8 @@
     | 'packet-interval-stats'
     | 'command-packet'
     | 'parsed-packet'
-    | 'state-change';
+    | 'state-change'
+    | 'activity-log-added';
 
   type StreamMessage<T = unknown> = {
     event: StreamEvent;
@@ -476,13 +477,6 @@
       const packetWithPort = { ...data, portId };
       commandPackets = [...commandPackets, packetWithPort].slice(-MAX_PACKETS);
 
-      const newLog: ActivityLog = {
-        timestamp: new Date(data.timestamp).getTime(),
-        message: `명령 전송: ${data.entityId}`,
-        details: { command: data.command, value: data.value },
-      };
-      activityLogs = [newLog, ...activityLogs];
-
       if (!isToastEnabled('command')) return;
 
       const eventTimestamp = new Date(data.timestamp).getTime();
@@ -509,14 +503,6 @@
       deviceStates.set(data.topic, { payload: data.payload, portId: data.portId ?? inferPortId(data.topic) ?? undefined });
       deviceStates = new Map(deviceStates);
 
-      const entityId = extractEntityIdFromTopic(data.topic);
-      const newLog: ActivityLog = {
-        timestamp: new Date(data.timestamp).getTime(),
-        message: `상태 변경: ${entityId}`,
-        details: data.state,
-      };
-      activityLogs = [newLog, ...activityLogs];
-
       if (!isToastEnabled('state')) return;
 
       const eventTimestamp = new Date(data.timestamp).getTime();
@@ -532,6 +518,10 @@
       });
     };
 
+    const handleActivityLogAdded = (data: ActivityLog) => {
+      activityLogs = [...activityLogs, data];
+    };
+
     const messageHandlers: Partial<Record<StreamEvent, (data: any) => void>> = {
       status: handleStatus,
       'mqtt-message': handleMqttMessage,
@@ -541,6 +531,7 @@
       'command-packet': handleCommandPacket,
       'parsed-packet': handleParsedPacket,
       'state-change': handleStateChange,
+      'activity-log-added': handleActivityLogAdded,
     };
 
     socket.addEventListener('open', () => {

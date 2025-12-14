@@ -78,8 +78,10 @@ export class StateManager {
 
     if (stateCache.get(topic) !== payload) {
       stateCache.set(topic, payload);
-      const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
-      logger.info(`[StateManager] ${deviceId}: {${stateStr}} → ${topic} [published]`);
+      if (logger.isLevelEnabled('info')) {
+        const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
+        logger.info(`[StateManager] ${deviceId}: {${stateStr}} → ${topic} [published]`);
+      }
       this.mqttPublisher.publish(topic, payload, { retain: true });
       const timestamp = new Date().toISOString();
       eventBus.emit('state:changed', {
@@ -92,8 +94,10 @@ export class StateManager {
       });
       eventBus.emit(`device:${deviceId}:state:changed`, newState);
     } else {
-      const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
-      logger.debug(`[StateManager] ${deviceId}: {${stateStr}} [unchanged]`);
+      if (logger.isLevelEnabled('debug')) {
+        const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
+        logger.debug(`[StateManager] ${deviceId}: {${stateStr}} [unchanged]`);
+      }
     }
   }
 }

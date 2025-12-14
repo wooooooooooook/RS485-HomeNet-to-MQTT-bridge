@@ -17,6 +17,7 @@ import {
   normalizePortId,
   validateConfig,
 } from '@rs485-homenet/core';
+import { activityLogService } from './activity-log.service.js';
 
 // Define a custom YAML type for !lambda
 const LambdaType = new Type('!lambda', {
@@ -204,6 +205,10 @@ app.get('/api/packets/command/history', (_req, res) => {
 
 app.get('/api/packets/parsed/history', (_req, res) => {
   res.json(parsedPacketHistory);
+});
+
+app.get('/api/activity/recent', (_req, res) => {
+  res.json(activityLogService.getRecentLogs());
 });
 
 app.get('/api/health', (_req, res) => {
@@ -452,6 +457,9 @@ const registerGlobalEventHandlers = () => {
     broadcastStreamEvent('packet-interval-stats', data);
   });
 };
+
+activityLogService.addLog('서비스가 시작되었습니다.');
+
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
     const requestUrl = getRequestUrl(req);

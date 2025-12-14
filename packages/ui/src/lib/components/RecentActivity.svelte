@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { afterUpdate } from 'svelte';
   import { sineOut } from 'svelte/easing';
   import { fade } from 'svelte/transition';
 
@@ -11,6 +12,14 @@
   let { activities = [] } = $props<{
     activities: ActivityLog[];
   }>();
+
+  let listElement: HTMLUListElement;
+
+  afterUpdate(() => {
+    if (listElement) {
+      listElement.scrollTop = listElement.scrollHeight;
+    }
+  });
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -27,7 +36,7 @@
   {#if activities.length === 0}
     <p>최근 활동이 없습니다.</p>
   {:else}
-    <ul>
+    <ul bind:this={listElement}>
       {#each activities as activity (activity.timestamp)}
         <li in:fade|local={{ duration: 300, easing: sineOut }}>
           <span class="time">{formatTime(activity.timestamp)}</span>

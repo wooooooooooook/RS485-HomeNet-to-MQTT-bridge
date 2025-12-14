@@ -292,7 +292,8 @@ type StreamEvent =
   | 'packet-interval-stats'
   | 'command-packet'
   | 'parsed-packet'
-  | 'state-change';
+  | 'state-change'
+  | 'activity-log-added';
 
 type StreamMessage<T = unknown> = {
   event: StreamEvent;
@@ -455,6 +456,9 @@ const registerGlobalEventHandlers = () => {
   });
   eventBus.on('packet-interval-stats', (data: unknown) => {
     broadcastStreamEvent('packet-interval-stats', data);
+  });
+  eventBus.on('activity-log:added', (data: unknown) => {
+    broadcastStreamEvent('activity-log-added', data);
   });
 };
 

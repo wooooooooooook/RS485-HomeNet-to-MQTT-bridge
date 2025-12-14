@@ -8,6 +8,21 @@ interface ActivityLog {
 
 const LOG_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+const formatStateValue = (value: unknown): string => {
+  if (value === null || typeof value === 'undefined') {
+    return 'N/A';
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
+
 class ActivityLogService {
   private logs: ActivityLog[] = [];
 
@@ -18,8 +33,10 @@ class ActivityLogService {
 
   private subscribeToEvents() {
     eventBus.on('state:changed', (event) => {
+      const from = formatStateValue(event.old_state);
+      const to = formatStateValue(event.new_state);
       this.addLog(
-        `상태 변경: ${event.entity_id}`,
+        `${event.entity_id} 상태 변경: ${event.attribute} ${from} → ${to}`,
         {
           attribute: event.attribute,
           from: event.old_state,
@@ -50,7 +67,8 @@ class ActivityLogService {
       message,
       details,
     };
-    this.logs.unshift(logEntry); // Add to the beginning of the array
+    this.logs.push(logEntry); // Add to the end of the array
+    eventBus.emit('activity-log:added', logEntry);
     this.cleanupOldLogs(); // Optional: cleanup on every new entry for more aggressive trimming
   }
 

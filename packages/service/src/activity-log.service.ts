@@ -7,6 +7,7 @@ interface ActivityLog {
 }
 
 const LOG_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const MAX_LOGS = 1000;
 
 const formatStateValue = (value: unknown): string => {
   if (value === null || typeof value === 'undefined') {
@@ -23,7 +24,7 @@ const formatStateValue = (value: unknown): string => {
 };
 
 
-class ActivityLogService {
+export class ActivityLogService {
   private logs: ActivityLog[] = [];
 
   constructor() {
@@ -80,10 +81,20 @@ class ActivityLogService {
     const now = Date.now();
     const cutoff = now - LOG_TTL;
     const originalCount = this.logs.length;
-    this.logs = this.logs.filter(log => log.timestamp >= cutoff);
 
-    if (originalCount > this.logs.length) {
-        console.log(`[Activity Log] ${originalCount - this.logs.length}개의 오래된 로그를 정리했습니다.`);
+    // Filter by TTL
+    this.logs = this.logs.filter((log) => log.timestamp >= cutoff);
+    const ttlRemoved = originalCount - this.logs.length;
+
+    // Filter by Size
+    if (this.logs.length > MAX_LOGS) {
+      this.logs = this.logs.slice(this.logs.length - MAX_LOGS);
+    }
+
+    if (ttlRemoved > 0) {
+      console.log(
+        `[Activity Log] ${ttlRemoved}개의 오래된 로그를 정리했습니다.`,
+      );
     }
   }
 }

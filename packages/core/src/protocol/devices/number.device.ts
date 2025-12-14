@@ -57,6 +57,7 @@ export class NumberDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         const length = (entityConfig.command_number as any).length || 1;
         const precision = (entityConfig.command_number as any).precision || 0;
+        const endian = (entityConfig.command_number as any).endian || 'big';
 
         // Apply precision
         let intValue = Math.round(value * Math.pow(10, precision));
@@ -65,9 +66,9 @@ export class NumberDevice extends GenericDevice {
         if (length === 1) {
           command[valueOffset] = intValue & 0xff;
         } else {
-          // TODO: Handle multi-byte and endianness
           for (let i = 0; i < length; i++) {
-            command[valueOffset + i] = (intValue >> (8 * (length - 1 - i))) & 0xff;
+            const shift = endian === 'little' ? i * 8 : (length - 1 - i) * 8;
+            command[valueOffset + i] = (intValue >> shift) & 0xff;
           }
         }
       }

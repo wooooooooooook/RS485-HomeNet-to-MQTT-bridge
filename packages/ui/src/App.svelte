@@ -414,7 +414,7 @@
       }
 
       if (!isStateTopic(data.topic)) return;
-      deviceStates.set(data.topic, { payload: data.payload, portId });
+      deviceStates.set(data.topic, { payload: data.payload, portId: portId ?? undefined });
       deviceStates = new Map(deviceStates);
     };
 

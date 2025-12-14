@@ -254,22 +254,11 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
 
 async function main() {
   const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
-  const protocol = process.env.SIMULATOR_PROTOCOL || 'pty';
 
-  let simulator: Simulator;
-
-  if (protocol === 'tcp') {
-    const port = process.env.SIMULATOR_PORT ? parseInt(process.env.SIMULATOR_PORT, 10) : 8888;
-    simulator = createTcpSimulator({
-      port,
-      device,
-    });
-  } else {
-    simulator = createSimulator({
-      device,
-    });
-  }
-
+  const simulator = createSimulator({
+    packets: undefined, // Let it pick based on device
+    device,
+  });
   console.log(JSON.stringify({ ptyPath: simulator.ptyPath }));
   simulator.start();
 

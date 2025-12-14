@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { BridgeInfo, UnifiedEntity, BridgeSerialInfo } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
+  import RecentActivity from '../components/RecentActivity.svelte';
   import { createEventDispatcher } from 'svelte';
 
   let {
@@ -56,28 +57,10 @@
       <p class="empty">브리지 정보가 없습니다.</p>
     </div>
   {:else}
-    <!-- Metadata Section -->
-    <div class="viewer-meta">
-      <div class="meta-card mqtt">
-        <span class="label">MQTT URL</span>
-        <strong>{mqttUrl}</strong>
-      </div>
-      {#each portMetadata as port (port.portId)}
-        <div class="meta-card">
-          <div class="meta-header">
-            <span class="badge">{port.portId}</span>
-            <small class="config-file">{port.configFile}</small>
-          </div>
-          <div class="meta-row">
-            <span class="label">Serial Path</span>
-            <strong>{port.path || '입력되지 않음'}</strong>
-          </div>
-          <div class="meta-row">
-            <span class="label">Baud Rate</span>
-            <strong>{port.baudRate}</strong>
-          </div>
-        </div>
-      {/each}
+    <!-- Minimized Metadata Section -->
+    <div class="viewer-meta-mini">
+      <span class="label">MQTT:</span>
+      <strong>{mqttUrl}</strong>
     </div>
 
     {#if bridgeInfo.error}
@@ -110,6 +93,23 @@
       </label>
     </div>
 
+    <!-- Port-specific Details Section -->
+    <div class="port-details-container">
+      {#if activePortId}
+        <!-- Minimized Port Metadata -->
+        {#each portMetadata.filter(p => p.portId === activePortId) as port}
+          <div class="port-meta-mini">
+            <div class="meta-item"><strong>Path:</strong> <span>{port.path || 'N/A'}</span></div>
+            <div class="meta-item"><strong>Baud:</strong> <span>{port.baudRate}</span></div>
+            <div class="meta-item"><strong>File:</strong> <span>{port.configFile}</span></div>
+          </div>
+        {/each}
+
+        <!-- Recent Activity Section -->
+        <RecentActivity />
+      {/if}
+    </div>
+
     <!-- Entity Grid Section -->
     <div class="entity-grid">
       {#if visibleEntities.length === 0 && !infoLoading}
@@ -129,62 +129,68 @@
   .dashboard-view {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
   }
 
-  .viewer-meta {
+  .viewer-meta-mini {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .viewer-meta-mini strong {
+    color: #cbd5e1;
+    font-weight: 600;
+    font-family: monospace;
+    word-break: break-all;
+  }
+
+  .port-details-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    padding: 1.5rem;
-    border-radius: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .port-meta-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    padding: 1rem;
+    border-radius: 8px;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(148, 163, 184, 0.1);
+    height: 150px; /* Match recent activity height */
+    box-sizing: border-box;
+    justify-content: center;
   }
 
-  .meta-card {
+  .meta-item {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-  }
-
-  .meta-card.mqtt {
-    grid-column: 1 / -1;
-    background: rgba(37, 99, 235, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-
-  .meta-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     justify-content: space-between;
+    gap: 1rem;
+    align-items: baseline;
   }
 
-  .meta-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    background: rgba(59, 130, 246, 0.15);
-    color: #bfdbfe;
-    font-weight: 700;
-    font-size: 0.85rem;
-  }
-
-  .config-file {
+  .meta-item strong {
     color: #94a3b8;
-    font-size: 0.8rem;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .meta-item span {
+    color: #f1f5f9;
+    word-break: break-all;
+    text-align: right;
+    font-family: monospace;
+    font-size: 0.9rem;
   }
 
   .label {

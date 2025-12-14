@@ -468,13 +468,31 @@ export class HomeNetBridge {
     const packetStats = calculateStats(packetIntervals);
     const idleStats = calculateStats(idleIntervals);
 
+    const idleOccurrenceIntervals: number[] = [];
+    if (idleIndices.length >= 2) {
+      for (let i = 0; i < idleIndices.length - 1; i++) {
+        const startIndex = idleIndices[i];
+        const endIndex = idleIndices[i + 1];
+        let sum = 0;
+        for (let k = startIndex + 1; k <= endIndex; k++) {
+          sum += intervals[k];
+        }
+        idleOccurrenceIntervals.push(sum);
+      }
+    }
+    const idleOccurrenceStats = calculateStats(idleOccurrenceIntervals);
+
+    const round = (num: number) => Math.round(num * 100) / 100;
+
     eventBus.emit('packet-interval-stats', {
       portId: context.portId,
-      stats: {
-        packet: packetStats,
-        idle: idleStats,
-        idleIndices,
-      },
+      packetAvg: round(packetStats.avg),
+      packetStdDev: round(packetStats.stdDev),
+      idleAvg: round(idleStats.avg),
+      idleStdDev: round(idleStats.stdDev),
+      idleOccurrenceAvg: round(idleOccurrenceStats.avg),
+      idleOccurrenceStdDev: round(idleOccurrenceStats.stdDev),
+      sampleSize: intervals.length,
     });
   }
 

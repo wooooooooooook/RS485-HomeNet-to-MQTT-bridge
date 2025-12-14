@@ -203,8 +203,6 @@ export class PacketParser {
         return false; // Not enough data
       }
 
-      const checksumBytes = packet.slice(checksumStart, checksumStart + 2);
-
       if (typeof this.defaults.rx_checksum2 === 'string') {
         const calculated = calculateChecksum2FromBuffer(
           packet,
@@ -212,7 +210,7 @@ export class PacketParser {
           headerLength,
           checksumStart,
         );
-        return calculated[0] === checksumBytes[0] && calculated[1] === checksumBytes[1];
+        return calculated[0] === packet[checksumStart] && calculated[1] === packet[checksumStart + 1];
       } else if ((this.defaults.rx_checksum2 as any).type === 'lambda') {
         const lambda = this.defaults.rx_checksum2 as LambdaConfig;
         const result = this.lambdaExecutor.execute(lambda, {
@@ -221,7 +219,7 @@ export class PacketParser {
         });
         // Lambda should return array of 2 bytes
         if (Array.isArray(result) && result.length === 2) {
-          return result[0] === checksumBytes[0] && result[1] === checksumBytes[1];
+          return result[0] === packet[checksumStart] && result[1] === packet[checksumStart + 1];
         }
         return false;
       }

@@ -148,11 +148,10 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       'packet-interval-stats',
       expect.objectContaining({
         portId: 'main',
-        stats: expect.objectContaining({
-          packet: expect.objectContaining({ avg: expect.any(Number), stdDev: expect.any(Number) }),
-          idle: expect.objectContaining({ avg: expect.any(Number), stdDev: expect.any(Number) }),
-          idleIndices: expect.any(Array),
-        }),
+        packetAvg: expect.any(Number),
+        packetStdDev: expect.any(Number),
+        idleAvg: expect.any(Number),
+        idleStdDev: expect.any(Number),
       }),
     );
   });
@@ -173,11 +172,9 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       'packet-interval-stats',
       expect.objectContaining({
         portId: 'main',
-        stats: expect.objectContaining({
-          packet: expect.any(Object),
-          idle: expect.any(Object),
-          idleIndices: expect.any(Array),
-        }),
+        packetAvg: expect.any(Number),
+        idleAvg: expect.any(Number),
+        idleOccurrenceAvg: expect.any(Number),
       }),
     );
   });

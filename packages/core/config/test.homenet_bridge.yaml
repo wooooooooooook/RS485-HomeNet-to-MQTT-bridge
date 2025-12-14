@@ -1,0 +1,36 @@
+homenet_bridge:
+  serial:
+    portId: test_port
+    path: localhost:8888
+    baud_rate: 9600
+    data_bits: 8
+    parity: none
+    stop_bits: 1
+
+  packet_defaults:
+    rx_timeout: 10ms
+    tx_delay: 50ms
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+    rx_length: 8
+    rx_checksum: add
+    tx_checksum: add
+
+  light:
+    - id: 'light_1'
+      name: 'Test Light 1'
+      state:
+        data: [0xB0, 0x00, 0x01]
+        mask: [0xF0, 0x00, 0xFF]
+      state_on:
+        offset: 1
+        data: [0x01]
+      state_off:
+        offset: 1
+        data: [0x00]
+      command_on:
+        data: [0x31, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB1, 0x01, 0x01]
+      command_off:
+        data: [0x31, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB1, 0x00, 0x01]

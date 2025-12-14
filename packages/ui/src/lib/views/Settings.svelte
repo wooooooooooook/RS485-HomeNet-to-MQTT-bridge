@@ -53,10 +53,10 @@
           <input
             type="checkbox"
             checked={getToastValue('stateChange')}
-            on:change={(event) => handleToggle('stateChange', event)}
+            onchange={(event) => handleToggle('stateChange', event)}
             disabled={isSaving || isLoading}
           />
-          <span class="slider" />
+          <span class="slider"></span>
         </label>
       </div>
 
@@ -69,10 +69,10 @@
           <input
             type="checkbox"
             checked={getToastValue('command')}
-            on:change={(event) => handleToggle('command', event)}
+            onchange={(event) => handleToggle('command', event)}
             disabled={isSaving || isLoading}
           />
-          <span class="slider" />
+          <span class="slider"></span>
         </label>
       </div>
     {/if}

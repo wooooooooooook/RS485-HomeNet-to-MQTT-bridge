@@ -81,7 +81,7 @@
             <button
               class:active={activePortId === portId}
               type="button"
-              on:click={() => dispatch('portChange', { portId })}
+              onclick={() => dispatch('portChange', { portId })}
             >
               {portId}
             </button>
@@ -89,7 +89,7 @@
         {/if}
       </div>
       <label class="toggle-switch">
-        <input type="checkbox" checked={showInactive} on:change={() => dispatch('toggleInactive')} />
+        <input type="checkbox" checked={showInactive} onchange={() => dispatch('toggleInactive')} />
         <span class="slider"></span>
         비활성 엔티티 보기
       </label>
@@ -99,7 +99,7 @@
     <div class="port-details-container">
       {#if activePortId}
         <!-- Minimized Port Metadata -->
-        {#each portMetadata.filter(p => p.portId === activePortId) as port}
+        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string }) => p.portId === activePortId) as port}
           <div class="port-meta-mini">
             <div class="meta-item"><strong>Path:</strong> <span>{port.path || 'N/A'}</span></div>
             <div class="meta-item"><strong>Baud:</strong> <span>{port.baudRate}</span></div>

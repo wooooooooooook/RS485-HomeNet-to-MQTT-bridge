@@ -23,18 +23,17 @@
 {#if toasts.length > 0}
   <div class="toast-container">
     {#each toasts as toast (toast.id)}
-      <div
+      <button
         class={`toast ${toast.type}`}
-        on:click={() => handleDismiss(toast.id)}
-        role="button"
-        tabindex="0"
+        onclick={() => handleDismiss(toast.id)}
+        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleDismiss(toast.id)}
       >
         <div class="toast-header">
           <div class="toast-title">{toast.title}</div>
           <div class="toast-time">{formatTimestamp(toast.timestamp)}</div>
         </div>
         <div class="toast-message">{toast.message}</div>
-      </div>
+      </button>
     {/each}
   </div>
 {/if}
@@ -64,6 +63,9 @@
     animation: enter 0.18s ease-out;
     cursor: pointer;
     pointer-events: auto;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
   }
 
   .toast.state {

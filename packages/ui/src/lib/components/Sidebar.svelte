@@ -19,7 +19,7 @@
     type="button"
     class="sidebar-backdrop"
     aria-label="사이드바 닫기"
-    on:click={() => dispatch('close')}
+    onclick={() => dispatch('close')}
   ></button>
 {/if}
 
@@ -34,7 +34,7 @@
       class="nav-item"
       class:active={activeView === 'dashboard'}
       aria-current={activeView === 'dashboard' ? 'page' : undefined}
-      on:click={() => handleNavClick('dashboard')}
+      onclick={() => handleNavClick('dashboard')}
     >
       <span class="icon">📊</span>
       <span class="label">대시보드</span>
@@ -43,7 +43,7 @@
       class="nav-item"
       class:active={activeView === 'analysis'}
       aria-current={activeView === 'analysis' ? 'page' : undefined}
-      on:click={() => handleNavClick('analysis')}
+      onclick={() => handleNavClick('analysis')}
     >
       <span class="icon">📈</span>
       <span class="label">분석</span>
@@ -52,7 +52,7 @@
       class="nav-item"
       class:active={activeView === 'settings'}
       aria-current={activeView === 'settings' ? 'page' : undefined}
-      on:click={() => handleNavClick('settings')}
+      onclick={() => handleNavClick('settings')}
     >
       <span class="icon">⚙️</span>
       <span class="label">설정</span>

@@ -54,7 +54,7 @@
         <button
           class:active={activePortId === portId}
           type="button"
-          on:click={() => dispatch('portChange', { portId })}
+          onclick={() => dispatch('portChange', { portId })}
         >
           {portId}
         </button>

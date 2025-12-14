@@ -25,7 +25,7 @@
   <div class="log-header">
     <h2>Raw 패킷 로그</h2>
     <div class="header-right">
-      <button class="ghost-sm" on:click={toggleStreaming}>
+      <button class="ghost-sm" onclick={toggleStreaming}>
         {isStreaming ? '⏹ 로깅 중지' : '▶ 로깅 시작'}
       </button>
     </div>

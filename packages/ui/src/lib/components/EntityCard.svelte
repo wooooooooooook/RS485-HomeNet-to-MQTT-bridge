@@ -45,8 +45,8 @@
 <button
   class="entity-card"
   class:inactive={!entity.statePayload}
-  on:click={() => dispatch('select')}
-  on:keydown={(e) => ['Enter', ' '].includes(e.key) && dispatch('select')}
+  onclick={() => dispatch('select')}
+  onkeydown={(e) => ['Enter', ' '].includes(e.key) && dispatch('select')}
 >
   <header class="card-header">
     <h3>{entity.displayName}</h3>

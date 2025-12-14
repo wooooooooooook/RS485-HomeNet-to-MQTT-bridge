@@ -12,7 +12,7 @@
     activities: ActivityLog[];
   }>();
 
-  let listElement: HTMLUListElement;
+  let listElement: HTMLUListElement | undefined = $state();
 
   $effect(() => {
     // activities 변경을 감지하기 위해 의존성 추가
@@ -108,10 +108,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     color: #cbd5e1;
-  }
-
-  .error {
-    color: #ef4444;
   }
 
   p {

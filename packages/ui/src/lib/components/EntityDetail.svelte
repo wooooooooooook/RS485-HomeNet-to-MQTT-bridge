@@ -190,18 +190,18 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen}
   <div
     class="overlay"
-    on:click={(e) => {
+    onclick={(e) => {
       if (e.target === e.currentTarget) close();
     }}
     transition:fade={{ duration: 200 }}
     role="button"
     tabindex="0"
-    on:keydown={handleKeydown}
+    onkeydown={handleKeydown}
     aria-label="Close modal"
   >
     <div
@@ -216,17 +216,17 @@
           <h2 id="modal-title">{entity.displayName}</h2>
           <span class="entity-id">{entity.id}</span>
         </div>
-        <button class="close-btn" on:click={close} aria-label="Close modal">&times;</button>
+        <button class="close-btn" onclick={close} aria-label="Close modal">&times;</button>
       </header>
 
       <div class="modal-tabs">
-        <button class:active={activeTab === 'status'} on:click={() => (activeTab = 'status')}
+        <button class:active={activeTab === 'status'} onclick={() => (activeTab = 'status')}
           >상태 & 명령</button
         >
-        <button class:active={activeTab === 'config'} on:click={() => (activeTab = 'config')}
+        <button class:active={activeTab === 'config'} onclick={() => (activeTab = 'config')}
           >설정 (YAML)</button
         >
-        <button class:active={activeTab === 'packets'} on:click={() => (activeTab = 'packets')}
+        <button class:active={activeTab === 'packets'} onclick={() => (activeTab = 'packets')}
           >패킷 로그</button
         >
       </div>
@@ -244,9 +244,9 @@
                 bind:value={renameInput}
                 placeholder="새 이름"
                 aria-label="새 엔티티 이름"
-                on:input={() => (renameLocalError = null)}
+                oninput={() => (renameLocalError = null)}
               />
-              <button class="save-btn" on:click={handleRename} disabled={isRenaming}>
+              <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
                 {isRenaming ? '변경 중...' : '저장'}
               </button>
             </div>
@@ -290,7 +290,7 @@
                           bind:value={commandInputs[`${cmd.entityId}_${cmd.commandName}`]}
                         />
                         <button
-                          on:click={() =>
+                          onclick={() =>
                             dispatch('execute', {
                               cmd,
                               value: commandInputs[`${cmd.entityId}_${cmd.commandName}`],
@@ -300,7 +300,7 @@
                         </button>
                       </div>
                     {:else}
-                      <button class="action-btn" on:click={() => dispatch('execute', { cmd })}>
+                      <button class="action-btn" onclick={() => dispatch('execute', { cmd })}>
                         {cmd.displayName}
                       </button>
                     {/if}
@@ -321,7 +321,7 @@
                   spellcheck="false"
                 ></textarea>
                 <div class="config-actions">
-                  <button class="save-btn" on:click={saveConfig} disabled={isSaving}>
+                  <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
                     {isSaving ? '저장 중...' : '저장'}
                   </button>
                   {#if saveMessage}

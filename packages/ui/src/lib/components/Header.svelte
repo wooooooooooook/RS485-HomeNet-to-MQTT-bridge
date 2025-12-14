@@ -34,7 +34,7 @@
     <button
       class="ghost mobile-menu-btn"
       type="button"
-      on:click={() => dispatch('toggleSidebar')}
+      onclick={() => dispatch('toggleSidebar')}
       aria-label="메뉴 열기"
     >
       <span class="icon">☰</span>
@@ -44,13 +44,13 @@
       <div class="status-item port-statuses">
         {#if portStatuses.length === 0}
           <div class="status-indicator" data-state={bridgeStatus}>
-            <span class="dot" />
+            <span class="dot"></span>
             <span class="label">{bridgeStatusLabels[bridgeStatus]}</span>
           </div>
         {:else}
           {#each portStatuses as portStatus (portStatus.portId)}
             <div class="status-indicator" data-state={portStatus.status}>
-              <span class="dot" />
+              <span class="dot"></span>
               <span class="label">
                 {portStatus.portId}: {portStatus.message || bridgeStatusLabels[portStatus.status] || bridgeStatusLabels[bridgeStatus]}
               </span>
@@ -60,7 +60,7 @@
       </div>
       <div class="status-item">
         <div class="status-indicator" data-state={connectionStatus}>
-          <span class="dot" />
+          <span class="dot"></span>
           <span class="label">{statusMessage || 'MQTT 스트림을 기다리는 중입니다.'}</span>
         </div>
       </div>
@@ -68,7 +68,7 @@
   </div>
 
   <div class="controls">
-    <button class="ghost" type="button" on:click={onRefresh} disabled={isRefreshing}>
+    <button class="ghost" type="button" onclick={onRefresh} disabled={isRefreshing}>
       {isRefreshing ? '갱신 중...' : '정보 새로고침'}
     </button>
   </div>

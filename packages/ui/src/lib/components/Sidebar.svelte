@@ -15,7 +15,12 @@
 </script>
 
 {#if isOpen}
-  <div class="sidebar-backdrop" on:click={() => dispatch('close')} />
+  <button
+    type="button"
+    class="sidebar-backdrop"
+    aria-label="사이드바 닫기"
+    on:click={() => dispatch('close')}
+  ></button>
 {/if}
 
 <aside class="sidebar" class:open={isOpen}>
@@ -28,6 +33,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'dashboard'}
+      aria-current={activeView === 'dashboard' ? 'page' : undefined}
       on:click={() => handleNavClick('dashboard')}
     >
       <span class="icon">📊</span>
@@ -36,6 +42,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'analysis'}
+      aria-current={activeView === 'analysis' ? 'page' : undefined}
       on:click={() => handleNavClick('analysis')}
     >
       <span class="icon">📈</span>
@@ -44,6 +51,7 @@
     <button
       class="nav-item"
       class:active={activeView === 'settings'}
+      aria-current={activeView === 'settings' ? 'page' : undefined}
       on:click={() => handleNavClick('settings')}
     >
       <span class="icon">⚙️</span>
@@ -79,6 +87,9 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 40;
     backdrop-filter: blur(2px);
+    border: none;
+    padding: 0;
+    cursor: pointer;
   }
 
   .logo {
@@ -127,11 +138,18 @@
     transition: all 0.2s;
     font-family: inherit;
     font-size: 0.95rem;
+    outline: none;
   }
 
   .nav-item:hover {
     background: rgba(148, 163, 184, 0.1);
     color: #e2e8f0;
+  }
+
+  .nav-item:focus-visible {
+    background: rgba(148, 163, 184, 0.1);
+    color: #e2e8f0;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   }
 
   .nav-item.active {

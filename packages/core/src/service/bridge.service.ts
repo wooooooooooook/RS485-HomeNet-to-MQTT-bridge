@@ -39,6 +39,8 @@ interface PortContext {
   packetIntervals: number[];
 }
 
+export type SerialFactory = (serialPath: string, serialConfig: SerialConfig) => Promise<Duplex>;
+
 // Redefine BridgeOptions to use the new HomenetBridgeConfig
 export interface BridgeOptions {
   configPath: string; // Path to the homenet_bridge.yaml configuration file
@@ -47,6 +49,7 @@ export interface BridgeOptions {
   mqttPassword?: string;
   mqttTopicPrefix?: string;
   configOverride?: HomenetBridgeConfig;
+  serialFactory?: SerialFactory;
 }
 
 export class HomeNetBridge {
@@ -287,7 +290,10 @@ export class HomeNetBridge {
       const serialConfig = this.config.serials[index];
       const normalizedPortId = normalizePortId(serialConfig.portId, index);
       const serialPath = this.resolveSerialPath(serialConfig);
-      const port = await createSerialPortConnection(serialPath, serialConfig);
+
+      const factory = this.options.serialFactory || createSerialPortConnection;
+      const port = await factory(serialPath, serialConfig);
+
       const stateProvider = this.buildStateProvider(normalizedPortId);
       const packetProcessor = new PacketProcessor(this.config, stateProvider);
       logger.debug({ portId: normalizedPortId }, '[core] PacketProcessor initialized.');

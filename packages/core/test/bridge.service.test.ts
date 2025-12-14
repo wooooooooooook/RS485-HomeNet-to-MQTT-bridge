@@ -1,24 +1,13 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
+import { Duplex } from 'stream';
 import { HomeNetBridge } from '../src/service/bridge.service';
 import { eventBus } from '../src/service/event-bus.js';
 
 // Mocks
-const mockSerialPortInstances: any[] = [];
-vi.mock('serialport', () => {
-  const SerialPortMock = class extends EventEmitter {
-    constructor() {
-      super();
-      mockSerialPortInstances.push(this);
-    }
-    write = vi.fn();
-    open(callback: (err?: Error | null) => void) {
-      callback?.(null);
-    }
-    destroy = vi.fn();
-  };
-  return { SerialPort: SerialPortMock };
-});
+
+// We no longer need to mock serialport globally or use the hack.
+// vi.mock('serialport', ...);
 
 vi.mock('mqtt', () => ({
   default: {
@@ -35,6 +24,8 @@ vi.mock('mqtt', () => ({
 vi.mock('../src/state/state-manager.js', () => ({
   StateManager: vi.fn().mockImplementation(() => ({
     processIncomingData: vi.fn(),
+    getLightState: vi.fn(),
+    getClimateState: vi.fn(),
   })),
 }));
 
@@ -59,24 +50,39 @@ vi.mock('node:fs/promises', () => ({
   access: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Create a mock class that behaves like Duplex for our purposes
+class MockSerialPort extends EventEmitter {
+  write = vi.fn();
+  open(callback: (err?: Error | null) => void) {
+    callback?.(null);
+  }
+  destroy = vi.fn();
+  // Mimic minimal Duplex props if needed by HomeNetBridge (it only uses write, on, destroy)
+}
+
 describe('HomeNetBridge Packet Interval Analysis', () => {
   let bridge: HomeNetBridge;
-  let fakeSerialPort: EventEmitter;
+  let fakeSerialPort: MockSerialPort;
   const eventBusEmitSpy = vi.spyOn(eventBus, 'emit');
 
   beforeEach(async () => {
     vi.useFakeTimers();
+
+    // Create the mock serial port instance we will control
+    fakeSerialPort = new MockSerialPort();
+
+    // Define the factory to return our mock
+    const mockSerialFactory = vi.fn().mockResolvedValue(fakeSerialPort as unknown as Duplex);
+
     bridge = new HomeNetBridge({
       configPath: 'test.yaml',
       mqttUrl: 'mqtt://fake',
+      serialFactory: mockSerialFactory,
     });
+
     await bridge.start();
 
-    // The serial port instance is created inside start()
-    // We need a way to get a reference to it.
-    // This is a bit of a hack, but we'll assume the mock is instantiated.
-    // A better approach would be dependency injection.
-    fakeSerialPort = mockSerialPortInstances[mockSerialPortInstances.length - 1];
+    // No longer need: fakeSerialPort = mockSerialPortInstances[mockSerialPortInstances.length - 1];
   });
 
   afterEach(() => {

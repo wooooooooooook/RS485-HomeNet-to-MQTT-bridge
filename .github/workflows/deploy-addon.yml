@@ -1,10 +1,21 @@
 name: Deploy Addon
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment type (patch/minor/major/none)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,10 +23,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version
+        id: bump_version
+        if: ${{ github.event.inputs.increment != 'none' }}
+        run: |
+          # Read current version from config.yaml
+          CURRENT_VERSION=$(grep '^version:' hassio-addon/config.yaml | awk '{print $2}' | tr -d '"' | tr -d '\r' | xargs)
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+
+          INCREMENT="${{ github.event.inputs.increment }}"
+
+          if [ "$INCREMENT" == "major" ]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [ "$INCREMENT" == "minor" ]; then
+            minor=$((minor + 1))
+            patch=0
+          elif [ "$INCREMENT" == "patch" ]; then
+            patch=$((patch + 1))
+          fi
+
+          NEW_VERSION="$major.$minor.$patch"
+          echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
+
+          # Update config.yaml
+          sed -i "s/^version: .*/version: $NEW_VERSION/" hassio-addon/config.yaml
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add hassio-addon/config.yaml
+          git commit -m "chore: bump addon version to $NEW_VERSION"
+          git push origin HEAD:${{ github.ref }}
 
       - name: Get version
         id: get_version
         run: |
+          # Read again to get the bumped version (or existing if none)
           VERSION=$(grep '^version:' hassio-addon/config.yaml | awk '{print $2}' | tr -d '"' | tr -d '\r' | xargs)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
@@ -61,11 +109,13 @@ jobs:
   sync-addon-repo:
     needs: build
     runs-on: ubuntu-latest
+    if: success()
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
         with:
           path: source
+          ref: ${{ github.ref }} # Checkout the latest commit (including version bump)
 
       - name: Checkout Target Repo
         uses: actions/checkout@v4

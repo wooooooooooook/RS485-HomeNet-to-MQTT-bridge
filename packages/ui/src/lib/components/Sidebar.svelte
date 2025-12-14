@@ -15,9 +15,12 @@
 </script>
 
 {#if isOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="sidebar-backdrop" on:click={() => dispatch('close')} />
+  <button
+    type="button"
+    class="sidebar-backdrop"
+    aria-label="사이드바 닫기"
+    on:click={() => dispatch('close')}
+  ></button>
 {/if}
 
 <aside class="sidebar" class:open={isOpen}>
@@ -84,6 +87,9 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 40;
     backdrop-filter: blur(2px);
+    border: none;
+    padding: 0;
+    cursor: pointer;
   }
 
   .logo {

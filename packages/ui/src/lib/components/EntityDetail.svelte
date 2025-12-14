@@ -219,164 +219,185 @@
         <button class="close-btn" onclick={close} aria-label="Close modal">&times;</button>
       </header>
 
-      <div class="modal-tabs">
-        <button class:active={activeTab === 'status'} onclick={() => (activeTab = 'status')}
-          >상태 & 명령</button
+      <div class="modal-tabs" role="tablist">
+        <button
+          role="tab"
+          id="tab-status"
+          aria-selected={activeTab === 'status'}
+          aria-controls="panel-status"
+          class:active={activeTab === 'status'}
+          onclick={() => (activeTab = 'status')}>상태 & 명령</button
         >
-        <button class:active={activeTab === 'config'} onclick={() => (activeTab = 'config')}
-          >설정 (YAML)</button
+        <button
+          role="tab"
+          id="tab-config"
+          aria-selected={activeTab === 'config'}
+          aria-controls="panel-config"
+          class:active={activeTab === 'config'}
+          onclick={() => (activeTab = 'config')}>설정 (YAML)</button
         >
-        <button class:active={activeTab === 'packets'} onclick={() => (activeTab = 'packets')}
-          >패킷 로그</button
+        <button
+          role="tab"
+          id="tab-packets"
+          aria-selected={activeTab === 'packets'}
+          aria-controls="panel-packets"
+          class:active={activeTab === 'packets'}
+          onclick={() => (activeTab = 'packets')}>패킷 로그</button
         >
       </div>
 
       <div class="modal-body">
         {#if activeTab === 'status'}
-          <div class="section rename-section">
-            <div>
-              <h3>이름 변경</h3>
-              <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
-            </div>
-            <div class="rename-form">
-              <input
-                type="text"
-                bind:value={renameInput}
-                placeholder="새 이름"
-                aria-label="새 엔티티 이름"
-                oninput={() => (renameLocalError = null)}
-              />
-              <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
-                {isRenaming ? '변경 중...' : '저장'}
-              </button>
-            </div>
-            {#if effectiveRenameError}
-              <div class="rename-error">{effectiveRenameError}</div>
-            {/if}
-          </div>
-
-          <div class="section status-section">
-            <h3>현재 상태</h3>
-            <div class="payload-list">
-              {#each parsePayload(entity.statePayload) as item}
-                <div class="payload-item">
-                  <span class="payload-key">{item.key}</span>
-                  <span class="payload-value">{item.value}</span>
-                </div>
-              {/each}
-              {#if !entity.statePayload}
-                <div class="no-data">상태 정보가 없습니다.</div>
+          <div role="tabpanel" id="panel-status" aria-labelledby="tab-status" tabindex="0">
+            <div class="section rename-section">
+              <div>
+                <h3>이름 변경</h3>
+                <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
+              </div>
+              <div class="rename-form">
+                <input
+                  type="text"
+                  bind:value={renameInput}
+                  placeholder="새 이름"
+                  aria-label="새 엔티티 이름"
+                  oninput={() => (renameLocalError = null)}
+                />
+                <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
+                  {isRenaming ? '변경 중...' : '저장'}
+                </button>
+              </div>
+              {#if effectiveRenameError}
+                <div class="rename-error">{effectiveRenameError}</div>
               {/if}
             </div>
-          </div>
 
-          {#if entity.commands.length > 0}
-            <div class="section command-section">
-              <h3>명령 보내기</h3>
-              <div class="command-grid">
-                {#each entity.commands as cmd}
-                  <div class="command-item">
-                    {#if cmd.inputType === 'number'}
-                      <div class="input-group">
-                        <label for={`cmd-${cmd.entityId}-${cmd.commandName}`}
-                          >{cmd.commandName.replace('command_', '')}</label
-                        >
-                        <input
-                          id={`cmd-${cmd.entityId}-${cmd.commandName}`}
-                          type="number"
-                          min={cmd.min}
-                          max={cmd.max}
-                          step={cmd.step}
-                          bind:value={commandInputs[`${cmd.entityId}_${cmd.commandName}`]}
-                        />
-                        <button
-                          onclick={() =>
-                            dispatch('execute', {
-                              cmd,
-                              value: commandInputs[`${cmd.entityId}_${cmd.commandName}`],
-                            })}
-                        >
-                          전송
-                        </button>
-                      </div>
-                    {:else}
-                      <button class="action-btn" onclick={() => dispatch('execute', { cmd })}>
-                        {cmd.displayName}
-                      </button>
-                    {/if}
+            <div class="section status-section">
+              <h3>현재 상태</h3>
+              <div class="payload-list">
+                {#each parsePayload(entity.statePayload) as item}
+                  <div class="payload-item">
+                    <span class="payload-key">{item.key}</span>
+                    <span class="payload-value">{item.value}</span>
                   </div>
                 {/each}
+                {#if !entity.statePayload}
+                  <div class="no-data">상태 정보가 없습니다.</div>
+                {/if}
               </div>
             </div>
-          {/if}
-        {:else if activeTab === 'config'}
-          <div class="section config-section">
-            {#if configLoading}
-              <div class="loading">설정 불러오는 중...</div>
-            {:else}
-              <div class="config-editor-container">
-                <textarea 
-                  class="config-editor" 
-                  bind:value={editingConfig}
-                  spellcheck="false"
-                ></textarea>
-                <div class="config-actions">
-                  <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
-                    {isSaving ? '저장 중...' : '저장'}
-                  </button>
-                  {#if saveMessage}
-                    <span class="save-message success">{saveMessage}</span>
-                  {/if}
-                  {#if configError}
-                    <span class="save-message error">{configError}</span>
-                  {/if}
+
+            {#if entity.commands.length > 0}
+              <div class="section command-section">
+                <h3>명령 보내기</h3>
+                <div class="command-grid">
+                  {#each entity.commands as cmd}
+                    <div class="command-item">
+                      {#if cmd.inputType === 'number'}
+                        <div class="input-group">
+                          <label for={`cmd-${cmd.entityId}-${cmd.commandName}`}
+                            >{cmd.commandName.replace('command_', '')}</label
+                          >
+                          <input
+                            id={`cmd-${cmd.entityId}-${cmd.commandName}`}
+                            type="number"
+                            min={cmd.min}
+                            max={cmd.max}
+                            step={cmd.step}
+                            bind:value={commandInputs[`${cmd.entityId}_${cmd.commandName}`]}
+                          />
+                          <button
+                            onclick={() =>
+                              dispatch('execute', {
+                                cmd,
+                                value: commandInputs[`${cmd.entityId}_${cmd.commandName}`],
+                              })}
+                          >
+                            전송
+                          </button>
+                        </div>
+                      {:else}
+                        <button class="action-btn" onclick={() => dispatch('execute', { cmd })}>
+                          {cmd.displayName}
+                        </button>
+                      {/if}
+                    </div>
+                  {/each}
                 </div>
               </div>
             {/if}
+          </div>
+        {:else if activeTab === 'config'}
+          <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
+            <div class="section config-section">
+              {#if configLoading}
+                <div class="loading">설정 불러오는 중...</div>
+              {:else}
+                <div class="config-editor-container">
+                  <textarea
+                    class="config-editor"
+                    bind:value={editingConfig}
+                    spellcheck="false"
+                  ></textarea>
+                  <div class="config-actions">
+                    <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
+                      {isSaving ? '저장 중...' : '저장'}
+                    </button>
+                    {#if saveMessage}
+                      <span class="save-message success">{saveMessage}</span>
+                    {/if}
+                    {#if configError}
+                      <span class="save-message error">{configError}</span>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
           </div>
         {:else if activeTab === 'packets'}
-          <div class="section packet-log-section">
-            <div class="log-header">
-              <div class="header-left">
-                <h4>패킷 로그 (RX/TX)</h4>
-                <div class="filters">
-                  <label>
-                    <input type="checkbox" bind:checked={showRx} /> RX (수신)
-                  </label>
-                  <label>
-                    <input type="checkbox" bind:checked={showTx} /> TX (발신)
-                  </label>
+          <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets" tabindex="0">
+            <div class="section packet-log-section">
+              <div class="log-header">
+                <div class="header-left">
+                  <h4>패킷 로그 (RX/TX)</h4>
+                  <div class="filters">
+                    <label>
+                      <input type="checkbox" bind:checked={showRx} /> RX (수신)
+                    </label>
+                    <label>
+                      <input type="checkbox" bind:checked={showTx} /> TX (발신)
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="log-list unified-list">
-              {#if mergedPackets.length === 0}
-                <div class="no-data">표시할 패킷이 없습니다.</div>
-              {:else}
-                {#each mergedPackets as packet}
-                  <div class="log-entry {packet.type}">
-                    <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
+              <div class="log-list unified-list">
+                {#if mergedPackets.length === 0}
+                  <div class="no-data">표시할 패킷이 없습니다.</div>
+                {:else}
+                  {#each mergedPackets as packet}
+                    <div class="log-entry {packet.type}">
+                      <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
 
-                    {#if packet.type === 'rx'}
-                      <span class="direction rx">RX</span>
-                      <span class="entity">{packet.entityId}</span>
-                      <span class="payload">{packet.packet.toUpperCase()}</span>
-                      {#if packet.state}
-                        <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
+                      {#if packet.type === 'rx'}
+                        <span class="direction rx">RX</span>
+                        <span class="entity">{packet.entityId}</span>
+                        <span class="payload">{packet.packet.toUpperCase()}</span>
+                        {#if packet.state}
+                          <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
+                        {/if}
+                      {:else}
+                        <span class="direction tx">TX</span>
+                        <span class="entity">{packet.entityId}</span>
+                        <span class="payload">{packet.packet.toUpperCase()}</span>
+                        <span class="command-info">
+                          {packet.command}
+                          {#if packet.value !== undefined}<span class="value">({packet.value})</span
+                            >{/if}
+                        </span>
                       {/if}
-                    {:else}
-                      <span class="direction tx">TX</span>
-                      <span class="entity">{packet.entityId}</span>
-                      <span class="payload">{packet.packet.toUpperCase()}</span>
-                      <span class="command-info">
-                        {packet.command}
-                        {#if packet.value !== undefined}<span class="value">({packet.value})</span
-                          >{/if}
-                      </span>
-                    {/if}
-                  </div>
-                {/each}
-              {/if}
+                    </div>
+                  {/each}
+                {/if}
+              </div>
             </div>
           </div>
         {/if}

@@ -9,6 +9,7 @@
   } from '../types';
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
+  import LatencyTest from '../components/analysis/LatencyTest.svelte';
 
   let {
     stats,
@@ -70,6 +71,10 @@
     on:start={startStreaming}
     on:stop={stopStreaming}
   />
+
+  {#if activePortId}
+    <LatencyTest portId={activePortId} />
+  {/if}
 </div>
 
 <style>

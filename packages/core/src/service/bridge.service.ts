@@ -2,9 +2,10 @@
 
 import { Duplex } from 'stream';
 import mqtt from 'mqtt';
+import { performance } from 'node:perf_hooks';
 
 import { logger } from '../utils/logger.js';
-import { HomenetBridgeConfig, SerialConfig } from '../config/types.js';
+import { HomenetBridgeConfig, SerialConfig, AutomationConfig } from '../config/types.js';
 import { loadConfig } from '../config/index.js';
 import { EntityConfig } from '../domain/entities/base.entity.js';
 import { PacketProcessor, EntityStateProvider } from '../protocol/packet-processor.js';
@@ -50,6 +51,14 @@ export interface BridgeOptions {
   mqttTopicPrefix?: string;
   configOverride?: HomenetBridgeConfig;
   serialFactory?: SerialFactory;
+}
+
+export interface LatencyStats {
+  avg: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  samples: number;
 }
 
 export class HomeNetBridge {
@@ -209,6 +218,118 @@ export class HomeNetBridge {
       const message = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, packet: hexPacket, error: message };
     }
+  }
+
+  async runLatencyTest(portId: string): Promise<LatencyStats> {
+    const context = this.portContexts.get(portId);
+    if (!context || !this.config) throw new Error('Port not found or config not loaded');
+
+    // 1. Pick a random entity that has commands
+    const entities: EntityConfig[] = [];
+    for (const type of ENTITY_TYPE_KEYS) {
+      const typeEntities = this.config[type] as EntityConfig[] | undefined;
+      if (typeEntities) entities.push(...typeEntities);
+    }
+
+    const candidates = entities.filter(e =>
+      Object.keys(e).some(k => k.startsWith('command_'))
+    );
+
+    if (candidates.length === 0) throw new Error('No capable entities found for test');
+    const targetEntity = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // 2. Find a command to use
+    const commandKey = Object.keys(targetEntity).find(k => k.startsWith('command_'));
+    if (!commandKey) throw new Error('Entity has no command'); // Should not happen due to filter
+    const commandName = commandKey.replace('command_', '');
+
+    // 3. Construct the test packet (use it as input trigger)
+    const testPacket = context.packetProcessor.constructCommandPacket(targetEntity, commandName);
+    if (!testPacket) throw new Error(`Failed to construct test packet for ${targetEntity.id}`);
+
+    // 4. Setup Automation
+    const automationId = `latency_test_${Date.now()}`;
+    const automationConfig: AutomationConfig = {
+      id: automationId,
+      trigger: [{
+        type: 'packet',
+        match: {
+          data: testPacket,
+          mask: testPacket.map(() => 0xFF) // Exact match
+        }
+      }],
+      then: [{
+        action: 'command',
+        target: `id(${targetEntity.id}).command_${commandName}()`
+      }]
+    };
+
+    context.automationManager.addAutomation(automationConfig);
+
+    // 5. Mock CommandManager
+    const originalSend = context.commandManager.send;
+    // We need to bypass the `send` method entirely to avoid queueing logic if we want to measure pure processing time?
+    // Actually, `processQueue` is part of the system latency. We should keep it.
+    // However, `CommandManager` waits for ACK. We must prevent that.
+    // We will spy on `send` but we need to resolve the promise immediately to simulate "sent".
+    // Wait, `send` pushes to queue. `processQueue` calls `executeJob`. `executeJob` calls `port.write` and waits.
+    // We want to measure time until `CommandManager.send` is CALLED by the automation action?
+    // No, `AutomationManager` calls `commandManager.send`.
+    // So if we mock `send`, we measure time until automation finishes.
+    // That's "Packet Reception -> Command Generation".
+
+    const measurements: number[] = [];
+    let resolveTestIteration: (() => void) | null = null;
+
+    // Replace send with our measurement hook
+    context.commandManager.send = async (_entity, _packet) => {
+      if (resolveTestIteration) resolveTestIteration();
+      return Promise.resolve();
+    };
+
+    try {
+      // 6. Loop
+      for (let i = 0; i < 100; i++) {
+        // Wait a bit to ensure clean state?
+        await new Promise(r => setTimeout(r, 2));
+
+        const start = performance.now();
+        const iterationPromise = new Promise<void>(resolve => { resolveTestIteration = resolve; });
+
+        // Inject
+        // We must mimic serial data coming in.
+        context.stateManager.processIncomingData(Buffer.from(testPacket));
+
+        // Wait for command generation
+        // Timeout safety
+        const timeoutPromise = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000));
+
+        await Promise.race([iterationPromise, timeoutPromise]);
+
+        const end = performance.now();
+        measurements.push(end - start);
+      }
+    } finally {
+      // Cleanup
+      context.commandManager.send = originalSend;
+      context.automationManager.removeAutomation(automationId);
+    }
+
+    // 7. Calculate Stats
+    if (measurements.length === 0) return { avg: 0, stdDev: 0, min: 0, max: 0, samples: 0 };
+
+    const sum = measurements.reduce((a, b) => a + b, 0);
+    const avg = sum / measurements.length;
+    const variance = measurements.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / measurements.length;
+    const stdDev = Math.sqrt(variance);
+
+    return {
+      avg: Math.round(avg * 100) / 100,
+      stdDev: Math.round(stdDev * 100) / 100,
+      min: Math.round(Math.min(...measurements) * 100) / 100,
+      max: Math.round(Math.max(...measurements) * 100) / 100,
+      samples: measurements.length
+    };
   }
 
   private buildStateProvider(portId: string): EntityStateProvider {

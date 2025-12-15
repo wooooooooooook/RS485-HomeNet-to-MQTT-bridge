@@ -1,0 +1,8 @@
+node_modules
+.git
+.DS_Store
+.vscode
+dist
+packages/*/dist
+packages/service/static
+.env

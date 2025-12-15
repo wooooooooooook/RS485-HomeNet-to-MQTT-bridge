@@ -1,17 +1,16 @@
-FROM node:20-alpine
+# Stage 1: Builder
+# node:20-slim (Debian based) is used to avoid QEMU hangs during pnpm install/build on ARM64
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install jq for parsing options.json and bash for run.sh
-RUN apk add --no-cache bash jq
-
-# Install pnpm via corepack; custom registry 지원을 위해 NPM_REGISTRY 사용 가능
+# Install pnpm via corepack
 ARG NPM_REGISTRY=https://registry.npmjs.org
 RUN corepack enable \
   && npm config set registry "$NPM_REGISTRY" \
   && corepack prepare pnpm@latest --activate
 
-# Copy workspace files
+# Copy workspace configuration
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/core/package.json packages/core/
 COPY packages/service/package.json packages/service/
@@ -19,19 +18,38 @@ COPY packages/ui/package.json packages/ui/
 COPY packages/simulator/package.json packages/simulator/
 
 # Install dependencies
-# Limit concurrency to prevent QEMU hangs on ARM builds
+# We use network-concurrency 1 just in case, though slim is more stable than alpine
 RUN pnpm install --frozen-lockfile --network-concurrency 1
 
 # Copy source code
 COPY . .
 
-# Build packages
-# We need to build core and ui, then service
+# Build packages (core, ui, service)
 RUN pnpm build
 
-# Environment variables will be set by run.sh
+# Remove development dependencies to reduce size of node_modules
+RUN pnpm prune --prod
+
+# Stage 2: Runner
+# node:20-alpine is used for a smaller runtime image
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Install runtime dependencies
+# bash: for run.sh script
+# jq: for parsing options.json
+# gcompat: provides glibc compatibility for native modules (like serialport) built in the debian stage
+RUN apk add --no-cache bash jq gcompat
+
+# Copy application from builder
+# This copies everything including node_modules and built dist folders
+COPY --from=builder /app /app
+
+# Environment setup
 ENV NODE_ENV=production
 
+# Setup run script
 COPY hassio-addon/run.sh /run.sh
 RUN chmod +x /run.sh
 

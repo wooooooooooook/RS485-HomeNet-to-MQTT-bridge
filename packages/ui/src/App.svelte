@@ -21,6 +21,7 @@
   import Dashboard from './lib/views/Dashboard.svelte';
   import Analysis from './lib/views/Analysis.svelte';
 
+  import LogConsentModal from './lib/components/LogConsentModal.svelte';
   import EntityDetail from './lib/components/EntityDetail.svelte';
   import ToastContainer from './lib/components/ToastContainer.svelte';
   import SettingsView from './lib/views/Settings.svelte';
@@ -81,6 +82,8 @@
   let activityLogs = $state<ActivityLog[]>([]);
   let activityLoading = $state(true);
   let activityError = $state('');
+
+  let showConsentModal = $state(false);
 
   type StreamEvent =
     | 'status'
@@ -232,7 +235,22 @@
     loadBridgeInfo(true);
     loadFrontendSettings();
     loadActivityLogs();
+    checkConsentStatus();
   });
+
+  const checkConsentStatus = async () => {
+    try {
+      const res = await fetch('/api/log-sharing/status');
+      if (res.ok) {
+        const status = await res.json();
+        if (!status.asked) {
+          showConsentModal = true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check consent status', err);
+    }
+  };
 
   // API 요청 helper 함수
   async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
@@ -958,6 +976,10 @@
 </main>
 
 <ToastContainer {toasts} on:dismiss={(event) => removeToast(event.detail.id)} />
+
+{#if showConsentModal}
+  <LogConsentModal onclose={() => (showConsentModal = false)} />
+{/if}
 
 <style>
   :global(body) {

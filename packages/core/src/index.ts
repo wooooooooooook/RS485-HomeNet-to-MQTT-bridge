@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { HomeNetBridge } from './service/bridge.service.js';
 import type { BridgeOptions } from './service/bridge.service.js';
 import { logger } from './utils/logger.js';
+import { logBuffer } from './utils/log-buffer.js';
 import { eventBus } from './service/event-bus.js';
 import type { HomenetBridgeConfig, LambdaConfig } from './config/types.js';
 import { CommandGenerator } from './protocol/generators/command.generator.js';
@@ -16,6 +17,7 @@ export {
   HomeNetBridge,
   BridgeOptions,
   logger,
+  logBuffer,
   eventBus,
   HomenetBridgeConfig,
   LambdaConfig,

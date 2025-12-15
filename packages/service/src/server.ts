@@ -18,6 +18,7 @@ import {
   validateConfig,
 } from '@rs485-homenet/core';
 import { activityLogService } from './activity-log.service.js';
+import { logCollectorService } from './log-collector.service.js';
 
 // Define a custom YAML type for !lambda
 const LambdaType = new Type('!lambda', {
@@ -282,6 +283,21 @@ app.put('/api/frontend-settings', async (req, res) => {
     logger.error({ err: error }, '[service] Failed to save frontend settings');
     res.status(500).json({ error: '프론트 설정을 저장하지 못했습니다.' });
   }
+});
+
+app.get('/api/log-sharing/status', async (_req, res) => {
+  const status = await logCollectorService.getPublicStatus();
+  res.json(status);
+});
+
+app.post('/api/log-sharing/consent', async (req, res) => {
+  const { consent } = req.body;
+  if (typeof consent !== 'boolean') {
+    return res.status(400).json({ error: 'consent must be boolean' });
+  }
+  await logCollectorService.updateConsent(consent);
+  const status = await logCollectorService.getPublicStatus();
+  res.json(status);
 });
 
 type StreamEvent =
@@ -1022,6 +1038,9 @@ async function loadAndStartBridges(filenames: string[]) {
       }
 
       bridges = startedBridges;
+
+      // Init LogCollector with the new bridges
+      await logCollectorService.init(bridges.map(b => b.bridge));
 
       bridgeStatus = 'started';
       logger.info(`[service] Bridge started successfully with ${currentConfigFiles.join(', ')}`);

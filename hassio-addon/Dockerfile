@@ -2,6 +2,9 @@
 # node:20-slim (Debian based) is used to avoid QEMU hangs during pnpm install/build on ARM64
 FROM node:20-slim AS builder
 
+# Set CI=true to prevent pnpm from requiring a TTY for commands like prune
+ENV CI=true
+
 WORKDIR /app
 
 # Install pnpm via corepack

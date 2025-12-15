@@ -1,9 +1,9 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
 # Install jq for parsing options.json and bash for run.sh
-RUN apk add --no-cache bash jq
+RUN apt-get update && apt-get install -y --no-install-recommends bash jq && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm via corepack; custom registry 지원을 위해 NPM_REGISTRY 사용 가능
 ARG NPM_REGISTRY=https://registry.npmjs.org
@@ -19,8 +19,7 @@ COPY packages/ui/package.json packages/ui/
 COPY packages/simulator/package.json packages/simulator/
 
 # Install dependencies
-# Limit concurrency to prevent QEMU hangs on ARM builds
-RUN pnpm install --frozen-lockfile --network-concurrency 1 --child-concurrency 1
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .

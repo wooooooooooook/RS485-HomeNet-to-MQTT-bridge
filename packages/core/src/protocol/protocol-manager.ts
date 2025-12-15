@@ -33,6 +33,13 @@ export class ProtocolManager extends EventEmitter {
     }
   }
 
+  public handleIncomingChunk(chunk: Buffer): void {
+    const packets = this.parser.parseChunk(chunk);
+    for (const packet of packets) {
+      this.processPacket(packet);
+    }
+  }
+
   public queueCommand(command: number[], highPriority: boolean = true) {
     if (highPriority) {
       this.txQueue.push(command);

@@ -100,9 +100,7 @@ export class PacketProcessor extends EventEmitter {
   }
 
   public processChunk(chunk: Buffer) {
-    for (const byte of chunk) {
-      this.protocolManager.handleIncomingByte(byte);
-    }
+    this.protocolManager.handleIncomingChunk(chunk);
   }
 
   public constructCommandPacket(

@@ -21,9 +21,15 @@
 </script>
 
 <div class="modal-backdrop">
-  <div class="modal">
-    <h2>로그 및 데이터 공유 동의</h2>
-    <p>
+  <div
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="consent-title"
+    aria-describedby="consent-desc"
+  >
+    <h2 id="consent-title">로그 및 데이터 공유 동의</h2>
+    <p id="consent-desc">
       서비스 품질 향상과 문제 해결을 위해 로그와 패킷 데이터(최초 1000개)를 수집하여
       개발자에게 전송하고자 합니다.
     </p>

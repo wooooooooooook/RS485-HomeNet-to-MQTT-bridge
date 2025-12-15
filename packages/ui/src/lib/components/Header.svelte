@@ -82,6 +82,17 @@
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    background-color: #0f172a;
+  }
+
+  @media (min-width: 769px) {
+    .header {
+      margin-left: 250px;
+      padding-right: 2rem;
+    }
   }
 
   .left-section {

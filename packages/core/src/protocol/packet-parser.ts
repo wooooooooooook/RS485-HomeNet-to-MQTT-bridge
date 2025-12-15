@@ -7,7 +7,7 @@ import { LambdaExecutor } from './lambda-executor.js';
 import { Buffer } from 'buffer';
 
 export class PacketParser {
-  private buffer: number[] = [];
+  private buffer: Buffer = Buffer.alloc(0);
   private lastRxTime: number = 0;
   private defaults: PacketDefaults;
   private lambdaExecutor: LambdaExecutor;
@@ -25,13 +25,11 @@ export class PacketParser {
   public parseChunk(chunk: Buffer): number[][] {
     const now = Date.now();
     if (this.defaults.rx_timeout && now - this.lastRxTime > this.defaults.rx_timeout) {
-      this.buffer = [];
+      this.buffer = Buffer.alloc(0);
     }
     this.lastRxTime = now;
 
-    for (const b of chunk) {
-      this.buffer.push(b);
-    }
+    this.buffer = Buffer.concat([this.buffer, chunk]);
 
     const packets: number[][] = [];
     const header = this.defaults.rx_header || [];
@@ -44,7 +42,7 @@ export class PacketParser {
     while (this.buffer.length > 0) {
       iterations++;
       if (iterations > maxIterations) {
-          this.buffer.shift();
+          this.buffer = this.buffer.subarray(1);
           continue;
       }
 
@@ -60,7 +58,7 @@ export class PacketParser {
           }
         }
         if (!headerMatch) {
-          this.buffer.shift();
+          this.buffer = this.buffer.subarray(1);
           continue;
         }
       }
@@ -73,9 +71,9 @@ export class PacketParser {
          if (this.buffer.length >= this.defaults.rx_length) {
             // Check Checksum
             if (this.verifyChecksum(this.buffer, this.defaults.rx_length)) {
-               const packet = this.buffer.slice(0, this.defaults.rx_length);
-               packets.push(packet);
-               this.buffer.splice(0, this.defaults.rx_length);
+               const packet = this.buffer.subarray(0, this.defaults.rx_length);
+               packets.push([...packet]);
+               this.buffer = this.buffer.subarray(this.defaults.rx_length);
                matchFound = true;
             } else {
                shift = true; // Invalid checksum for fixed length -> discard byte
@@ -100,9 +98,9 @@ export class PacketParser {
 
                  if (fMatch) {
                     if (this.verifyChecksum(this.buffer, len)) {
-                       const packet = this.buffer.slice(0, len);
-                       packets.push(packet);
-                       this.buffer.splice(0, len);
+                       const packet = this.buffer.subarray(0, len);
+                       packets.push([...packet]);
+                       this.buffer = this.buffer.subarray(len);
                        matchFound = true;
                        break;
                     }
@@ -117,9 +115,9 @@ export class PacketParser {
          if (checksumLen > 0 && this.buffer.length >= minLen) {
              for(let len = minLen; len <= this.buffer.length; len++) {
                 if (this.verifyChecksum(this.buffer, len)) {
-                    const packet = this.buffer.slice(0, len);
-                    packets.push(packet);
-                    this.buffer.splice(0, len);
+                    const packet = this.buffer.subarray(0, len);
+                    packets.push([...packet]);
+                    this.buffer = this.buffer.subarray(len);
                     matchFound = true;
                     break;
                 }
@@ -134,7 +132,7 @@ export class PacketParser {
       // Handle failed match
       if (this.defaults.rx_length && this.defaults.rx_length > 0) {
          if (shift) {
-             this.buffer.shift();
+             this.buffer = this.buffer.subarray(1);
              continue;
          }
          // Waiting for length
@@ -156,25 +154,23 @@ export class PacketParser {
         : 0;
   }
 
-  private verifyChecksum(packet: number[], length?: number): boolean {
-    const len = length !== undefined ? length : packet.length;
-
+  private verifyChecksum(buffer: Buffer, length: number): boolean {
     if (this.defaults.rx_checksum === 'none') return true;
 
     // 1-byte
     if (this.defaults.rx_checksum) {
-        let checksumByte = packet[len - 1];
-        let dataEnd = len - 1;
+        let checksumByte = buffer[length - 1];
+        let dataEnd = length - 1;
 
         if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
-           checksumByte = packet[len - 1 - this.defaults.rx_footer.length];
-           dataEnd = len - 1 - this.defaults.rx_footer.length;
+           checksumByte = buffer[length - 1 - this.defaults.rx_footer.length];
+           dataEnd = length - 1 - this.defaults.rx_footer.length;
         }
 
         if (typeof this.defaults.rx_checksum === 'string') {
              const headerLength = this.defaults.rx_header?.length || 0;
              const calculated = calculateChecksumFromBuffer(
-                packet,
+                buffer,
                 this.defaults.rx_checksum as ChecksumType,
                 headerLength,
                 dataEnd
@@ -183,7 +179,7 @@ export class PacketParser {
         } else if ((this.defaults.rx_checksum as any).type === 'lambda') {
             const lambda = this.defaults.rx_checksum as LambdaConfig;
             const result = this.lambdaExecutor.execute(lambda, {
-               data: packet.slice(0, dataEnd),
+               data: [...buffer.subarray(0, dataEnd)],
                len: dataEnd
             });
             return result === checksumByte;
@@ -196,25 +192,25 @@ export class PacketParser {
        const footerLength = this.defaults.rx_footer?.length || 0;
        const headerLength = this.defaults.rx_header?.length || 0;
 
-       const checksumStart = len - 2 - footerLength;
+       const checksumStart = length - 2 - footerLength;
        if (checksumStart < headerLength) return false;
 
        if (typeof this.defaults.rx_checksum2 === 'string') {
           const calculated = calculateChecksum2FromBuffer(
-             packet,
+             buffer,
              this.defaults.rx_checksum2 as Checksum2Type,
              headerLength,
              checksumStart
           );
-          return calculated[0] === packet[checksumStart] && calculated[1] === packet[checksumStart + 1];
+          return calculated[0] === buffer[checksumStart] && calculated[1] === buffer[checksumStart + 1];
        } else if ((this.defaults.rx_checksum2 as any).type === 'lambda') {
         const lambda = this.defaults.rx_checksum2 as LambdaConfig;
         const result = this.lambdaExecutor.execute(lambda, {
-          data: packet.slice(0, checksumStart),
+          data: [...buffer.subarray(0, checksumStart)],
           len: checksumStart,
         });
         if (Array.isArray(result) && result.length === 2) {
-          return result[0] === packet[checksumStart] && result[1] === packet[checksumStart + 1];
+          return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
         }
         return false;
       }

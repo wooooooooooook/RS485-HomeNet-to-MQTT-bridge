@@ -6,15 +6,11 @@
     bridgeStatus = 'idle' as BridgeStatus,
     connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
     statusMessage,
-    onRefresh,
-    isRefreshing = false,
     portStatuses = [],
   } = $props<{
     bridgeStatus: BridgeStatus;
     connectionStatus: 'idle' | 'connecting' | 'connected' | 'error';
     statusMessage: string;
-    onRefresh: () => void;
-    isRefreshing?: boolean;
     portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
   }>();
 
@@ -67,11 +63,6 @@
     </div>
   </div>
 
-  <div class="controls">
-    <button class="ghost" type="button" onclick={onRefresh} disabled={isRefreshing}>
-      {isRefreshing ? '갱신 중...' : '정보 새로고침'}
-    </button>
-  </div>
 </header>
 
 <style>

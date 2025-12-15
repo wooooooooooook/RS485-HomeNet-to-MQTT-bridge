@@ -382,6 +382,7 @@
 
   let socketCloseHandler: (() => void) | null = null;
   let socketErrorHandler: (() => void) | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   function startMqttStream() {
     if (typeof window === 'undefined' || !bridgeInfo) return;
@@ -550,12 +551,17 @@
     });
 
     const handleDisconnect = () => {
-      connectionStatus = 'error';
-      statusMessage = '스트림 연결이 끊어졌습니다. 잠시 후 다시 시도하세요.';
+      connectionStatus = 'connecting';
+      statusMessage = '스트림 연결이 끊어졌습니다. 재연결을 시도합니다...';
       socket = null;
       socketCloseHandler = null;
       socketErrorHandler = null;
       isStreaming = false;
+
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        startMqttStream();
+      }, 3000);
     };
 
     socketCloseHandler = handleDisconnect;
@@ -571,6 +577,11 @@
   }
 
   function closeStream() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
     if (socket) {
       if (socketCloseHandler) {
         socket.removeEventListener('close', socketCloseHandler);
@@ -877,8 +888,6 @@
     {portStatuses}
     {connectionStatus}
     {statusMessage}
-    onRefresh={() => loadBridgeInfo(true)}
-    isRefreshing={infoLoading}
     on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)}
   />
   <div class="content-body">

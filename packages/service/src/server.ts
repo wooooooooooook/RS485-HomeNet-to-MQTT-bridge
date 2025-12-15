@@ -519,6 +519,8 @@ const registerGlobalEventHandlers = () => {
 activityLogService.addLog('서비스가 시작되었습니다.');
 
 const registerPacketStream = () => {
+  const rawPacketSubscribers = new Set<WebSocket>();
+
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
     const requestUrl = getRequestUrl(req);
     const streamMqttUrl = resolveMqttUrl(
@@ -534,11 +536,22 @@ const registerPacketStream = () => {
       try {
         const parsed = JSON.parse(message);
         if (parsed.command === 'start') {
-          logger.info('[service] UI requested to start streaming raw packets.');
-          startAllRawPacketListeners();
+          if (!rawPacketSubscribers.has(socket)) {
+            const wasEmpty = rawPacketSubscribers.size === 0;
+            rawPacketSubscribers.add(socket);
+            if (wasEmpty) {
+              logger.info('[service] UI requested to start streaming raw packets.');
+              startAllRawPacketListeners();
+            }
+          }
         } else if (parsed.command === 'stop') {
-          logger.info('[service] UI requested to stop streaming raw packets.');
-          stopAllRawPacketListeners();
+          if (rawPacketSubscribers.has(socket)) {
+            rawPacketSubscribers.delete(socket);
+            if (rawPacketSubscribers.size === 0) {
+              logger.info('[service] UI requested to stop streaming raw packets.');
+              stopAllRawPacketListeners();
+            }
+          }
         }
       } catch (error) {
         logger.warn({
@@ -553,14 +566,20 @@ const registerPacketStream = () => {
     }, 15000);
     socket.on('close', () => {
       clearInterval(heartbeat);
-      if (wss.clients.size === 0) {
-        stopAllRawPacketListeners();
+      if (rawPacketSubscribers.has(socket)) {
+        rawPacketSubscribers.delete(socket);
+        if (rawPacketSubscribers.size === 0) {
+          stopAllRawPacketListeners();
+        }
       }
     });
     socket.on('error', () => {
       clearInterval(heartbeat);
-      if (wss.clients.size === 0) {
-        stopAllRawPacketListeners();
+      if (rawPacketSubscribers.has(socket)) {
+        rawPacketSubscribers.delete(socket);
+        if (rawPacketSubscribers.size === 0) {
+          stopAllRawPacketListeners();
+        }
       }
     });
   });

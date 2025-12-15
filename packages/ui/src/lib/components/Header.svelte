@@ -40,6 +40,11 @@
       <span class="icon">☰</span>
     </button>
 
+    <div class="mobile-logo">
+      <span class="logo-icon">H</span>
+      <span class="logo-text">Homenet2MQTT</span>
+    </div>
+
     <div class="status-container">
       <div class="status-item port-statuses">
         {#if portStatuses.length === 0}
@@ -106,6 +111,32 @@
     font-size: 1.5rem;
     padding: 0.25rem 0.5rem;
     line-height: 1;
+  }
+
+  .mobile-logo {
+    display: none; /* Hidden by default (desktop) */
+    align-items: center;
+    gap: 0.75rem;
+    margin-right: 1rem;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 0.9rem;
+  }
+
+  .logo-text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e2e8f0;
   }
 
   .status-container {
@@ -191,6 +222,10 @@
   @media (max-width: 768px) {
     .mobile-menu-btn {
       display: block;
+    }
+
+    .mobile-logo {
+      display: flex;
     }
   }
 </style>

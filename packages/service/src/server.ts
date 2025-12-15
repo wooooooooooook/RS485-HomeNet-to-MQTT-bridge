@@ -216,6 +216,44 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.post('/api/bridge/:portId/latency-test', async (req, res) => {
+  const { portId } = req.params;
+
+  if (bridges.length === 0) {
+    return res.status(503).json({ error: 'Bridge not started' });
+  }
+
+  // Find the bridge instance managing this port
+  let targetBridgeInstance: BridgeInstance | undefined;
+
+  // Try to find by direct match or normalize
+  for (const instance of bridges) {
+    // Check all serials in this instance
+    const serials = instance.config.serials || [];
+    for (let i = 0; i < serials.length; i++) {
+       const pId = normalizePortId(serials[i].portId, i);
+       if (pId === portId) {
+         targetBridgeInstance = instance;
+         break;
+       }
+    }
+    if (targetBridgeInstance) break;
+  }
+
+  if (!targetBridgeInstance) {
+    return res.status(404).json({ error: 'Bridge not found for port ' + portId });
+  }
+
+  try {
+    logger.info({ portId }, '[service] Starting latency test');
+    const stats = await targetBridgeInstance.bridge.runLatencyTest(portId);
+    res.json(stats);
+  } catch (error) {
+    logger.error({ err: error, portId }, '[service] Latency test failed');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Latency test failed' });
+  }
+});
+
 app.get('/api/bridge/info', async (_req, res) => {
   // If a startup is in progress, tell the client to wait.
   if (bridgeStartPromise) {

@@ -10,6 +10,7 @@
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import PacketStats from '../components/PacketStats.svelte';
+  import LatencyAnalysisTool from '../components/LatencyAnalysisTool.svelte';
 
   let {
     stats,
@@ -45,7 +46,7 @@
     selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : portIds[0] ?? null,
   );
 
-  let activeTab = $state<'log' | 'latency'>('log');
+  let activeTab = $state<'log' | 'analysis'>('log');
 </script>
 
 <div class="analysis-view">
@@ -75,11 +76,11 @@
         패킷 로그
       </button>
       <button
-        class:active={activeTab === 'latency'}
+        class:active={activeTab === 'analysis'}
         type="button"
-        onclick={() => (activeTab = 'latency')}
+        onclick={() => (activeTab = 'analysis')}
       >
-        지연 시간 분석
+        분석
       </button>
     </div>
   </div>
@@ -91,14 +92,15 @@
         {rawPackets}
         {isStreaming}
         stats={stats}
+        showStats={false}
         on:start={startStreaming}
         on:stop={stopStreaming}
       />
     </div>
-  {:else if activeTab === 'latency'}
-    <div class="tab-content latency-tab">
-      <div class="latency-header">
-        <h2>지연 시간 및 유휴 상태 분석</h2>
+  {:else if activeTab === 'analysis'}
+    <div class="tab-content analysis-tab">
+      <div class="section-header">
+        <h2>패킷 간격 분석</h2>
         <button
           class="control-btn"
           class:active={isStreaming}
@@ -111,25 +113,11 @@
         RS485 버스의 패킷 간격과 유휴(Idle) 시간을 실시간으로 분석하여 통신 안정성을 진단합니다.
       </p>
 
-      <PacketStats {stats} />
+      <PacketStats {stats} showTitle={false} />
 
-      {#if isStreaming && rawPackets.length > 0}
-        <div class="mini-log">
-          <h3>실시간 패킷 스트림 (최근 20개)</h3>
-          <div class="log-list">
-            {#each [...rawPackets].slice(-20).reverse() as packet (packet.receivedAt + packet.topic)}
-              <div class="log-item">
-                <span class="interval"
-                  >{packet.interval !== null ? `${packet.interval}ms` : '-'}</span
-                >
-                <code class="payload"
-                  >{packet.payload.match(/.{1,2}/g)?.map((p) => p.toUpperCase()).join(' ') ?? ''}</code
-                >
-              </div>
-            {/each}
-          </div>
-        </div>
-      {/if}
+      <div class="spacer"></div>
+
+      <LatencyAnalysisTool />
     </div>
   {/if}
 </div>
@@ -193,14 +181,14 @@
     font-style: italic;
   }
 
-  .latency-header {
+  .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
   }
 
-  .latency-header h2 {
+  .section-header h2 {
     font-size: 1.25rem;
     color: #e2e8f0;
     margin: 0;
@@ -239,43 +227,7 @@
     color: #6ee7b7;
   }
 
-  .mini-log {
-    margin-top: 2rem;
-    background: rgba(15, 23, 42, 0.3);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.1);
-  }
-
-  .mini-log h3 {
-    font-size: 1rem;
-    color: #94a3b8;
-    margin: 0 0 1rem 0;
-  }
-
-  .log-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-family: monospace;
-    font-size: 0.85rem;
-  }
-
-  .log-item {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .interval {
-    color: #f59e0b;
-    font-size: 0.8em;
-  }
-
-  .payload {
-    color: #cbd5e1;
+  .spacer {
+    height: 3rem;
   }
 </style>

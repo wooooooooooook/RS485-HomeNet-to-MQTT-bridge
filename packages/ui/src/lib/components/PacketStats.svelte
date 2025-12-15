@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { PacketStats } from '../types';
 
-  let { stats = null } = $props<{ stats?: PacketStats | null }>();
+  let { stats = null, showTitle = true } = $props<{ stats?: PacketStats | null; showTitle?: boolean }>();
 </script>
 
 <div class="stats-container">
-  <h2>패킷 간격 분석</h2>
+  {#if showTitle}
+    <h2>패킷 간격 분석</h2>
+  {/if}
   <div class="stats-grid">
     {#if stats}
       <div class="stat-item">

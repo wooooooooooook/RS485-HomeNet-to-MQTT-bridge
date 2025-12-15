@@ -3,10 +3,11 @@
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
   import PacketStats from './PacketStats.svelte';
 
-  let { rawPackets = [], isStreaming, stats = null } = $props<{
+  let { rawPackets = [], isStreaming, stats = null, showStats = true } = $props<{
     rawPackets?: RawPacketWithInterval[];
     isStreaming: boolean;
     stats?: PacketStatsType | null;
+    showStats?: boolean;
   }>();
 
   const dispatch = createEventDispatcher();
@@ -32,7 +33,7 @@
   </div>
   <p class="description">RS485 장치에서 수신된 raw 패킷 목록을 interval과 함께 표시합니다.</p>
 
-  {#if stats || isStreaming}
+  {#if showStats && (stats || isStreaming)}
     <PacketStats {stats} />
   {/if}
 

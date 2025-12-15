@@ -17,16 +17,24 @@
     stats = null;
 
     try {
-      const res = await fetch(`/api/bridge/${portId}/latency-test`, {
+      const res = await fetch(`./api/bridge/${portId}/latency-test`, {
         method: 'POST'
       });
 
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Failed to parse response:', text);
+        throw new Error(`Invalid server response: ${text.substring(0, 100)}`);
+      }
+
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || 'Test failed');
       }
 
-      stats = await res.json();
+      stats = data;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Unknown error';
     } finally {

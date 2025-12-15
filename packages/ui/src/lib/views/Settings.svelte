@@ -26,7 +26,7 @@
   let logSharingStatus = $state<{ asked: boolean; consented: boolean } | null>(null);
 
   $effect(() => {
-    fetch('/api/log-sharing/status')
+    fetch('./api/log-sharing/status')
       .then((res) => res.json())
       .then((data) => {
         logSharingStatus = data;
@@ -44,7 +44,7 @@
     }
 
     try {
-      const res = await fetch('/api/log-sharing/consent', {
+      const res = await fetch('./api/log-sharing/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ consent }),

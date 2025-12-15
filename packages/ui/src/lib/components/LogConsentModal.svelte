@@ -6,7 +6,7 @@
   const handleConsent = async (consent: boolean) => {
     isConsenting = true;
     try {
-      await fetch('/api/log-sharing/consent', {
+      await fetch('./api/log-sharing/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ consent }),

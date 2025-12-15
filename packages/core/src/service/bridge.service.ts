@@ -155,13 +155,7 @@ export class HomeNetBridge {
   stopRawPacketListener(portId?: string): void {
     const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
     targets.forEach((context) => {
-      if (context.rawPacketListener) {
-      logger.info({ portId: context.portId }, '[core] Stopping raw packet listener.');
-        context.port.off('data', context.rawPacketListener);
-        context.rawPacketListener = null;
-        context.packetIntervals = [];
-        context.lastPacketTimestamp = null;
-      }
+      this.detachRawListener(context);
     });
   }
 
@@ -391,8 +385,15 @@ export class HomeNetBridge {
     }
   }
 
+  // Keep track of how many consumers need raw data
+  private rawListenerRefCounts = new Map<string, number>();
+
   private attachRawListener(context: PortContext): void {
+    const currentCount = this.rawListenerRefCounts.get(context.portId) || 0;
+    this.rawListenerRefCounts.set(context.portId, currentCount + 1);
+
     if (context.rawPacketListener) {
+      // Already attached, just incremented ref count
       return;
     }
 
@@ -430,6 +431,22 @@ export class HomeNetBridge {
     };
 
     context.port.on('data', context.rawPacketListener);
+  }
+
+  private detachRawListener(context: PortContext): void {
+    const currentCount = this.rawListenerRefCounts.get(context.portId) || 0;
+    if (currentCount <= 0) return;
+
+    const newCount = currentCount - 1;
+    this.rawListenerRefCounts.set(context.portId, newCount);
+
+    if (newCount === 0 && context.rawPacketListener) {
+      logger.info({ portId: context.portId }, '[core] Stopping raw packet listener.');
+      context.port.off('data', context.rawPacketListener);
+      context.rawPacketListener = null;
+      context.packetIntervals = [];
+      context.lastPacketTimestamp = null;
+    }
   }
 
   private analyzeAndEmitPacketStats(context: PortContext) {

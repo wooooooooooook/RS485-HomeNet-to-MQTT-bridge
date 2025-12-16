@@ -23,7 +23,6 @@ const formatStateValue = (value: unknown): string => {
   return String(value);
 };
 
-
 export class ActivityLogService {
   private logs: ActivityLog[] = [];
 
@@ -44,29 +43,26 @@ export class ActivityLogService {
         const from = formatStateValue(oldValue);
         const to = formatStateValue(value);
 
-        this.addLog(
-          `${event.entityId} 상태 변경: ${key} ${from} → ${to}`,
-          {
-            attribute: key,
-            from: oldValue,
-            to: value,
-          },
-        );
+        this.addLog(`${event.entityId} 상태 변경: ${key} ${from} → ${to}`, {
+          attribute: key,
+          from: oldValue,
+          to: value,
+        });
       });
     });
 
     eventBus.on('mqtt-message', (event) => {
-        if (event.topic.endsWith('/set')) {
-            this.addLog(`명령 수신: ${event.topic}`, event.message);
-        }
+      if (event.topic.endsWith('/set')) {
+        this.addLog(`명령 수신: ${event.topic}`, event.message);
+      }
     });
 
     eventBus.on('core:started', () => {
-        this.addLog('코어 서비스가 시작되었습니다.');
+      this.addLog('코어 서비스가 시작되었습니다.');
     });
 
     eventBus.on('core:stopped', () => {
-        this.addLog('코어 서비스가 중지되었습니다.');
+      this.addLog('코어 서비스가 중지되었습니다.');
     });
   }
 

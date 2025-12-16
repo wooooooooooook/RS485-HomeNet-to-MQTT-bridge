@@ -1,4 +1,3 @@
-
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -99,15 +98,15 @@ export class LogCollectorService {
   async updateConsent(consent: boolean) {
     this.hasConsented = consent;
     try {
-        await fs.mkdir(path.dirname(CONSENT_FILE), { recursive: true });
-        await fs.writeFile(CONSENT_FILE, consent ? 'true' : 'false');
-        if (consent) {
-            this.startCollection();
-        } else {
-            this.stopCollection();
-        }
+      await fs.mkdir(path.dirname(CONSENT_FILE), { recursive: true });
+      await fs.writeFile(CONSENT_FILE, consent ? 'true' : 'false');
+      if (consent) {
+        this.startCollection();
+      } else {
+        this.stopCollection();
+      }
     } catch (err) {
-        logger.error({ err }, '[LogCollector] Failed to update consent file');
+      logger.error({ err }, '[LogCollector] Failed to update consent file');
     }
   }
 
@@ -124,7 +123,7 @@ export class LogCollectorService {
     logger.info('[LogCollector] Starting packet collection (target: 1000 packets)');
 
     // Enable raw listeners
-    this.bridges.forEach(b => b.startRawPacketListener());
+    this.bridges.forEach((b) => b.startRawPacketListener());
 
     // Subscribe
     eventBus.on('raw-data-with-interval', this.handlePacketBound);
@@ -133,7 +132,7 @@ export class LogCollectorService {
   stopCollection() {
     if (!this.isCollecting) return;
     this.isCollecting = false;
-    this.bridges.forEach(b => b.stopRawPacketListener());
+    this.bridges.forEach((b) => b.stopRawPacketListener());
     eventBus.off('raw-data-with-interval', this.handlePacketBound);
   }
 

@@ -37,7 +37,14 @@ describe('Climate Command Packet Generation', () => {
     } as unknown as Duplex;
 
     // Mock config with climate entity
-    const serial = { portId: 'main', path: '/dev/ttyUSB0', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 } as any;
+    const serial = {
+      portId: 'main',
+      path: '/dev/ttyUSB0',
+      baud_rate: 9600,
+      data_bits: 8,
+      parity: 'none',
+      stop_bits: 1,
+    } as any;
 
     mockConfig = {
       serial,

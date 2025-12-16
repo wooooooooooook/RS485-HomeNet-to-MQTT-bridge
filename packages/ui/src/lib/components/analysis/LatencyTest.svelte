@@ -18,7 +18,7 @@
 
     try {
       const res = await fetch(`./api/bridge/${portId}/latency-test`, {
-        method: 'POST'
+        method: 'POST',
       });
 
       const text = await res.text();
@@ -47,8 +47,9 @@
   <h3>패킷 처리 지연시간 분석 (Latency)</h3>
   <div class="description">
     <p>
-      가상 패킷을 생성하여 처리 파이프라인(수신 -> 파서 -> 자동화 -> 명령 생성)을 통과하는 시간을 측정합니다.
-      <br>실제 시리얼 포트로 데이터가 전송되지는 않습니다. (100회 반복 측정)
+      가상 패킷을 생성하여 처리 파이프라인(수신 -> 파서 -> 자동화 -> 명령 생성)을 통과하는 시간을
+      측정합니다.
+      <br />실제 시리얼 포트로 데이터가 전송되지는 않습니다. (100회 반복 측정)
     </p>
   </div>
 

@@ -102,9 +102,11 @@
   };
 
   const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
-  const getBasePrefixParts = () => normalizeTopicParts(bridgeInfo?.bridges?.[0]?.mqttTopicPrefix ?? '');
+  const getBasePrefixParts = () =>
+    normalizeTopicParts(bridgeInfo?.bridges?.[0]?.mqttTopicPrefix ?? '');
 
-  const getKnownPortIds = () => bridgeInfo?.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
+  const getKnownPortIds = () =>
+    bridgeInfo?.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
   const getDefaultPortId = () => selectedPortId ?? getKnownPortIds()[0] ?? null;
 
   const inferPortId = (topic?: string, explicit?: string | null) => {
@@ -121,7 +123,8 @@
   const extractPortIdFromTopic = (topic: string) => {
     const parts = normalizeTopicParts(topic);
     const basePrefix = getBasePrefixParts();
-    const hasBasePrefix = basePrefix.length > 0 && basePrefix.every((segment, index) => parts[index] === segment);
+    const hasBasePrefix =
+      basePrefix.length > 0 && basePrefix.every((segment, index) => parts[index] === segment);
 
     if (hasBasePrefix && parts.length > basePrefix.length) {
       return parts[basePrefix.length];
@@ -300,7 +303,8 @@
       deviceStates.clear();
       packetStatsByPort = new Map();
 
-      const portIds = data.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
+      const portIds =
+        data.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
       const defaultPortId = portIds[0] ?? null;
       if (!selectedPortId || (selectedPortId && !portIds.includes(selectedPortId))) {
         selectedPortId = defaultPortId;
@@ -519,7 +523,10 @@
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
-      deviceStates.set(data.topic, { payload: data.payload, portId: data.portId ?? inferPortId(data.topic) ?? undefined });
+      deviceStates.set(data.topic, {
+        payload: data.payload,
+        portId: data.portId ?? inferPortId(data.topic) ?? undefined,
+      });
       deviceStates = new Map(deviceStates);
 
       if (!isToastEnabled('state')) return;
@@ -727,7 +734,11 @@
 
     // 1. Initialize with Commands (Source of Truth for Configured Names)
     for (const cmd of availableCommands) {
-      const portId = cmd.portId ?? (cmd.configFile ? configPortMap.get(cmd.configFile) : null) ?? getDefaultPortId() ?? undefined;
+      const portId =
+        cmd.portId ??
+        (cmd.configFile ? configPortMap.get(cmd.configFile) : null) ??
+        getDefaultPortId() ??
+        undefined;
 
       if (!entities.has(cmd.entityId)) {
         entities.set(cmd.entityId, {
@@ -826,7 +837,8 @@
       ? parsedPackets
           .filter(
             (p) =>
-              p.entityId === selectedEntityId && (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
+              p.entityId === selectedEntityId &&
+              (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
           )
           .slice(-20)
       : [],
@@ -838,7 +850,8 @@
       ? commandPackets
           .filter(
             (p) =>
-              p.entityId === selectedEntityId && (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
+              p.entityId === selectedEntityId &&
+              (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
           )
           .slice(-20)
       : [],
@@ -858,7 +871,7 @@
   });
 
   const dashboardEntities = $derived.by<UnifiedEntity[]>(() =>
-    activePortId ? entitiesByPort[activePortId] ?? [] : unifiedEntities,
+    activePortId ? (entitiesByPort[activePortId] ?? []) : unifiedEntities,
   );
 
   const filteredCommandPackets = $derived.by<CommandPacket[]>(() =>
@@ -880,17 +893,18 @@
   );
 
   const filteredPacketStats = $derived.by<PacketStats | null>(() =>
-    activePortId ? packetStatsByPort.get(activePortId) ?? null : null,
+    activePortId ? (packetStatsByPort.get(activePortId) ?? null) : null,
   );
 
   const portStatuses = $derived.by(() => {
     const defaultStatus = bridgeInfo?.status ?? 'idle';
     return portMetadata.map((port) => {
       const payload = bridgeStatusByPort.get(port.portId);
-      const normalized =
-        ['idle', 'starting', 'started', 'stopped', 'error'].includes((payload || defaultStatus) as string)
-          ? ((payload || defaultStatus) as BridgeStatus)
-          : 'idle';
+      const normalized = ['idle', 'starting', 'started', 'stopped', 'error'].includes(
+        (payload || defaultStatus) as string,
+      )
+        ? ((payload || defaultStatus) as BridgeStatus)
+        : 'idle';
       return {
         portId: port.portId,
         status: normalized as BridgeStatus,
@@ -917,12 +931,12 @@
           {bridgeInfo}
           {infoLoading}
           {infoError}
-          portMetadata={portMetadata}
+          {portMetadata}
           mqttUrl={bridgeInfo?.mqttUrl || ''}
           entities={dashboardEntities}
           selectedPortId={activePortId}
           showInactive={showInactiveEntities}
-          activityLogs={activityLogs}
+          {activityLogs}
           on:select={(e) => (selectedEntityId = e.detail.entityId)}
           on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
           on:portChange={(event) => (selectedPortId = event.detail.portId)}
@@ -934,7 +948,7 @@
           parsedPackets={filteredParsedPackets}
           rawPackets={filteredRawPackets}
           {isStreaming}
-          portMetadata={portMetadata}
+          {portMetadata}
           selectedPortId={activePortId}
           on:portChange={(event) => (selectedPortId = event.detail.portId)}
           on:start={() => {
@@ -969,7 +983,7 @@
       on:close={() => (selectedEntityId = null)}
       on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
       isRenaming={renamingEntityId === selectedEntityId}
-      renameError={renameError}
+      {renameError}
       on:rename={(e) => selectedEntityId && renameEntityRequest(selectedEntityId, e.detail.newName)}
     />
   {/if}

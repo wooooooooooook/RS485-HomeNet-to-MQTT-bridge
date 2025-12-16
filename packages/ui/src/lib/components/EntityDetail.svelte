@@ -140,7 +140,7 @@
 
   async function saveConfig() {
     if (!editingConfig) return;
-    
+
     isSaving = true;
     configError = null;
     saveMessage = '';
@@ -333,10 +333,7 @@
                 <div class="loading">설정 불러오는 중...</div>
               {:else}
                 <div class="config-editor-container">
-                  <textarea
-                    class="config-editor"
-                    bind:value={editingConfig}
-                    spellcheck="false"
+                  <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
                   ></textarea>
                   <div class="config-actions">
                     <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
@@ -686,7 +683,7 @@
     min-height: 400px;
     outline: none;
   }
-  
+
   .config-editor:focus {
     border-color: #38bdf8;
   }
@@ -720,11 +717,11 @@
   .save-message {
     font-size: 0.9rem;
   }
-  
+
   .save-message.success {
     color: #34d399;
   }
-  
+
   .save-message.error {
     color: #f87171;
   }
@@ -840,4 +837,3 @@
     font-style: italic;
   }
 </style>
-

@@ -1,4 +1,3 @@
-
 export interface LogEntry {
   timestamp: number;
   level: string;

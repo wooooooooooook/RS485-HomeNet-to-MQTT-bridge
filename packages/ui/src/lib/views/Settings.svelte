@@ -23,7 +23,7 @@
   };
 
   // Log Sharing State
-  let logSharingStatus = $state<{ asked: boolean; consented: boolean } | null>(null);
+  let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(null);
 
   $effect(() => {
     fetch('./api/log-sharing/status')
@@ -131,6 +131,15 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      {#if logSharingStatus.consented && logSharingStatus.uid}
+        <div class="setting sub-setting">
+           <div>
+             <div class="setting-title">User ID</div>
+             <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
+           </div>
+        </div>
+      {/if}
       {/if}
     {/if}
   </div>
@@ -193,6 +202,13 @@
 
   .setting:first-of-type {
     border-top: none;
+  }
+
+  .sub-setting {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
   }
 
   .setting-title {

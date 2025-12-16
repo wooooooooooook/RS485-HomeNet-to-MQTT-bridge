@@ -2,131 +2,138 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import { eventBus, logger, HomeNetBridge, logBuffer } from '@rs485-homenet/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Should be imported from core/config or similar if available,
-// but we can resolve the config dir relative to this file or use env.
-// In the monorepo structure, we want to target packages/core/config unless overridden.
-// When running the service from packages/service, process.cwd() is usually the root of the monorepo (in Docker) or packages/service (local).
-// We'll rely on env or relative path resolution that works in the Docker env.
 const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
-const CONSENT_FILE = path.join(CONFIG_DIR, '.share_logs');
+const LEGACY_CONSENT_FILE = path.join(CONFIG_DIR, '.share_logs');
+const LOG_CONFIG_FILE = path.join(CONFIG_DIR, 'log_sharing.json');
 
 const LOG_COLLECTOR_URL = 'https://h2m-log-collector.nubiz.workers.dev/';
-const API_KEY = 'h2m-log-collector-is-cool';
+const API_KEY = process.env.LOG_COLLECTOR_API_KEY || 'h2m-log-collector-is-cool';
+
+interface LogConfig {
+  consent: boolean | null;
+  uid: string | null;
+}
+
+interface ConfigFileContent {
+  name: string;
+  content: string;
+}
 
 export class LogCollectorService {
   private packetBuffer: string[] = [];
   private isCollecting = false;
   private bridges: HomeNetBridge[] = [];
+  private configFiles: ConfigFileContent[] = [];
   private packetCount = 0;
-  private consentChecked = false;
-  private hasConsented = false;
+  private config: LogConfig = { consent: null, uid: null };
 
   constructor() {}
 
-  async init(bridges: HomeNetBridge[]) {
+  async init(bridges: HomeNetBridge[], configFiles: ConfigFileContent[] = []) {
     this.bridges = bridges;
-    await this.checkConsent();
-    if (this.hasConsented) {
+    this.configFiles = configFiles;
+    await this.loadConfig();
+    if (this.config.consent) {
       this.startCollection();
     }
   }
 
-  async checkConsent() {
+  private async loadConfig() {
     try {
-      const content = await fs.readFile(CONSENT_FILE, 'utf-8');
-      this.hasConsented = content.trim() === 'true';
-    } catch {
-      this.hasConsented = false;
-    }
-    this.consentChecked = true;
-  }
-
-  async setConsent(consent: boolean) {
-    this.hasConsented = consent;
-    try {
-      if (consent) {
-        await fs.mkdir(path.dirname(CONSENT_FILE), { recursive: true });
-        await fs.writeFile(CONSENT_FILE, 'true');
-        this.startCollection();
+      // Try loading new config file
+      const content = await fs.readFile(LOG_CONFIG_FILE, 'utf-8');
+      const parsed = JSON.parse(content);
+      this.config = {
+        consent: typeof parsed.consent === 'boolean' ? parsed.consent : null,
+        uid: typeof parsed.uid === 'string' ? parsed.uid : null,
+      };
+    } catch (e: any) {
+      if (e.code === 'ENOENT') {
+        // Fallback: check legacy file
+        await this.migrateLegacyConfig();
       } else {
-        await fs.rm(CONSENT_FILE, { force: true });
-        this.stopCollection();
+        logger.error({ err: e }, '[LogCollector] Failed to load config');
+        this.config = { consent: null, uid: null };
       }
-    } catch (err) {
-      logger.error({ err }, '[LogCollector] Failed to update consent file');
     }
   }
 
-  getConsentStatus() {
+  private async migrateLegacyConfig() {
+    try {
+      const content = await fs.readFile(LEGACY_CONSENT_FILE, 'utf-8');
+      const legacyConsent = content.trim() === 'true';
+
+      this.config = {
+        consent: legacyConsent,
+        uid: legacyConsent ? randomUUID() : null
+      };
+
+      await this.saveConfig();
+
+      // Remove legacy file after successful migration
+      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => {});
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+         logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');
+      }
+      // If legacy file doesn't exist, we start fresh (consent: null)
+    }
+  }
+
+  private async saveConfig() {
+    try {
+      await fs.mkdir(path.dirname(LOG_CONFIG_FILE), { recursive: true });
+      await fs.writeFile(LOG_CONFIG_FILE, JSON.stringify(this.config, null, 2));
+    } catch (err) {
+      logger.error({ err }, '[LogCollector] Failed to save config');
+    }
+  }
+
+  async getPublicStatus() {
     return {
-      asked: this.consentChecked, // Actually we assume if file exists it was asked?
-      // User said: "First run... show message".
-      // If file doesn't exist, we assume "not asked" or "not consented".
-      // We can use a separate logic or just rely on file existence = consented.
-      // But we need to know if we should show the modal.
-      // Let's check if the file exists. If it exists, user made a choice (agreed).
-      // If it doesn't exist, maybe they disagreed or never asked.
-      // To distinguish "never asked" from "disagreed", we might need another flag.
-      // But for now, let's assume !file -> show modal.
-      // Wait, if they disagree, we don't write the file. So on next boot, we show modal again?
-      // That's annoying. We should write a "false" or similar.
-      // Let's change logic: file content 'true' or 'false'.
-      consented: this.hasConsented,
-      hasChoice: this.consentChecked, // This flag is just internal state
+      asked: this.config.consent !== null,
+      consented: this.config.consent === true,
+      uid: this.config.uid
     };
   }
 
-  // Improved getStatus for API
-  async getPublicStatus() {
-    let choiceMade = false;
-    let consented = false;
-    try {
-      const content = await fs.readFile(CONSENT_FILE, 'utf-8');
-      choiceMade = true;
-      consented = content.trim() === 'true';
-    } catch {
-      choiceMade = false;
-    }
-    return { asked: choiceMade, consented };
-  }
-
-  // Update setConsent to write 'false' instead of deleting
   async updateConsent(consent: boolean) {
-    this.hasConsented = consent;
-    try {
-        await fs.mkdir(path.dirname(CONSENT_FILE), { recursive: true });
-        await fs.writeFile(CONSENT_FILE, consent ? 'true' : 'false');
-        if (consent) {
-            this.startCollection();
-        } else {
-            this.stopCollection();
-        }
-    } catch (err) {
-        logger.error({ err }, '[LogCollector] Failed to update consent file');
+    let newUid = this.config.uid;
+
+    if (consent && !newUid) {
+      newUid = randomUUID();
+    }
+
+    this.config = {
+      consent,
+      uid: newUid
+    };
+
+    await this.saveConfig();
+
+    if (consent) {
+      this.startCollection();
+    } else {
+      this.stopCollection();
     }
   }
 
   startCollection() {
     if (this.isCollecting) return;
 
-    // Only collect if we haven't already finished for this session?
-    // User said "Every execution".
-    // So we reset on start.
     this.packetBuffer = [];
     this.packetCount = 0;
     this.isCollecting = true;
 
     logger.info('[LogCollector] Starting packet collection (target: 1000 packets)');
 
-    // Enable raw listeners
     this.bridges.forEach(b => b.startRawPacketListener());
-
-    // Subscribe
     eventBus.on('raw-data-with-interval', this.handlePacketBound);
   }
 
@@ -143,11 +150,9 @@ export class LogCollectorService {
     if (!this.isCollecting) return;
 
     if (this.packetCount >= 1000) {
-      // Should have stopped already
       return;
     }
 
-    // data.payload is hex string
     this.packetBuffer.push(data.payload);
     this.packetCount++;
 
@@ -160,13 +165,23 @@ export class LogCollectorService {
   async sendData() {
     logger.info('[LogCollector] 1000 packets collected. Sending report...');
 
+    if (!this.config.uid) {
+        logger.warn('[LogCollector] No UID present, skipping upload despite collection.');
+        return;
+    }
+
+    const isRunningOnHASupervisor = !!process.env.SUPERVISOR_TOKEN;
+
     try {
       const logs = logBuffer.getLogs();
       const payload = {
+        uid: this.config.uid,
         architecture: process.arch,
         version: await this.getAddonVersion(),
+        isRunningOnHASupervisor,
         packets: this.packetBuffer,
         logs: logs,
+        configs: this.configFiles,
         timestamp: Date.now(),
       };
 
@@ -190,7 +205,6 @@ export class LogCollectorService {
   }
 
   private async getAddonVersion(): Promise<string> {
-    // Try HA Supervisor API
     const supervisorToken = process.env.SUPERVISOR_TOKEN;
     if (supervisorToken) {
       try {
@@ -205,8 +219,6 @@ export class LogCollectorService {
         // ignore
       }
     }
-    // Fallback: try to read package.json of service?
-    // Or just return 'dev'
     return process.env.npm_package_version || 'unknown';
   }
 }

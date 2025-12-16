@@ -1106,7 +1106,16 @@ async function loadAndStartBridges(filenames: string[]) {
       bridges = startedBridges;
 
       // Init LogCollector with the new bridges
-      await logCollectorService.init(bridges.map(b => b.bridge));
+      const loadedConfigFiles = await Promise.all(
+        resolvedPaths.map(async (p, idx) => ({
+          name: filenames[idx],
+          content: await fs.readFile(p, 'utf-8'),
+        })),
+      );
+      await logCollectorService.init(
+        bridges.map((b) => b.bridge),
+        loadedConfigFiles,
+      );
 
       bridgeStatus = 'started';
       logger.info(`[service] Bridge started successfully with ${currentConfigFiles.join(', ')}`);

@@ -162,6 +162,19 @@ export class HomeNetBridge {
     return { success: true };
   }
 
+  revokeDiscovery(entityId: string): { success: boolean; error?: string } {
+    if (this.portContexts.size === 0) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    // Try to revoke on all active ports/contexts to ensure cleanup
+    for (const context of this.portContexts.values()) {
+      context.discoveryManager.revokeDiscovery(entityId);
+    }
+
+    return { success: true };
+  }
+
   startRawPacketListener(portId?: string): void {
     const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
     targets.forEach((context) => this.attachRawListener(context));

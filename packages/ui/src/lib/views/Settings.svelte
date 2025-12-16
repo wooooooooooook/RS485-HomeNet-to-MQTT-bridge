@@ -26,7 +26,7 @@
   let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(null);
 
   $effect(() => {
-    fetch('./api/log-sharing/status')
+    fetch(`./api/log-sharing/status?_=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
         logSharingStatus = data;

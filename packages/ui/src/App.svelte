@@ -240,7 +240,7 @@
 
   const checkConsentStatus = async () => {
     try {
-      const res = await fetch('/api/log-sharing/status');
+      const res = await fetch(`/api/log-sharing/status?_=${Date.now()}`);
       if (res.ok) {
         const status = await res.json();
         if (!status.asked) {

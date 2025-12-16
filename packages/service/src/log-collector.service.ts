@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
 const LEGACY_CONSENT_FILE = path.join(CONFIG_DIR, '.share_logs');
-const LOG_CONFIG_FILE = path.join(CONFIG_DIR, 'log_config.json');
+const LOG_CONFIG_FILE = path.join(CONFIG_DIR, 'log_sharing.json');
 
 const LOG_COLLECTOR_URL = 'https://h2m-log-collector.nubiz.workers.dev/';
 const API_KEY = process.env.LOG_COLLECTOR_API_KEY || 'h2m-log-collector-is-cool';
@@ -20,17 +20,24 @@ interface LogConfig {
   uid: string | null;
 }
 
+interface ConfigFileContent {
+  name: string;
+  content: string;
+}
+
 export class LogCollectorService {
   private packetBuffer: string[] = [];
   private isCollecting = false;
   private bridges: HomeNetBridge[] = [];
+  private configFiles: ConfigFileContent[] = [];
   private packetCount = 0;
   private config: LogConfig = { consent: null, uid: null };
 
   constructor() {}
 
-  async init(bridges: HomeNetBridge[]) {
+  async init(bridges: HomeNetBridge[], configFiles: ConfigFileContent[] = []) {
     this.bridges = bridges;
+    this.configFiles = configFiles;
     await this.loadConfig();
     if (this.config.consent) {
       this.startCollection();
@@ -89,8 +96,6 @@ export class LogCollectorService {
   }
 
   async getPublicStatus() {
-    // If consent is null, it means we haven't asked or user hasn't decided.
-    // In the UI, 'asked' means "is the decision made?".
     return {
       asked: this.config.consent !== null,
       consented: this.config.consent === true,
@@ -104,11 +109,6 @@ export class LogCollectorService {
     if (consent && !newUid) {
       newUid = randomUUID();
     }
-
-    // If consent is revoked, we keep the UID or clear it?
-    // Usually better to keep it in case they re-enable, unless explicitly requested to delete.
-    // The requirement says "Introduce uid... generated if user consents".
-    // It doesn't strictly say delete on revoke. I'll keep it for consistency.
 
     this.config = {
       consent,
@@ -170,14 +170,18 @@ export class LogCollectorService {
         return;
     }
 
+    const isRunningOnHASupervisor = !!process.env.SUPERVISOR_TOKEN;
+
     try {
       const logs = logBuffer.getLogs();
       const payload = {
         uid: this.config.uid,
         architecture: process.arch,
         version: await this.getAddonVersion(),
+        isRunningOnHASupervisor,
         packets: this.packetBuffer,
         logs: logs,
+        configs: this.configFiles,
         timestamp: Date.now(),
       };
 

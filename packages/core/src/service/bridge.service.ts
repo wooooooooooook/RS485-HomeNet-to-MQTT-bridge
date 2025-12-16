@@ -245,7 +245,7 @@ export class HomeNetBridge {
       if (!hasCommand) return false;
 
       // If defaults use lambda checksum, we can't reliably calculate it here without duplication logic
-      if (defaults.rx_checksum && typeof defaults.rx_checksum !== 'string' && defaults.rx_checksum !== 'none') return false;
+      if (defaults.rx_checksum && typeof defaults.rx_checksum !== 'string') return false;
       if (defaults.rx_checksum2 && typeof defaults.rx_checksum2 !== 'string') return false;
       return true;
     });

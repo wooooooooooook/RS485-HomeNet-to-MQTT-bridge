@@ -11,10 +11,14 @@ export class PacketParser {
   private lastRxTime: number = 0;
   private defaults: PacketDefaults;
   private lambdaExecutor: LambdaExecutor;
+  private headerBuffer: Buffer | null = null;
 
   constructor(defaults: PacketDefaults) {
     this.defaults = defaults;
     this.lambdaExecutor = new LambdaExecutor();
+    if (this.defaults.rx_header && this.defaults.rx_header.length > 0) {
+      this.headerBuffer = Buffer.from(this.defaults.rx_header);
+    }
   }
 
   public parse(byte: number): number[] | null {
@@ -47,20 +51,23 @@ export class PacketParser {
       }
 
       // 1. Enforce Header (Sliding Window)
-      if (headerLen > 0) {
+      if (this.headerBuffer && headerLen > 0) {
         if (this.buffer.length < headerLen) break; // Wait for more data
 
-        let headerMatch = true;
-        for (let i = 0; i < headerLen; i++) {
-          if (this.buffer[i] !== header[i]) {
-            headerMatch = false;
-            break;
+        const idx = this.buffer.indexOf(this.headerBuffer);
+
+        if (idx === -1) {
+          // Header not found. Keep potential partial header at the end.
+          const keepLen = headerLen - 1;
+          if (this.buffer.length > keepLen) {
+            this.buffer = this.buffer.subarray(this.buffer.length - keepLen);
           }
+          break;
+        } else if (idx > 0) {
+          // Header found. Discard garbage before it.
+          this.buffer = this.buffer.subarray(idx);
         }
-        if (!headerMatch) {
-          this.buffer = this.buffer.subarray(1);
-          continue;
-        }
+        // If idx === 0, proceed.
       }
 
       // 2. Find Packet Length and Extract

@@ -69,7 +69,7 @@ export class AutomationManager {
   }
 
   start() {
-    if (this.isStarted || this.automationList.length === 0) return;
+    if (this.isStarted) return;
     this.isStarted = true;
 
     const stateListener = ({ entityId, state }: { entityId: string; state: Record<string, any> }) => {
@@ -236,7 +236,8 @@ export class AutomationManager {
     trigger: AutomationTrigger,
     context: TriggerContext,
   ) {
-    const guardResult = this.evaluateGuard(trigger.guard, context);
+    const guardResult =
+      this.evaluateGuard(trigger.guard, context) && this.evaluateGuard(automation.guard, context);
     const actions = guardResult ? automation.then : automation.else;
     if (!actions || actions.length === 0) return;
 

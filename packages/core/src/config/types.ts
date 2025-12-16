@@ -98,6 +98,7 @@ export interface AutomationConfig {
   name?: string;
   description?: string;
   trigger: AutomationTrigger[];
+  guard?: AutomationGuard;
   then: AutomationAction[];
   else?: AutomationAction[];
   enabled?: boolean;

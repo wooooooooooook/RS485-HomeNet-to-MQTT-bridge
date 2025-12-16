@@ -255,6 +255,8 @@ app.post('/api/bridge/:portId/latency-test', async (req, res) => {
 });
 
 app.get('/api/bridge/info', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
   // If a startup is in progress, tell the client to wait.
   if (bridgeStartPromise) {
     return res.status(503).json({ error: 'Bridge is starting...' });
@@ -324,6 +326,7 @@ app.put('/api/frontend-settings', async (req, res) => {
 });
 
 app.get('/api/log-sharing/status', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const status = await logCollectorService.getPublicStatus();
   res.json(status);
 });

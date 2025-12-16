@@ -56,6 +56,8 @@ jobs:
           if [ "$INCREMENT" != "none" ]; then
              echo "Updating config.yaml to $NEW_VERSION"
              sed -i "s/^version: .*/version: $NEW_VERSION/" hassio-addon/config.yaml
+             echo "Updating package.json to $NEW_VERSION"
+             npm version $NEW_VERSION --no-git-tag-version --allow-same-version
           fi
 
           echo "VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -107,7 +109,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add hassio-addon/config.yaml
+          git add hassio-addon/config.yaml package.json
           git commit -m "chore: bump addon version to $NEW_VERSION"
           git push origin HEAD:${{ github.ref }}
 

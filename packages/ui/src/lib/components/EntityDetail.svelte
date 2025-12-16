@@ -168,6 +168,38 @@
     }
   }
 
+  async function handleRevokeDiscovery() {
+    if (!confirm('정말로 이 엔티티의 디스커버리 정보를 회수하시겠습니까?\n(상태 패킷이 수신되면 다시 등록됩니다)')) return;
+
+    try {
+      const res = await fetch(`./api/entities/${entity.id}/revoke-discovery`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '실패했습니다.');
+      }
+      alert('디스커버리 정보가 회수되었습니다.');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '실패했습니다.');
+    }
+  }
+
+  async function handleDeleteEntity() {
+    if (!confirm('정말로 이 엔티티를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 설정 파일에서 영구적으로 제거됩니다.')) return;
+
+    try {
+      const res = await fetch(`./api/entities/${entity.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '삭제 실패');
+      }
+      alert('삭제되었습니다. 변경 사항을 적용하려면 서비스 재시작이 필요할 수 있습니다.');
+      close();
+      window.location.reload(); // Reload to refresh entity list since it's a major change
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '삭제 실패');
+    }
+  }
+
   function close() {
     dispatch('close');
   }
@@ -351,6 +383,22 @@
                   </div>
                 </div>
               {/if}
+            </div>
+
+            <div class="section management-section">
+              <h3>관리</h3>
+              <div class="management-actions">
+                <button class="danger-btn outline" onclick={handleRevokeDiscovery}>
+                  디스커버리 회수
+                </button>
+                <button class="danger-btn" onclick={handleDeleteEntity}>
+                  엔티티 삭제
+                </button>
+              </div>
+              <p class="subtle">
+                디스커버리 회수는 MQTT 토픽만 제거하며, 상태 패킷 수신 시 다시 등록됩니다.<br />
+                엔티티 삭제는 설정 파일에서 영구적으로 제거됩니다.
+              </p>
             </div>
           </div>
         {:else if activeTab === 'packets'}
@@ -727,6 +775,43 @@
   
   .save-message.error {
     color: #f87171;
+  }
+
+  .management-section {
+    border-top: 1px solid #334155;
+    padding-top: 2rem;
+    margin-top: 2rem;
+  }
+
+  .management-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .danger-btn {
+    background: #ef4444;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .danger-btn:hover {
+    background: #dc2626;
+  }
+
+  .danger-btn.outline {
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+  }
+
+  .danger-btn.outline:hover {
+    background: rgba(239, 68, 68, 0.1);
   }
 
   /* Unified Log Styles */

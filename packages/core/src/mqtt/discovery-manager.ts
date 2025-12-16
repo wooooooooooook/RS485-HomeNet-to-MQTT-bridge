@@ -64,6 +64,24 @@ export class DiscoveryManager {
     this.entities = this.collectEntities();
   }
 
+  public revokeDiscovery(entityId: string): void {
+    const entity = this.entities.find((e) => e.id === entityId);
+    if (!entity) {
+      logger.warn({ entityId }, '[DiscoveryManager] Cannot revoke discovery for unknown entity');
+      return;
+    }
+
+    const uniqueId = this.ensureUniqueId(entity);
+    const topic = `${this.discoveryPrefix}/${entity.type}/${uniqueId}/config`;
+
+    this.publisher.publish(topic, '', { retain: true });
+
+    const discoveryKey = `${this.portId}:${entityId}`;
+    this.discoveryPublished.delete(discoveryKey);
+
+    logger.info({ entityId, topic }, '[DiscoveryManager] Revoked discovery for entity');
+  }
+
   public setup(): void {
     // Subscribe to Home Assistant status to republish discovery on restart
     this.subscriber.subscribe(`${this.discoveryPrefix}/status`, (message) => {

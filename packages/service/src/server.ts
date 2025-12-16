@@ -943,6 +943,94 @@ app.post('/api/entities/rename', async (req, res) => {
   }
 });
 
+app.post('/api/entities/:entityId/revoke-discovery', (req, res) => {
+  const { entityId } = req.params;
+  if (!entityId) return res.status(400).json({ error: 'entityId required' });
+
+  const bridgeInstance = findBridgeForEntity(entityId);
+  if (!bridgeInstance) {
+    return res.status(404).json({ error: 'Entity not found or bridge not active' });
+  }
+
+  const result = bridgeInstance.bridge.revokeDiscovery(entityId);
+  if (result.success) {
+    res.json({ success: true });
+  } else {
+    res.status(500).json({ error: result.error });
+  }
+});
+
+app.delete('/api/entities/:entityId', async (req, res) => {
+  const { entityId } = req.params;
+
+  if (currentConfigFiles.length !== 1) {
+    return res.status(500).json({ error: '단일 설정 파일이 로드된 경우에만 삭제할 수 있습니다.' });
+  }
+
+  const targetConfigFile = currentConfigFiles[0];
+
+  try {
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as {
+      homenet_bridge: PersistableHomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
+    }
+
+    // Normalize to ensure we can match IDs accurately
+    const normalizedConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig);
+
+    let found = false;
+    for (const type of ENTITY_TYPE_KEYS) {
+      const list = normalizedConfig[type] as any[];
+      if (Array.isArray(list)) {
+        const index = list.findIndex((e) => e.id === entityId);
+        if (index !== -1) {
+          list.splice(index, 1);
+          found = true;
+          break;
+        }
+      }
+    }
+
+    if (!found) {
+      return res.status(404).json({ error: 'Entity not found in config' });
+    }
+
+    // Update the original object structure with the modified data
+    loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
+
+    // Backup
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${configPath}.${timestamp}.bak`;
+    await fs.copyFile(configPath, backupPath);
+
+    // Write new config
+    const newFileContent = yaml.dump(loadedYamlFromFile, {
+      schema: HOMENET_BRIDGE_SCHEMA,
+      styles: { '!!int': 'hexadecimal' },
+      noRefs: true,
+      lineWidth: -1,
+    });
+
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    // Update in-memory config
+    currentRawConfigs = [normalizedConfig];
+    currentConfigs = [normalizedConfig];
+    rebuildPortMappings();
+
+    logger.info(`[service] Entity ${entityId} deleted. Backup created at ${path.basename(backupPath)}`);
+    res.json({ success: true, backup: path.basename(backupPath) });
+  } catch (err) {
+    logger.error({ err }, '[service] Failed to delete entity');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Delete failed' });
+  }
+});
+
 app.post('/api/commands/execute', async (req, res) => {
   const { entityId, commandName, value } = req.body as {
     entityId?: string;

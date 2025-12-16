@@ -2,6 +2,9 @@
 
 # RS485 HomeNet to MQTT Bridge
 
+> **⚠️ 주의: 알파 버전**
+> 이 프로젝트는 현재 **초기 개발 단계(Alpha)**입니다. 소프트웨어가 불안정할 수 있으며, 잦은 업데이트와 **하위 호환성을 깨는 변경(Breaking Changes)**이 예고 없이 발생할 수 있습니다. 운영 환경 적용 시 주의하시기 바랍니다.
+
 RS485 기반 HomeNet 장비에서 수집한 프레임을 MQTT 브로커로 전달하고, Home Assistant에서 자동으로 발견할 수 있는 토픽을 발행하는 TypeScript 모노레포입니다. 코어 브릿지, Express API, Svelte UI, 시뮬레이터가 `pnpm` 워크스페이스로 묶여 있습니다.
 
 ## 프로젝트 개요

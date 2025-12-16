@@ -36,6 +36,8 @@
       <span class="icon">☰</span>
     </button>
 
+    <div class="alpha-badge">ALPHA</div>
+
     <div class="status-container">
       <div class="status-item port-statuses">
         {#if portStatuses.length === 0}
@@ -154,6 +156,16 @@
   button.ghost:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .alpha-badge {
+    background-color: #f59e0b;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    user-select: none;
   }
 
   @keyframes pulse {

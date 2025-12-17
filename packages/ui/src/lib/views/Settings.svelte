@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import LogConsentModal from '../components/LogConsentModal.svelte';
   import type { FrontendSettings } from '../types';
 
   let { frontendSettings = null, isLoading = false, isSaving = false, error = '' } = $props<{
@@ -24,30 +25,44 @@
 
   // Log Sharing State
   let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(null);
+  let showConsentModal = $state(false);
 
-  $effect(() => {
+  const fetchLogSharingStatus = () => {
     fetch(`./api/log-sharing/status?_=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
         logSharingStatus = data;
       })
       .catch((err) => console.error('Failed to fetch log sharing status', err));
+  };
+
+  $effect(() => {
+    fetchLogSharingStatus();
   });
 
   const handleLogSharingToggle = async (e: Event) => {
     const input = e.currentTarget as HTMLInputElement;
     const consent = input.checked;
 
+    if (consent) {
+      // Enabling: Show modal for consent
+      e.preventDefault(); // Prevent checkbox from checking immediately
+      input.checked = false; // Ensure it stays unchecked visually
+      showConsentModal = true;
+      return;
+    }
+
+    // Disabling: Process immediately
     // Optimistic update
     if (logSharingStatus) {
-      logSharingStatus = { ...logSharingStatus, consented: consent };
+      logSharingStatus = { ...logSharingStatus, consented: false };
     }
 
     try {
       const res = await fetch('./api/log-sharing/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent }),
+        body: JSON.stringify({ consent: false }),
       });
       if (res.ok) {
         logSharingStatus = await res.json();
@@ -56,13 +71,22 @@
       console.error('Failed to update log sharing', error);
       // Revert on error
       if (logSharingStatus) {
-        logSharingStatus = { ...logSharingStatus, consented: !consent };
+        logSharingStatus = { ...logSharingStatus, consented: true };
       }
     }
   };
 </script>
 
 <section class="settings-view">
+  {#if showConsentModal}
+    <LogConsentModal
+      onclose={() => {
+        showConsentModal = false;
+        fetchLogSharingStatus();
+      }}
+    />
+  {/if}
+
   <h1>설정</h1>
 
   {#if error}

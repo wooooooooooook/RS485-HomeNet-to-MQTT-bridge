@@ -111,6 +111,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add hassio-addon/config.yaml package.json
           git commit -m "chore: bump addon version to $NEW_VERSION"
+          git pull --rebase origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref }}
 
   sync-addon-repo:

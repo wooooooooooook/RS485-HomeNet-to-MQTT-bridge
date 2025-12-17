@@ -4,4 +4,3 @@ export const normalizePortId = (portId: string | undefined | null, index: number
   const trimmed = portId?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : `homedevice${index + 1}`;
 };
-

@@ -93,7 +93,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => { });
+      await this.startPromise.catch(() => {});
     }
 
     for (const context of this.portContexts.values()) {
@@ -120,10 +120,13 @@ export class HomeNetBridge {
       return false;
     }
     context.port.write(Buffer.from(packet));
-    logger.info({
-      portId: context.portId,
-      packet: packet.map((b) => b.toString(16).padStart(2, '0')).join(' '),
-    }, '[core] Raw packet sent');
+    logger.info(
+      {
+        portId: context.portId,
+        packet: packet.map((b) => b.toString(16).padStart(2, '0')).join(' '),
+      },
+      '[core] Raw packet sent',
+    );
     return true;
   }
 
@@ -134,7 +137,11 @@ export class HomeNetBridge {
     return this.config;
   }
 
-  renameEntity(entityId: string, newName: string, uniqueId?: string): { success: boolean; error?: string } {
+  renameEntity(
+    entityId: string,
+    newName: string,
+    uniqueId?: string,
+  ): { success: boolean; error?: string } {
     if (!this.config) {
       return { success: false, error: 'Bridge not initialized' };
     }
@@ -176,12 +183,16 @@ export class HomeNetBridge {
   }
 
   startRawPacketListener(portId?: string): void {
-    const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
+    const targets = portId
+      ? ([this.portContexts.get(portId)].filter(Boolean) as PortContext[])
+      : [...this.portContexts.values()];
     targets.forEach((context) => this.attachRawListener(context));
   }
 
   stopRawPacketListener(portId?: string): void {
-    const targets = portId ? [this.portContexts.get(portId)].filter(Boolean) as PortContext[] : [...this.portContexts.values()];
+    const targets = portId
+      ? ([this.portContexts.get(portId)].filter(Boolean) as PortContext[])
+      : [...this.portContexts.values()];
     targets.forEach((context) => {
       this.detachRawListener(context);
     });
@@ -296,7 +307,7 @@ export class HomeNetBridge {
 
     // Let's assume standard behavior unless proven otherwise:
     // Fill random data in the middle
-    const checksumLen = checksum2Type ? 2 : (checksumType && checksumType !== 'none' ? 1 : 0);
+    const checksumLen = checksum2Type ? 2 : checksumType && checksumType !== 'none' ? 1 : 0;
     const bodyStart = headerLen;
     const bodyEnd = targetLength - footerLen - checksumLen;
 
@@ -318,12 +329,22 @@ export class HomeNetBridge {
       // PacketParser expects checksum at `length - 1 - footerLen`.
       // My bodyEnd = targetLength - footerLen - 1. Yes.
       if (typeof checksumType === 'string') {
-        const cs = calculateChecksumFromBuffer(buffer, checksumType as ChecksumType, headerLen, bodyEnd);
+        const cs = calculateChecksumFromBuffer(
+          buffer,
+          checksumType as ChecksumType,
+          headerLen,
+          bodyEnd,
+        );
         testPacket[bodyEnd] = cs;
       }
     } else if (checksum2Type) {
       if (typeof checksum2Type === 'string') {
-        const cs = calculateChecksum2FromBuffer(buffer, checksum2Type as Checksum2Type, headerLen, bodyEnd);
+        const cs = calculateChecksum2FromBuffer(
+          buffer,
+          checksum2Type as Checksum2Type,
+          headerLen,
+          bodyEnd,
+        );
         testPacket[bodyEnd] = cs[0];
         testPacket[bodyEnd + 1] = cs[1];
       }
@@ -339,7 +360,7 @@ export class HomeNetBridge {
       const entities = this.config[type] as EntityConfig[] | undefined;
       if (entities && entities.length > 0) {
         for (const e of entities) {
-          const cmdKey = Object.keys(e).find(k => k.startsWith('command_'));
+          const cmdKey = Object.keys(e).find((k) => k.startsWith('command_'));
           if (cmdKey) {
             targetEntity = e;
             targetCommand = cmdKey.replace('command_', '');
@@ -351,25 +372,29 @@ export class HomeNetBridge {
     }
 
     if (!targetEntity || !targetCommand) {
-       // Fallback: If no entity/command exists, we can't run the test easily because Automation needs a target.
-       throw new Error('No capable entities found for latency test action target.');
+      // Fallback: If no entity/command exists, we can't run the test easily because Automation needs a target.
+      throw new Error('No capable entities found for latency test action target.');
     }
 
     // 3. Setup Automation
     const automationId = `latency_test_${Date.now()}`;
     const automationConfig: AutomationConfig = {
       id: automationId,
-      trigger: [{
-        type: 'packet',
-        match: {
-          data: testPacket,
-          mask: testPacket.map(() => 0xFF), // Exact match
+      trigger: [
+        {
+          type: 'packet',
+          match: {
+            data: testPacket,
+            mask: testPacket.map(() => 0xff), // Exact match
+          },
         },
-      }],
-      then: [{
-        action: 'command',
-        target: `id(${targetEntity.id}).command_${targetCommand}()`,
-      }],
+      ],
+      then: [
+        {
+          action: 'command',
+          target: `id(${targetEntity.id}).command_${targetCommand}()`,
+        },
+      ],
     };
 
     context.automationManager.addAutomation(automationConfig);
@@ -393,16 +418,20 @@ export class HomeNetBridge {
       // 5. Loop 100 times
       for (let i = 0; i < 100; i++) {
         // Wait a bit to ensure clean state
-        await new Promise(r => setTimeout(r, 10));
+        await new Promise((r) => setTimeout(r, 10));
 
         const start = performance.now();
-        const iterationPromise = new Promise<void>(resolve => { resolveTestIteration = resolve; });
+        const iterationPromise = new Promise<void>((resolve) => {
+          resolveTestIteration = resolve;
+        });
 
         // Inject Trigger Packet
         context.stateManager.processIncomingData(Buffer.from(testPacket));
 
         // Wait for command generation (Automation -> CommandManager.send)
-        const timeoutPromise = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000));
+        const timeoutPromise = new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 2000),
+        );
 
         try {
           await Promise.race([iterationPromise, timeoutPromise]);
@@ -424,7 +453,8 @@ export class HomeNetBridge {
 
     const sum = measurements.reduce((a, b) => a + b, 0);
     const avg = sum / measurements.length;
-    const variance = measurements.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / measurements.length;
+    const variance =
+      measurements.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / measurements.length;
     const stdDev = Math.sqrt(variance);
 
     return {
@@ -432,14 +462,16 @@ export class HomeNetBridge {
       stdDev: Math.round(stdDev * 100) / 100,
       min: Math.round(Math.min(...measurements) * 100) / 100,
       max: Math.round(Math.max(...measurements) * 100) / 100,
-      samples: measurements.length
+      samples: measurements.length,
     };
   }
 
   private buildStateProvider(portId: string): EntityStateProvider {
     return {
-      getLightState: (entityId: string) => this.portContexts.get(portId)?.stateManager.getLightState(entityId),
-      getClimateState: (entityId: string) => this.portContexts.get(portId)?.stateManager.getClimateState(entityId),
+      getLightState: (entityId: string) =>
+        this.portContexts.get(portId)?.stateManager.getLightState(entityId),
+      getClimateState: (entityId: string) =>
+        this.portContexts.get(portId)?.stateManager.getClimateState(entityId),
     };
   }
 
@@ -465,7 +497,8 @@ export class HomeNetBridge {
 
   private getMqttTopicPrefix(portId: string): string {
     const portPrefix = this.resolvedPortTopicPrefixes.get(portId);
-    const fallbackPortPrefix = this.resolvedPortTopicPrefixes.values().next().value || 'homedevice1';
+    const fallbackPortPrefix =
+      this.resolvedPortTopicPrefixes.values().next().value || 'homedevice1';
     const effectivePortPrefix = (portPrefix || fallbackPortPrefix).toString().trim();
 
     return `${this.commonMqttTopicPrefix}/${effectivePortPrefix}`;
@@ -474,7 +507,7 @@ export class HomeNetBridge {
   private async initialize() {
     this.resolvedPortTopicPrefixes.clear();
 
-    this.config = this.options.configOverride ?? await loadConfig(this.options.configPath);
+    this.config = this.options.configOverride ?? (await loadConfig(this.options.configPath));
     clearStateCache();
     this.commonMqttTopicPrefix = (this.options.mqttTopicPrefix || MQTT_TOPIC_PREFIX).trim();
     logger.info('[core] MQTT 연결을 백그라운드에서 대기하며 시리얼 포트 연결을 진행합니다.');

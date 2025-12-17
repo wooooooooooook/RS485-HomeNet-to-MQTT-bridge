@@ -140,7 +140,7 @@
 
   async function saveConfig() {
     if (!editingConfig) return;
-    
+
     isSaving = true;
     configError = null;
     saveMessage = '';
@@ -169,7 +169,12 @@
   }
 
   async function handleRevokeDiscovery() {
-    if (!confirm('정말로 이 엔티티의 디스커버리 정보를 회수하시겠습니까?\n(상태 패킷이 수신되면 다시 등록됩니다)')) return;
+    if (
+      !confirm(
+        '정말로 이 엔티티의 디스커버리 정보를 회수하시겠습니까?\n(상태 패킷이 수신되면 다시 등록됩니다)',
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`./api/entities/${entity.id}/revoke-discovery`, { method: 'POST' });
@@ -184,7 +189,12 @@
   }
 
   async function handleDeleteEntity() {
-    if (!confirm('정말로 이 엔티티를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 설정 파일에서 영구적으로 제거됩니다.')) return;
+    if (
+      !confirm(
+        '정말로 이 엔티티를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 설정 파일에서 영구적으로 제거됩니다.',
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`./api/entities/${entity.id}`, { method: 'DELETE' });
@@ -365,10 +375,7 @@
                 <div class="loading">설정 불러오는 중...</div>
               {:else}
                 <div class="config-editor-container">
-                  <textarea
-                    class="config-editor"
-                    bind:value={editingConfig}
-                    spellcheck="false"
+                  <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
                   ></textarea>
                   <div class="config-actions">
                     <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
@@ -391,9 +398,7 @@
                 <button class="danger-btn outline" onclick={handleRevokeDiscovery}>
                   디스커버리 회수
                 </button>
-                <button class="danger-btn" onclick={handleDeleteEntity}>
-                  엔티티 삭제
-                </button>
+                <button class="danger-btn" onclick={handleDeleteEntity}> 엔티티 삭제 </button>
               </div>
               <p class="subtle">
                 디스커버리 회수는 MQTT 토픽만 제거하며, 상태 패킷 수신 시 다시 등록됩니다.<br />
@@ -734,7 +739,7 @@
     min-height: 400px;
     outline: none;
   }
-  
+
   .config-editor:focus {
     border-color: #38bdf8;
   }
@@ -768,11 +773,11 @@
   .save-message {
     font-size: 0.9rem;
   }
-  
+
   .save-message.success {
     color: #34d399;
   }
-  
+
   .save-message.error {
     color: #f87171;
   }
@@ -925,4 +930,3 @@
     font-style: italic;
   }
 </style>
-

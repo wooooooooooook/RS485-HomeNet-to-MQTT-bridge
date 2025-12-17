@@ -30,20 +30,36 @@
   >
     <h2 id="consent-title">로그 및 데이터 공유 동의</h2>
     <p id="consent-desc">
-      서비스 품질 향상과 문제 해결을 위해 로그와 패킷 데이터(최초 1000개)를 수집하여
-      개발자에게 전송하고자 합니다.
+      서비스 품질 향상과 문제 해결을 위해 익명화된 데이터를 수집하여 개발자에게 전송합니다.
     </p>
-    <p class="details">
-      수집 항목: 시스템 아키텍처, 애드온 버전, 수신 패킷(1000개), 애플리케이션 로그.<br />
-      개인정보는 포함되지 않으며, 설정에서 언제든지 변경할 수 있습니다.
-    </p>
+
+    <div class="details">
+      <h3>수집 항목</h3>
+      <ul>
+        <li>시스템 실행 환경 (아키텍처, HA Supervisor 여부)</li>
+        <li>애드온 및 패키지 버전 정보</li>
+        <li>설정 파일 내용 (YAML 구성)</li>
+        <li>수신 패킷 데이터 (최초 1000개)</li>
+        <li>애플리케이션 실행 로그</li>
+      </ul>
+
+      <h3>수집 시점</h3>
+      <p>
+        동의 시점부터 패킷 수집이 시작되며, <strong>1000개의 패킷이 모이면 1회 전송</strong> 후 자동으로
+        수집이 종료됩니다. 지속적으로 감시하거나 수집하지 않습니다.
+      </p>
+
+      <p class="privacy-note">
+        * 개인정보는 포함되지 않으며, 설정에서 언제든지 변경할 수 있습니다.
+      </p>
+    </div>
 
     <div class="actions">
       <button onclick={() => handleConsent(false)} disabled={isConsenting} class="secondary">
         거절
       </button>
       <button onclick={() => handleConsent(true)} disabled={isConsenting} class="primary">
-        동의 및 활성화
+        동의 및 시작
       </button>
     </div>
   </div>
@@ -81,15 +97,37 @@
   p {
     color: #cbd5e1;
     line-height: 1.6;
+    margin: 0.5rem 0;
   }
 
   .details {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: #94a3b8;
     background: rgba(15, 23, 42, 0.5);
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 0.5rem;
-    margin: 1rem 0 2rem;
+    margin: 1.5rem 0;
+  }
+
+  .details h3 {
+    margin: 0 0 0.75rem 0;
+    color: #e2e8f0;
+    font-size: 1rem;
+  }
+
+  .details ul {
+    margin: 0 0 1.5rem 0;
+    padding-left: 1.25rem;
+  }
+
+  .details li {
+    margin-bottom: 0.4rem;
+  }
+
+  .privacy-note {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 1rem;
   }
 
   .actions {

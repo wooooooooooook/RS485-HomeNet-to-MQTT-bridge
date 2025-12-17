@@ -1,8 +1,14 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import LogConsentModal from '../components/LogConsentModal.svelte';
   import type { FrontendSettings } from '../types';
 
-  let { frontendSettings = null, isLoading = false, isSaving = false, error = '' } = $props<{
+  let {
+    frontendSettings = null,
+    isLoading = false,
+    isSaving = false,
+    error = '',
+  } = $props<{
     frontendSettings?: FrontendSettings | null;
     isLoading?: boolean;
     isSaving?: boolean;
@@ -11,7 +17,9 @@
 
   type ToastSettingKey = 'stateChange' | 'command';
 
-  const dispatch = createEventDispatcher<{ toastChange: { key: ToastSettingKey; value: boolean } }>();
+  const dispatch = createEventDispatcher<{
+    toastChange: { key: ToastSettingKey; value: boolean };
+  }>();
 
   const getToastValue = (key: ToastSettingKey) => {
     return frontendSettings?.toast?.[key] ?? true;
@@ -23,31 +31,47 @@
   };
 
   // Log Sharing State
-  let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(null);
+  let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(
+    null,
+  );
+  let showConsentModal = $state(false);
 
-  $effect(() => {
+  const fetchLogSharingStatus = () => {
     fetch(`./api/log-sharing/status?_=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
         logSharingStatus = data;
       })
       .catch((err) => console.error('Failed to fetch log sharing status', err));
+  };
+
+  $effect(() => {
+    fetchLogSharingStatus();
   });
 
   const handleLogSharingToggle = async (e: Event) => {
     const input = e.currentTarget as HTMLInputElement;
     const consent = input.checked;
 
+    if (consent) {
+      // Enabling: Show modal for consent
+      e.preventDefault(); // Prevent checkbox from checking immediately
+      input.checked = false; // Ensure it stays unchecked visually
+      showConsentModal = true;
+      return;
+    }
+
+    // Disabling: Process immediately
     // Optimistic update
     if (logSharingStatus) {
-      logSharingStatus = { ...logSharingStatus, consented: consent };
+      logSharingStatus = { ...logSharingStatus, consented: false };
     }
 
     try {
       const res = await fetch('./api/log-sharing/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent }),
+        body: JSON.stringify({ consent: false }),
       });
       if (res.ok) {
         logSharingStatus = await res.json();
@@ -56,13 +80,22 @@
       console.error('Failed to update log sharing', error);
       // Revert on error
       if (logSharingStatus) {
-        logSharingStatus = { ...logSharingStatus, consented: !consent };
+        logSharingStatus = { ...logSharingStatus, consented: true };
       }
     }
   };
 </script>
 
 <section class="settings-view">
+  {#if showConsentModal}
+    <LogConsentModal
+      onclose={() => {
+        showConsentModal = false;
+        fetchLogSharingStatus();
+      }}
+    />
+  {/if}
+
   <h1>설정</h1>
 
   {#if error}
@@ -116,30 +149,32 @@
       </div>
 
       {#if logSharingStatus}
-      <div class="setting">
-        <div>
-          <div class="setting-title">로그 및 데이터 공유</div>
-          <div class="setting-desc">문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.</div>
+        <div class="setting">
+          <div>
+            <div class="setting-title">로그 및 데이터 공유</div>
+            <div class="setting-desc">
+              문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.
+            </div>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={logSharingStatus.consented}
+              onchange={handleLogSharingToggle}
+              disabled={isSaving || isLoading}
+            />
+            <span class="slider"></span>
+          </label>
         </div>
-        <label class="switch">
-          <input
-            type="checkbox"
-            checked={logSharingStatus.consented}
-            onchange={handleLogSharingToggle}
-            disabled={isSaving || isLoading}
-          />
-          <span class="slider"></span>
-        </label>
-      </div>
 
-      {#if logSharingStatus.consented && logSharingStatus.uid}
-        <div class="setting sub-setting">
-           <div>
-             <div class="setting-title">User ID</div>
-             <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
-           </div>
-        </div>
-      {/if}
+        {#if logSharingStatus.consented && logSharingStatus.uid}
+          <div class="setting sub-setting">
+            <div>
+              <div class="setting-title">User ID</div>
+              <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
+            </div>
+          </div>
+        {/if}
       {/if}
     {/if}
   </div>

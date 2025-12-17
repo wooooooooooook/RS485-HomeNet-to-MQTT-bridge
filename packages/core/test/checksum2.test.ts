@@ -100,7 +100,13 @@ describe('2-Byte Checksum', () => {
         `,
       };
 
-      const serial = { portId: 'main', baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const };
+      const serial = {
+        portId: 'main',
+        baud_rate: 9600,
+        data_bits: 8 as const,
+        parity: 'none' as const,
+        stop_bits: 1 as const,
+      };
 
       const mockConfig = {
         serial,
@@ -140,7 +146,13 @@ describe('2-Byte Checksum', () => {
         script: 'return 42;',
       };
 
-      const serial = { portId: 'main', baud_rate: 9600, data_bits: 8 as const, parity: 'none' as const, stop_bits: 1 as const };
+      const serial = {
+        portId: 'main',
+        baud_rate: 9600,
+        data_bits: 8 as const,
+        parity: 'none' as const,
+        stop_bits: 1 as const,
+      };
 
       const mockConfig = {
         serial,

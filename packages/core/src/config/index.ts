@@ -31,7 +31,13 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
     if (!entities) return;
 
     entities.forEach((entity) => {
-      if (entity && typeof entity === 'object' && !('id' in entity) && 'name' in entity && typeof entity.name === 'string') {
+      if (
+        entity &&
+        typeof entity === 'object' &&
+        !('id' in entity) &&
+        'name' in entity &&
+        typeof entity.name === 'string'
+      ) {
         const slug = entity.name
           .toString()
           .toLowerCase()
@@ -50,7 +56,10 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
 
         if (needsUniqueId && typeof idValue === 'string' && idValue.trim()) {
           (entity as any).unique_id = `homenet_${idValue}`;
-          logger.trace({ entity: idValue, unique_id: (entity as any).unique_id }, '[config] Added default unique_id');
+          logger.trace(
+            { entity: idValue, unique_id: (entity as any).unique_id },
+            '[config] Added default unique_id',
+          );
         }
       }
     });
@@ -93,7 +102,9 @@ export function validateConfig(
   }
 
   if ((config as any).mqtt_topic_prefix !== undefined) {
-    errors.push('mqtt_topic_prefix는 더 이상 설정 파일에 정의할 수 없습니다. MQTT_TOPIC_PREFIX 환경변수를 사용하세요.');
+    errors.push(
+      'mqtt_topic_prefix는 더 이상 설정 파일에 정의할 수 없습니다. MQTT_TOPIC_PREFIX 환경변수를 사용하세요.',
+    );
   }
 
   if (!config.serial) {
@@ -103,7 +114,9 @@ export function validateConfig(
   if (!config.serials || !Array.isArray(config.serials) || config.serials.length === 0) {
     errors.push('serial 설정에 최소 1개 이상의 포트가 필요합니다.');
   } else if (config.serials.length !== 1) {
-    errors.push('각 설정 파일에는 단일 serial만 선언할 수 있습니다. 파일을 분리하여 포트를 나눠주세요.');
+    errors.push(
+      '각 설정 파일에는 단일 serial만 선언할 수 있습니다. 파일을 분리하여 포트를 나눠주세요.',
+    );
   }
 
   if (config.serial) {
@@ -113,7 +126,9 @@ export function validateConfig(
 
     const serial = config.serial;
     if ((serial as any).mqtt_topic_prefix !== undefined) {
-      errors.push('serial.mqtt_topic_prefix는 지원되지 않습니다. MQTT_TOPIC_PREFIX 환경변수를 사용하세요.');
+      errors.push(
+        'serial.mqtt_topic_prefix는 지원되지 않습니다. MQTT_TOPIC_PREFIX 환경변수를 사용하세요.',
+      );
     }
     if (!serial.portId || typeof serial.portId !== 'string') {
       errors.push('serial.portId는 필수 문자열입니다.');
@@ -147,7 +162,9 @@ export function validateConfig(
     }
   }
 
-  const hasEntities = ENTITY_TYPE_KEYS.some((type) => config[type] && Array.isArray(config[type]) && (config[type] as any[]).length > 0);
+  const hasEntities = ENTITY_TYPE_KEYS.some(
+    (type) => config[type] && Array.isArray(config[type]) && (config[type] as any[]).length > 0,
+  );
 
   if (!hasEntities) {
     errors.push('최소 한 개 이상의 엔터티(light, climate 등)가 설정되어야 합니다.');

@@ -1,4 +1,3 @@
-
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -71,7 +70,7 @@ export class LogCollectorService {
 
       this.config = {
         consent: legacyConsent,
-        uid: legacyConsent ? randomUUID() : null
+        uid: legacyConsent ? randomUUID() : null,
       };
 
       await this.saveConfig();
@@ -80,7 +79,7 @@ export class LogCollectorService {
       await fs.unlink(LEGACY_CONSENT_FILE).catch(() => {});
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
-         logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');
+        logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');
       }
       // If legacy file doesn't exist, we start fresh (consent: null)
     }
@@ -99,7 +98,7 @@ export class LogCollectorService {
     return {
       asked: this.config.consent !== null,
       consented: this.config.consent === true,
-      uid: this.config.uid
+      uid: this.config.uid,
     };
   }
 
@@ -112,7 +111,7 @@ export class LogCollectorService {
 
     this.config = {
       consent,
-      uid: newUid
+      uid: newUid,
     };
 
     await this.saveConfig();
@@ -133,14 +132,14 @@ export class LogCollectorService {
 
     logger.info('[LogCollector] Starting packet collection (target: 1000 packets)');
 
-    this.bridges.forEach(b => b.startRawPacketListener());
+    this.bridges.forEach((b) => b.startRawPacketListener());
     eventBus.on('raw-data-with-interval', this.handlePacketBound);
   }
 
   stopCollection() {
     if (!this.isCollecting) return;
     this.isCollecting = false;
-    this.bridges.forEach(b => b.stopRawPacketListener());
+    this.bridges.forEach((b) => b.stopRawPacketListener());
     eventBus.off('raw-data-with-interval', this.handlePacketBound);
   }
 
@@ -166,8 +165,8 @@ export class LogCollectorService {
     logger.info('[LogCollector] 1000 packets collected. Sending report...');
 
     if (!this.config.uid) {
-        logger.warn('[LogCollector] No UID present, skipping upload despite collection.');
-        return;
+      logger.warn('[LogCollector] No UID present, skipping upload despite collection.');
+      return;
     }
 
     const isRunningOnHASupervisor = !!process.env.SUPERVISOR_TOKEN;

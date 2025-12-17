@@ -41,7 +41,11 @@ export class AutomationManager {
   private readonly lambdaExecutor = new LambdaExecutor();
   private readonly debounceTracker = new Map<string, number>();
   private readonly timers: NodeJS.Timeout[] = [];
-  private readonly subscriptions: { emitter: EventEmitter; event: string; handler: (...args: any[]) => void }[] = [];
+  private readonly subscriptions: {
+    emitter: EventEmitter;
+    event: string;
+    handler: (...args: any[]) => void;
+  }[] = [];
   private readonly states = new Map<string, Record<string, any>>();
   private isStarted = false;
 
@@ -51,7 +55,9 @@ export class AutomationManager {
     commandManager: CommandManager,
     mqttPublisher: MqttPublisher,
   ) {
-    this.automationList = (config.automation || []).filter((automation) => automation.enabled !== false);
+    this.automationList = (config.automation || []).filter(
+      (automation) => automation.enabled !== false,
+    );
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
     this.mqttPublisher = mqttPublisher;
@@ -72,7 +78,13 @@ export class AutomationManager {
     if (this.isStarted) return;
     this.isStarted = true;
 
-    const stateListener = ({ entityId, state }: { entityId: string; state: Record<string, any> }) => {
+    const stateListener = ({
+      entityId,
+      state,
+    }: {
+      entityId: string;
+      state: Record<string, any>;
+    }) => {
       const previous = this.states.get(entityId) || {};
       this.states.set(entityId, { ...previous, ...state });
       this.handleStateTriggers(entityId, state);
@@ -88,8 +100,11 @@ export class AutomationManager {
           this.setupScheduleTrigger(automation, trigger);
         }
         if (trigger.type === 'startup') {
-          setTimeout(() =>
-            this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }), 0);
+          setTimeout(
+            () =>
+              this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
+            0,
+          );
         }
       }
     }
@@ -113,16 +128,17 @@ export class AutomationManager {
     this.subscriptions.push({ emitter, event, handler });
   }
 
-  private setupScheduleTrigger(
-    automation: AutomationConfig,
-    trigger: AutomationTriggerSchedule,
-  ) {
+  private setupScheduleTrigger(automation: AutomationConfig, trigger: AutomationTriggerSchedule) {
     if (!trigger.every_ms && !trigger.cron) {
-      logger.warn({ automation: automation.id }, '[automation] schedule trigger missing interval or cron');
+      logger.warn(
+        { automation: automation.id },
+        '[automation] schedule trigger missing interval or cron',
+      );
       return;
     }
 
-    const every = trigger.every_ms !== undefined ? parseDuration(trigger.every_ms as any) : undefined;
+    const every =
+      trigger.every_ms !== undefined ? parseDuration(trigger.every_ms as any) : undefined;
 
     if (every !== undefined) {
       const interval = setInterval(() => {
@@ -246,7 +262,10 @@ export class AutomationManager {
       try {
         await this.executeAction(action, context);
       } catch (error) {
-        logger.error({ error, automation: automation.id, action: action.action }, '[automation] Action failed');
+        logger.error(
+          { error, automation: automation.id, action: action.action },
+          '[automation] Action failed',
+        );
       }
     }
   }
@@ -265,7 +284,8 @@ export class AutomationManager {
   private async executeAction(action: AutomationAction, context: TriggerContext) {
     if (action.action === 'command') return this.executeCommandAction(action, context);
     if (action.action === 'publish') return this.executePublishAction(action, context);
-    if (action.action === 'log') return this.executeLogAction(action as AutomationActionLog, context);
+    if (action.action === 'log')
+      return this.executeLogAction(action as AutomationActionLog, context);
     if (action.action === 'delay') return this.executeDelayAction(action as AutomationActionDelay);
     if (action.action === 'script') return this.executeScriptAction(action, context);
   }
@@ -280,7 +300,11 @@ export class AutomationManager {
       return;
     }
 
-    const packet = this.packetProcessor.constructCommandPacket(entity, parsed.command, parsed.value);
+    const packet = this.packetProcessor.constructCommandPacket(
+      entity,
+      parsed.command,
+      parsed.value,
+    );
     if (!packet) {
       logger.warn({ target: action.target }, '[automation] Failed to construct command packet');
       return;
@@ -290,7 +314,8 @@ export class AutomationManager {
   }
 
   private async executePublishAction(action: AutomationActionPublish, context: TriggerContext) {
-    const payload = typeof action.payload === 'string' ? action.payload : JSON.stringify(action.payload);
+    const payload =
+      typeof action.payload === 'string' ? action.payload : JSON.stringify(action.payload);
     this.mqttPublisher.publish(action.topic, payload, action.retain ? { retain: true } : undefined);
   }
 
@@ -312,9 +337,10 @@ export class AutomationManager {
     this.lambdaExecutor.execute(lambda, this.buildContext(context));
   }
 
-  private parseCommandTarget(target: string, input: any):
-    | { entityId: string; command: string; value?: any }
-    | null {
+  private parseCommandTarget(
+    target: string,
+    input: any,
+  ): { entityId: string; command: string; value?: any } | null {
     const callPattern = /^id\(([^)]+)\)\.command_([^(]+)\((.*)\)$/;
     const match = target.match(callPattern);
     if (match) {

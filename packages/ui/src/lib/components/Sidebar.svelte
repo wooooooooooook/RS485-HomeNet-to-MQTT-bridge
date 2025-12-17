@@ -1,7 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 
-  let { activeView = $bindable<'dashboard' | 'analysis' | 'settings'>('dashboard'), isOpen = false } = $props<{
+  let {
+    activeView = $bindable<'dashboard' | 'analysis' | 'settings'>('dashboard'),
+    isOpen = false,
+  } = $props<{
     activeView: 'dashboard' | 'analysis' | 'settings';
     isOpen?: boolean;
   }>();

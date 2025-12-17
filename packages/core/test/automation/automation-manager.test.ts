@@ -5,7 +5,13 @@ import { AutomationManager } from '../../src/automation/automation-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 
-const serial = { portId: 'main', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 } as any;
+const serial = {
+  portId: 'main',
+  baud_rate: 9600,
+  data_bits: 8,
+  parity: 'none',
+  stop_bits: 1,
+} as any;
 const baseConfig: HomenetBridgeConfig = {
   serial,
   serials: [serial],
@@ -59,7 +65,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 상태 변경 이벤트 발생
@@ -95,14 +106,22 @@ describe('AutomationManager', () => {
 
     packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     eventBus.emit('state:changed', { entityId: 'light_1', state: { state_on: true } });
     await vi.runAllTimersAsync();
 
     expect(packetProcessor.constructCommandPacket).toHaveBeenCalled();
-    expect(commandManager.send).toHaveBeenCalledWith(expect.objectContaining({ id: 'light_1', type: 'light' }), [0x01]);
+    expect(commandManager.send).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'light_1', type: 'light' }),
+      [0x01],
+    );
   });
 
   it('시작(startup) 트리거 시 동작해야 한다', async () => {
@@ -117,7 +136,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // setTimeout 0으로 스케줄된 startup 트리거 실행 대기
@@ -137,7 +161,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 100ms 경과 후 첫 번째 실행 확인
@@ -159,7 +188,7 @@ describe('AutomationManager', () => {
             {
               type: 'packet',
               match: {
-                data: [0xAA, 0xBB],
+                data: [0xaa, 0xbb],
                 offset: 0,
               },
             },
@@ -169,16 +198,21 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 일치하는 패킷 수신
-    packetProcessor.emit('packet', [0xAA, 0xBB, 0xCC]);
+    packetProcessor.emit('packet', [0xaa, 0xbb, 0xcc]);
     await vi.runAllTimersAsync();
     expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
 
     // 일치하지 않는 패킷 수신 (동작하지 않아야 함)
-    packetProcessor.emit('packet', [0xAA, 0x00, 0xCC]);
+    packetProcessor.emit('packet', [0xaa, 0x00, 0xcc]);
     await vi.runAllTimersAsync();
     expect(mqttPublisher.publish).toHaveBeenCalledTimes(1); // 호출 횟수 증가 없음
   });
@@ -202,7 +236,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 조건 불만족 (10 <= 50)
@@ -236,7 +275,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 첫 번째 트리거 발생 (즉시 실행)
@@ -271,7 +315,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // The guard 'return false' should evaluate to false.
@@ -280,7 +329,12 @@ describe('AutomationManager', () => {
   });
 
   it('자동화를 동적으로 추가 및 제거할 수 있어야 한다', async () => {
-    automationManager = new AutomationManager(baseConfig, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      baseConfig,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 동적으로 확인 가능한 상태 트리거 자동화 추가
@@ -308,7 +362,7 @@ describe('AutomationManager', () => {
   });
 
   it('지연(delay) 액션을 올바르게 실행해야 한다', async () => {
-     const config: HomenetBridgeConfig = {
+    const config: HomenetBridgeConfig = {
       ...baseConfig,
       automation: [
         {
@@ -323,7 +377,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(config, packetProcessor as any, commandManager as any, mqttPublisher as any);
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
     automationManager.start();
 
     // 첫 번째 액션 실행 확인

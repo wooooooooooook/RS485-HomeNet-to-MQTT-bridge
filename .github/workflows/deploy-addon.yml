@@ -100,6 +100,8 @@ jobs:
           tags: |
             nubiz/homenet2mqtt:latest
             nubiz/homenet2mqtt:${{ steps.get_version.outputs.VERSION }}
+          build-args: |
+            LOG_COLLECTOR_API_KEY=${{ secrets.LOG_COLLECTOR_API_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

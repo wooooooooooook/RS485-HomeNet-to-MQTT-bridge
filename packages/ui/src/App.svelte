@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { isLoading } from 'svelte-i18n';
+  import { isLoading, locale } from 'svelte-i18n';
   import './lib/i18n';
   import type {
     BridgeInfo,
@@ -356,6 +356,9 @@
     try {
       const data = await apiRequest<{ settings: FrontendSettings }>('./api/frontend-settings');
       frontendSettings = data.settings;
+      if (frontendSettings.locale) {
+        locale.set(frontendSettings.locale);
+      }
     } catch (err) {
       settingsError = err instanceof Error ? err.message : '프론트 설정을 불러오지 못했습니다.';
       frontendSettings = DEFAULT_FRONTEND_SETTINGS;
@@ -384,6 +387,7 @@
   async function updateToastSetting(key: 'stateChange' | 'command', value: boolean) {
     const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
     const next: FrontendSettings = {
+      ...previous,
       toast: {
         ...previous.toast,
         [key]: value,
@@ -394,6 +398,24 @@
       await persistFrontendSettings(next);
     } catch {
       frontendSettings = previous;
+    }
+  }
+
+  async function updateLocaleSetting(newLocale: string) {
+    const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
+    const next: FrontendSettings = {
+      ...previous,
+      locale: newLocale,
+    };
+    frontendSettings = next;
+    locale.set(newLocale);
+    try {
+      await persistFrontendSettings(next);
+    } catch {
+      frontendSettings = previous;
+      if (previous.locale) {
+        locale.set(previous.locale);
+      }
     }
   }
 
@@ -972,6 +994,7 @@
             error={settingsError}
             isSaving={settingsSaving}
             on:toastChange={(e) => updateToastSetting(e.detail.key, e.detail.value)}
+            on:localeChange={(e) => updateLocaleSetting(e.detail.value)}
           />
         {/if}
       </section>

@@ -140,6 +140,7 @@ type FrontendSettings = {
     stateChange: boolean;
     command: boolean;
   };
+  locale?: string;
 };
 
 const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
@@ -180,6 +181,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           ? value.toast.command
           : DEFAULT_FRONTEND_SETTINGS.toast.command,
     },
+    locale: typeof value?.locale === 'string' ? value.locale : undefined,
   };
 };
 

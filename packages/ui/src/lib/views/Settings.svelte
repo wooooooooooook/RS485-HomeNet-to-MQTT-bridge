@@ -20,6 +20,7 @@
 
   const dispatch = createEventDispatcher<{
     toastChange: { key: ToastSettingKey; value: boolean };
+    localeChange: { value: string };
   }>();
 
   const getToastValue = (key: ToastSettingKey) => {
@@ -29,6 +30,11 @@
   const handleToggle = (key: ToastSettingKey, event: Event) => {
     const target = event.currentTarget as HTMLInputElement;
     dispatch('toastChange', { key, value: target.checked });
+  };
+
+  const handleLocaleChange = (event: Event) => {
+    const target = event.currentTarget as HTMLSelectElement;
+    dispatch('localeChange', { value: target.value });
   };
 
   // Log Sharing State
@@ -100,7 +106,11 @@
   <div class="view-header">
     <h1>{$t('settings.title')}</h1>
     <div class="lang-switcher">
-      <select bind:value={$locale}>
+      <select
+        value={$locale}
+        onchange={handleLocaleChange}
+        disabled={isSaving || isLoading}
+      >
         {#each $locales as l}
           <option value={l}>
             {l === 'ko' ? $t('common.korean') : $t('common.english')}

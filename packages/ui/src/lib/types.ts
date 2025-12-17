@@ -28,6 +28,7 @@ export type FrontendSettings = {
     stateChange: boolean;
     command: boolean;
   };
+  locale?: string;
 };
 
 export interface ActivityLog {

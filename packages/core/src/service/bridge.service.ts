@@ -182,19 +182,25 @@ export class HomeNetBridge {
     return { success: true };
   }
 
-  startRawPacketListener(portId?: string): void {
+  startRawPacketListener(
+    portId?: string,
+    options: { enableStats: boolean } = { enableStats: true },
+  ): void {
     const targets = portId
       ? ([this.portContexts.get(portId)].filter(Boolean) as PortContext[])
       : [...this.portContexts.values()];
-    targets.forEach((context) => this.attachRawListener(context));
+    targets.forEach((context) => this.attachRawListener(context, options.enableStats));
   }
 
-  stopRawPacketListener(portId?: string): void {
+  stopRawPacketListener(
+    portId?: string,
+    options: { enableStats: boolean } = { enableStats: true },
+  ): void {
     const targets = portId
       ? ([this.portContexts.get(portId)].filter(Boolean) as PortContext[])
       : [...this.portContexts.values()];
     targets.forEach((context) => {
-      this.detachRawListener(context);
+      this.detachRawListener(context, options.enableStats);
     });
   }
 
@@ -645,10 +651,20 @@ export class HomeNetBridge {
 
   // Keep track of how many consumers need raw data
   private rawListenerRefCounts = new Map<string, number>();
+  // Keep track of how many consumers need stats
+  private statsListenerRefCounts = new Map<string, number>();
 
-  private attachRawListener(context: PortContext): void {
+  private attachRawListener(context: PortContext, enableStats: boolean): void {
     const currentCount = this.rawListenerRefCounts.get(context.portId) || 0;
     this.rawListenerRefCounts.set(context.portId, currentCount + 1);
+
+    if (enableStats) {
+      const currentStatsCount = this.statsListenerRefCounts.get(context.portId) || 0;
+      if (currentStatsCount === 0) {
+        logger.info({ portId: context.portId }, '[core] Enabling packet statistics analysis.');
+      }
+      this.statsListenerRefCounts.set(context.portId, currentStatsCount + 1);
+    }
 
     if (context.rawPacketListener) {
       // Already attached, just incremented ref count
@@ -665,9 +681,12 @@ export class HomeNetBridge {
 
       if (context.lastPacketTimestamp !== null) {
         interval = now - context.lastPacketTimestamp;
-        context.packetIntervals.push(interval);
-        if (context.packetIntervals.length > 1000) {
-          context.packetIntervals.shift();
+        // Only collect intervals if stats are enabled by at least one consumer
+        if ((this.statsListenerRefCounts.get(context.portId) || 0) > 0) {
+          context.packetIntervals.push(interval);
+          if (context.packetIntervals.length > 1000) {
+            context.packetIntervals.shift();
+          }
         }
       }
 
@@ -681,8 +700,11 @@ export class HomeNetBridge {
         receivedAt: new Date().toISOString(),
       });
 
-      if (context.packetIntervals.length >= this.minPacketIntervalsForStats) {
-        this.analyzeAndEmitPacketStats(context);
+      // Only emit stats if ref count > 0
+      if ((this.statsListenerRefCounts.get(context.portId) || 0) > 0) {
+        if (context.packetIntervals.length >= this.minPacketIntervalsForStats) {
+          this.analyzeAndEmitPacketStats(context);
+        }
       }
 
       context.stateManager.processIncomingData(data);
@@ -691,7 +713,18 @@ export class HomeNetBridge {
     context.port.on('data', context.rawPacketListener);
   }
 
-  private detachRawListener(context: PortContext): void {
+  private detachRawListener(context: PortContext, enableStats: boolean): void {
+    if (enableStats) {
+      const currentStatsCount = this.statsListenerRefCounts.get(context.portId) || 0;
+      if (currentStatsCount > 0) {
+        const newStatsCount = currentStatsCount - 1;
+        this.statsListenerRefCounts.set(context.portId, newStatsCount);
+        if (newStatsCount === 0) {
+          logger.info({ portId: context.portId }, '[core] Disabling packet statistics analysis.');
+        }
+      }
+    }
+
     const currentCount = this.rawListenerRefCounts.get(context.portId) || 0;
     if (currentCount <= 0) return;
 

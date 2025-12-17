@@ -174,4 +174,52 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
       expect(stats.packetAvg).toBeLessThan(stats.idleAvg);
     }
   });
+
+  it('should NOT emit stats when enableStats is false', () => {
+    bridge.startRawPacketListener(undefined, { enableStats: false });
+
+    // Simulate packets
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i]));
+    }
+
+    const statsCalls = eventBusEmitSpy.mock.calls.filter(
+      (call) => call[0] === 'packet-interval-stats',
+    );
+    expect(statsCalls.length).toBe(0);
+
+    const rawCalls = eventBusEmitSpy.mock.calls.filter(
+      (call) => call[0] === 'raw-data-with-interval',
+    );
+    expect(rawCalls.length).toBeGreaterThan(0);
+  });
+
+  it('should emit stats when stats are enabled after being disabled', () => {
+    // First, start without stats
+    bridge.startRawPacketListener(undefined, { enableStats: false });
+
+    // Simulate packets
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i]));
+    }
+
+    let statsCalls = eventBusEmitSpy.mock.calls.filter(
+      (call) => call[0] === 'packet-interval-stats',
+    );
+    expect(statsCalls.length).toBe(0);
+
+    // Now enable stats (simulate UI connecting)
+    bridge.startRawPacketListener(undefined, { enableStats: true });
+
+    // Simulate more packets
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i]));
+    }
+
+    statsCalls = eventBusEmitSpy.mock.calls.filter((call) => call[0] === 'packet-interval-stats');
+    expect(statsCalls.length).toBeGreaterThan(0);
+  });
 });

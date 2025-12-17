@@ -142,14 +142,14 @@ export class LogCollectorService {
 
     logger.info('[LogCollector] Starting packet collection (target: 1000 packets)');
 
-    this.bridges.forEach((b) => b.startRawPacketListener());
+    this.bridges.forEach((b) => b.startRawPacketListener(undefined, { enableStats: false }));
     eventBus.on('raw-data-with-interval', this.handlePacketBound);
   }
 
   stopCollection() {
     if (!this.isCollecting) return;
     this.isCollecting = false;
-    this.bridges.forEach((b) => b.stopRawPacketListener());
+    this.bridges.forEach((b) => b.stopRawPacketListener(undefined, { enableStats: false }));
     eventBus.off('raw-data-with-interval', this.handlePacketBound);
   }
 

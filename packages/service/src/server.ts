@@ -453,11 +453,11 @@ const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => {
 };
 
 const stopAllRawPacketListeners = () => {
-  bridges.forEach((instance) => instance.bridge.stopRawPacketListener());
+  bridges.forEach((instance) => instance.bridge.stopRawPacketListener(undefined, { enableStats: true }));
 };
 
 const startAllRawPacketListeners = () => {
-  bridges.forEach((instance) => instance.bridge.startRawPacketListener());
+  bridges.forEach((instance) => instance.bridge.startRawPacketListener(undefined, { enableStats: true }));
 };
 
 const sendStreamEvent = <T>(socket: WebSocket, event: StreamEvent, payload: T) => {

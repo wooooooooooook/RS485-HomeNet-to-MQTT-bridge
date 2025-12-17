@@ -44,13 +44,17 @@
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
   const mergedPackets = $derived.by(() => {
-    const packets: MergedPacket[] = [];
+    let packets: MergedPacket[] = [];
 
     if (showRx) {
-      packets.push(...parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const));
+      packets = packets.concat(
+        parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const),
+      );
     }
     if (showTx) {
-      packets.push(...commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const));
+      packets = packets.concat(
+        commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const),
+      );
     }
 
     return packets.sort(
@@ -316,7 +320,7 @@
             <div class="section status-section">
               <h3>현재 상태</h3>
               <div class="payload-list">
-                {#each parsePayload(entity.statePayload) as item}
+                {#each parsePayload(entity.statePayload) as item (item.key)}
                   <div class="payload-item">
                     <span class="payload-key">{item.key}</span>
                     <span class="payload-value">{item.value}</span>
@@ -332,7 +336,7 @@
               <div class="section command-section">
                 <h3>명령 보내기</h3>
                 <div class="command-grid">
-                  {#each entity.commands as cmd}
+                  {#each entity.commands as cmd (`${cmd.entityId}-${cmd.commandName}`)}
                     <div class="command-item">
                       {#if cmd.inputType === 'number'}
                         <div class="input-group">
@@ -426,7 +430,7 @@
                 {#if mergedPackets.length === 0}
                   <div class="no-data">표시할 패킷이 없습니다.</div>
                 {:else}
-                  {#each mergedPackets as packet}
+                  {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
                     <div class="log-entry {packet.type}">
                       <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
 

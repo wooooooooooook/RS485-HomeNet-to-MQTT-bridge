@@ -79,6 +79,10 @@
 
 <style>
   .entity-card {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    height: 100%;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(148, 163, 184, 0.1);
     border-radius: 12px;

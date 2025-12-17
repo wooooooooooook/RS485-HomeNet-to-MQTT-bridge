@@ -34,6 +34,7 @@ export interface ActivityLog {
   timestamp: number;
   message: string;
   details?: any;
+  portId?: string;
 }
 
 export type BridgeStatus = 'idle' | 'starting' | 'started' | 'stopped' | 'error';

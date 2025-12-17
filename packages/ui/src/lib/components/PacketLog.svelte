@@ -12,13 +12,17 @@
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
   const mergedPackets = $derived.by(() => {
-    const packets: MergedPacket[] = [];
+    let packets: MergedPacket[] = [];
 
     if (showRx) {
-      packets.push(...parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const));
+      packets = packets.concat(
+        parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const),
+      );
     }
     if (showTx) {
-      packets.push(...commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const));
+      packets = packets.concat(
+        commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const),
+      );
     }
 
     return packets.sort(
@@ -47,7 +51,7 @@
     {#if mergedPackets.length === 0}
       <p class="empty">표시할 패킷이 없습니다.</p>
     {:else}
-      {#each mergedPackets as packet}
+      {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
         <div class="log-item {packet.type}">
           <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
 

@@ -107,17 +107,16 @@
 
   const getKnownPortIds = () =>
     bridgeInfo?.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
-  const getDefaultPortId = () => selectedPortId ?? getKnownPortIds()[0] ?? null;
-
-  const inferPortId = (topic?: string, explicit?: string | null) => {
-    const knownPorts = getKnownPortIds();
-    const candidate = explicit ?? extractPortIdFromTopic(topic || '');
-
-    if (candidate && (!knownPorts.length || knownPorts.includes(candidate))) {
-      return candidate;
+  // portId는 명시적으로 전달받은 값만 사용합니다. 추론하여 기본값으로 대체하지 않습니다.
+  const getExplicitPortId = (explicit?: string | null, topic?: string): string | undefined => {
+    // 명시적으로 전달받은 portId가 있으면 사용
+    if (explicit) return explicit;
+    // topic에서 추출 시도 (topic 구조에서 portId를 알 수 있는 경우만)
+    if (topic) {
+      const extracted = extractPortIdFromTopic(topic);
+      if (extracted) return extracted;
     }
-
-    return getDefaultPortId() ?? candidate ?? undefined;
+    return undefined;
   };
 
   const extractPortIdFromTopic = (topic: string) => {
@@ -167,7 +166,7 @@
     payload: data.payload ?? '',
     receivedAt: data.receivedAt ?? new Date().toISOString(),
     interval: typeof data.interval === 'number' ? data.interval : null,
-    portId: inferPortId(data.topic, data.portId),
+    portId: getExplicitPortId(data.portId, data.topic),
   });
 
   const appendRawPacket = (packet: RawPacketWithInterval) => {
@@ -328,15 +327,9 @@
         apiRequest<CommandPacket[]>('./api/packets/command/history'),
         apiRequest<ParsedPacket[]>('./api/packets/parsed/history'),
       ]);
-      const fallbackPort = getDefaultPortId();
-      commandPackets = cmds.map((cmd) => ({
-        ...cmd,
-        portId: cmd.portId ?? fallbackPort ?? undefined,
-      }));
-      parsedPackets = parsed.map((packet) => ({
-        ...packet,
-        portId: packet.portId ?? fallbackPort ?? undefined,
-      }));
+      // portId가 없는 패킷은 그대로 유지 (포트별 필터링 시 처리됨)
+      commandPackets = cmds.slice(-MAX_PACKETS);
+      parsedPackets = parsed.slice(-MAX_PACKETS);
     } catch (err) {
       console.error('Failed to load packet history:', err);
     }
@@ -465,7 +458,7 @@
       hasIntervalPackets = true;
       const packet = normalizeRawPacket({
         ...data,
-        portId: inferPortId(data.topic, data.portId),
+        portId: getExplicitPortId(data.portId, data.topic),
       });
       lastRawPacketTimestamp = Date.parse(packet.receivedAt);
       appendRawPacket(packet);
@@ -480,25 +473,21 @@
         normalizeRawPacket({
           ...data,
           interval,
-          portId: inferPortId(data.topic),
+          portId: getExplicitPortId(undefined, data.topic),
         }),
       );
     };
 
     const handlePacketStats = (data: PacketStats) => {
-      if (data) {
-        const portId = data.portId ?? getDefaultPortId() ?? undefined;
-        if (portId) {
-          packetStatsByPort.set(portId, { ...data, portId });
-          packetStatsByPort = new Map(packetStatsByPort);
-        }
+      if (data && data.portId) {
+        packetStatsByPort.set(data.portId, data);
+        packetStatsByPort = new Map(packetStatsByPort);
       }
     };
 
     const handleCommandPacket = (data: CommandPacket) => {
-      const portId = data.portId ?? getDefaultPortId() ?? undefined;
-      const packetWithPort = { ...data, portId };
-      commandPackets = [...commandPackets, packetWithPort].slice(-MAX_PACKETS);
+      // portId가 없는 패킷은 그대로 저장 (필터링 시 제외됨)
+      commandPackets = [...commandPackets, data].slice(-MAX_PACKETS);
 
       if (!isToastEnabled('command')) return;
 
@@ -510,22 +499,22 @@
         type: 'command',
         title: `${data.entity || data.entityId} 명령 전송`,
         message:
-          packetWithPort.value !== undefined
-            ? `${packetWithPort.command} → ${formatToastValue(packetWithPort.value)}`
-            : packetWithPort.command,
-        timestamp: packetWithPort.timestamp,
+          data.value !== undefined
+            ? `${data.command} → ${formatToastValue(data.value)}`
+            : data.command,
+        timestamp: data.timestamp,
       });
     };
 
     const handleParsedPacket = (data: ParsedPacket) => {
-      const portId = data.portId ?? getDefaultPortId() ?? undefined;
-      parsedPackets = [...parsedPackets, { ...data, portId }].slice(-MAX_PACKETS);
+      // portId가 없는 패킷은 그대로 저장
+      parsedPackets = [...parsedPackets, data].slice(-MAX_PACKETS);
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
       deviceStates.set(data.topic, {
         payload: data.payload,
-        portId: data.portId ?? inferPortId(data.topic) ?? undefined,
+        portId: getExplicitPortId(data.portId, data.topic),
       });
       deviceStates = new Map(deviceStates);
 
@@ -729,19 +718,29 @@
     return map;
   });
 
+  /**
+   * `availableCommands`와 `configPortMap`을 기반으로 통합된 엔티티 목록을 생성합니다.
+   * 각 엔티티는 고유한 ID, 표시 이름, 타입, 관련 명령 및 포트 ID를 가집니다.
+   * 포트 ID는 명령에 명시된 값 또는 `configFile`을 통해 `configPortMap`에서 매핑된 값으로 결정됩니다.
+   */
   const unifiedEntities = $derived.by<UnifiedEntity[]>(() => {
+    // 복합 키: portId:entityId 형태로 관리하여 같은 entityId가 다른 포트에서 올 때 구분
     const entities = new Map<string, UnifiedEntity>();
+
+    // 복합 키 생성 헬퍼
+    const makeKey = (portId: string | undefined, entityId: string) =>
+      `${portId ?? 'unknown'}:${entityId}`;
 
     // 1. Initialize with Commands (Source of Truth for Configured Names)
     for (const cmd of availableCommands) {
+      // portId는 명시적으로 제공된 값 또는 configFile에서 매핑된 값만 사용
       const portId =
-        cmd.portId ??
-        (cmd.configFile ? configPortMap.get(cmd.configFile) : null) ??
-        getDefaultPortId() ??
-        undefined;
+        cmd.portId ?? (cmd.configFile ? configPortMap.get(cmd.configFile) : null) ?? undefined;
 
-      if (!entities.has(cmd.entityId)) {
-        entities.set(cmd.entityId, {
+      const key = makeKey(portId, cmd.entityId);
+
+      if (!entities.has(key)) {
+        entities.set(key, {
           id: cmd.entityId,
           displayName: cmd.entityName || cmd.entityId,
           type: cmd.entityType,
@@ -750,10 +749,7 @@
           portId,
         });
       }
-      const entity = entities.get(cmd.entityId)!;
-      if (!entity.portId && portId) {
-        entity.portId = portId;
-      }
+      const entity = entities.get(key)!;
       entity.commands.push({ ...cmd, portId });
     }
 
@@ -763,11 +759,13 @@
 
       const entityId = extractEntityIdFromTopic(topic);
       const payload = entry?.payload ?? '';
-      const portId = entry?.portId ?? inferPortId(topic);
+      const portId = entry?.portId;
 
-      if (!entities.has(entityId)) {
+      const key = makeKey(portId, entityId);
+
+      if (!entities.has(key)) {
         // Unknown entity (read-only or no commands configured)
-        entities.set(entityId, {
+        entities.set(key, {
           id: entityId,
           displayName: entityId, // Fallback to ID
           commands: [],
@@ -776,11 +774,8 @@
         });
       }
 
-      const entity = entities.get(entityId)!;
+      const entity = entities.get(key)!;
       entity.statePayload = payload;
-      if (!entity.portId && portId) {
-        entity.portId = portId;
-      }
     }
 
     // Convert to array, filter only those with state, and sort
@@ -896,6 +891,12 @@
     activePortId ? (packetStatsByPort.get(activePortId) ?? null) : null,
   );
 
+  const filteredActivityLogs = $derived.by<ActivityLog[]>(() =>
+    activePortId
+      ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
+      : activityLogs,
+  );
+
   const portStatuses = $derived.by(() => {
     const defaultStatus = bridgeInfo?.status ?? 'idle';
     return portMetadata.map((port) => {
@@ -915,13 +916,7 @@
 </script>
 
 <main class="app-container">
-  <Header
-    bridgeStatus={bridgeInfo?.status || 'idle'}
-    {portStatuses}
-    {connectionStatus}
-    {statusMessage}
-    on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)}
-  />
+  <Header on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
   <div class="content-body">
     <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
 
@@ -936,7 +931,10 @@
           entities={dashboardEntities}
           selectedPortId={activePortId}
           showInactive={showInactiveEntities}
-          {activityLogs}
+          activityLogs={filteredActivityLogs}
+          {connectionStatus}
+          {statusMessage}
+          {portStatuses}
           on:select={(e) => (selectedEntityId = e.detail.entityId)}
           on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
           on:portChange={(event) => (selectedPortId = event.detail.portId)}

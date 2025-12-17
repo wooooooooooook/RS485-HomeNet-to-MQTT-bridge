@@ -1,5 +1,11 @@
 <script lang="ts">
-  import type { BridgeInfo, UnifiedEntity, BridgeSerialInfo, ActivityLog } from '../types';
+  import type {
+    BridgeInfo,
+    UnifiedEntity,
+    BridgeSerialInfo,
+    ActivityLog,
+    BridgeStatus,
+  } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
   import { createEventDispatcher } from 'svelte';
@@ -14,6 +20,9 @@
     selectedPortId,
     showInactive,
     activityLogs,
+    connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
+    statusMessage = '',
+    portStatuses = [],
   } = $props<{
     bridgeInfo: BridgeInfo | null;
     infoLoading: boolean;
@@ -24,6 +33,9 @@
     selectedPortId: string | null;
     showInactive: boolean;
     activityLogs: ActivityLog[];
+    connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
+    statusMessage?: string;
+    portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
   }>();
 
   const dispatch = createEventDispatcher<{
@@ -38,11 +50,18 @@
   const activePortId = $derived.by<string | null>(() =>
     selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
-  const visibleEntities = $derived.by<UnifiedEntity[]>(() =>
-    activePortId
-      ? entities.filter((entity: UnifiedEntity) => !entity.portId || entity.portId === activePortId)
-      : entities,
-  );
+  // App.svelte에서 이미 dashboardEntities로 포트별 필터링을 완료하여 전달하므로,
+  // 여기서는 전달받은 entities를 그대로 사용합니다.
+  const visibleEntities = $derived.by<UnifiedEntity[]>(() => entities);
+
+  // portStatuses에서 해당 포트의 상태를 가져오는 헬퍼 함수
+  function getPortStatus(portId: string): BridgeStatus | 'unknown' {
+    const portStatus = portStatuses.find(
+      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
+        p.portId === portId,
+    );
+    return portStatus?.status ?? 'unknown';
+  }
 
   function handleSelect(entityId: string) {
     dispatch('select', { entityId });
@@ -63,10 +82,16 @@
       <p class="empty">브리지 정보가 없습니다.</p>
     </div>
   {:else}
-    <!-- Minimized Metadata Section -->
+    <!-- Minimized Metadata Section with MQTT Status -->
     <div class="viewer-meta-mini">
-      <span class="label">MQTT:</span>
-      <strong>{mqttUrl}</strong>
+      <div class="mqtt-info">
+        <span class="label">MQTT:</span>
+        <strong>{mqttUrl}</strong>
+      </div>
+      <div class="mqtt-status" data-state={connectionStatus}>
+        <span class="dot"></span>
+        <span class="status-text">{statusMessage || 'MQTT 스트림을 기다리는 중입니다.'}</span>
+      </div>
     </div>
 
     {#if bridgeInfo.error}
@@ -81,12 +106,14 @@
         {#if portIds.length === 0}
           <span class="hint">구성된 포트가 없습니다.</span>
         {:else}
-          {#each portIds as portId}
+          {#each portIds as portId (portId)}
             <button
               class:active={activePortId === portId}
               type="button"
               onclick={() => dispatch('portChange', { portId })}
+              data-state={getPortStatus(portId)}
             >
+              <span class="port-status-dot"></span>
               {portId}
             </button>
           {/each}
@@ -103,7 +130,7 @@
     <div class="port-details-container">
       {#if activePortId}
         <!-- Minimized Port Metadata -->
-        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string }) => p.portId === activePortId) as port}
+        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string }) => p.portId === activePortId) as port (port.portId)}
           <div class="port-meta-mini">
             <div class="meta-item"><strong>Path:</strong> <span>{port.path || 'N/A'}</span></div>
             <div class="meta-item"><strong>Baud:</strong> <span>{port.baudRate}</span></div>
@@ -147,7 +174,60 @@
     color: #94a3b8;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .mqtt-info {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
+  }
+
+  .mqtt-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .mqtt-status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #64748b;
+    flex-shrink: 0;
+  }
+
+  .mqtt-status[data-state='connected'] .dot {
+    background-color: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+
+  .mqtt-status[data-state='connecting'] .dot {
+    background-color: #f59e0b;
+    animation: pulse 2s infinite;
+  }
+
+  .mqtt-status[data-state='error'] .dot {
+    background-color: #ef4444;
+  }
+
+  .mqtt-status[data-state='error'] {
+    color: #ef4444;
+  }
+
+  .mqtt-status .status-text {
+    color: #94a3b8;
+  }
+
+  .mqtt-status[data-state='connected'] .status-text {
+    color: #10b981;
+  }
+
+  .mqtt-status[data-state='error'] .status-text {
+    color: #ef4444;
   }
 
   .viewer-meta-mini strong {
@@ -158,31 +238,31 @@
   }
 
   .port-details-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
-    align-items: start;
+    width: 100%;
   }
 
   .port-meta-mini {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2rem;
     font-size: 0.85rem;
     padding: 1rem;
     border-radius: 8px;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(148, 163, 184, 0.1);
-    height: 150px; /* Match recent activity height */
     box-sizing: border-box;
-    justify-content: center;
+    width: 100%;
   }
 
   .meta-item {
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: baseline;
+    gap: 0.5rem;
+    align-items: center;
   }
 
   .meta-item strong {
@@ -194,7 +274,6 @@
   .meta-item span {
     color: #f1f5f9;
     word-break: break-all;
-    text-align: right;
     font-family: monospace;
     font-size: 0.9rem;
   }
@@ -262,6 +341,35 @@
     border: 1px solid rgba(148, 163, 184, 0.3);
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .port-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #64748b;
+    flex-shrink: 0;
+  }
+
+  .port-tabs button[data-state='started'] .port-status-dot {
+    background-color: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+
+  .port-tabs button[data-state='starting'] .port-status-dot {
+    background-color: #f59e0b;
+    animation: pulse 2s infinite;
+  }
+
+  .port-tabs button[data-state='error'] .port-status-dot {
+    background-color: #ef4444;
+  }
+
+  .port-tabs button[data-state='stopped'] .port-status-dot {
+    background-color: #64748b;
   }
 
   .port-tabs button.active {
@@ -319,5 +427,17 @@
 
   input:checked + .slider:before {
     transform: translateX(16px);
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 </style>

@@ -4,6 +4,7 @@ interface ActivityLog {
   timestamp: number;
   message: string;
   details?: any;
+  portId?: string;
 }
 
 const LOG_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -43,11 +44,15 @@ export class ActivityLogService {
         const from = formatStateValue(oldValue);
         const to = formatStateValue(value);
 
-        this.addLog(`${event.entityId} 상태 변경: ${key} ${from} → ${to}`, {
-          attribute: key,
-          from: oldValue,
-          to: value,
-        });
+        this.addLog(
+          `${event.entityId} 상태 변경: ${key} ${from} → ${to}`,
+          {
+            attribute: key,
+            from: oldValue,
+            to: value,
+          },
+          event.portId,
+        );
       });
     });
 
@@ -66,11 +71,12 @@ export class ActivityLogService {
     });
   }
 
-  public addLog(message: string, details: any = {}): void {
+  public addLog(message: string, details: any = {}, portId?: string): void {
     const logEntry: ActivityLog = {
       timestamp: Date.now(),
       message,
       details,
+      portId,
     };
     this.logs.push(logEntry); // Add to the end of the array
     eventBus.emit('activity-log:added', logEntry);

@@ -6,6 +6,7 @@
     timestamp: number;
     message: string;
     details?: any;
+    portId?: string;
   }
 
   let { activities = [] } = $props<{
@@ -13,11 +14,19 @@
   }>();
 
   let listElement: HTMLUListElement | undefined = $state();
+  let isPinned = $state(true);
+
+  function handleScroll() {
+    if (!listElement) return;
+    const { scrollTop, scrollHeight, clientHeight } = listElement;
+    // 스크롤이 바닥에 가까운지 확인 (20px 여유)
+    isPinned = scrollHeight - (scrollTop + clientHeight) < 20;
+  }
 
   $effect(() => {
     // activities 변경을 감지하기 위해 의존성 추가
     activities;
-    if (listElement) {
+    if (listElement && isPinned) {
       listElement.scrollTop = listElement.scrollHeight;
     }
   });
@@ -37,8 +46,8 @@
   {#if activities.length === 0}
     <p>최근 활동이 없습니다.</p>
   {:else}
-    <ul bind:this={listElement}>
-      {#each activities as activity (activity.timestamp)}
+    <ul bind:this={listElement} onscroll={handleScroll}>
+      {#each activities as activity, index (`${activity.timestamp}-${index}`)}
         <li in:fade|local={{ duration: 300, easing: sineOut }}>
           <span class="time">{formatTime(activity.timestamp)}</span>
           <span class="message">{activity.message}</span>
@@ -50,7 +59,7 @@
 
 <style>
   .recent-activity-container {
-    height: 150px; /* Approximately 6 lines of small text */
+    height: 200px; /* Approximately 8 lines of small text */
     overflow: hidden;
     position: relative;
     border: 1px solid rgba(148, 163, 184, 0.1);

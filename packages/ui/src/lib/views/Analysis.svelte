@@ -51,7 +51,7 @@
     {#if portIds.length === 0}
       <span class="hint">포트 구성이 없습니다.</span>
     {:else}
-      {#each portIds as portId}
+      {#each portIds as portId (portId)}
         <button
           class:active={activePortId === portId}
           type="button"

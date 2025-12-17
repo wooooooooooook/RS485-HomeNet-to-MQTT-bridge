@@ -44,7 +44,7 @@
     {#if rawPackets.length === 0}
       <p class="empty">실시간 Raw 패킷 로그를 확인하려면 로깅을 시작해주세요.</p>
     {:else}
-      {#each [...rawPackets].reverse() as packet (packet.receivedAt + packet.topic)}
+      {#each [...rawPackets].reverse() as packet, index (`${packet.receivedAt}-${packet.topic}-${index}`)}
         <div class="log-item">
           <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
           <span class="interval"

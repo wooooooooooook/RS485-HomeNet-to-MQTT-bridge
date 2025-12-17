@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import { isLoading } from 'svelte-i18n';
   import './lib/i18n';
   import type {
     BridgeInfo,
@@ -916,79 +917,83 @@
   });
 </script>
 
-<main class="app-container">
-  <Header on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
-  <div class="content-body">
-    <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
+{#if $isLoading}
+  <div class="loading-screen">Loading resources...</div>
+{:else}
+  <main class="app-container">
+    <Header on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
+    <div class="content-body">
+      <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
 
-    <section class="main-content">
-      {#if activeView === 'dashboard'}
-        <Dashboard
-          {bridgeInfo}
-          {infoLoading}
-          {infoError}
-          {portMetadata}
-          mqttUrl={bridgeInfo?.mqttUrl || ''}
-          entities={dashboardEntities}
-          selectedPortId={activePortId}
-          showInactive={showInactiveEntities}
-          activityLogs={filteredActivityLogs}
-          {connectionStatus}
-          {statusMessage}
-          {portStatuses}
-          on:select={(e) => (selectedEntityId = e.detail.entityId)}
-          on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
-          on:portChange={(event) => (selectedPortId = event.detail.portId)}
-        />
-      {:else if activeView === 'analysis'}
-        <Analysis
-          stats={filteredPacketStats}
-          commandPackets={filteredCommandPackets}
-          parsedPackets={filteredParsedPackets}
-          rawPackets={filteredRawPackets}
-          {isStreaming}
-          {portMetadata}
-          selectedPortId={activePortId}
-          on:portChange={(event) => (selectedPortId = event.detail.portId)}
-          on:start={() => {
-            sendStreamCommand('start');
-            isStreaming = true;
-            rawPackets = [];
-            packetStatsByPort = new Map();
-          }}
-          on:stop={() => {
-            sendStreamCommand('stop');
-            isStreaming = false;
-          }}
-        />
-      {:else if activeView === 'settings'}
-        <SettingsView
-          {frontendSettings}
-          isLoading={settingsLoading}
-          error={settingsError}
-          isSaving={settingsSaving}
-          on:toastChange={(e) => updateToastSetting(e.detail.key, e.detail.value)}
-        />
-      {/if}
-    </section>
-  </div>
+      <section class="main-content">
+        {#if activeView === 'dashboard'}
+          <Dashboard
+            {bridgeInfo}
+            {infoLoading}
+            {infoError}
+            {portMetadata}
+            mqttUrl={bridgeInfo?.mqttUrl || ''}
+            entities={dashboardEntities}
+            selectedPortId={activePortId}
+            showInactive={showInactiveEntities}
+            activityLogs={filteredActivityLogs}
+            {connectionStatus}
+            {statusMessage}
+            {portStatuses}
+            on:select={(e) => (selectedEntityId = e.detail.entityId)}
+            on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
+            on:portChange={(event) => (selectedPortId = event.detail.portId)}
+          />
+        {:else if activeView === 'analysis'}
+          <Analysis
+            stats={filteredPacketStats}
+            commandPackets={filteredCommandPackets}
+            parsedPackets={filteredParsedPackets}
+            rawPackets={filteredRawPackets}
+            {isStreaming}
+            {portMetadata}
+            selectedPortId={activePortId}
+            on:portChange={(event) => (selectedPortId = event.detail.portId)}
+            on:start={() => {
+              sendStreamCommand('start');
+              isStreaming = true;
+              rawPackets = [];
+              packetStatsByPort = new Map();
+            }}
+            on:stop={() => {
+              sendStreamCommand('stop');
+              isStreaming = false;
+            }}
+          />
+        {:else if activeView === 'settings'}
+          <SettingsView
+            {frontendSettings}
+            isLoading={settingsLoading}
+            error={settingsError}
+            isSaving={settingsSaving}
+            on:toastChange={(e) => updateToastSetting(e.detail.key, e.detail.value)}
+          />
+        {/if}
+      </section>
+    </div>
 
-  {#if selectedEntity}
-    <EntityDetail
-      entity={selectedEntity}
-      isOpen={!!selectedEntityId}
-      parsedPackets={selectedEntityParsedPackets}
-      commandPackets={selectedEntityCommandPackets}
-      on:close={() => (selectedEntityId = null)}
-      on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
-      isRenaming={renamingEntityId === selectedEntityId}
-      {renameError}
-      on:rename={(e) =>
-        selectedEntity &&
-        renameEntityRequest(selectedEntity.id, e.detail.newName, selectedEntity.portId)}
-    />
-  {/if}
-</main>
+    {#if selectedEntity}
+      <EntityDetail
+        entity={selectedEntity}
+        isOpen={!!selectedEntityId}
+        parsedPackets={selectedEntityParsedPackets}
+        commandPackets={selectedEntityCommandPackets}
+        on:close={() => (selectedEntityId = null)}
+        on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
+        isRenaming={renamingEntityId === selectedEntityId}
+        {renameError}
+        on:rename={(e) =>
+          selectedEntity &&
+          renameEntityRequest(selectedEntity.id, e.detail.newName, selectedEntity.portId)}
+      />
+    {/if}
+  </main>
+{/if}
 
 <ToastContainer {toasts} on:dismiss={(event) => removeToast(event.detail.id)} />
 
@@ -1058,5 +1063,13 @@
 
   :global(::-webkit-scrollbar-thumb:hover) {
     background: rgba(148, 163, 184, 0.5);
+  }
+
+  .loading-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #94a3b8;
   }
 </style>

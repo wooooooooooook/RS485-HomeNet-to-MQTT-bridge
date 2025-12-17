@@ -36,8 +36,15 @@
       <span class="icon">☰</span>
     </button>
 
-    <div class="alpha-badge">ALPHA</div>
+    <div class="logo">
+      <span class="logo-icon">H</span>
+      <span class="logo-text">Homenet2MQTT</span>
+    </div>
 
+    <div class="alpha-badge">ALPHA</div>
+  </div>
+
+  <div class="right-section">
     <div class="status-container">
       <div class="status-item port-statuses">
         {#if portStatuses.length === 0}
@@ -70,18 +77,47 @@
 
 <style>
   .header {
+    height: 65px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    padding: 0 2rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    background-color: #0f172a;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    box-sizing: border-box;
   }
 
   .left-section {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e2e8f0;
   }
 
   .mobile-menu-btn {
@@ -94,25 +130,27 @@
   .status-container {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
+    align-items: flex-end;
   }
 
   .port-statuses {
     display: grid;
     gap: 0.25rem;
+    justify-items: end;
   }
 
   .status-indicator {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #94a3b8;
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background-color: #64748b;
   }
@@ -164,7 +202,7 @@
     color: #fff;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: bold;
     user-select: none;
   }
@@ -182,8 +220,16 @@
   }
 
   @media (max-width: 768px) {
+    .header {
+      padding: 0 1rem;
+    }
+
     .mobile-menu-btn {
       display: block;
+    }
+
+    .logo-text {
+      display: none;
     }
   }
 </style>

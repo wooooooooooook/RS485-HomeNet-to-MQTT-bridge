@@ -147,34 +147,41 @@
           <span class="slider"></span>
         </label>
       </div>
+    {/if}
+  </div>
 
-      {#if logSharingStatus}
-        <div class="setting">
-          <div>
-            <div class="setting-title">로그 및 데이터 공유</div>
-            <div class="setting-desc">
-              문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.
-            </div>
-          </div>
-          <label class="switch">
-            <input
-              type="checkbox"
-              checked={logSharingStatus.consented}
-              onchange={handleLogSharingToggle}
-              disabled={isSaving || isLoading}
-            />
-            <span class="slider"></span>
-          </label>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>로그 및 데이터 공유</h2>
+        <p>문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.</p>
+      </div>
+    </div>
+
+    {#if !logSharingStatus}
+      <div class="loading">설정을 불러오는 중...</div>
+    {:else}
+      <div class="setting">
+        <div>
+          <div class="setting-title">로그 공유 활성화</div>
         </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={logSharingStatus.consented}
+            onchange={handleLogSharingToggle}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
 
-        {#if logSharingStatus.consented && logSharingStatus.uid}
-          <div class="setting sub-setting">
-            <div>
-              <div class="setting-title">User ID</div>
-              <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
-            </div>
+      {#if logSharingStatus.consented && logSharingStatus.uid}
+        <div class="setting sub-setting">
+          <div>
+            <div class="setting-title">User ID</div>
+            <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
           </div>
-        {/if}
+        </div>
       {/if}
     {/if}
   </div>

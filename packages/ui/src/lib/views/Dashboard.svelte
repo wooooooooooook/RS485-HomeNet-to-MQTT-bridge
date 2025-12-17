@@ -32,12 +32,16 @@
     portChange: { portId: string };
   }>();
 
-  const portIds = $derived.by<string[]>(() => portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId));
+  const portIds = $derived.by<string[]>(() =>
+    portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
+  );
   const activePortId = $derived.by<string | null>(() =>
-    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : portIds[0] ?? null,
+    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
   const visibleEntities = $derived.by<UnifiedEntity[]>(() =>
-    activePortId ? entities.filter((entity: UnifiedEntity) => !entity.portId || entity.portId === activePortId) : entities,
+    activePortId
+      ? entities.filter((entity: UnifiedEntity) => !entity.portId || entity.portId === activePortId)
+      : entities,
   );
 
   function handleSelect(entityId: string) {

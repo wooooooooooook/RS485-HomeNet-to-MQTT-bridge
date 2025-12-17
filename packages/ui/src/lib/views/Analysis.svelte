@@ -42,7 +42,7 @@
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
   );
   const activePortId = $derived.by<string | null>(() =>
-    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : portIds[0] ?? null,
+    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
 </script>
 
@@ -67,7 +67,7 @@
   <RawPacketLog
     {rawPackets}
     {isStreaming}
-    stats={stats}
+    {stats}
     on:start={startStreaming}
     on:stop={stopStreaming}
   />

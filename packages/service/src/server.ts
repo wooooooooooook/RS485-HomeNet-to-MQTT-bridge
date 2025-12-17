@@ -174,11 +174,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
 
 const saveFrontendSettings = async (settings: FrontendSettings) => {
   await fs.mkdir(CONFIG_DIR, { recursive: true });
-  await fs.writeFile(
-    FRONTEND_SETTINGS_FILE,
-    JSON.stringify(settings, null, 2),
-    'utf-8',
-  );
+  await fs.writeFile(FRONTEND_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
 };
 
 const loadFrontendSettings = async (): Promise<FrontendSettings> => {
@@ -231,11 +227,11 @@ app.post('/api/bridge/:portId/latency-test', async (req, res) => {
     // Check all serials in this instance
     const serials = instance.config.serials || [];
     for (let i = 0; i < serials.length; i++) {
-       const pId = normalizePortId(serials[i].portId, i);
-       if (pId === portId) {
-         targetBridgeInstance = instance;
-         break;
-       }
+      const pId = normalizePortId(serials[i].portId, i);
+      if (pId === portId) {
+        targetBridgeInstance = instance;
+        break;
+      }
     }
     if (targetBridgeInstance) break;
   }
@@ -274,15 +270,16 @@ app.get('/api/bridge/info', async (_req, res) => {
   }
 
   const bridgesInfo = currentConfigs.map((config, configIndex) => {
-    const serialTopics = config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => {
-      const portId = normalizePortId(serial.portId, index);
-      return {
-        portId,
-        path: serial.path,
-        baudRate: serial.baud_rate,
-        topic: `${BASE_MQTT_PREFIX}/${portId}`,
-      };
-    }) ?? [];
+    const serialTopics =
+      config.serials?.map((serial: HomenetBridgeConfig['serials'][number], index: number) => {
+        const portId = normalizePortId(serial.portId, index);
+        return {
+          portId,
+          path: serial.path,
+          baudRate: serial.baud_rate,
+          topic: `${BASE_MQTT_PREFIX}/${portId}`,
+        };
+      }) ?? [];
 
     return {
       configFile: currentConfigFiles[configIndex],
@@ -541,7 +538,7 @@ const registerPacketStream = () => {
     );
     sendStreamEvent(socket, 'status', {
       state: 'connected',
-      mqttUrl: streamMqttUrl
+      mqttUrl: streamMqttUrl,
     });
     latestStates.forEach((state) => sendStreamEvent(socket, 'state-change', state));
     socket.on('message', (message: string) => {
@@ -566,9 +563,12 @@ const registerPacketStream = () => {
           }
         }
       } catch (error) {
-        logger.warn({
-          err: error
-        }, '[service] Invalid WebSocket message received');
+        logger.warn(
+          {
+            err: error,
+          },
+          '[service] Invalid WebSocket message received',
+        );
       }
     });
     const heartbeat = setInterval(() => {
@@ -643,7 +643,7 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
 
     for (const entity of entities) {
       const entityId = entity.id as string;
-      const entityName = entity.name as string || entityId;
+      const entityName = (entity.name as string) || entityId;
 
       // Dynamically find all command_* properties in the entity
       for (const key of Object.keys(entity)) {
@@ -664,13 +664,22 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
         };
 
         // Detect input types based on command name and entity type
-        if (key === 'command_temperature' || key === 'command_speed' || key === 'command_brightness' || key === 'command_percentage' || key === 'command_position') {
+        if (
+          key === 'command_temperature' ||
+          key === 'command_speed' ||
+          key === 'command_brightness' ||
+          key === 'command_percentage' ||
+          key === 'command_position'
+        ) {
           cmdInfo.inputType = 'number';
 
           // Get visual config for temperature bounds (climate)
-          const visual = entity.visual as { min_temperature?: string; max_temperature?: string; temperature_step?: string } | undefined;
+          const visual = entity.visual as
+            | { min_temperature?: string; max_temperature?: string; temperature_step?: string }
+            | undefined;
           if (visual && key === 'command_temperature') {
-            const parseTemp = (val?: string) => val ? parseInt(val.replace(/[^\d]/g, '')) : undefined;
+            const parseTemp = (val?: string) =>
+              val ? parseInt(val.replace(/[^\d]/g, '')) : undefined;
             cmdInfo.min = parseTemp(visual.min_temperature) ?? 5;
             cmdInfo.max = parseTemp(visual.max_temperature) ?? 40;
             cmdInfo.step = parseTemp(visual.temperature_step) ?? 1;
@@ -678,7 +687,11 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
             cmdInfo.min = 0;
             cmdInfo.max = 255;
             cmdInfo.step = 1;
-          } else if (key === 'command_percentage' || key === 'command_speed' || key === 'command_position') {
+          } else if (
+            key === 'command_percentage' ||
+            key === 'command_speed' ||
+            key === 'command_position'
+          ) {
             cmdInfo.min = 0;
             cmdInfo.max = 100;
             cmdInfo.step = 1;
@@ -688,15 +701,15 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
         // Number entity
         if (entityType === 'number' && key === 'command_number') {
           cmdInfo.inputType = 'number';
-          cmdInfo.min = entity.min_value as number ?? 0;
-          cmdInfo.max = entity.max_value as number ?? 100;
-          cmdInfo.step = entity.step as number ?? 1;
+          cmdInfo.min = (entity.min_value as number) ?? 0;
+          cmdInfo.max = (entity.max_value as number) ?? 100;
+          cmdInfo.step = (entity.step as number) ?? 1;
         }
 
         // Select entity
         if (entityType === 'select' && key === 'command_option') {
           cmdInfo.inputType = 'text';
-          cmdInfo.options = entity.options as string[] ?? [];
+          cmdInfo.options = (entity.options as string[]) ?? [];
         }
 
         // Text entity
@@ -760,7 +773,11 @@ app.get('/api/config/raw/:entityId', (req, res) => {
   }
 
   if (foundEntity) {
-    res.json({ yaml: yaml.dump(foundEntity, { styles: { '!!int': 'hexadecimal' } }).replace(/\b0x([0-9a-fA-F])\b/g, '0x0$1') });
+    res.json({
+      yaml: yaml
+        .dump(foundEntity, { styles: { '!!int': 'hexadecimal' } })
+        .replace(/\b0x([0-9a-fA-F])\b/g, '0x0$1'),
+    });
   } else {
     res.status(404).json({ error: 'Entity not found in config' });
   }
@@ -790,7 +807,7 @@ app.post('/api/config/update', async (req, res) => {
 
     // Ensure ID matches or at least exists
     if (newEntity.id && newEntity.id !== entityId) {
-      // Warning: ID changed. This might duplicate if we just push, 
+      // Warning: ID changed. This might duplicate if we just push,
       // but here we are replacing the *found* index.
       // So effectively we are renaming the entity in the config.
       logger.warn(`[service] Entity ID changed from ${entityId} to ${newEntity.id} during update`);
@@ -808,14 +825,16 @@ app.post('/api/config/update', async (req, res) => {
     }
 
     // Normalize the loaded config to ensure IDs are present
-    const normalizedFullConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig);
+    const normalizedFullConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
 
     // 3. Find and update entity
     let found = false;
     for (const type of ENTITY_TYPE_KEYS) {
       const list = normalizedFullConfig[type] as any[]; // Use normalizedFullConfig here
       if (Array.isArray(list)) {
-        const index = list.findIndex(e => e.id === entityId);
+        const index = list.findIndex((e) => e.id === entityId);
         if (index !== -1) {
           list[index] = newEntity;
           found = true;
@@ -841,11 +860,12 @@ app.post('/api/config/update', async (req, res) => {
 
     // 5. Write new config
     // Note: This will strip comments and might alter formatting.
-    const newFileContent = yaml.dump(loadedYamlFromFile, { // Dump the full object
+    const newFileContent = yaml.dump(loadedYamlFromFile, {
+      // Dump the full object
       schema: HOMENET_BRIDGE_SCHEMA,
       styles: { '!!int': 'hexadecimal' },
       noRefs: true,
-      lineWidth: -1 // Try to avoid wrapping lines excessively
+      lineWidth: -1, // Try to avoid wrapping lines excessively
     });
 
     await fs.writeFile(configPath, newFileContent, 'utf8');
@@ -855,7 +875,9 @@ app.post('/api/config/update', async (req, res) => {
     currentConfigs = [normalizedFullConfig]; // Ensure bridge uses normalized config
     rebuildPortMappings();
 
-    logger.info(`[service] Config updated for entity ${entityId}. Backup created at ${path.basename(backupPath)}`);
+    logger.info(
+      `[service] Config updated for entity ${entityId}. Backup created at ${path.basename(backupPath)}`,
+    );
     res.json({ success: true, backup: path.basename(backupPath) });
   } catch (err) {
     logger.error({ err }, '[service] Failed to update config');
@@ -875,7 +897,9 @@ app.post('/api/entities/rename', async (req, res) => {
   }
 
   if (currentConfigFiles.length !== 1) {
-    return res.status(500).json({ error: '단일 설정 파일이 로드된 경우에만 엔터티 이름을 변경할 수 있습니다.' });
+    return res
+      .status(500)
+      .json({ error: '단일 설정 파일이 로드된 경우에만 엔터티 이름을 변경할 수 있습니다.' });
   }
 
   try {
@@ -889,7 +913,9 @@ app.post('/api/entities/rename', async (req, res) => {
       throw new Error('Invalid config file structure');
     }
 
-    const normalizedConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig);
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
 
     let targetEntity: any | null = null;
     for (const type of ENTITY_TYPE_KEYS) {
@@ -939,7 +965,13 @@ app.post('/api/entities/rename', async (req, res) => {
       `[service] Entity ${entityId} renamed to '${trimmedName}'. Backup created at ${path.basename(backupPath)}`,
     );
 
-    res.json({ success: true, entityId, newName: trimmedName, uniqueId, backup: path.basename(backupPath) });
+    res.json({
+      success: true,
+      entityId,
+      newName: trimmedName,
+      uniqueId,
+      backup: path.basename(backupPath),
+    });
   } catch (error) {
     logger.error({ err: error }, '[service] Failed to rename entity');
     res.status(500).json({ error: error instanceof Error ? error.message : 'Rename failed' });
@@ -984,7 +1016,9 @@ app.delete('/api/entities/:entityId', async (req, res) => {
     }
 
     // Normalize to ensure we can match IDs accurately
-    const normalizedConfig = normalizeConfig(loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig);
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
 
     let found = false;
     for (const type of ENTITY_TYPE_KEYS) {
@@ -1026,7 +1060,9 @@ app.delete('/api/entities/:entityId', async (req, res) => {
     currentConfigs = [normalizedConfig];
     rebuildPortMappings();
 
-    logger.info(`[service] Entity ${entityId} deleted. Backup created at ${path.basename(backupPath)}`);
+    logger.info(
+      `[service] Entity ${entityId} deleted. Backup created at ${path.basename(backupPath)}`,
+    );
     res.json({ success: true, backup: path.basename(backupPath) });
   } catch (err) {
     logger.error({ err }, '[service] Failed to delete entity');
@@ -1113,9 +1149,7 @@ const loadConfigFile = async (configPath: string): Promise<HomenetBridgeConfig> 
   }
 
   const rawConfig = loadedYaml.homenet_bridge;
-  const normalized = normalizeConfig(
-    JSON.parse(JSON.stringify(rawConfig)) as HomenetBridgeConfig,
-  );
+  const normalized = normalizeConfig(JSON.parse(JSON.stringify(rawConfig)) as HomenetBridgeConfig);
   validateConfig(normalized, rawConfig);
 
   return normalized;
@@ -1146,7 +1180,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -1234,9 +1268,10 @@ server.listen(port, async () => {
   try {
     logger.info('[service] Initializing bridge on startup...');
     const configFilesFromEnv = envConfigFiles.values;
-    const availableConfigFiles = configFilesFromEnv.length > 0
-      ? configFilesFromEnv
-      : (await fs.readdir(CONFIG_DIR)).filter((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+    const availableConfigFiles =
+      configFilesFromEnv.length > 0
+        ? configFilesFromEnv
+        : (await fs.readdir(CONFIG_DIR)).filter((file) => /\.homenet_bridge\.ya?ml$/.test(file));
 
     if (availableConfigFiles.length === 0) {
       throw new Error('No homenet_bridge configuration files found in config directory.');

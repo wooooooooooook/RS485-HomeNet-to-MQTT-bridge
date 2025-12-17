@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from 'vitest';
 import { Device } from '../src/protocol/device';
 import { StateSchema, StateNumSchema } from '../src/protocol/types';
@@ -28,13 +27,13 @@ describe('Device.extractFromSchema', () => {
     // 0xAB = 1010 1011
     // mask 0x0F = 0000 1111
     // result 0x0B = 11
-    const packet = [0xAB];
+    const packet = [0xab];
     const schema: StateNumSchema = {
       offset: 0,
-      mask: 0x0F,
-      length: 1
+      mask: 0x0f,
+      length: 1,
     };
-    expect(device.testExtractFromSchema(packet, schema)).toBe(0x0B);
+    expect(device.testExtractFromSchema(packet, schema)).toBe(0x0b);
   });
 
   it('should support multi-byte extraction (big endian)', () => {
@@ -56,7 +55,7 @@ describe('Device.extractFromSchema', () => {
       offset: 0,
       mask: 0x01,
       inverted: true,
-      length: 1
+      length: 1,
     };
     expect(device.testExtractFromSchema(packet, schema)).toBe(1);
 
@@ -68,9 +67,9 @@ describe('Device.extractFromSchema', () => {
   it('should return null if data mismatch', () => {
     const packet = [0x01];
     const schema: StateNumSchema = {
-        offset: 0,
-        data: [0x02], // Expect 0x02
-        length: 1
+      offset: 0,
+      data: [0x02], // Expect 0x02
+      length: 1,
     };
     expect(device.testExtractFromSchema(packet, schema)).toBe(null);
   });
@@ -78,64 +77,64 @@ describe('Device.extractFromSchema', () => {
   it('should extract if data matches', () => {
     const packet = [0x02];
     const schema: StateNumSchema = {
-        offset: 0,
-        data: [0x02],
-        length: 1
+      offset: 0,
+      data: [0x02],
+      length: 1,
     };
     expect(device.testExtractFromSchema(packet, schema)).toBe(2);
   });
 
   it('should handle signed integer', () => {
-      // 0xFF -> -1 (8 bit)
-      const packet = [0xFF];
-      const schema: StateNumSchema = {
-          offset: 0,
-          length: 1,
-          signed: true
-      };
-      expect(device.testExtractFromSchema(packet, schema)).toBe(-1);
+    // 0xFF -> -1 (8 bit)
+    const packet = [0xff];
+    const schema: StateNumSchema = {
+      offset: 0,
+      length: 1,
+      signed: true,
+    };
+    expect(device.testExtractFromSchema(packet, schema)).toBe(-1);
   });
 
   it('should handle precision', () => {
-      // 123 -> 1.23
-      const packet = [123];
-      const schema: StateNumSchema = {
-          offset: 0,
-          length: 1,
-          precision: 2
-      };
-      expect(device.testExtractFromSchema(packet, schema)).toBe(1.23);
+    // 123 -> 1.23
+    const packet = [123];
+    const schema: StateNumSchema = {
+      offset: 0,
+      length: 1,
+      precision: 2,
+    };
+    expect(device.testExtractFromSchema(packet, schema)).toBe(1.23);
   });
 
   it('should handle mapping', () => {
-      const packet = [0x01];
-      const schema: StateNumSchema = {
-          offset: 0,
-          length: 1,
-          mapping: { 1: 'ON', 0: 'OFF' }
-      };
-      expect(device.testExtractFromSchema(packet, schema)).toBe('ON');
+    const packet = [0x01];
+    const schema: StateNumSchema = {
+      offset: 0,
+      length: 1,
+      mapping: { 1: 'ON', 0: 'OFF' },
+    };
+    expect(device.testExtractFromSchema(packet, schema)).toBe('ON');
   });
 
   it('should handle BCD decode', () => {
-      // 0x12 -> 12
-      const packet = [0x12];
-      const schema: StateNumSchema = {
-          offset: 0,
-          length: 1,
-          decode: 'bcd'
-      };
-      expect(device.testExtractFromSchema(packet, schema)).toBe(12);
+    // 0x12 -> 12
+    const packet = [0x12];
+    const schema: StateNumSchema = {
+      offset: 0,
+      length: 1,
+      decode: 'bcd',
+    };
+    expect(device.testExtractFromSchema(packet, schema)).toBe(12);
   });
 
   it('should handle ASCII decode', () => {
-      // 0x41 -> 'A'
-      const packet = [0x41];
-      const schema: StateNumSchema = {
-          offset: 0,
-          length: 1,
-          decode: 'ascii'
-      };
-      expect(device.testExtractFromSchema(packet, schema)).toBe('A');
+    // 0x41 -> 'A'
+    const packet = [0x41];
+    const schema: StateNumSchema = {
+      offset: 0,
+      length: 1,
+      decode: 'ascii',
+    };
+    expect(device.testExtractFromSchema(packet, schema)).toBe('A');
   });
 });

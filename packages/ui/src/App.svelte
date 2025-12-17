@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import './lib/i18n';
   import type {
     BridgeInfo,
     BridgeSerialInfo,

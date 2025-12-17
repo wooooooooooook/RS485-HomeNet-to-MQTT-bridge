@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
   import type { CommandPacket, ParsedPacket } from '../types';
 
   let { parsedPackets = [], commandPackets = [] } = $props<{
@@ -35,21 +36,21 @@
 <div class="log-section">
   <div class="log-header">
     <div class="header-left">
-      <h2>패킷 로그 (RX/TX)</h2>
+      <h2>{$t('analysis.packet_log.title')}</h2>
       <div class="filters">
         <label>
-          <input type="checkbox" bind:checked={showRx} /> RX (수신)
+          <input type="checkbox" bind:checked={showRx} /> {$t('analysis.packet_log.rx')}
         </label>
         <label>
-          <input type="checkbox" bind:checked={showTx} /> TX (발신)
+          <input type="checkbox" bind:checked={showTx} /> {$t('analysis.packet_log.tx')}
         </label>
       </div>
     </div>
   </div>
-  <p class="description">파싱된 수신패킷과 H2M에서 발신한 패킷 목록입니다.</p>
+  <p class="description">{$t('analysis.packet_log.desc')}</p>
   <div class="log-list unified-list">
     {#if mergedPackets.length === 0}
-      <p class="empty">표시할 패킷이 없습니다.</p>
+      <p class="empty">{$t('analysis.packet_log.empty')}</p>
     {:else}
       {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
         <div class="log-item {packet.type}">

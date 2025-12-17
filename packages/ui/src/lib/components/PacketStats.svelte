@@ -1,23 +1,24 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
   import type { PacketStats } from '../types';
 
   let { stats = null } = $props<{ stats?: PacketStats | null }>();
 </script>
 
 <div class="stats-container">
-  <h2>패킷 간격 분석</h2>
+  <h2>{$t('analysis.stats.title')}</h2>
   <div class="stats-grid">
     {#if stats}
       <div class="stat-item">
-        <span class="label">패킷 간격 (평균 ± 표준편차)</span>
+        <span class="label">{$t('analysis.stats.packet_interval')}</span>
         <strong>{stats.packetAvg} ± {stats.packetStdDev} ms</strong>
       </div>
       <div class="stat-item">
-        <span class="label">유휴 간격 (평균 ± 표준편차)</span>
+        <span class="label">{$t('analysis.stats.idle_interval')}</span>
         <strong>{stats.idleAvg > 0 ? `${stats.idleAvg} ± ${stats.idleStdDev} ms` : 'N/A'}</strong>
       </div>
       <div class="stat-item">
-        <span class="label">유휴 발생 간격 (평균 ± 표준편차)</span>
+        <span class="label">{$t('analysis.stats.idle_occurrence')}</span>
         <strong
           >{stats.idleOccurrenceAvg > 0
             ? `${stats.idleOccurrenceAvg} ± ${stats.idleOccurrenceStdDev} ms`
@@ -25,11 +26,11 @@
         >
       </div>
       <div class="stat-item">
-        <span class="label">표본 크기</span>
+        <span class="label">{$t('analysis.stats.sample_size')}</span>
         <strong>{stats.sampleSize}</strong>
       </div>
     {:else}
-      <p class="empty">분석중입니다...</p>
+      <p class="empty">{$t('analysis.stats.analyzing')}</p>
     {/if}
   </div>
 </div>

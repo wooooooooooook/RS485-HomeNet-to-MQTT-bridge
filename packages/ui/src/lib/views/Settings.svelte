@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
   import type { FrontendSettings } from '../types';
 
@@ -96,7 +97,18 @@
     />
   {/if}
 
-  <h1>설정</h1>
+  <div class="view-header">
+    <h1>{$t('settings.title')}</h1>
+    <div class="lang-switcher">
+      <select bind:value={$locale}>
+        {#each $locales as l}
+          <option value={l}>
+            {l === 'ko' ? $t('common.korean') : $t('common.english')}
+          </option>
+        {/each}
+      </select>
+    </div>
+  </div>
 
   {#if error}
     <div class="error-banner">{error}</div>
@@ -105,21 +117,21 @@
   <div class="card">
     <div class="card-header">
       <div>
-        <h2>토스트 알림</h2>
-        <p>상태 업데이트나 명령 전송 이벤트 발생 시 토스트 표시 여부를 제어합니다.</p>
+        <h2>{$t('settings.toast.title')}</h2>
+        <p>{$t('settings.toast.desc')}</p>
       </div>
       {#if isSaving}
-        <span class="badge">저장 중...</span>
+        <span class="badge">{$t('settings.saving')}</span>
       {/if}
     </div>
 
     {#if isLoading}
-      <div class="loading">설정을 불러오는 중...</div>
+      <div class="loading">{$t('settings.loading')}</div>
     {:else}
       <div class="setting">
         <div>
-          <div class="setting-title">상태 변경 토스트</div>
-          <div class="setting-desc">상태 토픽 업데이트마다 토스트를 띄웁니다.</div>
+          <div class="setting-title">{$t('settings.toast.state_change.title')}</div>
+          <div class="setting-desc">{$t('settings.toast.state_change.desc')}</div>
         </div>
         <label class="switch">
           <input
@@ -134,8 +146,8 @@
 
       <div class="setting">
         <div>
-          <div class="setting-title">명령 전송 토스트</div>
-          <div class="setting-desc">명령 패킷을 보낼 때 토스트를 띄웁니다.</div>
+          <div class="setting-title">{$t('settings.toast.command.title')}</div>
+          <div class="setting-desc">{$t('settings.toast.command.desc')}</div>
         </div>
         <label class="switch">
           <input
@@ -153,17 +165,17 @@
   <div class="card">
     <div class="card-header">
       <div>
-        <h2>로그 및 데이터 공유</h2>
-        <p>문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.</p>
+        <h2>{$t('settings.log_sharing.title')}</h2>
+        <p>{$t('settings.log_sharing.desc')}</p>
       </div>
     </div>
 
     {#if !logSharingStatus}
-      <div class="loading">설정을 불러오는 중...</div>
+      <div class="loading">{$t('settings.loading')}</div>
     {:else}
       <div class="setting">
         <div>
-          <div class="setting-title">로그 공유 활성화</div>
+          <div class="setting-title">{$t('settings.log_sharing.enable')}</div>
         </div>
         <label class="switch">
           <input
@@ -178,8 +190,10 @@
       {#if logSharingStatus.consented && logSharingStatus.uid}
         <div class="setting sub-setting">
           <div>
-            <div class="setting-title">User ID</div>
-            <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
+            <div class="setting-title">{$t('settings.log_sharing.uid_title')}</div>
+            <div class="setting-desc">
+              {$t('settings.log_sharing.uid_desc', { values: { uid: logSharingStatus.uid } })}
+            </div>
           </div>
         </div>
       {/if}
@@ -194,9 +208,24 @@
     gap: 1.5rem;
   }
 
+  .view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   h1 {
     margin: 0;
     font-size: 1.75rem;
+  }
+
+  .lang-switcher select {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
   }
 
   .card {

@@ -7,6 +7,7 @@
     ParsedPacket,
     BridgeSerialInfo,
   } from '../types';
+  import { t } from 'svelte-i18n';
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import LatencyTest from '../components/analysis/LatencyTest.svelte';
@@ -47,9 +48,9 @@
 </script>
 
 <div class="analysis-view">
-  <div class="port-tabs" aria-label="포트별 로그 보기">
+  <div class="port-tabs" aria-label={$t('analysis.port_tabs_aria')}>
     {#if portIds.length === 0}
-      <span class="hint">포트 구성이 없습니다.</span>
+      <span class="hint">{$t('analysis.no_config')}</span>
     {:else}
       {#each portIds as portId (portId)}
         <button

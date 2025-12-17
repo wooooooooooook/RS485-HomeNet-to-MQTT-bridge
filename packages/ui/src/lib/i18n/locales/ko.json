@@ -1,0 +1,67 @@
+{
+  "settings": {
+    "title": "설정",
+    "toast": {
+      "title": "토스트 알림",
+      "desc": "상태 업데이트나 명령 전송 이벤트 발생 시 토스트 표시 여부를 제어합니다.",
+      "state_change": {
+        "title": "상태 변경 토스트",
+        "desc": "상태 토픽 업데이트마다 토스트를 띄웁니다."
+      },
+      "command": {
+        "title": "명령 전송 토스트",
+        "desc": "명령 패킷을 보낼 때 토스트를 띄웁니다."
+      }
+    },
+    "log_sharing": {
+      "title": "로그 및 데이터 공유",
+      "desc": "문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.",
+      "enable": "로그 공유 활성화",
+      "uid_title": "User ID",
+      "uid_desc": "익명화된 식별자입니다: {uid}"
+    },
+    "loading": "설정을 불러오는 중...",
+    "saving": "저장 중..."
+  },
+  "analysis": {
+    "port_tabs_aria": "포트별 로그 보기",
+    "no_config": "포트 구성이 없습니다.",
+    "latency": {
+      "title": "패킷 처리 지연시간 분석 (Latency)",
+      "desc": "가상 패킷을 생성하여 처리 파이프라인(수신 -> 파서 -> 자동화 -> 명령 생성)을 통과하는 시간을 측정합니다. <br />실제 시리얼 포트로 데이터가 전송되지는 않습니다. (100회 반복 측정)",
+      "start": "측정 시작",
+      "running": "측정 중...",
+      "avg": "평균 (Avg)",
+      "std_dev": "표준편차 (StdDev)",
+      "min": "최소 (Min)",
+      "max": "최대 (Max)"
+    },
+    "packet_log": {
+      "title": "패킷 로그 (RX/TX)",
+      "rx": "RX (수신)",
+      "tx": "TX (발신)",
+      "desc": "파싱된 수신패킷과 H2M에서 발신한 패킷 목록입니다.",
+      "empty": "표시할 패킷이 없습니다."
+    },
+    "raw_log": {
+      "title": "Raw 패킷 로그",
+      "start": "로깅 시작",
+      "stop": "로깅 중지",
+      "desc": "RS485 장치에서 수신된 raw 패킷 목록을 interval과 함께 표시합니다.",
+      "empty": "실시간 Raw 패킷 로그를 확인하려면 로깅을 시작해주세요."
+    },
+    "stats": {
+      "title": "패킷 간격 분석",
+      "packet_interval": "패킷 간격 (평균 ± 표준편차)",
+      "idle_interval": "유휴 간격 (평균 ± 표준편차)",
+      "idle_occurrence": "유휴 발생 간격 (평균 ± 표준편차)",
+      "sample_size": "표본 크기",
+      "analyzing": "분석중입니다..."
+    }
+  },
+  "common": {
+    "language": "언어",
+    "english": "English",
+    "korean": "한국어"
+  }
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t } from 'svelte-i18n';
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
   import PacketStats from './PacketStats.svelte';
 
@@ -27,14 +28,14 @@
 
 <div class="log-section">
   <div class="log-header">
-    <h2>Raw 패킷 로그</h2>
+    <h2>{$t('analysis.raw_log.title')}</h2>
     <div class="header-right">
       <button class="ghost-sm" onclick={toggleStreaming}>
-        {isStreaming ? '⏹ 로깅 중지' : '▶ 로깅 시작'}
+        {isStreaming ? `⏹ ${$t('analysis.raw_log.stop')}` : `▶ ${$t('analysis.raw_log.start')}`}
       </button>
     </div>
   </div>
-  <p class="description">RS485 장치에서 수신된 raw 패킷 목록을 interval과 함께 표시합니다.</p>
+  <p class="description">{$t('analysis.raw_log.desc')}</p>
 
   {#if stats || isStreaming}
     <PacketStats {stats} />
@@ -42,7 +43,7 @@
 
   <div class="log-list raw-list">
     {#if rawPackets.length === 0}
-      <p class="empty">실시간 Raw 패킷 로그를 확인하려면 로깅을 시작해주세요.</p>
+      <p class="empty">{$t('analysis.raw_log.empty')}</p>
     {:else}
       {#each [...rawPackets].reverse() as packet, index (`${packet.receivedAt}-${packet.topic}-${index}`)}
         <div class="log-item">

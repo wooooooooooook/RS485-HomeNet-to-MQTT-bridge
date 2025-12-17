@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
+
   let { portId } = $props<{ portId: string }>();
 
   let isRunning = $state(false);
@@ -44,21 +46,19 @@
 </script>
 
 <div class="latency-test-container">
-  <h3>패킷 처리 지연시간 분석 (Latency)</h3>
+  <h3>{$t('analysis.latency.title')}</h3>
   <div class="description">
     <p>
-      가상 패킷을 생성하여 처리 파이프라인(수신 -> 파서 -> 자동화 -> 명령 생성)을 통과하는 시간을
-      측정합니다.
-      <br />실제 시리얼 포트로 데이터가 전송되지는 않습니다. (100회 반복 측정)
+      {@html $t('analysis.latency.desc')}
     </p>
   </div>
 
   <div class="controls">
     <button class="primary" onclick={runTest} disabled={isRunning}>
       {#if isRunning}
-        측정 중...
+        {$t('analysis.latency.running')}
       {:else}
-        측정 시작
+        {$t('analysis.latency.start')}
       {/if}
     </button>
   </div>
@@ -72,19 +72,19 @@
   {#if stats}
     <div class="results">
       <div class="stat-box">
-        <div class="label">평균 (Avg)</div>
+        <div class="label">{$t('analysis.latency.avg')}</div>
         <div class="value">{stats.avg} ms</div>
       </div>
       <div class="stat-box">
-        <div class="label">표준편차 (StdDev)</div>
+        <div class="label">{$t('analysis.latency.std_dev')}</div>
         <div class="value">± {stats.stdDev} ms</div>
       </div>
       <div class="stat-box">
-        <div class="label">최소 (Min)</div>
+        <div class="label">{$t('analysis.latency.min')}</div>
         <div class="value">{stats.min} ms</div>
       </div>
       <div class="stat-box">
-        <div class="label">최대 (Max)</div>
+        <div class="label">{$t('analysis.latency.max')}</div>
         <div class="value">{stats.max} ms</div>
       </div>
     </div>

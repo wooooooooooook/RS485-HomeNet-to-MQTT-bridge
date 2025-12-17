@@ -1,0 +1,67 @@
+{
+  "settings": {
+    "title": "Settings",
+    "toast": {
+      "title": "Toast Notifications",
+      "desc": "Control whether to show toasts on state updates or command events.",
+      "state_change": {
+        "title": "State Change Toast",
+        "desc": "Show toast on every state topic update."
+      },
+      "command": {
+        "title": "Command Sent Toast",
+        "desc": "Show toast when sending command packets."
+      }
+    },
+    "log_sharing": {
+      "title": "Log & Data Sharing",
+      "desc": "Send anonymized logs and packets (1000) to the developer for troubleshooting.",
+      "enable": "Enable Log Sharing",
+      "uid_title": "User ID",
+      "uid_desc": "Anonymized Identifier: {uid}"
+    },
+    "loading": "Loading settings...",
+    "saving": "Saving..."
+  },
+  "analysis": {
+    "port_tabs_aria": "View logs by port",
+    "no_config": "No port configuration found.",
+    "latency": {
+      "title": "Packet Processing Latency Analysis",
+      "desc": "Measures the time it takes for a generated virtual packet to pass through the processing pipeline (Receive -> Parser -> Automation -> Command Generation). <br />Data is not sent to the actual serial port. (100 iterations)",
+      "start": "Start Test",
+      "running": "Running...",
+      "avg": "Average (Avg)",
+      "std_dev": "Std Dev",
+      "min": "Min",
+      "max": "Max"
+    },
+    "packet_log": {
+      "title": "Packet Log (RX/TX)",
+      "rx": "RX (Received)",
+      "tx": "TX (Sent)",
+      "desc": "List of parsed received packets and packets sent by H2M.",
+      "empty": "No packets to display."
+    },
+    "raw_log": {
+      "title": "Raw Packet Log",
+      "start": "Start Logging",
+      "stop": "Stop Logging",
+      "desc": "List of raw packets received from RS485 devices with intervals.",
+      "empty": "Start logging to view real-time raw packets."
+    },
+    "stats": {
+      "title": "Packet Interval Analysis",
+      "packet_interval": "Packet Interval (Avg ± StdDev)",
+      "idle_interval": "Idle Interval (Avg ± StdDev)",
+      "idle_occurrence": "Idle Occurrence Interval (Avg ± StdDev)",
+      "sample_size": "Sample Size",
+      "analyzing": "Analyzing..."
+    }
+  },
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "korean": "Korean"
+  }
+}

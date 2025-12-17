@@ -1,9 +1,11 @@
 import { eventBus } from '@rs485-homenet/core';
 
-interface ActivityLog {
+export interface ActivityLog {
   timestamp: number;
-  message: string;
-  details?: any;
+  code: string;
+  params?: Record<string, any>;
+  // Optional fallback message for legacy or non-i18n clients
+  message?: string;
   portId?: string;
 }
 
@@ -45,11 +47,12 @@ export class ActivityLogService {
         const to = formatStateValue(value);
 
         this.addLog(
-          `${event.entityId} 상태 변경: ${key} ${from} → ${to}`,
+          'log.state_change',
           {
+            entityId: event.entityId,
             attribute: key,
-            from: oldValue,
-            to: value,
+            from,
+            to,
           },
           event.portId,
         );
@@ -58,29 +61,36 @@ export class ActivityLogService {
 
     eventBus.on('mqtt-message', (event) => {
       if (event.topic.endsWith('/set')) {
-        this.addLog(`명령 수신: ${event.topic}`, event.message);
+        this.addLog(
+          'log.command_received',
+          {
+            topic: event.topic,
+            message: event.message,
+          },
+          undefined, // portId unknown here usually
+        );
       }
     });
 
     eventBus.on('core:started', () => {
-      this.addLog('코어 서비스가 시작되었습니다.');
+      this.addLog('log.core_started');
     });
 
     eventBus.on('core:stopped', () => {
-      this.addLog('코어 서비스가 중지되었습니다.');
+      this.addLog('log.core_stopped');
     });
   }
 
-  public addLog(message: string, details: any = {}, portId?: string): void {
+  public addLog(code: string, params: Record<string, any> = {}, portId?: string): void {
     const logEntry: ActivityLog = {
       timestamp: Date.now(),
-      message,
-      details,
+      code,
+      params,
       portId,
     };
     this.logs.push(logEntry); // Add to the end of the array
     eventBus.emit('activity-log:added', logEntry);
-    this.cleanupOldLogs(); // Optional: cleanup on every new entry for more aggressive trimming
+    this.cleanupOldLogs();
   }
 
   public getRecentLogs(): ActivityLog[] {

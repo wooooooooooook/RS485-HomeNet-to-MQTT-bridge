@@ -5,8 +5,9 @@
 
   interface ActivityLog {
     timestamp: number;
-    message: string;
-    details?: any;
+    code: string;
+    params?: Record<string, any>;
+    message?: string;
     portId?: string;
   }
 
@@ -31,13 +32,21 @@
   {:else}
     <ul>
       <!--
-        Use a composite key of timestamp and message to identify unique items.
+        Use a composite key of timestamp and code to identify unique items.
         Using index with reverse() causes the entire list to re-render/animate on every update.
       -->
-      {#each [...activities].reverse() as activity (`${activity.timestamp}-${activity.message}`)}
+      {#each [...activities].reverse() as activity (`${activity.timestamp}-${activity.code}`)}
         <li in:fade|local={{ duration: 300, easing: sineOut }}>
           <span class="time">{formatTime(activity.timestamp)}</span>
-          <span class="message">{activity.message}</span>
+          <span class="message">
+            {#if activity.code.startsWith('log.')}
+              {$t(`logs.${activity.code.replace('log.', '')}`, { values: activity.params })}
+            {:else if activity.message}
+               {activity.message}
+            {:else}
+               {activity.code}
+            {/if}
+          </span>
         </li>
       {/each}
     </ul>

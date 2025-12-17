@@ -149,5 +149,18 @@
         "error": "삭제 실패"
       }
     }
+  },
+  "logs": {
+    "state_change": "{entityId} 상태 변경: {attribute} {from} → {to}",
+    "command_received": "명령 수신: {topic}",
+    "core_started": "코어 서비스가 시작되었습니다.",
+    "core_stopped": "코어 서비스가 중지되었습니다.",
+    "service_started": "서비스가 시작되었습니다."
+  },
+  "errors": {
+    "BRIDGE_NOT_CONFIGURED": "브리지가 설정되지 않았거나 시작에 실패했습니다.",
+    "BRIDGE_STARTING": "브리지가 시작 중입니다...",
+    "BRIDGE_NOT_STARTED": "브리지가 시작되지 않았습니다.",
+    "BRIDGE_NOT_FOUND_FOR_PORT": "포트 {portId}에 대한 브리지를 찾을 수 없습니다."
   }
 }

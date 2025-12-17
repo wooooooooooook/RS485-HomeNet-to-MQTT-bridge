@@ -34,7 +34,7 @@ describe('ActivityLogService', () => {
 
     // Add 1100 logs
     for (let i = 0; i < 1100; i++) {
-      service.addLog(`Message ${i}`);
+      service.addLog(`code_${i}`, { index: i });
     }
 
     const logs = service.getRecentLogs();
@@ -47,8 +47,8 @@ describe('ActivityLogService', () => {
 
     // Verify that we kept the NEWEST logs
     if (logs.length === MAX_LOGS) {
-      expect(logs[0].message).toBe('Message 100');
-      expect(logs[logs.length - 1].message).toBe('Message 1099');
+      expect(logs[0].code).toBe('code_100');
+      expect(logs[logs.length - 1].code).toBe('code_1099');
     }
   });
 });

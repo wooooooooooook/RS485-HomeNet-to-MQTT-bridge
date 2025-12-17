@@ -98,7 +98,7 @@
     {#if bridgeInfo.error}
       <div class="bridge-error">
         <p class="error subtle">
-          {$t('dashboard.bridge_error', { values: { error: bridgeInfo.error } })}
+          {$t('dashboard.bridge_error', { values: { error: $t(`errors.${bridgeInfo.error}`) } })}
         </p>
       </div>
     {/if}

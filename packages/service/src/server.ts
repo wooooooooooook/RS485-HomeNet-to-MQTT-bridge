@@ -227,7 +227,7 @@ app.post('/api/bridge/:portId/latency-test', async (req, res) => {
   const { portId } = req.params;
 
   if (bridges.length === 0) {
-    return res.status(503).json({ error: 'Bridge not started' });
+    return res.status(503).json({ error: 'BRIDGE_NOT_STARTED' });
   }
 
   // Find the bridge instance managing this port
@@ -248,7 +248,7 @@ app.post('/api/bridge/:portId/latency-test', async (req, res) => {
   }
 
   if (!targetBridgeInstance) {
-    return res.status(404).json({ error: 'Bridge not found for port ' + portId });
+    return res.status(404).json({ error: 'BRIDGE_NOT_FOUND_FOR_PORT', portId });
   }
 
   try {
@@ -266,7 +266,7 @@ app.get('/api/bridge/info', async (_req, res) => {
 
   // If a startup is in progress, tell the client to wait.
   if (bridgeStartPromise) {
-    return res.status(503).json({ error: 'Bridge is starting...' });
+    return res.status(503).json({ error: 'BRIDGE_STARTING' });
   }
 
   if (currentConfigs.length === 0) {
@@ -275,7 +275,7 @@ app.get('/api/bridge/info', async (_req, res) => {
       bridges: [],
       mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
       status: 'error',
-      error: bridgeError || '브리지가 설정되지 않았거나 시작에 실패했습니다.',
+      error: bridgeError || 'BRIDGE_NOT_CONFIGURED',
       topic: `${BASE_MQTT_PREFIX}/homedevice1/raw`,
     });
   }
@@ -538,7 +538,7 @@ const registerGlobalEventHandlers = () => {
   });
 };
 
-activityLogService.addLog('서비스가 시작되었습니다.');
+activityLogService.addLog('log.service_started');
 
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {

@@ -92,5 +92,25 @@
     "entity_card": {
       "no_status": "No status info"
     }
+  },
+  "logs": {
+    "state_change": "{entityId} State changed: {attribute} {from} → {to}",
+    "command_received": "Command received: {topic}",
+    "core_started": "Core service started.",
+    "core_stopped": "Core service stopped.",
+    "service_started": "Service started."
+  },
+  "mqtt": {
+    "connected": "MQTT stream connected",
+    "subscribed": "Subscribing to '{topic}'",
+    "error": "MQTT stream error occurred",
+    "connecting": "Reconnecting to MQTT stream...",
+    "disconnected": "Stream disconnected. Retrying..."
+  },
+  "errors": {
+    "BRIDGE_NOT_CONFIGURED": "Bridge is not configured or failed to start.",
+    "BRIDGE_STARTING": "Bridge is starting...",
+    "BRIDGE_NOT_STARTED": "Bridge has not started.",
+    "BRIDGE_NOT_FOUND_FOR_PORT": "Bridge not found for port {portId}."
   }
 }

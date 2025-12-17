@@ -451,17 +451,32 @@
       const state = data.state;
       if (state === 'connected') {
         connectionStatus = 'connected';
-        statusMessage = 'MQTT 스트림 연결 완료';
+        statusMessage = 'mqtt.connected';
       } else if (state === 'subscribed') {
         connectionStatus = 'connected';
-        statusMessage = `'${data.topic}' 토픽 구독 중`;
+        // params will be handled by translation component if we pass params separately,
+        // but currently Dashboard receives a single string.
+        // We can pre-interpolate here if we had access to $t inside script,
+        // OR we change statusMessage to be an object or use a convention.
+        // Given current architecture, let's keep it simple: pass a special string format or handle it in Dashboard.
+        // To support params like {topic}, we need to change how statusMessage is used.
+        // However, since we don't want to refactor Dashboard props too much right now,
+        // let's try to pass the key and rely on Dashboard to translate it.
+        // BUT 'subscribed' needs a param.
+        // Hack: We will store JSON string if params are needed, or handle it in Dashboard.
+        // Better: Dashboard uses $t(statusMessage)
+        // For params: statusMessage = JSON.stringify({ key: 'mqtt.subscribed', values: { topic: data.topic } })
+        // This is getting complicated for a simple status.
+        // Let's modify handleStatus to dispatch an object or simply use a dedicated store for status.
+        // For now, let's use the simplest approach compatible with Dashboard's string prop.
+        statusMessage = JSON.stringify({ key: 'mqtt.subscribed', values: { topic: data.topic } });
       } else if (state === 'error') {
         connectionStatus = 'error';
-        statusMessage =
-          typeof data.message === 'string' ? data.message : 'MQTT 스트림 오류가 발생했습니다.';
+        // Error messages from server might be raw strings.
+        statusMessage = typeof data.message === 'string' ? data.message : 'mqtt.error';
       } else if (state === 'connecting') {
         connectionStatus = 'connecting';
-        statusMessage = 'MQTT 스트림을 다시 연결하는 중입니다...';
+        statusMessage = 'mqtt.connecting';
       }
     };
 
@@ -590,7 +605,7 @@
 
     const handleDisconnect = () => {
       connectionStatus = 'connecting';
-      statusMessage = '스트림 연결이 끊어졌습니다. 재연결을 시도합니다...';
+      statusMessage = 'mqtt.disconnected';
       socket = null;
       socketCloseHandler = null;
       socketErrorHandler = null;

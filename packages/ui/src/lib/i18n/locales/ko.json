@@ -157,6 +157,13 @@
     "core_stopped": "코어 서비스가 중지되었습니다.",
     "service_started": "서비스가 시작되었습니다."
   },
+  "mqtt": {
+    "connected": "MQTT 스트림 연결 완료",
+    "subscribed": "'{topic}' 토픽 구독 중",
+    "error": "MQTT 스트림 오류가 발생했습니다.",
+    "connecting": "MQTT 스트림을 다시 연결하는 중입니다...",
+    "disconnected": "스트림 연결이 끊어졌습니다. 재연결을 시도합니다..."
+  },
   "errors": {
     "BRIDGE_NOT_CONFIGURED": "브리지가 설정되지 않았거나 시작에 실패했습니다.",
     "BRIDGE_STARTING": "브리지가 시작 중입니다...",

@@ -67,6 +67,18 @@
   function handleSelect(entityId: string) {
     dispatch('select', { entityId });
   }
+
+  const parseStatusMessage = (msg: string | undefined) => {
+    if (!msg) return { key: 'dashboard.mqtt_waiting', values: {} };
+    try {
+      const parsed = JSON.parse(msg);
+      if (parsed && typeof parsed === 'object' && parsed.key) {
+        return { key: parsed.key, values: parsed.values || {} };
+      }
+    } catch {}
+    // If not JSON, return as key with no values
+    return { key: msg, values: {} };
+  };
 </script>
 
 <div class="dashboard-view">
@@ -91,7 +103,12 @@
       </div>
       <div class="mqtt-status" data-state={connectionStatus}>
         <span class="dot"></span>
-        <span class="status-text">{statusMessage || $t('dashboard.mqtt_waiting')}</span>
+        {#if statusMessage}
+          {@const status = parseStatusMessage(statusMessage)}
+          <span class="status-text">{$t(status.key, { values: status.values })}</span>
+        {:else}
+          <span class="status-text">{$t('dashboard.mqtt_waiting')}</span>
+        {/if}
       </div>
     </div>
 

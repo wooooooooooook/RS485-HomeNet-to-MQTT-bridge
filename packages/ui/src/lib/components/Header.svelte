@@ -50,7 +50,9 @@
             <div class="status-indicator" data-state={portStatus.status}>
               <span class="dot"></span>
               <span class="label">
-                {portStatus.portId}: {portStatus.message || bridgeStatusLabels[portStatus.status] || bridgeStatusLabels[bridgeStatus]}
+                {portStatus.portId}: {portStatus.message ||
+                  bridgeStatusLabels[portStatus.status] ||
+                  bridgeStatusLabels[bridgeStatus]}
               </span>
             </div>
           {/each}
@@ -64,7 +66,6 @@
       </div>
     </div>
   </div>
-
 </header>
 
 <style>

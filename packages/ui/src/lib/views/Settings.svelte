@@ -3,7 +3,12 @@
   import LogConsentModal from '../components/LogConsentModal.svelte';
   import type { FrontendSettings } from '../types';
 
-  let { frontendSettings = null, isLoading = false, isSaving = false, error = '' } = $props<{
+  let {
+    frontendSettings = null,
+    isLoading = false,
+    isSaving = false,
+    error = '',
+  } = $props<{
     frontendSettings?: FrontendSettings | null;
     isLoading?: boolean;
     isSaving?: boolean;
@@ -12,7 +17,9 @@
 
   type ToastSettingKey = 'stateChange' | 'command';
 
-  const dispatch = createEventDispatcher<{ toastChange: { key: ToastSettingKey; value: boolean } }>();
+  const dispatch = createEventDispatcher<{
+    toastChange: { key: ToastSettingKey; value: boolean };
+  }>();
 
   const getToastValue = (key: ToastSettingKey) => {
     return frontendSettings?.toast?.[key] ?? true;
@@ -24,7 +31,9 @@
   };
 
   // Log Sharing State
-  let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(null);
+  let logSharingStatus = $state<{ asked: boolean; consented: boolean; uid?: string | null } | null>(
+    null,
+  );
   let showConsentModal = $state(false);
 
   const fetchLogSharingStatus = () => {
@@ -140,30 +149,32 @@
       </div>
 
       {#if logSharingStatus}
-      <div class="setting">
-        <div>
-          <div class="setting-title">로그 및 데이터 공유</div>
-          <div class="setting-desc">문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.</div>
+        <div class="setting">
+          <div>
+            <div class="setting-title">로그 및 데이터 공유</div>
+            <div class="setting-desc">
+              문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.
+            </div>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={logSharingStatus.consented}
+              onchange={handleLogSharingToggle}
+              disabled={isSaving || isLoading}
+            />
+            <span class="slider"></span>
+          </label>
         </div>
-        <label class="switch">
-          <input
-            type="checkbox"
-            checked={logSharingStatus.consented}
-            onchange={handleLogSharingToggle}
-            disabled={isSaving || isLoading}
-          />
-          <span class="slider"></span>
-        </label>
-      </div>
 
-      {#if logSharingStatus.consented && logSharingStatus.uid}
-        <div class="setting sub-setting">
-           <div>
-             <div class="setting-title">User ID</div>
-             <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
-           </div>
-        </div>
-      {/if}
+        {#if logSharingStatus.consented && logSharingStatus.uid}
+          <div class="setting sub-setting">
+            <div>
+              <div class="setting-title">User ID</div>
+              <div class="setting-desc">익명화된 식별자입니다: {logSharingStatus.uid}</div>
+            </div>
+          </div>
+        {/if}
       {/if}
     {/if}
   </div>

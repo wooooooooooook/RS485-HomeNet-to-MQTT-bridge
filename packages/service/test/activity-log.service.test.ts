@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => {
       on: vi.fn(),
       emit: vi.fn(),
       off: vi.fn(),
-    }
+    },
   };
 });
 
@@ -47,8 +47,8 @@ describe('ActivityLogService', () => {
 
     // Verify that we kept the NEWEST logs
     if (logs.length === MAX_LOGS) {
-        expect(logs[0].message).toBe('Message 100');
-        expect(logs[logs.length - 1].message).toBe('Message 1099');
+      expect(logs[0].message).toBe('Message 100');
+      expect(logs[logs.length - 1].message).toBe('Message 1099');
     }
   });
 });

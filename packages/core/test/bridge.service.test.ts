@@ -27,7 +27,14 @@ vi.mock('../src/state/state-manager.js', () => ({
 vi.mock('../src/config/index.js', () => ({
   loadConfig: () =>
     Promise.resolve({
-      serial: { portId: 'main', path: '/dev/ttyUSB0', baud_rate: 9600, data_bits: 8, parity: 'none', stop_bits: 1 },
+      serial: {
+        portId: 'main',
+        path: '/dev/ttyUSB0',
+        baud_rate: 9600,
+        data_bits: 8,
+        parity: 'none',
+        stop_bits: 1,
+      },
       serials: [
         {
           portId: 'main',
@@ -111,11 +118,11 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
     bridge.startRawPacketListener();
     // Simulate 1010 packets
     for (let i = 0; i < 1010; i++) {
-        vi.advanceTimersByTime(1);
-        fakeSerialPort.emit('data', Buffer.from([i % 255]));
+      vi.advanceTimersByTime(1);
+      fakeSerialPort.emit('data', Buffer.from([i % 255]));
     }
 
-    const calls = eventBusEmitSpy.mock.calls.filter(call => call[0] === 'packet-interval-stats');
+    const calls = eventBusEmitSpy.mock.calls.filter((call) => call[0] === 'packet-interval-stats');
     const lastCall = calls[calls.length - 1];
     const stats = lastCall[1] as any;
 
@@ -128,28 +135,28 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
 
     fakeSerialPort.emit('data', Buffer.from([0]));
 
-    for(let i=0; i<3; i++) {
-        vi.advanceTimersByTime(10);
-        fakeSerialPort.emit('data', Buffer.from([i+1]));
+    for (let i = 0; i < 3; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i + 1]));
     }
 
     vi.advanceTimersByTime(200);
     fakeSerialPort.emit('data', Buffer.from([4]));
 
-    for(let i=0; i<3; i++) {
-        vi.advanceTimersByTime(10);
-        fakeSerialPort.emit('data', Buffer.from([i+5]));
+    for (let i = 0; i < 3; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i + 5]));
     }
 
     vi.advanceTimersByTime(200);
     fakeSerialPort.emit('data', Buffer.from([8]));
 
-    for(let i=0; i<3; i++) {
-        vi.advanceTimersByTime(10);
-        fakeSerialPort.emit('data', Buffer.from([i+9]));
+    for (let i = 0; i < 3; i++) {
+      vi.advanceTimersByTime(10);
+      fakeSerialPort.emit('data', Buffer.from([i + 9]));
     }
 
-    const calls = eventBusEmitSpy.mock.calls.filter(call => call[0] === 'packet-interval-stats');
+    const calls = eventBusEmitSpy.mock.calls.filter((call) => call[0] === 'packet-interval-stats');
     expect(calls.length).toBeGreaterThan(0);
     const lastCall = calls[calls.length - 1];
     const stats = lastCall[1] as any;
@@ -164,7 +171,7 @@ describe('HomeNetBridge Packet Interval Analysis', () => {
 
     // We expect some differentiation between packetAvg (small) and idleAvg (large)
     if (stats.packetAvg > 0 && stats.idleAvg > 0) {
-        expect(stats.packetAvg).toBeLessThan(stats.idleAvg);
+      expect(stats.packetAvg).toBeLessThan(stats.idleAvg);
     }
   });
 });

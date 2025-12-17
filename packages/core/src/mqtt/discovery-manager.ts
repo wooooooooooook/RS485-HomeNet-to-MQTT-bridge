@@ -97,9 +97,12 @@ export class DiscoveryManager {
       this.handleStateReceived(entityId);
     });
 
-    eventBus.on('entity:renamed', ({ entityId, newName }: { entityId: string; newName: string }) => {
-      this.handleEntityRenamed(entityId, newName);
-    });
+    eventBus.on(
+      'entity:renamed',
+      ({ entityId, newName }: { entityId: string; newName: string }) => {
+        this.handleEntityRenamed(entityId, newName);
+      },
+    );
 
     // Publish bridge online status
     this.publisher.publish(this.bridgeStatusTopic, 'online', { retain: true });
@@ -158,7 +161,10 @@ export class DiscoveryManager {
 
     const device = this.devicesById.get(deviceId);
     if (!device) {
-      logger.warn({ deviceId }, '[DiscoveryManager] Referenced device not found, using bridge device info');
+      logger.warn(
+        { deviceId },
+        '[DiscoveryManager] Referenced device not found, using bridge device info',
+      );
       return this.defaultBridgeDevice();
     }
 
@@ -241,11 +247,17 @@ export class DiscoveryManager {
         : false;
 
     if (!alwaysPublish && !hasState && !linkedReady && !force) {
-      logger.debug({ id: entity.id }, '[DiscoveryManager] Discovery deferred until state packet received');
+      logger.debug(
+        { id: entity.id },
+        '[DiscoveryManager] Discovery deferred until state packet received',
+      );
       return;
     }
 
-    if (linkedReady && !this.discoveryPublished.has(`${this.portId}:${entity.discovery_linked_id || ''}`)) {
+    if (
+      linkedReady &&
+      !this.discoveryPublished.has(`${this.portId}:${entity.discovery_linked_id || ''}`)
+    ) {
       logger.debug(
         {
           id: entity.id,

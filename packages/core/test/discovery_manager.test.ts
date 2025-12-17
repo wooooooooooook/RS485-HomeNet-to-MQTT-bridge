@@ -205,7 +205,9 @@ describe('DiscoveryManager', () => {
 
     vi.advanceTimersByTime(2000);
 
-    const publishCalls = mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === topic && args[1]);
+    const publishCalls = mockPublisher.publish.mock.calls.filter(
+      (args: any[]) => args[0] === topic && args[1],
+    );
     expect(publishCalls.length).toBeGreaterThan(0);
 
     const payload = JSON.parse(publishCalls[publishCalls.length - 1][1]);

@@ -3,7 +3,11 @@
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
   import PacketStats from './PacketStats.svelte';
 
-  let { rawPackets = [], isStreaming, stats = null } = $props<{
+  let {
+    rawPackets = [],
+    isStreaming,
+    stats = null,
+  } = $props<{
     rawPackets?: RawPacketWithInterval[];
     isStreaming: boolean;
     stats?: PacketStatsType | null;

@@ -111,7 +111,7 @@
   }
 
   p {
-      color: #94a3b8;
-      font-style: italic;
+    color: #94a3b8;
+    font-style: italic;
   }
 </style>

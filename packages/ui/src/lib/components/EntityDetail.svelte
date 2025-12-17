@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
+  import { t } from 'svelte-i18n';
   import type { UnifiedEntity, CommandInfo, ParsedPacket, CommandPacket } from '../types';
 
   let {
@@ -81,12 +82,12 @@
     const trimmed = renameInput.trim();
 
     if (!trimmed) {
-      renameLocalError = '새 이름을 입력해주세요.';
+      renameLocalError = $t('entity_detail.manage.rename.error_empty');
       return;
     }
 
     if (trimmed === entity.displayName) {
-      renameLocalError = '변경된 내용이 없습니다.';
+      renameLocalError = $t('entity_detail.manage.rename.error_same');
       return;
     }
 
@@ -136,7 +137,7 @@
       const data = await res.json();
       editingConfig = data.yaml;
     } catch (err) {
-      configError = '설정 정보를 불러올 수 없습니다.';
+      configError = $t('entity_detail.config.load_error');
     } finally {
       configLoading = false;
     }
@@ -162,44 +163,34 @@
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || '저장에 실패했습니다.');
+        throw new Error(data.error || $t('entity_detail.config.save_error'));
       }
 
-      saveMessage = `저장 완료 (백업: ${data.backup})`;
+      saveMessage = $t('entity_detail.config.save_success', { values: { backup: data.backup } });
     } catch (err) {
-      configError = err instanceof Error ? err.message : '저장에 실패했습니다.';
+      configError = err instanceof Error ? err.message : $t('entity_detail.config.save_error');
     } finally {
       isSaving = false;
     }
   }
 
   async function handleRevokeDiscovery() {
-    if (
-      !confirm(
-        '정말로 이 엔티티의 디스커버리 정보를 회수하시겠습니까?\n(상태 패킷이 수신되면 다시 등록됩니다)',
-      )
-    )
-      return;
+    if (!confirm($t('entity_detail.manage.revoke.confirm'))) return;
 
     try {
       const res = await fetch(`./api/entities/${entity.id}/revoke-discovery`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || '실패했습니다.');
+        throw new Error(data.error || $t('entity_detail.manage.revoke.error'));
       }
-      alert('디스커버리 정보가 회수되었습니다.');
+      alert($t('entity_detail.manage.revoke.success'));
     } catch (e) {
-      alert(e instanceof Error ? e.message : '실패했습니다.');
+      alert(e instanceof Error ? e.message : $t('entity_detail.manage.revoke.error'));
     }
   }
 
   async function handleDeleteEntity() {
-    if (
-      !confirm(
-        '정말로 이 엔티티를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 설정 파일에서 영구적으로 제거됩니다.',
-      )
-    )
-      return;
+    if (!confirm($t('entity_detail.manage.delete.confirm'))) return;
 
     try {
       const deleteUrl = entity.portId
@@ -208,13 +199,13 @@
       const res = await fetch(deleteUrl, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || '삭제 실패');
+        throw new Error(data.error || $t('entity_detail.manage.delete.error'));
       }
-      alert('삭제되었습니다. 변경 사항을 적용하려면 서비스 재시작이 필요할 수 있습니다.');
+      alert($t('entity_detail.manage.delete.success'));
       close();
       window.location.reload(); // Reload to refresh entity list since it's a major change
     } catch (e) {
-      alert(e instanceof Error ? e.message : '삭제 실패');
+      alert(e instanceof Error ? e.message : $t('entity_detail.manage.delete.error'));
     }
   }
 
@@ -252,7 +243,7 @@
     role="button"
     tabindex="0"
     onkeydown={handleKeydown}
-    aria-label="Close modal"
+    aria-label={$t('entity_detail.close_aria')}
   >
     <div
       class="modal"
@@ -266,7 +257,9 @@
           <h2 id="modal-title">{entity.displayName}</h2>
           <span class="entity-id">{entity.id}</span>
         </div>
-        <button class="close-btn" onclick={close} aria-label="Close modal">&times;</button>
+        <button class="close-btn" onclick={close} aria-label={$t('entity_detail.close_aria')}
+          >&times;</button
+        >
       </header>
 
       <div class="modal-tabs" role="tablist">
@@ -276,7 +269,7 @@
           aria-selected={activeTab === 'status'}
           aria-controls="panel-status"
           class:active={activeTab === 'status'}
-          onclick={() => (activeTab = 'status')}>상태 & 명령</button
+          onclick={() => (activeTab = 'status')}>{$t('entity_detail.tabs.status')}</button
         >
         <button
           role="tab"
@@ -284,7 +277,7 @@
           aria-selected={activeTab === 'config'}
           aria-controls="panel-config"
           class:active={activeTab === 'config'}
-          onclick={() => (activeTab = 'config')}>설정 (YAML)</button
+          onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
         >
         <button
           role="tab"
@@ -292,7 +285,7 @@
           aria-selected={activeTab === 'packets'}
           aria-controls="panel-packets"
           class:active={activeTab === 'packets'}
-          onclick={() => (activeTab = 'packets')}>패킷 로그</button
+          onclick={() => (activeTab = 'packets')}>{$t('entity_detail.tabs.packets')}</button
         >
         <button
           role="tab"
@@ -300,7 +293,7 @@
           aria-selected={activeTab === 'manage'}
           aria-controls="panel-manage"
           class:active={activeTab === 'manage'}
-          onclick={() => (activeTab = 'manage')}>관리</button
+          onclick={() => (activeTab = 'manage')}>{$t('entity_detail.tabs.manage')}</button
         >
       </div>
 
@@ -308,7 +301,7 @@
         {#if activeTab === 'status'}
           <div role="tabpanel" id="panel-status" aria-labelledby="tab-status" tabindex="0">
             <div class="section status-section">
-              <h3>현재 상태</h3>
+              <h3>{$t('entity_detail.status.title')}</h3>
               <div class="payload-list">
                 {#each parsePayload(entity.statePayload) as item (item.key)}
                   <div class="payload-item">
@@ -317,14 +310,14 @@
                   </div>
                 {/each}
                 {#if !entity.statePayload}
-                  <div class="no-data">상태 정보가 없습니다.</div>
+                  <div class="no-data">{$t('entity_detail.status.no_data')}</div>
                 {/if}
               </div>
             </div>
 
             {#if entity.commands.length > 0}
               <div class="section command-section">
-                <h3>명령 보내기</h3>
+                <h3>{$t('entity_detail.status.command_title')}</h3>
                 <div class="command-grid">
                   {#each entity.commands as cmd (`${cmd.entityId}-${cmd.commandName}`)}
                     <div class="command-item">
@@ -348,7 +341,7 @@
                                 value: commandInputs[`${cmd.entityId}_${cmd.commandName}`],
                               })}
                           >
-                            전송
+                            {$t('entity_detail.status.send')}
                           </button>
                         </div>
                       {:else}
@@ -366,14 +359,16 @@
           <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
             <div class="section config-section">
               {#if configLoading}
-                <div class="loading">설정 불러오는 중...</div>
+                <div class="loading">{$t('entity_detail.config.loading')}</div>
               {:else}
                 <div class="config-editor-container">
                   <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
                   ></textarea>
                   <div class="config-actions">
                     <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
-                      {isSaving ? '저장 중...' : '저장'}
+                      {isSaving
+                        ? $t('entity_detail.config.saving')
+                        : $t('entity_detail.config.save')}
                     </button>
                     {#if saveMessage}
                       <span class="save-message success">{saveMessage}</span>
@@ -391,20 +386,22 @@
             <div class="section packet-log-section">
               <div class="log-header">
                 <div class="header-left">
-                  <h4>패킷 로그 (RX/TX)</h4>
+                  <h4>{$t('entity_detail.packets.title')}</h4>
                   <div class="filters">
                     <label>
-                      <input type="checkbox" bind:checked={showRx} /> RX (수신)
+                      <input type="checkbox" bind:checked={showRx} />
+                      {$t('entity_detail.packets.rx_label')}
                     </label>
                     <label>
-                      <input type="checkbox" bind:checked={showTx} /> TX (발신)
+                      <input type="checkbox" bind:checked={showTx} />
+                      {$t('entity_detail.packets.tx_label')}
                     </label>
                   </div>
                 </div>
               </div>
               <div class="log-list unified-list">
                 {#if mergedPackets.length === 0}
-                  <div class="no-data">표시할 패킷이 없습니다.</div>
+                  <div class="no-data">{$t('entity_detail.packets.no_packets')}</div>
                 {:else}
                   {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
                     <div class="log-entry {packet.type}">
@@ -436,18 +433,20 @@
         {:else if activeTab === 'manage'}
           <div role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" tabindex="0">
             <div class="section manage-card">
-              <h3>이름 변경</h3>
-              <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
+              <h3>{$t('entity_detail.manage.rename.title')}</h3>
+              <p class="subtle">{$t('entity_detail.manage.rename.desc')}</p>
               <div class="rename-form">
                 <input
                   type="text"
                   bind:value={renameInput}
-                  placeholder="새 이름"
-                  aria-label="새 엔티티 이름"
+                  placeholder={$t('entity_detail.manage.rename.placeholder')}
+                  aria-label={$t('entity_detail.manage.rename.placeholder')}
                   oninput={() => (renameLocalError = null)}
                 />
                 <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
-                  {isRenaming ? '변경 중...' : '저장'}
+                  {isRenaming
+                    ? $t('entity_detail.manage.rename.saving')
+                    : $t('entity_detail.manage.rename.save')}
                 </button>
               </div>
               {#if effectiveRenameError}
@@ -456,23 +455,23 @@
             </div>
 
             <div class="section manage-card">
-              <h3>디스커버리 회수</h3>
+              <h3>{$t('entity_detail.manage.revoke.title')}</h3>
               <p class="subtle">
-                Home Assistant에서 엔티티의 디스커버리 정보를 제거합니다.<br />
-                상태 패킷이 수신되면 자동으로 다시 등록됩니다.
+                {@html $t('entity_detail.manage.revoke.desc')}
               </p>
               <button class="action-btn-secondary" onclick={handleRevokeDiscovery}>
-                디스커버리 회수
+                {$t('entity_detail.manage.revoke.button')}
               </button>
             </div>
 
             <div class="section manage-card danger-zone">
-              <h3>엔티티 삭제</h3>
+              <h3>{$t('entity_detail.manage.delete.title')}</h3>
               <p class="subtle">
-                설정 파일에서 이 엔티티를 영구적으로 제거합니다.<br />
-                <strong>이 작업은 되돌릴 수 없습니다.</strong>
+                {@html $t('entity_detail.manage.delete.desc')}
               </p>
-              <button class="danger-btn" onclick={handleDeleteEntity}> 엔티티 삭제 </button>
+              <button class="danger-btn" onclick={handleDeleteEntity}>
+                {$t('entity_detail.manage.delete.button')}
+              </button>
             </div>
           </div>
         {/if}

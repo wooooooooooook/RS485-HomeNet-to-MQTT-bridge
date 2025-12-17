@@ -92,5 +92,62 @@
     "entity_card": {
       "no_status": "상태 정보 없음"
     }
+  },
+  "entity_detail": {
+    "title_aria": "엔티티 상세 정보",
+    "close_aria": "모달 닫기",
+    "tabs": {
+      "status": "상태 & 명령",
+      "config": "설정 (YAML)",
+      "packets": "패킷 로그",
+      "manage": "관리"
+    },
+    "status": {
+      "title": "현재 상태",
+      "no_data": "상태 정보가 없습니다.",
+      "command_title": "명령 보내기",
+      "send": "전송"
+    },
+    "config": {
+      "loading": "설정 불러오는 중...",
+      "saving": "저장 중...",
+      "save": "저장",
+      "save_success": "저장 완료 (백업: {backup})",
+      "load_error": "설정 정보를 불러올 수 없습니다.",
+      "save_error": "저장에 실패했습니다."
+    },
+    "packets": {
+      "title": "패킷 로그 (RX/TX)",
+      "rx_label": "RX (수신)",
+      "tx_label": "TX (발신)",
+      "no_packets": "표시할 패킷이 없습니다."
+    },
+    "manage": {
+      "rename": {
+        "title": "이름 변경",
+        "desc": "Home Assistant 엔티티 이름도 함께 변경됩니다.",
+        "placeholder": "새 이름",
+        "saving": "변경 중...",
+        "save": "저장",
+        "error_empty": "새 이름을 입력해주세요.",
+        "error_same": "변경된 내용이 없습니다."
+      },
+      "revoke": {
+        "title": "디스커버리 회수",
+        "desc": "Home Assistant에서 엔티티의 디스커버리 정보를 제거합니다.<br />상태 패킷이 수신되면 자동으로 다시 등록됩니다.",
+        "button": "디스커버리 회수",
+        "confirm": "정말로 이 엔티티의 디스커버리 정보를 회수하시겠습니까?\\n(상태 패킷이 수신되면 다시 등록됩니다)",
+        "success": "디스커버리 정보가 회수되었습니다.",
+        "error": "실패했습니다."
+      },
+      "delete": {
+        "title": "엔티티 삭제",
+        "desc": "설정 파일에서 이 엔티티를 영구적으로 제거합니다.<br /><strong>이 작업은 되돌릴 수 없습니다.</strong>",
+        "button": "엔티티 삭제",
+        "confirm": "정말로 이 엔티티를 삭제하시겠습니까?\\n이 작업은 되돌릴 수 없으며 설정 파일에서 영구적으로 제거됩니다.",
+        "success": "삭제되었습니다. 변경 사항을 적용하려면 서비스 재시작이 필요할 수 있습니다.",
+        "error": "삭제 실패"
+      }
+    }
   }
 }

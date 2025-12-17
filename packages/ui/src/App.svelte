@@ -667,7 +667,7 @@
     }
   }
 
-  async function renameEntityRequest(entityId: string, newName: string) {
+  async function renameEntityRequest(entityId: string, newName: string, portId?: string) {
     const trimmed = newName.trim();
     if (!trimmed) {
       renameError = '새 이름을 입력해주세요.';
@@ -680,7 +680,7 @@
     try {
       await apiRequest('./api/entities/rename', {
         method: 'POST',
-        body: JSON.stringify({ entityId, newName: trimmed }),
+        body: JSON.stringify({ entityId, newName: trimmed, portId }),
       });
 
       availableCommands = availableCommands.map((cmd) =>
@@ -982,7 +982,9 @@
       on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
       isRenaming={renamingEntityId === selectedEntityId}
       {renameError}
-      on:rename={(e) => selectedEntityId && renameEntityRequest(selectedEntityId, e.detail.newName)}
+      on:rename={(e) =>
+        selectedEntity &&
+        renameEntityRequest(selectedEntity.id, e.detail.newName, selectedEntity.portId)}
     />
   {/if}
 </main>

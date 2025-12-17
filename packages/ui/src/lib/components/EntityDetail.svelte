@@ -25,7 +25,7 @@
     rename: { newName: string };
   }>();
 
-  let activeTab = $state<'status' | 'config' | 'packets'>('status');
+  let activeTab = $state<'status' | 'config' | 'packets' | 'manage'>('status');
   let editingConfig = $state('');
   let configLoading = $state(false);
   let configError = $state<string | null>(null);
@@ -156,6 +156,7 @@
         body: JSON.stringify({
           entityId: entity.id,
           yaml: editingConfig,
+          portId: entity.portId,
         }),
       });
 
@@ -201,7 +202,10 @@
       return;
 
     try {
-      const res = await fetch(`./api/entities/${entity.id}`, { method: 'DELETE' });
+      const deleteUrl = entity.portId
+        ? `./api/entities/${entity.id}?portId=${encodeURIComponent(entity.portId)}`
+        : `./api/entities/${entity.id}`;
+      const res = await fetch(deleteUrl, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || '삭제 실패');
@@ -290,33 +294,19 @@
           class:active={activeTab === 'packets'}
           onclick={() => (activeTab = 'packets')}>패킷 로그</button
         >
+        <button
+          role="tab"
+          id="tab-manage"
+          aria-selected={activeTab === 'manage'}
+          aria-controls="panel-manage"
+          class:active={activeTab === 'manage'}
+          onclick={() => (activeTab = 'manage')}>관리</button
+        >
       </div>
 
       <div class="modal-body">
         {#if activeTab === 'status'}
           <div role="tabpanel" id="panel-status" aria-labelledby="tab-status" tabindex="0">
-            <div class="section rename-section">
-              <div>
-                <h3>이름 변경</h3>
-                <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
-              </div>
-              <div class="rename-form">
-                <input
-                  type="text"
-                  bind:value={renameInput}
-                  placeholder="새 이름"
-                  aria-label="새 엔티티 이름"
-                  oninput={() => (renameLocalError = null)}
-                />
-                <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
-                  {isRenaming ? '변경 중...' : '저장'}
-                </button>
-              </div>
-              {#if effectiveRenameError}
-                <div class="rename-error">{effectiveRenameError}</div>
-              {/if}
-            </div>
-
             <div class="section status-section">
               <h3>현재 상태</h3>
               <div class="payload-list">
@@ -395,20 +385,6 @@
                 </div>
               {/if}
             </div>
-
-            <div class="section management-section">
-              <h3>관리</h3>
-              <div class="management-actions">
-                <button class="danger-btn outline" onclick={handleRevokeDiscovery}>
-                  디스커버리 회수
-                </button>
-                <button class="danger-btn" onclick={handleDeleteEntity}> 엔티티 삭제 </button>
-              </div>
-              <p class="subtle">
-                디스커버리 회수는 MQTT 토픽만 제거하며, 상태 패킷 수신 시 다시 등록됩니다.<br />
-                엔티티 삭제는 설정 파일에서 영구적으로 제거됩니다.
-              </p>
-            </div>
           </div>
         {:else if activeTab === 'packets'}
           <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets" tabindex="0">
@@ -455,6 +431,48 @@
                   {/each}
                 {/if}
               </div>
+            </div>
+          </div>
+        {:else if activeTab === 'manage'}
+          <div role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" tabindex="0">
+            <div class="section manage-card">
+              <h3>이름 변경</h3>
+              <p class="subtle">Home Assistant 엔티티 이름도 함께 변경됩니다.</p>
+              <div class="rename-form">
+                <input
+                  type="text"
+                  bind:value={renameInput}
+                  placeholder="새 이름"
+                  aria-label="새 엔티티 이름"
+                  oninput={() => (renameLocalError = null)}
+                />
+                <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
+                  {isRenaming ? '변경 중...' : '저장'}
+                </button>
+              </div>
+              {#if effectiveRenameError}
+                <div class="rename-error">{effectiveRenameError}</div>
+              {/if}
+            </div>
+
+            <div class="section manage-card">
+              <h3>디스커버리 회수</h3>
+              <p class="subtle">
+                Home Assistant에서 엔티티의 디스커버리 정보를 제거합니다.<br />
+                상태 패킷이 수신되면 자동으로 다시 등록됩니다.
+              </p>
+              <button class="action-btn-secondary" onclick={handleRevokeDiscovery}>
+                디스커버리 회수
+              </button>
+            </div>
+
+            <div class="section manage-card danger-zone">
+              <h3>엔티티 삭제</h3>
+              <p class="subtle">
+                설정 파일에서 이 엔티티를 영구적으로 제거합니다.<br />
+                <strong>이 작업은 되돌릴 수 없습니다.</strong>
+              </p>
+              <button class="danger-btn" onclick={handleDeleteEntity}> 엔티티 삭제 </button>
             </div>
           </div>
         {/if}
@@ -581,13 +599,6 @@
     margin: 0.25rem 0 0;
     color: #94a3b8;
     font-size: 0.9rem;
-  }
-
-  .rename-section {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    padding: 1.25rem;
   }
 
   .rename-form {
@@ -786,18 +797,6 @@
     color: #f87171;
   }
 
-  .management-section {
-    border-top: 1px solid #334155;
-    padding-top: 2rem;
-    margin-top: 2rem;
-  }
-
-  .management-actions {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
   .danger-btn {
     background: #ef4444;
     border: none;
@@ -932,5 +931,50 @@
     text-align: center;
     color: #475569;
     font-style: italic;
+  }
+
+  /* Manage Tab Styles */
+  .manage-card {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  .manage-card h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  .manage-card .subtle {
+    margin-bottom: 1rem;
+  }
+
+  .manage-card .rename-form {
+    margin-top: 1rem;
+  }
+
+  .action-btn-secondary {
+    background: #334155;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .action-btn-secondary:hover {
+    background: #475569;
+    border-color: #64748b;
+  }
+
+  .danger-zone {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .danger-zone h3 {
+    color: #f87171;
   }
 </style>

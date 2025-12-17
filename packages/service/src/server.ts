@@ -736,6 +736,42 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
   return commands;
 }
 
+/**
+ * Find which config file (by index) contains the given portId.
+ * Returns -1 if not found.
+ */
+const findConfigIndexByPortId = (portId: string): number => {
+  for (let i = 0; i < currentConfigs.length; i += 1) {
+    const config = currentConfigs[i];
+    const serials = Array.isArray(config.serial) ? config.serial : config.serial ? [config.serial] : [];
+    for (let j = 0; j < serials.length; j += 1) {
+      const serial = serials[j] as { portId?: string };
+      const configPortId = normalizePortId(serial.portId, j);
+      if (configPortId === portId) {
+        return i;
+      }
+    }
+  }
+  return -1;
+};
+
+/**
+ * Find which config file (by index) contains the given entity.
+ * Returns -1 if not found.
+ */
+const findConfigIndexForEntity = (entityId: string): number => {
+  for (let i = 0; i < currentConfigs.length; i += 1) {
+    const config = currentConfigs[i];
+    for (const type of ENTITY_TYPE_KEYS) {
+      const entities = config[type] as Array<any> | undefined;
+      if (Array.isArray(entities) && entities.some((entity) => entity.id === entityId)) {
+        return i;
+      }
+    }
+  }
+  return -1;
+};
+
 const findBridgeForEntity = (entityId: string): BridgeInstance | undefined => {
   for (let i = 0; i < currentConfigs.length; i += 1) {
     const config = currentConfigs[i];
@@ -795,13 +831,15 @@ app.get('/api/config/raw/:entityId', (req, res) => {
 });
 
 app.post('/api/config/update', async (req, res) => {
-  const { entityId, yaml: newEntityYaml } = req.body as { entityId: string; yaml: string };
+  const { entityId, yaml: newEntityYaml, portId } = req.body as { entityId: string; yaml: string; portId?: string };
 
-  if (currentConfigFiles.length !== 1) {
-    return res.status(500).json({ error: '단일 설정 파일이 로드된 경우에만 수정할 수 있습니다.' });
+  // Find config by portId if provided, otherwise fallback to finding by entityId
+  let configIndex = portId ? findConfigIndexByPortId(portId) : findConfigIndexForEntity(entityId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Entity not found in any loaded config' });
   }
 
-  const targetConfigFile = currentConfigFiles[0];
+  const targetConfigFile = currentConfigFiles[configIndex];
 
   try {
     // 1. Parse new YAML snippet
@@ -882,8 +920,8 @@ app.post('/api/config/update', async (req, res) => {
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
     // 6. Update in-memory raw config (this also needs to be normalized)
-    currentRawConfigs = [normalizedFullConfig]; // Update with normalized config
-    currentConfigs = [normalizedFullConfig]; // Ensure bridge uses normalized config
+    currentRawConfigs[configIndex] = normalizedFullConfig;
+    currentConfigs[configIndex] = normalizedFullConfig;
     rebuildPortMappings();
 
     logger.info(
@@ -897,7 +935,7 @@ app.post('/api/config/update', async (req, res) => {
 });
 
 app.post('/api/entities/rename', async (req, res) => {
-  const { entityId, newName } = req.body as { entityId?: string; newName?: string };
+  const { entityId, newName, portId } = req.body as { entityId?: string; newName?: string; portId?: string };
 
   if (!entityId || typeof entityId !== 'string') {
     return res.status(400).json({ error: 'entityId가 필요합니다.' });
@@ -907,14 +945,16 @@ app.post('/api/entities/rename', async (req, res) => {
     return res.status(400).json({ error: '새 이름을 입력해주세요.' });
   }
 
-  if (currentConfigFiles.length !== 1) {
-    return res
-      .status(500)
-      .json({ error: '단일 설정 파일이 로드된 경우에만 엔터티 이름을 변경할 수 있습니다.' });
+  // Find config by portId if provided, otherwise fallback to finding by entityId
+  const configIndex = portId ? findConfigIndexByPortId(portId) : findConfigIndexForEntity(entityId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Entity not found in any loaded config' });
   }
 
+  const targetConfigFile = currentConfigFiles[configIndex];
+
   try {
-    const configPath = path.join(CONFIG_DIR, currentConfigFiles[0]);
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
     const fileContent = await fs.readFile(configPath, 'utf8');
     const loadedYamlFromFile = yaml.load(fileContent, { schema: HOMENET_BRIDGE_SCHEMA }) as {
       homenet_bridge: PersistableHomenetBridgeConfig;
@@ -965,11 +1005,11 @@ app.post('/api/entities/rename', async (req, res) => {
 
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
-    currentRawConfigs = [normalizedConfig];
-    currentConfigs = [normalizedConfig];
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
     rebuildPortMappings();
 
-    const targetBridge = bridges.find((instance) => instance.configFile === currentConfigFiles[0]);
+    const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
     targetBridge?.bridge.renameEntity(entityId, trimmedName, uniqueId);
 
     logger.info(
@@ -1008,12 +1048,15 @@ app.post('/api/entities/:entityId/revoke-discovery', (req, res) => {
 
 app.delete('/api/entities/:entityId', async (req, res) => {
   const { entityId } = req.params;
+  const portId = req.query.portId as string | undefined;
 
-  if (currentConfigFiles.length !== 1) {
-    return res.status(500).json({ error: '단일 설정 파일이 로드된 경우에만 삭제할 수 있습니다.' });
+  // Find config by portId if provided, otherwise fallback to finding by entityId
+  const configIndex = portId ? findConfigIndexByPortId(portId) : findConfigIndexForEntity(entityId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Entity not found in any loaded config' });
   }
 
-  const targetConfigFile = currentConfigFiles[0];
+  const targetConfigFile = currentConfigFiles[configIndex];
 
   try {
     const configPath = path.join(CONFIG_DIR, targetConfigFile);
@@ -1067,8 +1110,8 @@ app.delete('/api/entities/:entityId', async (req, res) => {
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
     // Update in-memory config
-    currentRawConfigs = [normalizedConfig];
-    currentConfigs = [normalizedConfig];
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
     rebuildPortMappings();
 
     logger.info(

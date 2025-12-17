@@ -56,6 +56,10 @@ COPY --from=builder /app /app
 # Environment setup
 ENV NODE_ENV=production
 
+# Inject Log Collector API Key
+ARG LOG_COLLECTOR_API_KEY
+ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
+
 # Setup run script
 COPY hassio-addon/run.sh /run.sh
 RUN chmod +x /run.sh

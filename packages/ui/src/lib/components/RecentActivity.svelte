@@ -14,24 +14,6 @@
     activities: ActivityLog[];
   }>();
 
-  let listElement: HTMLUListElement | undefined = $state();
-  let isPinned = $state(true);
-
-  function handleScroll() {
-    if (!listElement) return;
-    const { scrollTop, scrollHeight, clientHeight } = listElement;
-    // 스크롤이 바닥에 가까운지 확인 (20px 여유)
-    isPinned = scrollHeight - (scrollTop + clientHeight) < 20;
-  }
-
-  $effect(() => {
-    // activities 변경을 감지하기 위해 의존성 추가
-    activities;
-    if (listElement && isPinned) {
-      listElement.scrollTop = listElement.scrollHeight;
-    }
-  });
-
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ko-KR', {
@@ -47,8 +29,12 @@
   {#if activities.length === 0}
     <p>{$t('dashboard.recent_activity.empty')}</p>
   {:else}
-    <ul bind:this={listElement} onscroll={handleScroll}>
-      {#each activities as activity, index (`${activity.timestamp}-${index}`)}
+    <ul>
+      <!--
+        Use a composite key of timestamp and message to identify unique items.
+        Using index with reverse() causes the entire list to re-render/animate on every update.
+      -->
+      {#each [...activities].reverse() as activity (`${activity.timestamp}-${activity.message}`)}
         <li in:fade|local={{ duration: 300, easing: sineOut }}>
           <span class="time">{formatTime(activity.timestamp)}</span>
           <span class="message">{activity.message}</span>
@@ -60,14 +46,17 @@
 
 <style>
   .recent-activity-container {
-    height: 200px; /* Approximately 8 lines of small text */
+    height: 200px;
     overflow: hidden;
     position: relative;
     border: 1px solid rgba(148, 163, 184, 0.1);
     padding: 1rem;
+    padding-bottom: 0; /* Remove bottom padding to let UL handle it */
     border-radius: 8px;
     background: rgba(30, 41, 59, 0.5);
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
 
   h4 {
@@ -75,28 +64,47 @@
     font-size: 0.9rem;
     color: #cbd5e1;
     font-weight: 600;
+    flex-shrink: 0;
   }
 
   ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    height: calc(100% - 2rem);
+    /*
+      Use flex-grow to fill the remaining space.
+      Add bottom padding to content so the last item isn't covered by the gradient/scrollbar overlap area.
+    */
+    flex-grow: 1;
     overflow-y: auto;
+    overflow-x: auto;
     scrollbar-width: thin;
+    padding-bottom: 1rem;
   }
 
-  /* Fade-out effect at the top */
-  .recent-activity-container::before {
+  /* Fade-out effect at the bottom */
+  .recent-activity-container::after {
     content: '';
     position: absolute;
-    top: 2.5rem; /* Adjusted for new padding */
-    left: 0;
+    bottom: 0;
+    left: 0; /* Start from left edge (ignoring padding) */
     right: 0;
-    height: 1.5rem;
-    background: linear-gradient(to bottom, rgba(30, 41, 59, 1), transparent);
+    /*
+       Make the gradient height cover the bottom area.
+       Since we removed container bottom padding and added it to UL,
+       the scrollbar is at the very bottom of the container.
+       We raise the gradient slightly or make it transparent at the very bottom?
+       Actually, standard "fade out" usually sits *above* the scrollbar if possible.
+       But scrollbar is inside the element.
+
+       Let's stick to the requested visual "Gradient at bottom".
+    */
+    height: 3rem;
+    background: linear-gradient(to top, rgba(30, 41, 59, 1) 20%, transparent);
     pointer-events: none;
     z-index: 1;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
   }
 
   li {
@@ -106,6 +114,8 @@
     display: flex;
     gap: 0.75rem;
     font-family: monospace;
+    width: max-content;
+    min-width: 100%;
   }
 
   .time {
@@ -115,13 +125,12 @@
 
   .message {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: #cbd5e1;
   }
 
   p {
     color: #94a3b8;
     font-style: italic;
+    padding-bottom: 1rem; /* Add padding here too if empty */
   }
 </style>

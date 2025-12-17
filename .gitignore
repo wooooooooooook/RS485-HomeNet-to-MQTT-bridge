@@ -32,8 +32,9 @@ coverage
 .vscode/*
 !.vscode/settings.json
 
-# .refs
 packages/ui/vite.config.ts.timestamp-*.mjs
-deploy/docker/docker-compose.dev.yml
-
 verification/
+
+packages/core/config/frontend-setting.json
+packages/core/config/log_sharing.json
+packages/core/config/sim_commax.homenet_bridge.yaml

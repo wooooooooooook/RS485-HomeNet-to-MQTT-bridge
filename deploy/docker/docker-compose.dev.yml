@@ -53,7 +53,7 @@ services:
       SIMULATOR_INTERVAL_MS: '500'
       SIMULATOR_PROTOCOL: 'tcp'
       SIMULATOR_DEVICE: ${SYSTEM_TYPE}
-      CONFIG_PATH: packages/core/config/${SYSTEM_TYPE}.homenet_bridge.yaml
+      CONFIG_PATH: packages/core/config/examples/${SYSTEM_TYPE}.homenet_bridge.yaml
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
@@ -79,11 +79,12 @@ services:
     # network_mode: host
     environment:
       # SERIAL_PORT: 192.168.0.83:8888
-      SERIAL_PORT: rs485-simulator-dev:8888
+      # SERIAL_PORT: rs485-simulator-dev:8888
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'
-      CONFIG_FILE: packages/core/config/${SYSTEM_TYPE}.homenet_bridge.yaml
+      CONFIG_ROOT: /workspace/packages/core/config
+      CONFIG_FILES: ${SYSTEM_TYPE}.homenet_bridge.yaml,sim_commax.homenet_bridge.yaml
       LOG_LEVEL: info
       MQTT_TOPIC_PREFIX: homenet
     volumes:

@@ -36,7 +36,18 @@ dotenv.config();
 // --- Constants ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
+
+// CONFIG_ROOT 환경 변수 처리: 상대 경로는 process.cwd() 기준으로 해석
+const resolveConfigRoot = (): string => {
+  const configRoot = process.env.CONFIG_ROOT;
+  if (!configRoot) {
+    return path.resolve(__dirname, '../../core/config');
+  }
+  // 절대 경로인 경우 그대로 사용, 상대 경로인 경우 cwd 기준으로 resolve
+  return path.isAbsolute(configRoot) ? configRoot : path.resolve(process.cwd(), configRoot);
+};
+
+const CONFIG_DIR = resolveConfigRoot();
 const FRONTEND_SETTINGS_FILE = path.join(CONFIG_DIR, 'frontend-setting.json');
 type PersistableHomenetBridgeConfig = Omit<HomenetBridgeConfig, 'serials'> & {
   serials?: HomenetBridgeConfig['serials'];
@@ -69,7 +80,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -1180,7 +1191,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {});
+    await bridgeStartPromise.catch(() => { });
   }
 
   bridgeStartPromise = (async () => {

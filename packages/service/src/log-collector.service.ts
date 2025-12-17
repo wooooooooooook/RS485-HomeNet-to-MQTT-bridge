@@ -7,7 +7,17 @@ import { eventBus, logger, HomeNetBridge, logBuffer } from '@rs485-homenet/core'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const CONFIG_DIR = process.env.CONFIG_ROOT || path.resolve(__dirname, '../../core/config');
+// CONFIG_ROOT 환경 변수 처리: 상대 경로는 process.cwd() 기준으로 해석
+const resolveConfigRoot = (): string => {
+  const configRoot = process.env.CONFIG_ROOT;
+  if (!configRoot) {
+    return path.resolve(__dirname, '../../core/config');
+  }
+  // 절대 경로인 경우 그대로 사용, 상대 경로인 경우 cwd 기준으로 resolve
+  return path.isAbsolute(configRoot) ? configRoot : path.resolve(process.cwd(), configRoot);
+};
+
+const CONFIG_DIR = resolveConfigRoot();
 const LEGACY_CONSENT_FILE = path.join(CONFIG_DIR, '.share_logs');
 const LOG_CONFIG_FILE = path.join(CONFIG_DIR, 'log_sharing.json');
 
@@ -32,7 +42,7 @@ export class LogCollectorService {
   private packetCount = 0;
   private config: LogConfig = { consent: null, uid: null };
 
-  constructor() {}
+  constructor() { }
 
   async init(bridges: HomeNetBridge[], configFiles: ConfigFileContent[] = []) {
     this.bridges = bridges;
@@ -76,7 +86,7 @@ export class LogCollectorService {
       await this.saveConfig();
 
       // Remove legacy file after successful migration
-      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => {});
+      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => { });
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
         logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');

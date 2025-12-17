@@ -42,7 +42,7 @@ jobs:
         with:
           context: .
           file: hassio-addon-dev/Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: nubiz/homenet2mqtt:dev
 
@@ -81,6 +81,7 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add .
             git commit -m "Update homenet2mqtt-dev addon (Build ${{ needs.build.outputs.VERSION }})"
+            git pull --rebase
             git push
           else
             echo "No changes to sync."

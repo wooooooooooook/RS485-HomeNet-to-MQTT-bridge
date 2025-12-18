@@ -25,6 +25,7 @@
   "dependencies": {
     "cron-parser": "^4.9.0",
     "dotenv": "^16.4.5",
+    "isolated-vm": "^6.0.2",
     "js-yaml": "^4.1.0",
     "mqtt": "^5.3.4",
     "pino": "^10.1.0",

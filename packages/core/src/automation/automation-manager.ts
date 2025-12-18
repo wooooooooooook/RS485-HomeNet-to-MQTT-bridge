@@ -60,6 +60,44 @@ export class AutomationManager {
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
     this.mqttPublisher = mqttPublisher;
+
+    // Register CEL functions (exceptions to "pure function" rule)
+    // IMPORTANT: When testing with vitest mocks, logger might be a spy object.
+    // We bind directly to the logger instance to allow mocking in tests.
+    this.celExecutor.registerFunction('log(string): bool', (message: string) => {
+      logger.info({ context: 'CEL' }, `[automation] ${message}`);
+      return true;
+    });
+
+    this.celExecutor.registerFunction(
+      'command(string, string, dyn): bool',
+      (entityId: string, command: string, value: any) => {
+        // Run command execution in background
+        // Use setImmediate or nextTick logic if strictly needed, but here we just fire and forget.
+        // We catch the promise to avoid unhandled rejections.
+        this.runCommandFromCel(entityId, command, value).catch((err) => {
+          logger.error({ error: err }, '[automation] CEL command failed');
+        });
+        return true;
+      },
+    );
+  }
+
+  private async runCommandFromCel(entityId: string, command: string, value: any) {
+    const entity = findEntityById(this.config, entityId);
+    if (!entity) {
+      logger.warn({ entityId }, '[automation] CEL command: Entity not found');
+      return;
+    }
+    // Handle BigInt from CEL
+    const safeValue = typeof value === 'bigint' ? Number(value) : value;
+
+    const packet = this.packetProcessor.constructCommandPacket(entity, command, safeValue);
+    if (!packet) {
+      logger.warn({ entityId, command }, '[automation] CEL command: Failed to construct packet');
+      return;
+    }
+    await this.commandManager.send(entity, packet);
   }
 
   public addAutomation(config: AutomationConfig) {

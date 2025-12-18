@@ -59,7 +59,7 @@ describe('2-Byte Checksum', () => {
 
       try {
         // Test packet: 0xF7 0x01 0xAA 0xBB
-        const bytes = [0xf7, 0x01, 0xAA, 0xBB];
+        const bytes = [0xf7, 0x01, 0xaa, 0xbb];
 
         let result = null;
         for (const byte of bytes) {
@@ -114,7 +114,7 @@ describe('2-Byte Checksum', () => {
       const packet = generator.constructCommandPacket(mockEntity, 'command_on');
 
       // Expected: 0xF7 0x01 [0xAA 0xBB]
-      expect(packet).toEqual([0xf7, 0x01, 0xAA, 0xBB]);
+      expect(packet).toEqual([0xf7, 0x01, 0xaa, 0xbb]);
     });
   });
 });

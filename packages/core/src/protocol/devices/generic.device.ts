@@ -101,26 +101,34 @@ export class GenericDevice extends Device {
       const dataPart = Buffer.from(commandPacket);
       const checksumType = this.protocolConfig.packet_defaults.tx_checksum as ChecksumType;
 
-      const standardChecksums = new Set(['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx', 'none']);
+      const standardChecksums = new Set([
+        'add',
+        'xor',
+        'add_no_header',
+        'xor_no_header',
+        'samsung_rx',
+        'samsung_tx',
+        'none',
+      ]);
 
       if (typeof checksumType === 'string') {
         if (standardChecksums.has(checksumType)) {
-           const checksum = calculateChecksum(headerPart, dataPart, checksumType);
-           commandPacket.push(checksum);
+          const checksum = calculateChecksum(headerPart, dataPart, checksumType);
+          commandPacket.push(checksum);
         } else {
-           // CEL Expression
-           // Pass full packet (header + cmd) as 'data' for checksum calculation
-           const fullData = [...txHeader, ...commandPacket];
-           const result = this.celExecutor.execute(checksumType, {
-               data: fullData,
-               len: fullData.length
-           });
-           if (typeof result === 'number') {
-               commandPacket.push(result);
-           } else if (Array.isArray(result)) {
-               // If returns array (like 2-byte checksum)
-               commandPacket.push(...result);
-           }
+          // CEL Expression
+          // Pass full packet (header + cmd) as 'data' for checksum calculation
+          const fullData = [...txHeader, ...commandPacket];
+          const result = this.celExecutor.execute(checksumType, {
+            data: fullData,
+            len: fullData.length,
+          });
+          if (typeof result === 'number') {
+            commandPacket.push(result);
+          } else if (Array.isArray(result)) {
+            // If returns array (like 2-byte checksum)
+            commandPacket.push(...result);
+          }
         }
       }
     }

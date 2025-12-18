@@ -11,6 +11,7 @@ export class CelExecutor {
     this.env.registerVariable('x', 'int');
     this.env.registerVariable('data', 'list'); // list(int)
     this.env.registerVariable('state', 'map');
+    this.env.registerVariable('states', 'map');
 
     // Helper: BCD to Int
     this.env.registerFunction('bcd_to_int(int): int', (bcd: bigint) => {
@@ -45,6 +46,10 @@ export class CelExecutor {
     );
   }
 
+  public registerFunction(name: string, impl: (...args: any[]) => any) {
+    this.env.registerFunction(name, impl);
+  }
+
   public execute(script: string, contextData: Record<string, any>): any {
     try {
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'
@@ -65,6 +70,10 @@ export class CelExecutor {
 
       if (contextData.state) {
         safeContext.state = contextData.state;
+      }
+
+      if (contextData.states) {
+        safeContext.states = contextData.states;
       }
 
       const res = this.env.evaluate(script, safeContext);

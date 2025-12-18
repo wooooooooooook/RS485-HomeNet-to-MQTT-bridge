@@ -37,6 +37,12 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 *   `data`: 빈 배열 (`[]`)
 *   `state`: 해당 장치의 현재 상태 맵 (Map).
 
+### 3. 자동화 (Automation `guard`)
+
+자동화 실행 여부를 결정하는 조건식에서 사용합니다.
+
+*   `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다.
+
 ## 헬퍼 함수
 
 홈넷 환경에 필요한 비트 연산 및 BCD 변환 함수를 제공합니다.
@@ -130,10 +136,15 @@ CEL 도입으로 인해 기존 `!lambda`에서 가능했던 일부 기능이 더
     *   `for`, `while` 등의 반복문을 사용할 수 없습니다.
     *   따라서 가변 길이의 데이터를 순회하며 체크섬을 계산하거나 복잡한 알고리즘을 수행하는 로직은 단일 표현식으로 구현하기 어렵습니다.
 
-2.  **부작용 없음 (No Side Effects)**
-    *   CEL 표현식은 순수(Pure)해야 하며, 외부 상태를 변경하거나 부작용을 일으키는 코드를 실행할 수 없습니다.
-    *   예: `console.log()`로 로그를 출력하거나, `id('device').write_command(...)`와 같이 다른 장치를 제어하는 함수를 호출할 수 없습니다.
-    *   참고: *`packages/core/config/examples/samsung_sds_door.homenet_bridge.yaml` 내 주석 참조 ("Complex side-effect logic is not supported in CEL")*
+2.  **부작용 없음 (No Side Effects) - *일부 예외 존재***
+    *   기본적으로 CEL 표현식은 순수(Pure)해야 합니다.
+    *   **예외 (자동화 Guard 내에서만 사용 가능):**
+        *   `log(message)`: 로그를 출력합니다. (리턴값: true)
+            *   예: `log('Automation triggered!')`
+        *   `command(entity_id, command_name, value)`: 다른 엔티티에 명령을 전송합니다. (리턴값: true)
+            *   예: `command('light_livingroom', 'power', 'on')`
+    *   위 함수들은 `guard` 조건식 내에서 사이드 이펙트를 발생시키기 위해 의도적으로 허용되었습니다. 논리 연산자(`&&`)를 사용하여 조건 검사와 함께 사용할 수 있습니다.
+        *   예: `states['light_1']['power'] == 'on' && command('fan_1', 'power', 'on')`
 
 3.  **제한된 표준 라이브러리**
     *   JavaScript의 모든 표준 객체(`Math`, `Date` 등)를 사용할 수 없으며, 제공된 연산자와 헬퍼 함수만 사용 가능합니다.

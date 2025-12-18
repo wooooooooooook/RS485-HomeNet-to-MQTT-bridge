@@ -9,6 +9,7 @@ export class PacketParser {
   private defaults: PacketDefaults;
   private celExecutor: CelExecutor;
   private headerBuffer: Buffer | null = null;
+  private footerBuffer: Buffer | null = null;
 
   private readonly checksumTypes = new Set([
     'add',
@@ -26,6 +27,9 @@ export class PacketParser {
     this.celExecutor = new CelExecutor();
     if (this.defaults.rx_header && this.defaults.rx_header.length > 0) {
       this.headerBuffer = Buffer.from(this.defaults.rx_header);
+    }
+    if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
+      this.footerBuffer = Buffer.from(this.defaults.rx_footer);
     }
   }
 
@@ -99,28 +103,28 @@ export class PacketParser {
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + 1 + checksumLen + this.defaults.rx_footer.length;
 
-        if (this.buffer.length >= minLen) {
-          const footer = this.defaults.rx_footer;
-          // Scan buffer for footer sequence
-          for (let len = minLen; len <= this.buffer.length; len++) {
-            // Check if segment [0...len] ends with footer
-            let fMatch = true;
-            for (let f = 0; f < footer.length; f++) {
-              if (this.buffer[len - footer.length + f] !== footer[f]) {
-                fMatch = false;
-                break;
-              }
+        if (this.buffer.length >= minLen && this.footerBuffer) {
+          const footerLen = this.footerBuffer.length;
+          // Footer ends at 'len', so it starts at 'len - footerLen'.
+          // 'len' starts at 'minLen', so start search at 'minLen - footerLen'.
+          let searchIdx = minLen - footerLen;
+
+          // Optimization: Use indexOf to find footer candidates
+          while (searchIdx <= this.buffer.length - footerLen) {
+            const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
+            if (foundIdx === -1) break;
+
+            const len = foundIdx + footerLen;
+            if (this.verifyChecksum(this.buffer, len)) {
+              const packet = this.buffer.subarray(0, len);
+              packets.push([...packet]);
+              this.buffer = this.buffer.subarray(len);
+              matchFound = true;
+              break;
             }
 
-            if (fMatch) {
-              if (this.verifyChecksum(this.buffer, len)) {
-                const packet = this.buffer.subarray(0, len);
-                packets.push([...packet]);
-                this.buffer = this.buffer.subarray(len);
-                matchFound = true;
-                break;
-              }
-            }
+            // Footer found but checksum failed. Continue searching after this footer.
+            searchIdx = foundIdx + 1;
           }
         }
       } else {

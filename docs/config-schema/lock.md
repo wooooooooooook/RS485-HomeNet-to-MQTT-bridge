@@ -7,7 +7,7 @@
 
 ## 옵션 필드 (상태)
 - `state`: 장치에서 오는 기본 상태 패킷 서명.
-- 잠금 단계: `state_locked`, `state_unlocked`, `state_locking`, `state_unlocking`, `state_jammed` — 모두 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- 잠금 단계: `state_locked`, `state_unlocked`, `state_locking`, `state_unlocking`, `state_jammed` — 모두 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 CEL 표현식.
 
 ## 옵션 필드 (명령)
 - `command_lock`, `command_unlock`: 잠금/해제 패킷.

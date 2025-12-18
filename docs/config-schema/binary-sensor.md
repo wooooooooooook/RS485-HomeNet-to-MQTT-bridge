@@ -8,7 +8,7 @@
 ## 옵션 필드
 - `state_on`: 켜짐 상태를 나타내는 서명. `offset`과 `data`로 특정 비트를 비교합니다.
 - `state_off`: 꺼짐 상태 서명.
-- `state_*`는 모두 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다(`!lambda`)로 작성할 수 있습니다.
+- `state_*`는 모두 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 CEL 표현식로 작성할 수 있습니다.
 
 ## 예제: 도어벨 패킷 매칭
 `hyundai_door.homenet_bridge.yaml`에서는 헤더·푸터를 전역으로 설정하고, 오프셋 0 바이트를 확인해 벨 상태를 판별합니다.【F:packages/core/config/hyundai_door.homenet_bridge.yaml†L17-L38】

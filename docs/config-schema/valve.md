@@ -6,7 +6,7 @@
 - `state`: 밸브 상태를 식별하는 기본 패킷 서명.
 
 ## 옵션 필드 (상태)
-- 상태 비트: `state_open`, `state_closed`, `state_opening`, `state_closing` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- 상태 비트: `state_open`, `state_closed`, `state_opening`, `state_closing` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 CEL 표현식.
 - 위치(0~100): `state_position` — `StateNumSchema`로 현재 열림 정도를 표현.
 - `reports_position`: 장치가 이동 중 위치를 주기적으로 보고하는지 여부(Boolean).
 

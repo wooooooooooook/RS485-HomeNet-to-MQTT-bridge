@@ -166,7 +166,7 @@ select:
       data: [0xC0, 0x00]
 ```
 
-### 상태 파싱을 위한 Lambda 예제
+### 상태 파싱을 위한 CEL 예제
 ```yaml
 select:
   - id: operation_mode
@@ -179,12 +179,11 @@ select:
       - "ON"
       - "AUTO"
       - "MANUAL"
-    state_select: !lambda |-
-      if (data[1] == 0x00) return "OFF";
-      if (data[1] == 0x01) return "ON";
-      if (data[1] == 0x02) return "AUTO";
-      if (data[1] == 0x03) return "MANUAL";
-      return "OFF";
+    state_select: >-
+      data[1] == 0x00 ? "OFF" :
+      (data[1] == 0x01 ? "ON" :
+      (data[1] == 0x02 ? "AUTO" :
+      (data[1] == 0x03 ? "MANUAL" : "OFF")))
     command_select:
       data: [0xC1, 0x00]
 ```
@@ -528,7 +527,7 @@ fan:
       - "절전"
       - "터보"
       - "취침"
-    state_preset_mode: { offset: 3, data: [0x00] }  # lambda로 파싱
+    state_preset_mode: { offset: 3, data: [0x00] }  # CEL로 파싱
     command_preset_mode:
       data: [0x41, 0x01, 0x00, 0x00]
       value_offset: 3
@@ -611,15 +610,14 @@ valve:
 
 ## 참고 사항
 
-### Lambda 표현식
-일부 고급 기능은 JavaScript Lambda 표현식을 사용하여 커스텀 로직을 구현할 수 있습니다:
+### CEL 표현식
+일부 고급 기능은 CEL (Common Expression Language) 표현식을 사용하여 커스텀 로직을 구현할 수 있습니다:
 
 ```yaml
-state_select: !lambda |-
-  // packet 배열에서 값을 읽어 옵션 문자열 반환
-  if (packet[1] == 0x00) return "OFF";
-  if (packet[1] == 0x01) return "ON";
-  return "UNKNOWN";
+state_select: >-
+  // data 배열에서 값을 읽어 옵션 문자열 반환
+  data[1] == 0x00 ? "OFF" :
+  (data[1] == 0x01 ? "ON" : "UNKNOWN")
 ```
 
 ### 바이트 순서 (Endianness)

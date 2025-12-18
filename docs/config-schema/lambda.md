@@ -1,3 +1,10 @@
+# ⚠️ Deprecation Warning
+
+**이 문서는 더 이상 유효하지 않습니다.** `!lambda` 기능은 **CEL (Common Expression Language)**로 대체되었습니다.
+최신 작성법은 **[CEL 가이드](../CEL_GUIDE.md)**를 참고하세요.
+
+---
+
 # Lambda 작성법
 
 `!lambda`를 사용하면 YAML에 직접 자바스크립트 코드를 적어 패킷 파싱·명령 생성·체크섬 계산을 동적으로 처리할 수 있습니다. 내부에서는 `vm` 샌드박스에서 실행되며, 타입 정의(`LambdaConfig`, `StateLambdaConfig`, `CommandLambdaConfig`)에 따라 전달되는 컨텍스트가 다릅니다.

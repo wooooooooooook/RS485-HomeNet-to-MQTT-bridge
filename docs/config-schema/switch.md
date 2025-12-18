@@ -6,7 +6,7 @@ On/Off 토글 장치는 `switch` 엔티티를 사용합니다. `type`은 `switch
 - `state`: 이 스위치가 포함된 패킷을 구분하는 서명.
 
 ## 옵션 필드
-- 전원 상태: `state_on`, `state_off` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- 전원 상태: `state_on`, `state_off` — [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 CEL 표현식.
 - 명령: `command_on`, `command_off`(필요 시 `value_offset`/`homenet_logic` 사용), `command_update`(상태 재요청).
 
 ## 예제: 도어 호출 스위치

@@ -3,7 +3,7 @@
 벨/문열림 등 단순 트리거를 보내는 장치는 `button` 엔티티를 사용합니다. `type`은 `button`이며, 공통 필드(`id`, `name`, `packet_parameters`, `device_class`, `icon`)를 함께 지정할 수 있습니다.
 
 ## 필수 필드
-- `command_press`: 버튼 눌림 시 송신할 패킷. [`CommandSchema`](./lambda.md#commandschema-필드) 또는 람다로 작성합니다.
+- `command_press`: 버튼 눌림 시 송신할 패킷. [`CommandSchema`](./lambda.md#commandschema-필드) 또는 CEL 표현식으로 작성합니다.
 
 ## 옵션 필드
 - 추가 필드는 없지만, `command_press`에 `homenet_logic`을 넣어 다중 패킷 전송이나 엔티티 상태 조건부 전송을 구성할 수 있습니다.

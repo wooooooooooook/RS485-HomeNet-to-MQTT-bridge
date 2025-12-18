@@ -1,6 +1,6 @@
 # Automation 블록 사양
 
-`homenet_bridge.automation`은 수신 상태/패킷/주기/시동 이벤트를 감지해 MQTT 발행이나 장치 명령을 실행하는 규칙 엔진이다. 기존 엔티티 설정에서 사용하는 `StateSchema`/`CommandSchema`와 `!lambda` DSL을 재사용하며, 모든 예시는 `homenet_bridge` 최상위 키 안에서 작성한다.
+`homenet_bridge.automation`은 수신 상태/패킷/주기/시동 이벤트를 감지해 MQTT 발행이나 장치 명령을 실행하는 규칙 엔진이다. 기존 엔티티 설정에서 사용하는 `StateSchema`/`CommandSchema`와 CEL 표현식을 재사용하며, 모든 예시는 `homenet_bridge` 최상위 키 안에서 작성한다.
 
 ## 기본 구조
 ```yaml
@@ -12,9 +12,9 @@ homenet_bridge:
       trigger:                    # 하나 이상
         - type: state | packet | schedule | startup
           ...                     # 트리거별 세부 필드
-          guard: "return ..."    # 선택, true 일 때만 then 실행
+          guard: "data[0] == 1"   # 선택, CEL 표현식이 true 일 때만 then 실행
       then:                       # 필수, guard 통과 시 순차 실행
-        - action: command | publish | log | delay | script
+        - action: command | publish | log | delay
           ...                     # 액션별 세부 필드
       else: []                    # 선택, guard=false 일 때 실행
       enabled: true               # 기본값
@@ -47,16 +47,13 @@ homenet_bridge:
   - `message`: 로그 메시지.
 - `action: delay`
   - `milliseconds`: 대기 시간(ms 또는 `500ms`/`2s`).
-- `action: script`
-  - `code`: `"return ..."` 또는 `!lambda` 코드. 실행 컨텍스트는 아래 참조.
 
-### guard와 실행 컨텍스트
-`guard`와 `script`는 `LambdaExecutor`로 평가되며, 다음 헬퍼에 접근할 수 있다.
-- `id('<entity>')`: 상태를 가진 Proxy 객체. `id(light_1).state_on`처럼 읽거나 `id(light_2).command_on()`으로 명령을 보낼 수 있다.
-- `states`: 모든 엔티티 상태 스냅샷.
-- `command(entityId, command, value?)`: 명령 실행 헬퍼.
-- `publish(topic, payload, retain?)`: MQTT 발행 헬퍼.
-- `trigger`: 현재 트리거 정보(`type`, `state`/`packet`, `timestamp`).
+### Guard (CEL 표현식)
+`guard`는 CEL(Common Expression Language)로 평가되며, 현재 다음 변수에 접근할 수 있습니다.
+- `state`: 트리거된 엔티티의 상태 객체 (state 트리거인 경우).
+- `data`: 수신된 패킷 배열 (packet 트리거인 경우).
+
+> **주의**: 기존의 `id()`, `states` 등의 헬퍼 함수는 CEL 환경에서 지원되지 않습니다.
 
 ### 예시
 ```yaml

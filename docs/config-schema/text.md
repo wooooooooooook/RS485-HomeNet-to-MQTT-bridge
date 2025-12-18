@@ -4,7 +4,7 @@
 
 ## 필수/옵션 필드 (상태)
 - `state`: 이 텍스트 상태가 포함된 패킷 서명.
-- `state_text`: 문자열 추출용 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 람다.
+- `state_text`: 문자열 추출용 [`StateSchema`](./lambda.md#stateschema와-statenumschema-필드) 또는 CEL 표현식.
 - 길이 제약: `min_length`, `max_length`.
 - `pattern`: 입력 검증용 정규식 문자열.
 - `mode`: `text`(일반) 또는 `password`(별표 처리).

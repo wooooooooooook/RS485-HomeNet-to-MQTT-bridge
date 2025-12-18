@@ -23,7 +23,7 @@
 - 효과: `command_effect`.
 - 전환 시간: `default_transition_length`(초 단위 기본 페이드 값).
 
-모든 `command_*`는 [`CommandSchema`](./lambda.md#commandschema-필드) 또는 람다로 작성할 수 있습니다.
+모든 `command_*`는 [`CommandSchema`](./lambda.md#commandschema-필드) 또는 CEL 표현식으로 작성할 수 있습니다.
 
 ## 예제: 두 채널 동시 제어 람다
 `kocom.homenet_bridge.yaml`에서는 한 패킷으로 두 채널을 제어하기 위해 람다에서 다른 조명 상태를 함께 실어 보냅니다.【F:packages/core/config/examples/kocom.homenet_bridge.yaml†L22-L41】

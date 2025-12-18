@@ -109,8 +109,15 @@ export class LambdaExecutor {
         `(function() { ${lambda.script} \n})()`
       );
 
-      const result = userScript.runSync(context, { timeout: 100 });
-      return result;
+      // 4. Run and Copy Result
+      // We use 'reference: true' to always get a handle to the result (primitive or object)
+      // and then copy it out. This handles Arrays/Objects correctly which default runSync might not return directly.
+      const resultRef = userScript.runSync(context, { timeout: 100, reference: true });
+
+      if (resultRef instanceof ivm.Reference) {
+        return resultRef.copySync();
+      }
+      return resultRef;
 
     } catch (error) {
       logger.error({ error, script: lambda.script }, '[Lambda] Execution failed');

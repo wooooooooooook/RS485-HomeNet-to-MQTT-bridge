@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
+  import Button from '../Button.svelte';
 
   let { portId } = $props<{ portId: string }>();
 
@@ -54,13 +55,9 @@
   </div>
 
   <div class="controls">
-    <button class="primary" onclick={runTest} disabled={isRunning}>
-      {#if isRunning}
-        {$t('analysis.latency.running')}
-      {:else}
-        {$t('analysis.latency.start')}
-      {/if}
-    </button>
+    <Button onclick={runTest} isLoading={isRunning}>
+      {$t('analysis.latency.start')}
+    </Button>
   </div>
 
   {#if error}
@@ -115,27 +112,6 @@
 
   .controls {
     margin-bottom: 1rem;
-  }
-
-  button.primary {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-  }
-
-  button.primary:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  button.primary:disabled {
-    background: #475569;
-    cursor: not-allowed;
-    opacity: 0.7;
   }
 
   .error-message {

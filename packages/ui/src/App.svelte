@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { isLoading, locale } from 'svelte-i18n';
+  import { isLoading, locale, t } from 'svelte-i18n';
+  import { get } from 'svelte/store';
   import './lib/i18n';
   import type {
     BridgeInfo,
@@ -358,7 +359,7 @@
       const data = await apiRequest<ActivityLog[]>('./api/activity/recent');
       activityLogs = data;
     } catch (err) {
-      activityError = err instanceof Error ? err.message : '최근 활동을 불러오지 못했습니다.';
+      activityError = err instanceof Error ? err.message : get(t)('errors.ACTIVITY_LOAD_FAILED');
     } finally {
       activityLoading = false;
     }
@@ -374,7 +375,7 @@
         locale.set(frontendSettings.locale);
       }
     } catch (err) {
-      settingsError = err instanceof Error ? err.message : '프론트 설정을 불러오지 못했습니다.';
+      settingsError = err instanceof Error ? err.message : get(t)('errors.SETTINGS_LOAD_FAILED');
       frontendSettings = DEFAULT_FRONTEND_SETTINGS;
     } finally {
       settingsLoading = false;
@@ -391,7 +392,7 @@
       });
       frontendSettings = data.settings;
     } catch (err) {
-      settingsError = err instanceof Error ? err.message : '프론트 설정을 저장하지 못했습니다.';
+      settingsError = err instanceof Error ? err.message : get(t)('errors.SETTINGS_SAVE_FAILED');
       throw err;
     } finally {
       settingsSaving = false;
@@ -443,7 +444,7 @@
     closeStream();
 
     connectionStatus = 'connecting';
-    statusMessage = 'MQTT 스트림을 연결하는 중입니다...';
+    statusMessage = 'mqtt.connecting';
 
     // ingress 환경에서는 window.location을 기준으로 해야 Supervisor 토큰이 포함된다
     const baseUrl = typeof window !== 'undefined' ? window.location.href : document.baseURI;
@@ -550,7 +551,7 @@
 
       addToast({
         type: 'command',
-        title: `${data.entity || data.entityId} 명령 전송`,
+        title: get(t)('toasts.command_sent', { values: { entity: data.entity || data.entityId } }),
         message:
           data.value !== undefined
             ? `${data.command} → ${formatToastValue(data.value)}`
@@ -580,8 +581,10 @@
       const summary = formatStateSummary(data.state);
       addToast({
         type: 'state',
-        title: `${extractEntityIdFromTopic(data.topic)} 상태 업데이트`,
-        message: summary || data.payload || '상태가 갱신되었습니다.',
+        title: get(t)('toasts.state_update', {
+          values: { entity: extractEntityIdFromTopic(data.topic) },
+        }),
+        message: summary || data.payload || get(t)('toasts.state_updated'),
         timestamp: data.timestamp,
       });
     };
@@ -604,7 +607,7 @@
 
     socket.addEventListener('open', () => {
       connectionStatus = 'connected';
-      statusMessage = 'MQTT 스트림 연결 완료';
+      statusMessage = 'mqtt.connected';
     });
 
     socket.addEventListener('message', (event) => {
@@ -690,7 +693,7 @@
       availableCommands = data.commands;
       // Initialize inputs with default values
     } catch (err) {
-      commandsError = err instanceof Error ? err.message : '명령 목록을 불러오지 못했습니다.';
+      commandsError = err instanceof Error ? err.message : get(t)('errors.COMMANDS_LOAD_FAILED');
     } finally {
       commandsLoading = false;
     }
@@ -723,7 +726,7 @@
   async function renameEntityRequest(entityId: string, newName: string, portId?: string) {
     const trimmed = newName.trim();
     if (!trimmed) {
-      renameError = '새 이름을 입력해주세요.';
+      renameError = get(t)('errors.RENAME_EMPTY_NAME');
       return;
     }
 
@@ -743,12 +746,12 @@
 
       addToast({
         type: 'state',
-        title: '엔티티 이름 변경',
-        message: `${trimmed} 으로 이름이 변경되었습니다.`,
+        title: get(t)('toasts.entity_renamed_title'),
+        message: get(t)('toasts.entity_renamed_message', { values: { name: trimmed } }),
         timestamp: new Date().toISOString(),
       });
     } catch (err) {
-      renameError = err instanceof Error ? err.message : '이름 변경에 실패했습니다.';
+      renameError = err instanceof Error ? err.message : get(t)('errors.RENAME_FAILED');
     } finally {
       renamingEntityId = null;
     }

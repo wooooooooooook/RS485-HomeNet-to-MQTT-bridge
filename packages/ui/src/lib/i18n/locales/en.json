@@ -18,7 +18,22 @@
       "desc": "Send anonymized logs and packets (1000) to the developer for troubleshooting.",
       "enable": "Enable Log Sharing",
       "uid_title": "User ID",
-      "uid_desc": "Anonymized Identifier: {uid}"
+      "uid_desc": "Anonymized Identifier: {uid}",
+      "consent_modal": {
+        "title": "Log & Data Sharing Consent",
+        "desc": "To improve service quality and troubleshoot issues, anonymized data will be collected and sent to the developer.",
+        "collection_items_title": "Collected Data",
+        "collection_item_1": "System runtime environment (architecture, HA Supervisor status)",
+        "collection_item_2": "Add-on and package version information",
+        "collection_item_3": "Configuration file contents (YAML)",
+        "collection_item_4": "Received packet data (first 1000 packets)",
+        "collection_item_5": "Application runtime logs",
+        "collection_timing_title": "Collection Timing",
+        "collection_timing": "Packet collection starts upon consent and <strong>automatically stops after sending once when 1000 packets are collected.</strong> No continuous monitoring or collection.",
+        "privacy_note": "* No personal information is included. You can change this setting anytime.",
+        "decline": "Decline",
+        "accept": "Accept & Start"
+      }
     },
     "loading": "Loading settings...",
     "saving": "Saving..."
@@ -171,6 +186,19 @@
     "BRIDGE_NOT_STARTED": "Bridge has not started.",
     "BRIDGE_NOT_FOUND_FOR_PORT": "Bridge not found for port {portId}.",
     "BRIDGE_INFO_LOAD_FAILED": "Failed to load bridge information.",
-    "UNKNOWN_ERROR": "An unknown error occurred."
+    "UNKNOWN_ERROR": "An unknown error occurred.",
+    "ACTIVITY_LOAD_FAILED": "Failed to load recent activity.",
+    "SETTINGS_LOAD_FAILED": "Failed to load frontend settings.",
+    "SETTINGS_SAVE_FAILED": "Failed to save frontend settings.",
+    "COMMANDS_LOAD_FAILED": "Failed to load commands.",
+    "RENAME_EMPTY_NAME": "Please enter a new name.",
+    "RENAME_FAILED": "Failed to rename."
+  },
+  "toasts": {
+    "command_sent": "{entity} Command Sent",
+    "state_update": "{entity} State Updated",
+    "state_updated": "State has been updated.",
+    "entity_renamed_title": "Entity Renamed",
+    "entity_renamed_message": "Renamed to {name}."
   }
 }

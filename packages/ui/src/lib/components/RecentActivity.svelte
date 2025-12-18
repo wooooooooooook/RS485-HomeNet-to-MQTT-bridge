@@ -1,7 +1,7 @@
 <script lang="ts">
   import { sineOut } from 'svelte/easing';
   import { fade } from 'svelte/transition';
-  import { t } from 'svelte-i18n';
+  import { t, locale } from 'svelte-i18n';
 
   interface ActivityLog {
     timestamp: number;
@@ -17,7 +17,8 @@
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('ko-KR', {
+    const currentLocale = $locale === 'ko' ? 'ko-KR' : 'en-US';
+    return date.toLocaleTimeString(currentLocale, {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',

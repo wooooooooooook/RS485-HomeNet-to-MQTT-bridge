@@ -18,7 +18,22 @@
       "desc": "문제 해결을 위해 익명화된 로그와 패킷(1000개)을 개발자에게 전송합니다.",
       "enable": "로그 공유 활성화",
       "uid_title": "User ID",
-      "uid_desc": "익명화된 식별자입니다: {uid}"
+      "uid_desc": "익명화된 식별자입니다: {uid}",
+      "consent_modal": {
+        "title": "로그 및 데이터 공유 동의",
+        "desc": "서비스 품질 향상과 문제 해결을 위해 익명화된 데이터를 수집하여 개발자에게 전송합니다.",
+        "collection_items_title": "수집 항목",
+        "collection_item_1": "시스템 실행 환경 (아키텍처, HA Supervisor 여부)",
+        "collection_item_2": "애드온 및 패키지 버전 정보",
+        "collection_item_3": "설정 파일 내용 (YAML 구성)",
+        "collection_item_4": "수신 패킷 데이터 (최초 1000개)",
+        "collection_item_5": "애플리케이션 실행 로그",
+        "collection_timing_title": "수집 시점",
+        "collection_timing": "동의 시점부터 패킷 수집이 시작되며, <strong>1000개의 패킷이 모이면 1회 전송</strong> 후 자동으로 수집이 종료됩니다. 지속적으로 감시하거나 수집하지 않습니다.",
+        "privacy_note": "* 개인정보는 포함되지 않으며, 설정에서 언제든지 변경할 수 있습니다.",
+        "decline": "거절",
+        "accept": "동의 및 시작"
+      }
     },
     "loading": "설정을 불러오는 중...",
     "saving": "저장 중..."
@@ -171,6 +186,19 @@
     "BRIDGE_NOT_STARTED": "브리지가 시작되지 않았습니다.",
     "BRIDGE_NOT_FOUND_FOR_PORT": "포트 {portId}에 대한 브리지를 찾을 수 없습니다.",
     "BRIDGE_INFO_LOAD_FAILED": "브리지 정보를 불러오지 못했습니다.",
-    "UNKNOWN_ERROR": "알 수 없는 오류가 발생했습니다."
+    "UNKNOWN_ERROR": "알 수 없는 오류가 발생했습니다.",
+    "ACTIVITY_LOAD_FAILED": "최근 활동을 불러오지 못했습니다.",
+    "SETTINGS_LOAD_FAILED": "프론트 설정을 불러오지 못했습니다.",
+    "SETTINGS_SAVE_FAILED": "프론트 설정을 저장하지 못했습니다.",
+    "COMMANDS_LOAD_FAILED": "명령 목록을 불러오지 못했습니다.",
+    "RENAME_EMPTY_NAME": "새 이름을 입력해주세요.",
+    "RENAME_FAILED": "이름 변경에 실패했습니다."
+  },
+  "toasts": {
+    "command_sent": "{entity} 명령 전송",
+    "state_update": "{entity} 상태 업데이트",
+    "state_updated": "상태가 갱신되었습니다.",
+    "entity_renamed_title": "엔티티 이름 변경",
+    "entity_renamed_message": "{name} 으로 이름이 변경되었습니다."
   }
 }

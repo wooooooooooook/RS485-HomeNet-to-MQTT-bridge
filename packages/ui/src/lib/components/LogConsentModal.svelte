@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
+
   let { onclose } = $props<{ onclose: () => void }>();
 
   let isConsenting = $state(false);
@@ -28,38 +30,37 @@
     aria-labelledby="consent-title"
     aria-describedby="consent-desc"
   >
-    <h2 id="consent-title">로그 및 데이터 공유 동의</h2>
+    <h2 id="consent-title">{$t('settings.log_sharing.consent_modal.title')}</h2>
     <p id="consent-desc">
-      서비스 품질 향상과 문제 해결을 위해 익명화된 데이터를 수집하여 개발자에게 전송합니다.
+      {$t('settings.log_sharing.consent_modal.desc')}
     </p>
 
     <div class="details">
-      <h3>수집 항목</h3>
+      <h3>{$t('settings.log_sharing.consent_modal.collection_items_title')}</h3>
       <ul>
-        <li>시스템 실행 환경 (아키텍처, HA Supervisor 여부)</li>
-        <li>애드온 및 패키지 버전 정보</li>
-        <li>설정 파일 내용 (YAML 구성)</li>
-        <li>수신 패킷 데이터 (최초 1000개)</li>
-        <li>애플리케이션 실행 로그</li>
+        <li>{$t('settings.log_sharing.consent_modal.collection_item_1')}</li>
+        <li>{$t('settings.log_sharing.consent_modal.collection_item_2')}</li>
+        <li>{$t('settings.log_sharing.consent_modal.collection_item_3')}</li>
+        <li>{$t('settings.log_sharing.consent_modal.collection_item_4')}</li>
+        <li>{$t('settings.log_sharing.consent_modal.collection_item_5')}</li>
       </ul>
 
-      <h3>수집 시점</h3>
+      <h3>{$t('settings.log_sharing.consent_modal.collection_timing_title')}</h3>
       <p>
-        동의 시점부터 패킷 수집이 시작되며, <strong>1000개의 패킷이 모이면 1회 전송</strong> 후 자동으로
-        수집이 종료됩니다. 지속적으로 감시하거나 수집하지 않습니다.
+        {@html $t('settings.log_sharing.consent_modal.collection_timing')}
       </p>
 
       <p class="privacy-note">
-        * 개인정보는 포함되지 않으며, 설정에서 언제든지 변경할 수 있습니다.
+        {$t('settings.log_sharing.consent_modal.privacy_note')}
       </p>
     </div>
 
     <div class="actions">
       <button onclick={() => handleConsent(false)} disabled={isConsenting} class="secondary">
-        거절
+        {$t('settings.log_sharing.consent_modal.decline')}
       </button>
       <button onclick={() => handleConsent(true)} disabled={isConsenting} class="primary">
-        동의 및 시작
+        {$t('settings.log_sharing.consent_modal.accept')}
       </button>
     </div>
   </div>

@@ -206,6 +206,12 @@ const loadFrontendSettings = async (): Promise<FrontendSettings> => {
 };
 
 // --- Express Middleware & Setup ---
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  next();
+});
 app.use(express.json());
 
 // --- API Endpoints ---
@@ -1200,8 +1206,7 @@ app.use(
   (err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error({ err }, '[service] Request error');
     if (res.headersSent) return;
-    const message = err instanceof Error ? err.message : 'Internal Server Error';
-    res.status(500).json({ error: message });
+    res.status(500).json({ error: 'Internal Server Error' });
   },
 );
 

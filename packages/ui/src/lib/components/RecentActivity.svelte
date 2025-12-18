@@ -35,16 +35,16 @@
         Use a composite key of timestamp and code to identify unique items.
         Using index with reverse() causes the entire list to re-render/animate on every update.
       -->
-      {#each [...activities].reverse() as activity (`${activity.timestamp}-${activity.code}`)}
+      {#each [...activities].reverse() as activity, i (`${activity.timestamp}-${activity.code}-${activities.length - 1 - i}`)}
         <li in:fade|local={{ duration: 300, easing: sineOut }}>
           <span class="time">{formatTime(activity.timestamp)}</span>
           <span class="message">
             {#if activity.code.startsWith('log.')}
               {$t(`logs.${activity.code.replace('log.', '')}`, { values: activity.params })}
             {:else if activity.message}
-               {activity.message}
+              {activity.message}
             {:else}
-               {activity.code}
+              {activity.code}
             {/if}
           </span>
         </li>

@@ -18,6 +18,7 @@ export class StateManager {
   private ignoredEntityId: string | null = null;
   // Timestamp of the last received chunk (ms since epoch)
   private lastChunkTimestamp: number = 0;
+  private sharedStates?: Map<string, Record<string, any>>;
 
   constructor(
     portId: string,
@@ -25,12 +26,14 @@ export class StateManager {
     packetProcessor: PacketProcessor,
     mqttPublisher: MqttPublisher,
     mqttTopicPrefix: string,
+    sharedStates?: Map<string, Record<string, any>>,
   ) {
     this.portId = portId;
     this.config = config;
     this.packetProcessor = packetProcessor;
     this.mqttPublisher = mqttPublisher;
     this.mqttTopicPrefix = mqttTopicPrefix;
+    this.sharedStates = sharedStates;
 
     if (typeof (this.packetProcessor as any).on === 'function') {
       this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
@@ -83,6 +86,11 @@ export class StateManager {
     const currentState = this.deviceStates.get(deviceId) || {};
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
+
+    // Update shared global state if available
+    if (this.sharedStates) {
+      this.sharedStates.set(deviceId, newState);
+    }
 
     const topic = `${this.mqttTopicPrefix}/${deviceId}/state`;
     const payload = JSON.stringify(newState);

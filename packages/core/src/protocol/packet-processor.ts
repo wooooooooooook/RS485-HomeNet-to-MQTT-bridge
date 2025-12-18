@@ -26,9 +26,15 @@ export interface EntityStateProvider {
 
 export class PacketProcessor extends EventEmitter {
   private protocolManager: ProtocolManager;
+  private states?: Map<string, Record<string, any>>;
 
-  constructor(config: HomenetBridgeConfig, stateProvider: EntityStateProvider) {
+  constructor(
+    config: HomenetBridgeConfig,
+    stateProvider: EntityStateProvider,
+    states?: Map<string, Record<string, any>>,
+  ) {
     super();
+    this.states = states;
     const protocolConfig: ProtocolConfig = {
       packet_defaults: config.packet_defaults,
       rx_priority: 'data', // Default to data priority
@@ -117,7 +123,7 @@ export class PacketProcessor extends EventEmitter {
 
     // Using temporary device for now to keep it simple
     const device = new GenericDevice(entity, this.protocolManager['config']);
-    return device.constructCommand(commandName, value);
+    return device.constructCommand(commandName, value, this.states);
   }
 
   // Deprecated/Legacy method support if needed, or remove if we update call sites

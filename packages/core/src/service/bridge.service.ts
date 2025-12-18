@@ -534,7 +534,9 @@ export class HomeNetBridge {
       }
 
       const stateProvider = this.buildStateProvider(normalizedPortId);
-      const packetProcessor = new PacketProcessor(this.config, stateProvider);
+      // Create a shared states Map for this port context
+      const states = new Map<string, Record<string, any>>();
+      const packetProcessor = new PacketProcessor(this.config, stateProvider, states);
       logger.debug({ portId: normalizedPortId }, '[core] PacketProcessor initialized.');
 
       packetProcessor.on('parsed-packet', (data) => {
@@ -557,6 +559,7 @@ export class HomeNetBridge {
         packetProcessor,
         mqttPublisher,
         mqttTopicPrefix,
+        states, // Pass the shared states map to StateManager
       );
       const commandManager = new CommandManager(port, this.config, normalizedPortId);
       const mqttSubscriber = new MqttSubscriber(

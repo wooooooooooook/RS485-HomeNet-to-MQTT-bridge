@@ -12,7 +12,10 @@ export class GenericDevice extends Device {
     this.celExecutor = new CelExecutor();
   }
 
-  public parseData(packet: number[]): Record<string, any> | null {
+  public parseData(
+    packet: number[],
+    states?: Map<string, Record<string, any>>,
+  ): Record<string, any> | null {
     if (!this.matchesPacket(packet)) {
       return null;
     }
@@ -35,6 +38,7 @@ export class GenericDevice extends Device {
         const result = this.celExecutor.execute(script, {
           data: packet,
           x: null, // No previous value for state extraction usually
+          states: states ? Object.fromEntries(states) : {}, // Pass global states if available
         });
 
         if (result !== undefined && result !== null && result !== '') {
@@ -64,7 +68,11 @@ export class GenericDevice extends Device {
     return hasUpdates ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null {
     const entityConfig = this.config as any;
     const commandKey = `command_${commandName}`;
     const commandConfig = entityConfig[commandKey];
@@ -78,6 +86,7 @@ export class GenericDevice extends Device {
           x: value,
           data: [], // No packet data for command construction
           state: this.getState() || {},
+          states: states ? Object.fromEntries(states) : {}, // Pass global states
         });
 
         if (Array.isArray(result)) {

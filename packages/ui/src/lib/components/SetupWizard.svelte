@@ -74,8 +74,8 @@
         }
       }
 
-      // 사용자가 직접 설정 파일을 지정한 경우 1단계 건너뛰기
-      if (data.hasCustomConfig) {
+      // 초기화가 이미 끝났거나 사용자가 직접 설정 파일을 지정한 경우에만 1단계 건너뛰기
+      if (!data.requiresInitialization && data.hasCustomConfig) {
         currentStep = 'consent';
       }
     } catch (err) {

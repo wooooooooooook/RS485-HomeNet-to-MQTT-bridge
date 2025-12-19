@@ -9,7 +9,7 @@
 | `ezville` | `packages/core/config/examples/ezville.homenet_bridge.yaml` | 9600 8N1, `xor_add` 체크섬 | 조명, 난방 | 일부 조명은 inverted 상태 비트를 사용 |
 | `hyundai_imazu` | `packages/core/config/examples/hyundai_imazu.homenet_bridge.yaml` | 9600 8N1, XOR 체크섬 | 콘센트 전력 센서, 스위치 | 실시간 전력량 계산을 위해 센서/스위치 묶음 제공 |
 | `hyundai_door` | `packages/core/config/examples/hyundai_door.homenet_bridge.yaml` | 3880 8N1, `0x7F`/`0xEE` 헤더·푸터 | 도어벨 바이너리 센서, 문 개폐 버튼 | 도어폰 호출 명령과 공용 채널 분리 |
-| `kocom` | `packages/core/config/examples/kocom.homenet_bridge.yaml` | 9600 8N1, `0xAA55` 헤더, add 체크섬 | 다구역 조명, 난방 | 조명 명령은 다른 스위치 상태를 참조하도록 Legacy Lambda 사용 |
+| `kocom` | `packages/core/config/examples/kocom.homenet_bridge.yaml` | 9600 8N1, `0xAA55` 헤더, add 체크섬 | 다구역 조명, 난방 | 조명 명령은 다른 스위치 상태를 참조하도록 CEL 표현식 사용 |
 | `kocom_door` | `packages/core/config/examples/kocom_door.homenet_bridge.yaml` | 9600 8N1, `0x0D0D` 푸터 | 도어벨/도어락 센서·버튼 | 설치 현장의 벨/공용 채널을 분리 보고 |
 | `kocom_theart` | `packages/core/config/examples/kocom_theart.homenet_bridge.yaml` | 9600 8N1, `0xAA55` 헤더, add 체크섬 | 대형 거실 조명 그룹 | RX 길이 21바이트 고정, `command_update` 제공 |
 | `kocom_thinks` | `packages/core/config/examples/kocom_thinks.homenet_bridge.yaml` | 9600 8N1, `0xAA55` 헤더, add 체크섬 | 거실 조명 + 바닥 난방 | `command_update`로 동시 상태 갱신 |

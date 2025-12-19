@@ -40,8 +40,24 @@ const resolveConfigRoot = (): string => {
 
 const CONFIG_DIR = resolveConfigRoot();
 const FRONTEND_SETTINGS_FILE = path.join(CONFIG_DIR, 'frontend-setting.json');
+const DEFAULT_CONFIG_FILENAME = 'default.homenet_bridge.yaml';
+const LEGACY_DEFAULT_CONFIG_FILENAME = 'default.yaml';
+const CONFIG_INIT_MARKER = path.join(CONFIG_DIR, '.initialized');
+const CONFIG_RESTART_FLAG = path.join(CONFIG_DIR, '.restart-required');
+const EXAMPLES_DIR = path.resolve(__dirname, '../../core/config/examples');
 type PersistableHomenetBridgeConfig = Omit<HomenetBridgeConfig, 'serials'> & {
   serials?: HomenetBridgeConfig['serials'];
+};
+
+const fileExists = async (targetPath: string): Promise<boolean> => {
+  try {
+    await fs.access(targetPath);
+    return true;
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') return false;
+    throw error;
+  }
 };
 
 const stripLegacyKeysBeforeSave = (config: HomenetBridgeConfig): PersistableHomenetBridgeConfig => {
@@ -83,6 +99,33 @@ const parseEnvList = (
 };
 
 const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+
+const listExampleConfigs = async (): Promise<string[]> => {
+  try {
+    const files = await fs.readdir(EXAMPLES_DIR);
+    return files.filter((file) => file.endsWith('.yaml'));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') return [];
+    throw error;
+  }
+};
+
+const getDefaultConfigFilename = async (): Promise<string | null> => {
+  const defaultPath = path.join(CONFIG_DIR, DEFAULT_CONFIG_FILENAME);
+  const legacyDefaultPath = path.join(CONFIG_DIR, LEGACY_DEFAULT_CONFIG_FILENAME);
+
+  if (await fileExists(defaultPath)) return DEFAULT_CONFIG_FILENAME;
+  if (await fileExists(legacyDefaultPath)) return LEGACY_DEFAULT_CONFIG_FILENAME;
+  return null;
+};
+
+const triggerRestart = () => {
+  setTimeout(() => {
+    logger.info('[service] Restarting process to apply configuration changes');
+    process.exit(0);
+  }, 300);
+};
 
 const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
 
@@ -816,6 +859,80 @@ const findBridgeForEntity = (entityId: string): BridgeInstance | undefined => {
   return undefined;
 };
 
+const getInitializationState = async () => {
+  const [defaultConfigName, hasInitMarker] = await Promise.all([
+    getDefaultConfigFilename(),
+    fileExists(CONFIG_INIT_MARKER),
+  ]);
+
+  return {
+    defaultConfigName,
+    hasDefaultConfig: Boolean(defaultConfigName),
+    hasInitMarker,
+    requiresInitialization: !defaultConfigName && !hasInitMarker,
+  };
+};
+
+app.get('/api/config/examples', async (_req, res) => {
+  try {
+    const [state, examples] = await Promise.all([
+      getInitializationState(),
+      listExampleConfigs(),
+    ]);
+
+    res.json({
+      configRoot: CONFIG_DIR,
+      examples,
+      defaultConfigName: state.defaultConfigName,
+      requiresInitialization: state.requiresInitialization,
+      hasInitMarker: state.hasInitMarker,
+    });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to list example configs');
+    res.status(500).json({ error: '예제 설정을 불러오지 못했습니다.' });
+  }
+});
+
+app.post('/api/config/examples/select', async (req, res) => {
+  try {
+    const state = await getInitializationState();
+    if (!state.requiresInitialization) {
+      return res.status(400).json({ error: 'INITIALIZATION_NOT_ALLOWED' });
+    }
+
+    const { filename } = req.body || {};
+    if (typeof filename !== 'string' || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'INVALID_FILENAME' });
+    }
+
+    const examples = await listExampleConfigs();
+    if (!examples.includes(filename)) {
+      return res.status(404).json({ error: 'EXAMPLE_NOT_FOUND' });
+    }
+
+    const sourcePath = path.join(EXAMPLES_DIR, filename);
+    const targetPath = path.join(CONFIG_DIR, DEFAULT_CONFIG_FILENAME);
+
+    await fs.mkdir(CONFIG_DIR, { recursive: true });
+    await fs.copyFile(sourcePath, targetPath);
+    await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
+    await fs.writeFile(CONFIG_RESTART_FLAG, 'restart', 'utf-8');
+
+    logger.info({ filename, targetPath }, '[service] Default config seeded from example');
+
+    res.json({
+      ok: true,
+      target: DEFAULT_CONFIG_FILENAME,
+      restartScheduled: true,
+    });
+
+    triggerRestart();
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to select example config');
+    res.status(500).json({ error: '기본 설정 생성에 실패했습니다.' });
+  }
+});
+
 app.get('/api/commands', (_req, res) => {
   if (currentConfigs.length === 0) {
     return res.status(400).json({ error: 'Config not loaded' });
@@ -1456,25 +1573,58 @@ server.listen(port, async () => {
   logger.info(`Service listening on port ${port}`);
   try {
     logger.info('[service] Initializing bridge on startup...');
-    const configFilesFromEnv = envConfigFiles.values;
-    const availableConfigFiles =
-      configFilesFromEnv.length > 0
-        ? configFilesFromEnv
-        : (await fs.readdir(CONFIG_DIR)).filter((file) => /\.homenet_bridge\.ya?ml$/.test(file));
+    const initState = await getInitializationState();
 
-    if (availableConfigFiles.length === 0) {
+    if (initState.requiresInitialization) {
+      bridgeStatus = 'error';
+      bridgeError = 'CONFIG_INITIALIZATION_REQUIRED';
+      currentConfigFiles = [];
+      logger.warn(
+        '[service] No default configuration found and .initialized is missing. Exposing example list for selection.',
+      );
+      return;
+    }
+
+    const configFilesFromEnv = envConfigFiles.values;
+    const discoveredConfigFiles = (await fs.readdir(CONFIG_DIR)).filter(
+      (file) =>
+        file === DEFAULT_CONFIG_FILENAME ||
+        file === LEGACY_DEFAULT_CONFIG_FILENAME ||
+        /\.homenet_bridge\.ya?ml$/.test(file),
+    );
+
+    const shouldPersistInitMarker = !initState.hasInitMarker && Boolean(initState.defaultConfigName);
+
+    const availableConfigFiles = (() => {
+      if (!initState.hasInitMarker && initState.defaultConfigName) {
+        const remaining = (configFilesFromEnv.length > 0 ? configFilesFromEnv : discoveredConfigFiles).filter(
+          (file) => file !== initState.defaultConfigName,
+        );
+        return [initState.defaultConfigName, ...remaining];
+      }
+
+      return configFilesFromEnv.length > 0 ? configFilesFromEnv : discoveredConfigFiles;
+    })();
+
+    const uniqueConfigFiles = [...new Set(availableConfigFiles)];
+
+    if (uniqueConfigFiles.length === 0) {
       throw new Error('No homenet_bridge configuration files found in config directory.');
     }
 
     logger.info(
       {
-        configFiles: availableConfigFiles.map((file) => path.basename(file)),
+        configFiles: uniqueConfigFiles.map((file) => path.basename(file)),
         configRoot: CONFIG_DIR,
       },
       '[service] Starting bridge with configuration files',
     );
 
-    await loadAndStartBridges(availableConfigFiles);
+    await loadAndStartBridges(uniqueConfigFiles);
+
+    if (shouldPersistInitMarker && !(await fileExists(CONFIG_INIT_MARKER))) {
+      await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
+    }
   } catch (err) {
     logger.error({ err }, '[service] Initial bridge start failed');
     bridgeStatus = 'error';

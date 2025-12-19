@@ -29,9 +29,18 @@
 
 6. 애드온의 webUI는 현재 패킷 수신상태 확인 및 등록된 엔티티의 상태, 명령패킷보내기 등의 기능이 있고 패킷간격분석이있는데, 명령이 계속 씹히는 경우에 패킷 간격과 겹치지 않는 딜레이를 설정해보시라고 넣었습니다.
 
-​
+## 초기화 및 기본 설정 파일
+- 기본 번들 설정 파일은 `packages/core/config/commax.homenet_bridge.yaml`이며 추가 예제는 `packages/core/config/examples/`에 있습니다.
+- `/homeassistant/homenet2mqtt`에 `default.homenet_bridge.yaml` 또는 `default.yaml`이 없고 `.initialized` 파일도 없으면 `/api/config/examples`에서 예제 목록을 내려주며, 선택한 항목이 `default.homenet_bridge.yaml`으로 복사된 뒤 `.initialized`/`.restart-required`가 생성됩니다. 서버 프로세스는 종료되고 애드온 루프가 이를 감지해 자동 재시작합니다.
 
-​
+| 상황 | 설정 파일 우선순위 |
+| --- | --- |
+| 최초 기동 (`.initialized` 없음) | 1) `/homeassistant/homenet2mqtt/default.homenet_bridge.yaml` → 2) `config_files`/`config_file` 옵션 → 3) `/homeassistant/homenet2mqtt` 내 기타 `*.homenet_bridge.yaml` |
+| 이후 기동 (`.initialized` 존재) | 1) `config_files`/`config_file` 옵션 → 2) `/homeassistant/homenet2mqtt` 내 모든 `*.homenet_bridge.yaml`(기본/레거시 포함) |
+
+                                                                                                                                ​
+
+                                                                                                                                ​
 
 알파버전의 한계점
 

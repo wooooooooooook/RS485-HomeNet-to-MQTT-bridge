@@ -53,6 +53,14 @@ pnpm dev:down       # 개발용 컨테이너 정리
 
 시뮬레이터 전용 변수: `SIMULATOR_DEVICE`(기본 `commax`), `SIMULATOR_INTERVAL_MS`, `SIMULATOR_PROTOCOL`, `SIMULATOR_LINK_PATH`. 도커 개발 스택은 `SYSTEM_TYPE` 값을 시뮬레이터와 코어에 동시에 전달합니다.
 
+### 기본 설정 초기화
+`CONFIG_DIR`(기본 `packages/core/config`)에 `default.homenet_bridge.yaml`(또는 레거시 `default.yaml`)이 없고 `.initialized` 플래그가 존재하지 않으면 `/api/config/examples`에서 `packages/core/config/examples/` 하위 예제 목록을 노출합니다. 선택한 예제는 `CONFIG_DIR/default.homenet_bridge.yaml`으로 복사된 뒤 `.initialized`가 생성되고 서비스가 자동 재시작되어 기본값을 적용합니다. 기본 번들 설정 파일은 `packages/core/config/commax.homenet_bridge.yaml`입니다.
+
+| 상황 | 설정 파일 우선순위 |
+| --- | --- |
+| 최초 기동 (`.initialized` 없음) | 1) `CONFIG_DIR/default.homenet_bridge.yaml` → 2) `CONFIG_FILES`/`CONFIG_FILE`에서 지정한 경로 → 3) `CONFIG_DIR` 내 기타 `*.homenet_bridge.yaml` |
+| 이후 기동 (`.initialized` 존재) | 1) `CONFIG_FILES`/`CONFIG_FILE`에서 지정한 경로 → 2) `CONFIG_DIR` 내 모든 `*.homenet_bridge.yaml`(기본/레거시 포함) |
+
 ### 예시 `.env`
 ```env
 CONFIG_FILES=packages/core/config/commax.homenet_bridge.yaml,packages/core/config/examples/kocom.homenet_bridge.yaml

@@ -20,6 +20,7 @@ import {
 } from '@rs485-homenet/core';
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
+import { RateLimiter } from './utils/rate-limiter.js';
 
 dotenv.config();
 
@@ -95,6 +96,10 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 const commandPacketHistory: unknown[] = [];
 const parsedPacketHistory: unknown[] = [];
 const MAX_PACKET_HISTORY = 1000;
+
+// Security: Rate Limiters
+const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 seconds
+const configRateLimiter = new RateLimiter(60000, 5); // 5 requests per minute
 
 eventBus.on('command-packet', (packet: unknown) => {
   commandPacketHistory.push(packet);
@@ -856,6 +861,11 @@ app.get('/api/config/raw/:entityId', (req, res) => {
 });
 
 app.post('/api/config/update', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Config update rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   // Security: Block config update by default to prevent RCE via lambda injection
   // Set ALLOW_CONFIG_UPDATE=true to enable (use with caution)
   const allowConfigUpdate = process.env.ALLOW_CONFIG_UPDATE === 'true';
@@ -1170,6 +1180,10 @@ app.delete('/api/entities/:entityId', async (req, res) => {
 });
 
 app.post('/api/commands/execute', async (req, res) => {
+  if (!commandRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { entityId, commandName, value } = req.body as {
     entityId?: string;
     commandName?: string;

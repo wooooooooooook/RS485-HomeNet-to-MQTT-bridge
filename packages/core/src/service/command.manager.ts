@@ -17,6 +17,7 @@ interface CommandJob {
 
 export class CommandManager {
   private queue: CommandJob[] = [];
+  private lowPriorityQueue: CommandJob[] = [];
   private isProcessing = false;
   private serialPort: Duplex;
   private config: HomenetBridgeConfig;
@@ -35,7 +36,11 @@ export class CommandManager {
     });
   }
 
-  public send(entity: EntityConfig, packet: number[]): Promise<void> {
+  public send(
+    entity: EntityConfig,
+    packet: number[],
+    options?: { priority?: 'normal' | 'low' },
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const retryConfig = this.getRetryConfig(entity);
       const job: CommandJob = {
@@ -47,7 +52,11 @@ export class CommandManager {
         reject,
         isSettled: false,
       };
-      this.queue.push(job);
+      if (options?.priority === 'low') {
+        this.lowPriorityQueue.push(job);
+      } else {
+        this.queue.push(job);
+      }
       this.processQueue();
     });
   }
@@ -64,11 +73,18 @@ export class CommandManager {
   }
 
   private async processQueue() {
-    if (this.isProcessing || this.queue.length === 0) {
+    if (this.isProcessing) {
       return;
     }
+
+    // Process normal queue first, then low priority queue
+    const job = this.queue.shift() || this.lowPriorityQueue.shift();
+
+    if (!job) {
+      return;
+    }
+
     this.isProcessing = true;
-    const job = this.queue.shift()!;
 
     this.executeJob(job)
       .then(job.resolve)

@@ -65,6 +65,25 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
     });
   });
 
+  if (config.automation && Array.isArray(config.automation)) {
+    config.automation.forEach((auto) => {
+      if (!auto.trigger) return;
+      const hasSchedule = auto.trigger.some((t) => t.type === 'schedule');
+      if (hasSchedule) {
+        const injectLowPriority = (actions: any[] | undefined) => {
+          if (!actions) return;
+          actions.forEach((action) => {
+            if (action.action === 'command' && action.low_priority === undefined) {
+              action.low_priority = true;
+            }
+          });
+        };
+        injectLowPriority(auto.then);
+        injectLowPriority(auto.else);
+      }
+    });
+  }
+
   if (config.packet_defaults) {
     const pd = config.packet_defaults;
     if (pd.rx_timeout !== undefined) {

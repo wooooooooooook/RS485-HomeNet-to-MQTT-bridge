@@ -343,7 +343,9 @@ export class AutomationManager {
       return;
     }
 
-    await this.commandManager.send(entity, packet);
+    await this.commandManager.send(entity, packet, {
+      priority: action.low_priority ? 'low' : 'normal',
+    });
   }
 
   private async executePublishAction(action: AutomationActionPublish, context: TriggerContext) {

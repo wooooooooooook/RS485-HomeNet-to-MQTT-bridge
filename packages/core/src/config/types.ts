@@ -61,6 +61,7 @@ export interface AutomationActionCommand {
   action: 'command';
   target: string;
   input?: any;
+  low_priority?: boolean;
 }
 
 export interface AutomationActionPublish {

@@ -9,6 +9,7 @@ export interface CommandSchema {
   signed?: boolean;
   endian?: EndianType;
   multiply_factor?: number;
+  low_priority?: boolean;
 }
 
 export interface EntityConfig {

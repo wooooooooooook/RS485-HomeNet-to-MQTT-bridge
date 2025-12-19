@@ -343,8 +343,17 @@ export class AutomationManager {
       return;
     }
 
+    let isLowPriority = action.low_priority;
+    if (isLowPriority === undefined) {
+      const commandKey = `command_${parsed.command}`;
+      const schema = (entity as any)[commandKey];
+      if (schema && typeof schema === 'object' && schema.low_priority) {
+        isLowPriority = true;
+      }
+    }
+
     await this.commandManager.send(entity, packet, {
-      priority: action.low_priority ? 'low' : 'normal',
+      priority: isLowPriority ? 'low' : 'normal',
     });
   }
 

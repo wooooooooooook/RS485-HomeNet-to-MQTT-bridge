@@ -80,6 +80,7 @@ state:
 | `endian`          | `'big'` \| `'little'`  | `'big'`  | 값의 바이트 순서.                                                          |
 | `value_encode`    | `DecodeEncodeType`     | `'none'` | 값 인코딩 방식 (`bcd`, `ascii`, `multiply` 등).                            |
 | `multiply_factor` | `number`               | -        | `value_encode: multiply` 사용 시 곱할 계수.                                |
+| `low_priority`    | `boolean`              | `false`  | `true`인 경우, 해당 명령을 낮은 우선순위 큐로 전송합니다. 자동화 액션에서 오버라이드 가능합니다. |
 
 ## Automation Action
 

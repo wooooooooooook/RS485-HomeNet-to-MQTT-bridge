@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t } from 'svelte-i18n';
 
   const dispatch = createEventDispatcher();
 </script>
@@ -10,7 +11,7 @@
       class="ghost mobile-menu-btn"
       type="button"
       onclick={() => dispatch('toggleSidebar')}
-      aria-label="메뉴 열기"
+      aria-label={$t('header.toggle_menu')}
     >
       <span class="icon">☰</span>
     </button>
@@ -20,7 +21,13 @@
       <span class="logo-text">Homenet2MQTT</span>
     </div>
 
-    <div class="alpha-badge">ALPHA</div>
+    <div
+      class="alpha-badge"
+      title={$t('header.alpha_badge_label')}
+      aria-label={$t('header.alpha_badge_label')}
+    >
+      ALPHA
+    </div>
   </div>
 </header>
 

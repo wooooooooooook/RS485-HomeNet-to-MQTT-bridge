@@ -79,6 +79,11 @@
     "english": "English",
     "korean": "Korean"
   },
+  "header": {
+    "toggle_menu": "Open navigation menu",
+    "alpha_badge_label": "This is an alpha version. Features may be unstable.",
+    "skip_to_content": "Skip to main content"
+  },
   "sidebar": {
     "dashboard": "Dashboard",
     "analysis": "Analysis",

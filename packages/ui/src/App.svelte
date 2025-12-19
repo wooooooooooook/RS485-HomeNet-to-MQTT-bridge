@@ -1018,12 +1018,13 @@
 {#if $isLoading}
   <div class="loading-screen">Loading resources...</div>
 {:else}
+  <a href="#main-content" class="skip-link">{$t('header.skip_to_content')}</a>
   <main class="app-container">
     <Header on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
     <div class="content-body">
       <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
 
-      <section class="main-content">
+      <section id="main-content" class="main-content" tabindex="-1">
         {#if activeView === 'dashboard'}
           <Dashboard
             {bridgeInfo}
@@ -1172,5 +1173,23 @@
     align-items: center;
     height: 100vh;
     color: #94a3b8;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #3b82f6;
+    color: white;
+    padding: 8px;
+    z-index: 100;
+    transition: top 0.2s;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 0 0 4px 0;
+  }
+
+  .skip-link:focus {
+    top: 0;
   }
 </style>

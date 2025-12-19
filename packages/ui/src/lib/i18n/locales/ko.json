@@ -79,6 +79,11 @@
     "english": "English",
     "korean": "한국어"
   },
+  "header": {
+    "toggle_menu": "메뉴 열기",
+    "alpha_badge_label": "알파 버전입니다. 기능이 불안정할 수 있습니다.",
+    "skip_to_content": "메인 콘텐츠로 건너뛰기"
+  },
   "sidebar": {
     "dashboard": "대시보드",
     "analysis": "분석",

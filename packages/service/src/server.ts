@@ -126,6 +126,41 @@ const getDefaultConfigFilename = async (): Promise<string | null> => {
   return null;
 };
 
+const applySerialPathToConfig = (configObject: unknown, serialPath: string): boolean => {
+  if (!configObject || typeof configObject !== 'object') {
+    return false;
+  }
+
+  const bridgeConfig =
+    (configObject as Record<string, unknown>).homenet_bridge ||
+    (configObject as Record<string, unknown>).homenetBridge ||
+    configObject;
+
+  if (!bridgeConfig || typeof bridgeConfig !== 'object') {
+    return false;
+  }
+
+  let updated = false;
+  const normalizedPath = serialPath.trim();
+
+  if ((bridgeConfig as Record<string, unknown>).serial) {
+    const serial = (bridgeConfig as Record<string, unknown>).serial as Record<string, unknown>;
+    (bridgeConfig as Record<string, unknown>).serial = { ...serial, path: normalizedPath };
+    updated = true;
+  }
+
+  const serials = (bridgeConfig as Record<string, unknown>).serials;
+  if (Array.isArray(serials)) {
+    (bridgeConfig as Record<string, unknown>).serials = serials.map((serial: unknown) => {
+      if (!serial || typeof serial !== 'object') return serial;
+      return { ...(serial as Record<string, unknown>), path: normalizedPath };
+    });
+    updated = true;
+  }
+
+  return updated;
+};
+
 const triggerRestart = () => {
   setTimeout(() => {
     logger.info('[service] Restarting process to apply configuration changes');
@@ -906,9 +941,13 @@ app.post('/api/config/examples/select', async (req, res) => {
       return res.status(400).json({ error: 'INITIALIZATION_NOT_ALLOWED' });
     }
 
-    const { filename } = req.body || {};
+    const { filename, serialPath } = req.body || {};
     if (typeof filename !== 'string' || filename.includes('/') || filename.includes('\\')) {
       return res.status(400).json({ error: 'INVALID_FILENAME' });
+    }
+
+    if (typeof serialPath !== 'string' || !serialPath.trim()) {
+      return res.status(400).json({ error: 'SERIAL_PATH_REQUIRED' });
     }
 
     const examples = await listExampleConfigs();
@@ -918,13 +957,32 @@ app.post('/api/config/examples/select', async (req, res) => {
 
     const sourcePath = path.join(EXAMPLES_DIR, filename);
     const targetPath = path.join(CONFIG_DIR, DEFAULT_CONFIG_FILENAME);
+    const serialPathValue = serialPath.trim();
+
+    let parsedConfig: unknown;
+    try {
+      const rawContent = await fs.readFile(sourcePath, 'utf-8');
+      parsedConfig = yaml.load(rawContent);
+    } catch (error) {
+      logger.error({ err: error, sourcePath }, '[service] Failed to read example config');
+      return res.status(500).json({ error: 'EXAMPLE_READ_FAILED' });
+    }
+
+    if (!applySerialPathToConfig(parsedConfig, serialPathValue)) {
+      return res.status(400).json({ error: 'SERIAL_CONFIG_MISSING' });
+    }
+
+    const updatedYaml = yaml.dump(parsedConfig, { lineWidth: 120, noRefs: true });
 
     await fs.mkdir(CONFIG_DIR, { recursive: true });
-    await fs.copyFile(sourcePath, targetPath);
+    await fs.writeFile(targetPath, updatedYaml, 'utf-8');
     await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
     await fs.writeFile(CONFIG_RESTART_FLAG, 'restart', 'utf-8');
 
-    logger.info({ filename, targetPath }, '[service] Default config seeded from example');
+    logger.info(
+      { filename, targetPath, serialPath: serialPathValue },
+      '[service] Default config seeded from example',
+    );
 
     res.json({
       ok: true,

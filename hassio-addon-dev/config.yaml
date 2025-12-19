@@ -20,7 +20,7 @@ options:
   mqtt_user: "addons"
   mqtt_passwd: ""
   config_files:
-    - commax.homenet_bridge.yaml
+    - default.homenet_bridge.yaml
   mqtt_topic_prefix: homenet2mqtt
 hassio_role: default
 hassio_api: true

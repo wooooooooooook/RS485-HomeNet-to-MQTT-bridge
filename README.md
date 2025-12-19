@@ -38,7 +38,7 @@ pnpm dev:down       # 개발용 컨테이너 정리
 
 | 변수 | 설명 | 기본값 |
 | --- | --- | --- |
-| `CONFIG_FILES` (`CONFIG_FILE` 호환) | 사용할 `homenet_bridge.yaml` 경로를 쉼표로 나열합니다. 각 파일마다 개별 브릿지 인스턴스가 생성되며 시리얼·엔터티 구성이 섞이지 않습니다. | `packages/core/config/commax.homenet_bridge.yaml` |
+| `CONFIG_FILES` (`CONFIG_FILE` 호환) | 사용할 `homenet_bridge.yaml` 경로를 쉼표로 나열합니다. 각 파일마다 개별 브릿지 인스턴스가 생성되며 시리얼·엔터티 구성이 섞이지 않습니다. | `default.homenet_bridge.yaml` |
 | `SERIAL_PATH_WAIT_TIMEOUT_MS` | 시작 시 시리얼 경로를 기다리는 최대 시간 | `15000` |
 | `MQTT_URL` | MQTT 브로커 URL | `mqtt://mq:1883` |
 | `MQTT_USER`/`MQTT_PASSWD` | 브로커 인증 정보 | unset |
@@ -53,6 +53,14 @@ pnpm dev:down       # 개발용 컨테이너 정리
 
 시뮬레이터 전용 변수: `SIMULATOR_DEVICE`(기본 `commax`), `SIMULATOR_INTERVAL_MS`, `SIMULATOR_PROTOCOL`, `SIMULATOR_LINK_PATH`. 도커 개발 스택은 `SYSTEM_TYPE` 값을 시뮬레이터와 코어에 동시에 전달합니다.
 
+### 기본 설정 초기화
+`CONFIG_DIR`(기본 `packages/core/config`)에 `default.homenet_bridge.yaml`(또는 레거시 `default.yaml`)이 없고 `.initialized` 플래그가 존재하지 않으면 `/api/config/examples`에서 `packages/core/config/examples/` 하위 예제 목록을 노출합니다. 선택한 예제는 `CONFIG_DIR/default.homenet_bridge.yaml`으로 복사된 뒤 `.initialized`가 생성되고 서비스가 자동 재시작되어 기본값을 적용합니다. 환경 변수에 `CONFIG_FILES`를 지정하지 않아도 기본값으로 `default.homenet_bridge.yaml`을 로딩하며, 번들 예시는 `packages/core/config/commax.homenet_bridge.yaml`에 포함됩니다.
+
+| 상황 | 설정 파일 우선순위 |
+| --- | --- |
+| 최초 기동 (`.initialized` 없음) | 1) `CONFIG_DIR/default.homenet_bridge.yaml` → 2) `CONFIG_FILES`/`CONFIG_FILE`에서 지정한 경로 → 3) `CONFIG_DIR` 내 기타 `*.homenet_bridge.yaml` |
+| 이후 기동 (`.initialized` 존재) | 1) `CONFIG_FILES`/`CONFIG_FILE`에서 지정한 경로 → 2) `CONFIG_DIR` 내 모든 `*.homenet_bridge.yaml`(기본/레거시 포함) |
+
 ### 예시 `.env`
 ```env
 CONFIG_FILES=packages/core/config/commax.homenet_bridge.yaml,packages/core/config/examples/kocom.homenet_bridge.yaml
@@ -65,7 +73,7 @@ LOG_LEVEL=debug
 각 설정 파일에는 단일 시리얼 설정(`serial`)만 포함해야 하며, 여러 파일을 지정하면 파일마다 별도 브릿지가 실행되어 포트/엔티티가 섞이지 않습니다. MQTT 토픽 접두사는 환경 변수 `MQTT_TOPIC_PREFIX`로만 지정할 수 있으며 최종 토픽 구조는 `${MQTT_TOPIC_PREFIX}/{portId}/{엔티티ID}/(state|set|...)` 형태로 발행됩니다.
 
 ### 기기 타입별 설정
-장비 프로토콜마다 별도의 YAML이 필요합니다. 지원 목록과 시리얼 파라미터, 엔티티 구성을 [docs/DEVICE_SETTINGS.md](docs/DEVICE_SETTINGS.md)에서 확인한 뒤 `CONFIG_FILES`에 원하는 YAML 경로를 추가하거나, Docker 개발 스택에서는 `SYSTEM_TYPE`으로 기본 파일을 선택하세요. 기본값은 `packages/core/config/commax.homenet_bridge.yaml`, 추가 예제는 `packages/core/config/examples/`에 있습니다. 새 타입을 추가한다면 동일 문서와 설정 디렉터리에 함께 반영합니다.
+장비 프로토콜마다 별도의 YAML이 필요합니다. 지원 목록과 시리얼 파라미터, 엔티티 구성을 [docs/DEVICE_SETTINGS.md](docs/DEVICE_SETTINGS.md)에서 확인한 뒤 `CONFIG_FILES`에 원하는 YAML 경로를 추가하거나, Docker 개발 스택에서는 `SYSTEM_TYPE`으로 기본 파일을 선택하세요. 설정을 지정하지 않으면 `default.homenet_bridge.yaml`(초기 예제 선택 시 생성됨)이 로딩되며, 추가 예제는 `packages/core/config/examples/`에 있습니다. 새 타입을 추가한다면 동일 문서와 설정 디렉터리에 함께 반영합니다.
 
 ### Docker / Home Assistant
 - 개발용: `deploy/docker/docker-compose.dev.yml`에서 Home Assistant, Mosquitto, 시뮬레이터, UI가 함께 기동합니다. `SYSTEM_TYPE`을 `.env`에 지정하면 해당 구성 파일이 자동 바인딩됩니다.

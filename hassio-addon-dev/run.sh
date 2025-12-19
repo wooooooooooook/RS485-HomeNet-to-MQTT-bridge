@@ -18,12 +18,12 @@ if [ -z "$CONFIG_FILES" ] && [ -n "$LEGACY_CONFIG_FILE" ] && [ "$LEGACY_CONFIG_F
   CONFIG_FILES="$LEGACY_CONFIG_FILE"
 fi
 
+if [ -z "$CONFIG_FILES" ] || [ "$CONFIG_FILES" == "null" ]; then
+  CONFIG_FILES="default.homenet_bridge.yaml"
+fi
+
 IFS=',' read -r -a CONFIG_FILE_LIST <<< "$CONFIG_FILES"
 
-if [ ${#CONFIG_FILE_LIST[@]} -eq 0 ]; then
-  echo "[addon] config_files에 최소 1개 이상의 항목이 필요합니다."
-  exit 1
-fi
 export CONFIG_FILES="$CONFIG_FILES"
 export CONFIG_FILE="${CONFIG_FILE_LIST[0]}"
 
@@ -31,6 +31,7 @@ export CONFIG_FILE="${CONFIG_FILE_LIST[0]}"
 HA_CONFIG_DIR="/homeassistant/homenet2mqtt"
 DEFAULT_CONFIG_DIR="packages/core/config"
 INIT_MARKER="$HA_CONFIG_DIR/.initialized"
+RESTART_FLAG="$HA_CONFIG_DIR/.restart-required"
 
 if [ ! -d "$HA_CONFIG_DIR" ]; then
   echo "Creating configuration directory at $HA_CONFIG_DIR..."
@@ -66,5 +67,16 @@ echo "  MQTT_NEED_LOGIN: $MQTT_NEED_LOGIN"
 echo "  MQTT_USER: $MQTT_USER"
 echo "  MQTT_TOPIC_PREFIX: $MQTT_TOPIC_PREFIX"
 
-# Run the service
-node packages/service/dist/server.js
+# Run the service with restart flag support for initialization flow
+while true; do
+  node packages/service/dist/server.js
+  exit_code=$?
+
+  if [ $exit_code -eq 0 ] && [ -f "$RESTART_FLAG" ]; then
+    echo "[addon-dev] Restart flag detected. Re-launching service to apply selected default config..."
+    rm -f "$RESTART_FLAG"
+    continue
+  fi
+
+  exit $exit_code
+done

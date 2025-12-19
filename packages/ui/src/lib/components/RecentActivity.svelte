@@ -2,14 +2,7 @@
   import { sineOut } from 'svelte/easing';
   import { fade } from 'svelte/transition';
   import { t, locale } from 'svelte-i18n';
-
-  interface ActivityLog {
-    timestamp: number;
-    code: string;
-    params?: Record<string, any>;
-    message?: string;
-    portId?: string;
-  }
+  import type { ActivityLog } from '../types';
 
   let { activities = [] } = $props<{
     activities: ActivityLog[];

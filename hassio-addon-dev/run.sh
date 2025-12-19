@@ -61,64 +61,18 @@ fi
 
 if [ ! -f "$INIT_MARKER" ]; then
   echo "First run detected, seeding configuration files..."
-  for file in "$DEFAULT_CONFIG_DIR"/*.yaml; do
-    filename=$(basename "$file")
-    echo "Copying default config $filename to $HA_CONFIG_DIR..."
-    cp "$file" "$HA_CONFIG_DIR/"
-  done
+  # 예제 설정 파일만 복사 (default 설정은 서버에서 UI를 통해 생성됨)
   if [ -d "$DEFAULT_CONFIG_DIR/examples" ]; then
     echo "Copying example configs to $HA_CONFIG_DIR/examples..."
-    cp -r "$DEFAULT_CONFIG_DIR/examples" "$HA_CONFIG_DIR/"
+    mkdir -p "$HA_CONFIG_DIR/examples"
+    cp -r "$DEFAULT_CONFIG_DIR/examples/"* "$HA_CONFIG_DIR/examples/" 2>/dev/null || true
   fi
-  touch "$INIT_MARKER"
-  echo "기본 및 예제 설정파일이 $HA_CONFIG_DIR 에 복사되었습니다."
-  
-  # Docker 컨테이너 환경에서는 종료하지 않고 계속 진행
-  if [ -f "$CONFIG_PATH" ]; then
-    echo "알맞은 설정파일을 검토 및 수정한 뒤 애드온 설정에서 config_files를 지정 하고 애드온을 다시 시작해주세요."
-    exit 0
-  else
-    echo "알맞은 설정파일을 검토 및 수정한 뒤 CONFIG_FILES 환경변수를 지정하고 컨테이너를 다시 시작해주세요."
-    echo "또는 기본 설정파일 ($CONFIG_FILES)로 시작합니다..."
-  fi
+  echo "예제 설정파일이 $HA_CONFIG_DIR/examples 에 복사되었습니다."
+  echo "UI에서 예제 설정을 선택하고 시리얼 포트 경로를 입력해주세요."
+  # .initialized 마커는 서버에서 초기화 완료 후 생성됨
 fi
 
 export CONFIG_ROOT="$HA_CONFIG_DIR"
-
-# Check if default.homenet_bridge.yaml exists, create if not
-DEFAULT_CONFIG_FILE="$HA_CONFIG_DIR/default.homenet_bridge.yaml"
-if [ ! -f "$DEFAULT_CONFIG_FILE" ]; then
-  echo "Creating default configuration file at $DEFAULT_CONFIG_FILE..."
-  cat > "$DEFAULT_CONFIG_FILE" << 'EOF'
-# RS485 HomeNet to MQTT Bridge Configuration
-# 이 파일은 기본 설정 템플릿입니다.
-# examples 폴더의 샘플을 참고하여 설정을 수정하세요.
-#
-# 설정 가이드:
-# - serial.path: RS485 장치 경로 (예: /dev/ttyUSB0, 192.168.0.1:8888)
-# - serial.baud_rate: 통신 속도 (기본값: 9600)
-# - packet_defaults: 패킷 형식 설정 (헤더, 푸터, 체크섬 등)
-# - light, switch, climate 등: 기기 설정
-
-homenet_bridge:
-  serial:
-    portId: main
-    path: /dev/ttyUSB0
-    baud_rate: 9600
-    data_bits: 8
-    parity: NONE
-    stop_bits: 1
-
-  packet_defaults:
-    rx_timeout: 10ms
-    tx_delay: 50ms
-    tx_timeout: 500ms
-    tx_retry_cnt: 3
-
-# 기기 설정은 examples 폴더의 샘플을 참고하세요.
-# 예: examples/kocom.homenet_bridge.yaml, examples/commax.homenet_bridge.yaml 등
-EOF
-fi
 
 echo "Starting homenet2mqtt..."
 echo "Configuration:"

@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from 'svelte-i18n';
 
-  const dispatch = createEventDispatcher();
+  let { onToggleSidebar }: { onToggleSidebar?: () => void } = $props();
 </script>
 
 <header class="header">
@@ -10,7 +9,7 @@
     <button
       class="ghost mobile-menu-btn"
       type="button"
-      onclick={() => dispatch('toggleSidebar')}
+      onclick={() => onToggleSidebar?.()}
       aria-label={$t('header.toggle_menu')}
     >
       <span class="icon">☰</span>
@@ -22,11 +21,11 @@
     </div>
 
     <div
-      class="alpha-badge"
-      title={$t('header.alpha_badge_label')}
-      aria-label={$t('header.alpha_badge_label')}
+      class="beta-badge"
+      title={$t('header.beta_badge_label')}
+      aria-label={$t('header.beta_badge_label')}
     >
-      ALPHA
+      BETA
     </div>
   </div>
 </header>
@@ -105,7 +104,7 @@
     cursor: not-allowed;
   }
 
-  .alpha-badge {
+  .beta-badge {
     background-color: #f59e0b;
     color: #fff;
     padding: 0.25rem 0.5rem;

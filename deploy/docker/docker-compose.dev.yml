@@ -81,7 +81,7 @@ services:
       SERIAL_PATH_WAIT_TIMEOUT_MS: '6000'
       PORT: '3000'
       CONFIG_ROOT: /workspace/deploy/.configs
-      CONFIG_FILES: ${SYSTEM_TYPE}.homenet_bridge.yaml,sim_commax.homenet_bridge.yaml
+      # CONFIG_FILES: ${SYSTEM_TYPE}.homenet_bridge.yaml,sim_commax.homenet_bridge.yaml
       LOG_LEVEL: info
       MQTT_TOPIC_PREFIX: homenet
     volumes:

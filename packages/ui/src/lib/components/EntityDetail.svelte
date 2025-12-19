@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from 'svelte-i18n';
   import type { UnifiedEntity, CommandInfo, ParsedPacket, CommandPacket } from '../types';
@@ -12,7 +12,10 @@
     isRenaming = false,
     renameError = null,
     allowConfigUpdate = true,
-  } = $props<{
+    onClose,
+    onExecute,
+    onRename,
+  }: {
     entity: UnifiedEntity;
     parsedPackets?: ParsedPacket[];
     commandPackets?: CommandPacket[];
@@ -20,13 +23,10 @@
     isRenaming?: boolean;
     renameError?: string | null;
     allowConfigUpdate?: boolean;
-  }>();
-
-  const dispatch = createEventDispatcher<{
-    close: void;
-    execute: { cmd: CommandInfo; value?: any };
-    rename: { newName: string };
-  }>();
+    onClose?: () => void;
+    onExecute?: (cmd: CommandInfo, value?: any) => void;
+    onRename?: (newName: string) => void;
+  } = $props();
 
   let activeTab = $state<'status' | 'config' | 'packets' | 'manage'>('status');
   let editingConfig = $state('');
@@ -94,7 +94,7 @@
     }
 
     renameLocalError = null;
-    dispatch('rename', { newName: trimmed });
+    onRename?.(trimmed);
   }
 
   onMount(() => {
@@ -212,7 +212,7 @@
   }
 
   function close() {
-    dispatch('close');
+    onClose?.();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -338,16 +338,13 @@
                           />
                           <button
                             onclick={() =>
-                              dispatch('execute', {
-                                cmd,
-                                value: commandInputs[`${cmd.entityId}_${cmd.commandName}`],
-                              })}
+                              onExecute?.(cmd, commandInputs[`${cmd.entityId}_${cmd.commandName}`])}
                           >
                             {$t('entity_detail.status.send')}
                           </button>
                         </div>
                       {:else}
-                        <button class="action-btn" onclick={() => dispatch('execute', { cmd })}>
+                        <button class="action-btn" onclick={() => onExecute?.(cmd)}>
                           {cmd.displayName}
                         </button>
                       {/if}

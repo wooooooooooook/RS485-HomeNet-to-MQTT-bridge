@@ -81,7 +81,7 @@
   },
   "header": {
     "toggle_menu": "메뉴 열기",
-    "alpha_badge_label": "알파 버전입니다. 기능이 불안정할 수 있습니다.",
+    "beta_badge_label": "베타 버전입니다. 기능이 불안정할 수 있습니다.",
     "skip_to_content": "메인 콘텐츠로 건너뛰기"
   },
   "sidebar": {
@@ -199,7 +199,34 @@
     "COMMANDS_LOAD_FAILED": "명령 목록을 불러오지 못했습니다.",
     "RENAME_EMPTY_NAME": "새 이름을 입력해주세요.",
     "RENAME_FAILED": "이름 변경에 실패했습니다.",
-    "CONFIG_UPDATE_DISABLED": "설정 수정이 비활성화되어 있습니다. ALLOW_CONFIG_UPDATE=true 환경 변수를 설정하세요."
+    "CONFIG_UPDATE_DISABLED": "설정 수정이 비활성화되어 있습니다. ALLOW_CONFIG_UPDATE=true 환경 변수를 설정하세요.",
+    "CONFIG_INITIALIZATION_REQUIRED": "초기 설정이 필요합니다.",
+    "INITIALIZATION_NOT_ALLOWED": "이미 초기화가 완료되었습니다.",
+    "INVALID_FILENAME": "잘못된 파일명입니다.",
+    "SERIAL_PATH_REQUIRED": "시리얼 포트 경로를 입력해주세요.",
+    "EXAMPLE_NOT_FOUND": "예제 설정 파일을 찾을 수 없습니다.",
+    "EXAMPLE_READ_FAILED": "예제 설정 파일을 읽을 수 없습니다.",
+    "SERIAL_CONFIG_MISSING": "설정 파일에 serial 설정이 없습니다."
+  },
+  "setup_wizard": {
+    "title": "초기 설정",
+    "subtitle": "RS485 홈넷 브리지를 시작하기 위한 기본 설정을 진행합니다.",
+    "loading": "예제 설정 목록을 불러오는 중...",
+    "load_error": "예제 목록을 불러오지 못했습니다.",
+    "example_label": "예제 설정 선택",
+    "example_hint": "사용 중인 홈넷 시스템에 맞는 예제를 선택하세요.",
+    "serial_path_label": "시리얼 포트 경로",
+    "serial_path_placeholder": "/dev/ttyUSB0 또는 192.168.0.100:8899",
+    "serial_path_hint": "RS485 장치 경로 또는 TCP 주소를 입력하세요.",
+    "validation_error": "예제와 시리얼 포트 경로를 모두 입력해주세요.",
+    "step_config": "설정",
+    "step_consent": "동의",
+    "next": "다음",
+    "submit": "설정 완료 및 시작",
+    "submitting": "설정 적용 중...",
+    "submit_error": "설정 적용에 실패했습니다.",
+    "success_message": "설정이 완료되었습니다!",
+    "restarting": "애드온 또는 컨테이너를 재시작해주세요."
   },
   "toasts": {
     "command_sent": "{entity} 명령 전송",

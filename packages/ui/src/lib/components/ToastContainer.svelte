@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import type { ToastMessage } from '../types';
 
-  let { toasts = [] } = $props<{ toasts?: ToastMessage[] }>();
-
-  const dispatch = createEventDispatcher<{ dismiss: { id: string } }>();
+  let { toasts = [], onDismiss }: { toasts?: ToastMessage[]; onDismiss?: (id: string) => void } =
+    $props();
 
   const formatTimestamp = (timestamp: string) => {
     try {
@@ -16,7 +14,7 @@
   };
 
   const handleDismiss = (id: string) => {
-    dispatch('dismiss', { id });
+    onDismiss?.(id);
   };
 </script>
 

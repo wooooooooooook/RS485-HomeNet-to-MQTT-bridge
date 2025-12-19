@@ -1,27 +1,25 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
   import type { FrontendSettings } from '../types';
+
+  type ToastSettingKey = 'stateChange' | 'command';
 
   let {
     frontendSettings = null,
     isLoading = false,
     isSaving = false,
     error = '',
-  } = $props<{
+    onToastChange,
+    onLocaleChange,
+  }: {
     frontendSettings?: FrontendSettings | null;
     isLoading?: boolean;
     isSaving?: boolean;
     error?: string;
-  }>();
-
-  type ToastSettingKey = 'stateChange' | 'command';
-
-  const dispatch = createEventDispatcher<{
-    toastChange: { key: ToastSettingKey; value: boolean };
-    localeChange: { value: string };
-  }>();
+    onToastChange?: (key: ToastSettingKey, value: boolean) => void;
+    onLocaleChange?: (value: string) => void;
+  } = $props();
 
   const getToastValue = (key: ToastSettingKey) => {
     return frontendSettings?.toast?.[key] ?? true;
@@ -29,12 +27,12 @@
 
   const handleToggle = (key: ToastSettingKey, event: Event) => {
     const target = event.currentTarget as HTMLInputElement;
-    dispatch('toastChange', { key, value: target.checked });
+    onToastChange?.(key, target.checked);
   };
 
   const handleLocaleChange = (event: Event) => {
     const target = event.currentTarget as HTMLSelectElement;
-    dispatch('localeChange', { value: target.value });
+    onLocaleChange?.(target.value);
   };
 
   // Log Sharing State

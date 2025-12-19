@@ -24,7 +24,6 @@
   import Dashboard from './lib/views/Dashboard.svelte';
   import Analysis from './lib/views/Analysis.svelte';
 
-  import LogConsentModal from './lib/components/LogConsentModal.svelte';
   import EntityDetail from './lib/components/EntityDetail.svelte';
   import ToastContainer from './lib/components/ToastContainer.svelte';
   import SettingsView from './lib/views/Settings.svelte';
@@ -96,8 +95,6 @@
   let activityLogs = $state<ActivityLog[]>([]);
   let activityLoading = $state(true);
   let activityError = $state('');
-
-  let showConsentModal = $state(false);
 
   type StreamEvent =
     | 'status'
@@ -251,22 +248,7 @@
     loadBridgeInfo(true);
     loadFrontendSettings();
     loadActivityLogs();
-    checkConsentStatus();
   });
-
-  const checkConsentStatus = async () => {
-    try {
-      const res = await fetch(`/api/log-sharing/status?_=${Date.now()}`);
-      if (res.ok) {
-        const status = await res.json();
-        if (!status.asked) {
-          showConsentModal = true;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check consent status', err);
-    }
-  };
 
   // API 요청 helper 함수
   async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
@@ -1020,9 +1002,9 @@
 {:else}
   <a href="#main-content" class="skip-link">{$t('header.skip_to_content')}</a>
   <main class="app-container">
-    <Header on:toggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
+    <Header onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
     <div class="content-body">
-      <Sidebar bind:activeView isOpen={isSidebarOpen} on:close={() => (isSidebarOpen = false)} />
+      <Sidebar bind:activeView isOpen={isSidebarOpen} onClose={() => (isSidebarOpen = false)} />
 
       <section id="main-content" class="main-content" tabindex="-1">
         {#if activeView === 'dashboard'}
@@ -1039,10 +1021,9 @@
             {connectionStatus}
             {statusMessage}
             {portStatuses}
-            on:select={(e) =>
-              (selectedEntityKey = makeEntityKey(e.detail.portId, e.detail.entityId))}
-            on:toggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
-            on:portChange={(event) => (selectedPortId = event.detail.portId)}
+            onSelect={(entityId, portId) => (selectedEntityKey = makeEntityKey(portId, entityId))}
+            onToggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
+            onPortChange={(portId) => (selectedPortId = portId)}
           />
         {:else if activeView === 'analysis'}
           <Analysis
@@ -1053,14 +1034,14 @@
             {isStreaming}
             {portMetadata}
             selectedPortId={activePortId}
-            on:portChange={(event) => (selectedPortId = event.detail.portId)}
-            on:start={() => {
+            onPortChange={(portId) => (selectedPortId = portId)}
+            onStart={() => {
               sendStreamCommand('start');
               isStreaming = true;
               rawPackets = [];
               packetStatsByPort = new Map();
             }}
-            on:stop={() => {
+            onStop={() => {
               sendStreamCommand('stop');
               isStreaming = false;
             }}
@@ -1071,8 +1052,8 @@
             isLoading={settingsLoading}
             error={settingsError}
             isSaving={settingsSaving}
-            on:toastChange={(e) => updateToastSetting(e.detail.key, e.detail.value)}
-            on:localeChange={(e) => updateLocaleSetting(e.detail.value)}
+            onToastChange={(key, value) => updateToastSetting(key, value)}
+            onLocaleChange={(value) => updateLocaleSetting(value)}
           />
         {/if}
       </section>
@@ -1085,23 +1066,18 @@
         parsedPackets={selectedEntityParsedPackets}
         commandPackets={selectedEntityCommandPackets}
         allowConfigUpdate={bridgeInfo?.allowConfigUpdate ?? false}
-        on:close={() => (selectedEntityKey = null)}
-        on:execute={(e) => executeCommand(e.detail.cmd, e.detail.value)}
+        onClose={() => (selectedEntityKey = null)}
+        onExecute={(cmd, value) => executeCommand(cmd, value)}
         isRenaming={renamingEntityId === selectedEntity.id}
         {renameError}
-        on:rename={(e) =>
-          selectedEntity &&
-          renameEntityRequest(selectedEntity.id, e.detail.newName, selectedEntity.portId)}
+        onRename={(newName) =>
+          selectedEntity && renameEntityRequest(selectedEntity.id, newName, selectedEntity.portId)}
       />
     {/if}
   </main>
 {/if}
 
-<ToastContainer {toasts} on:dismiss={(event) => removeToast(event.detail.id)} />
-
-{#if showConsentModal}
-  <LogConsentModal onclose={() => (showConsentModal = false)} />
-{/if}
+<ToastContainer {toasts} onDismiss={(id) => removeToast(id)} />
 
 <style>
   :global(body) {

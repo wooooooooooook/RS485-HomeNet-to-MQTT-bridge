@@ -8,7 +8,7 @@
   } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
-  import { createEventDispatcher } from 'svelte';
+  import SetupWizard from '../components/SetupWizard.svelte';
   import { t } from 'svelte-i18n';
 
   let {
@@ -24,7 +24,10 @@
     connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
     statusMessage = '',
     portStatuses = [],
-  } = $props<{
+    onSelect,
+    onToggleInactive,
+    onPortChange,
+  }: {
     bridgeInfo: BridgeInfo | null;
     infoLoading: boolean;
     infoError: string;
@@ -43,13 +46,10 @@
     connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
     statusMessage?: string;
     portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
-  }>();
-
-  const dispatch = createEventDispatcher<{
-    select: { entityId: string; portId?: string };
-    toggleInactive: void;
-    portChange: { portId: string };
-  }>();
+    onSelect?: (entityId: string, portId?: string) => void;
+    onToggleInactive?: () => void;
+    onPortChange?: (portId: string) => void;
+  } = $props();
 
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map(
@@ -87,7 +87,7 @@
   }
 
   function handleSelect(entityId: string, portId?: string) {
-    dispatch('select', { entityId, portId });
+    onSelect?.(entityId, portId);
   }
 
   const parseStatusMessage = (msg: string | undefined) => {
@@ -108,6 +108,8 @@
     <div class="loading-state">
       <p class="hint">{$t('dashboard.loading_bridge')}</p>
     </div>
+  {:else if infoError === 'CONFIG_INITIALIZATION_REQUIRED'}
+    <SetupWizard oncomplete={() => window.location.reload()} />
   {:else if infoError}
     <div class="error-state">
       <p class="error">{$t(`errors.${infoError}`)}</p>
@@ -116,6 +118,8 @@
     <div class="empty-state">
       <p class="empty">{$t('dashboard.no_bridge_info')}</p>
     </div>
+  {:else if bridgeInfo.error === 'CONFIG_INITIALIZATION_REQUIRED'}
+    <SetupWizard oncomplete={() => window.location.reload()} />
   {:else}
     <!-- Minimized Metadata Section with MQTT Status -->
     <div class="viewer-meta-mini">
@@ -152,7 +156,7 @@
             <button
               class:active={activePortId === portId}
               type="button"
-              onclick={() => dispatch('portChange', { portId })}
+              onclick={() => onPortChange?.(portId)}
               data-state={getPortStatus(portId)}
             >
               <span class="port-status-dot"></span>
@@ -162,7 +166,7 @@
         {/if}
       </div>
       <label class="toggle-switch">
-        <input type="checkbox" checked={showInactive} onchange={() => dispatch('toggleInactive')} />
+        <input type="checkbox" checked={showInactive} onchange={() => onToggleInactive?.()} />
         <span class="slider"></span>
         {$t('dashboard.show_inactive_entities')}
       </label>
@@ -208,7 +212,7 @@
         </div>
       {:else}
         {#each visibleEntities as entity (entity.id)}
-          <EntityCard {entity} on:select={() => handleSelect(entity.id, entity.portId)} />
+          <EntityCard {entity} onSelect={() => handleSelect(entity.id, entity.portId)} />
         {/each}
       {/if}
     </div>

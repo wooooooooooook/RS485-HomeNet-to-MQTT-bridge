@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import type {
     CommandPacket,
     PacketStats as PacketStatsType,
@@ -20,7 +19,10 @@
     isStreaming,
     portMetadata,
     selectedPortId,
-  } = $props<{
+    onStart,
+    onStop,
+    onPortChange,
+  }: {
     stats: PacketStatsType | null;
     commandPackets: CommandPacket[];
     parsedPackets: ParsedPacket[];
@@ -28,16 +30,13 @@
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
     selectedPortId: string | null;
-  }>();
+    onStart?: () => void;
+    onStop?: () => void;
+    onPortChange?: (portId: string) => void;
+  } = $props();
 
-  const dispatch = createEventDispatcher<{
-    start: void;
-    stop: void;
-    portChange: { portId: string };
-  }>();
-
-  const startStreaming = () => dispatch('start');
-  const stopStreaming = () => dispatch('stop');
+  const startStreaming = () => onStart?.();
+  const stopStreaming = () => onStop?.();
 
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
@@ -56,7 +55,7 @@
         <button
           class:active={activePortId === portId}
           type="button"
-          onclick={() => dispatch('portChange', { portId })}
+          onclick={() => onPortChange?.(portId)}
         >
           {portId}
         </button>
@@ -69,8 +68,8 @@
     {rawPackets}
     {isStreaming}
     {stats}
-    on:start={startStreaming}
-    on:stop={stopStreaming}
+    onStart={startStreaming}
+    onStop={stopStreaming}
   />
 
   {#if activePortId}

@@ -1,13 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import type { UnifiedEntity, ParsedPayloadEntry } from '../types';
   import { t } from 'svelte-i18n';
 
-  let { entity } = $props<{ entity: UnifiedEntity }>();
-
-  const dispatch = createEventDispatcher<{
-    select: void;
-  }>();
+  let { entity, onSelect }: { entity: UnifiedEntity; onSelect?: () => void } = $props();
 
   function parsePayload(payload: string): ParsedPayloadEntry[] | null {
     try {
@@ -46,8 +41,8 @@
 <button
   class="entity-card"
   class:inactive={!entity.statePayload}
-  onclick={() => dispatch('select')}
-  onkeydown={(e) => ['Enter', ' '].includes(e.key) && dispatch('select')}
+  onclick={() => onSelect?.()}
+  onkeydown={(e) => ['Enter', ' '].includes(e.key) && onSelect?.()}
 >
   <header class="card-header">
     <h3>{entity.displayName}</h3>

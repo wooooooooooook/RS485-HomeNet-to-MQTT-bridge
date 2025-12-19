@@ -81,7 +81,7 @@
   },
   "header": {
     "toggle_menu": "Open navigation menu",
-    "alpha_badge_label": "This is an alpha version. Features may be unstable.",
+    "beta_badge_label": "This is a beta version. Features may be unstable.",
     "skip_to_content": "Skip to main content"
   },
   "sidebar": {
@@ -199,7 +199,34 @@
     "COMMANDS_LOAD_FAILED": "Failed to load commands.",
     "RENAME_EMPTY_NAME": "Please enter a new name.",
     "RENAME_FAILED": "Failed to rename.",
-    "CONFIG_UPDATE_DISABLED": "Config update is disabled. Set ALLOW_CONFIG_UPDATE=true environment variable."
+    "CONFIG_UPDATE_DISABLED": "Config update is disabled. Set ALLOW_CONFIG_UPDATE=true environment variable.",
+    "CONFIG_INITIALIZATION_REQUIRED": "Initial setup is required.",
+    "INITIALIZATION_NOT_ALLOWED": "Initialization has already been completed.",
+    "INVALID_FILENAME": "Invalid filename.",
+    "SERIAL_PATH_REQUIRED": "Serial port path is required.",
+    "EXAMPLE_NOT_FOUND": "Example configuration file not found.",
+    "EXAMPLE_READ_FAILED": "Failed to read example configuration file.",
+    "SERIAL_CONFIG_MISSING": "Serial configuration is missing from the config file."
+  },
+  "setup_wizard": {
+    "title": "Initial Setup",
+    "subtitle": "Configure basic settings to start the RS485 HomeNet Bridge.",
+    "loading": "Loading example configurations...",
+    "load_error": "Failed to load examples.",
+    "example_label": "Select Example Configuration",
+    "example_hint": "Choose an example that matches your HomeNet system.",
+    "serial_path_label": "Serial Port Path",
+    "serial_path_placeholder": "/dev/ttyUSB0 or 192.168.0.100:8899",
+    "serial_path_hint": "Enter the RS485 device path or TCP address.",
+    "validation_error": "Please select an example and enter a serial port path.",
+    "step_config": "Config",
+    "step_consent": "Consent",
+    "next": "Next",
+    "submit": "Complete Setup & Start",
+    "submitting": "Applying settings...",
+    "submit_error": "Failed to apply settings.",
+    "success_message": "Setup completed!",
+    "restarting": "Please restart the addon or container."
   },
   "toasts": {
     "command_sent": "{entity} Command Sent",

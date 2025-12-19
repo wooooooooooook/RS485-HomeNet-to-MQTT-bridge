@@ -87,7 +87,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -910,7 +910,7 @@ const getInitializationState = async () => {
     defaultConfigName,
     hasDefaultConfig: Boolean(defaultConfigName),
     hasInitMarker,
-    requiresInitialization: !defaultConfigName && !hasInitMarker,
+    requiresInitialization: !hasInitMarker,
   };
 };
 
@@ -927,6 +927,7 @@ app.get('/api/config/examples', async (_req, res) => {
       defaultConfigName: state.defaultConfigName,
       requiresInitialization: state.requiresInitialization,
       hasInitMarker: state.hasInitMarker,
+      hasCustomConfig: envConfigFiles.source !== 'default',
     });
   } catch (error) {
     logger.error({ err: error }, '[service] Failed to list example configs');
@@ -1473,7 +1474,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {});
+    await bridgeStartPromise.catch(() => { });
   }
 
   bridgeStartPromise = (async () => {

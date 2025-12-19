@@ -33,8 +33,10 @@ export type FrontendSettings = {
 
 export interface ActivityLog {
   timestamp: number;
-  message: string;
-  details?: any;
+  code: string;
+  params?: Record<string, any>;
+  // Optional fallback message for legacy or non-i18n clients
+  message?: string;
   portId?: string;
 }
 

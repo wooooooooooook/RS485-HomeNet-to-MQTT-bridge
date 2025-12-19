@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from 'svelte-i18n';
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
   import PacketStats from './PacketStats.svelte';
@@ -8,20 +7,23 @@
     rawPackets = [],
     isStreaming,
     stats = null,
-  } = $props<{
+    onStart,
+    onStop,
+  }: {
     rawPackets?: RawPacketWithInterval[];
     isStreaming: boolean;
     stats?: PacketStatsType | null;
-  }>();
+    onStart?: () => void;
+    onStop?: () => void;
+  } = $props();
 
-  const dispatch = createEventDispatcher();
   const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 
   function toggleStreaming() {
     if (isStreaming) {
-      dispatch('stop');
+      onStop?.();
     } else {
-      dispatch('start');
+      onStart?.();
     }
   }
 </script>

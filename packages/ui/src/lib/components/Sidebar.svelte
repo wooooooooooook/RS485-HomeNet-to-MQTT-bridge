@@ -1,20 +1,19 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from 'svelte-i18n';
 
   let {
     activeView = $bindable<'dashboard' | 'analysis' | 'settings'>('dashboard'),
     isOpen = false,
-  } = $props<{
+    onClose,
+  }: {
     activeView: 'dashboard' | 'analysis' | 'settings';
     isOpen?: boolean;
-  }>();
-
-  const dispatch = createEventDispatcher();
+    onClose?: () => void;
+  } = $props();
 
   function handleNavClick(view: typeof activeView) {
     activeView = view;
-    dispatch('close');
+    onClose?.();
   }
 </script>
 
@@ -23,7 +22,7 @@
     type="button"
     class="sidebar-backdrop"
     aria-label={$t('sidebar.close_aria')}
-    onclick={() => dispatch('close')}
+    onclick={() => onClose?.()}
   ></button>
 {/if}
 

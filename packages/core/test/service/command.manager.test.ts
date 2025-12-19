@@ -139,4 +139,77 @@ describe('CommandManager', () => {
 
     await expect(promise2).resolves.toBeUndefined();
   });
+
+  it('should process low priority commands only when normal queue is empty', async () => {
+    const writeSpy = vi.spyOn(serialPort, 'write');
+    const entity2: EntityConfig = { id: 'test_light_2', name: 'Test Light 2', type: 'light' };
+
+    // Send normal priority command
+    const promise1 = commandManager.send(testEntity, testPacket);
+    // Send low priority command
+    const promise2 = commandManager.send(entity2, testPacket, { priority: 'low' });
+
+    // Only the first command should be sent initially (normal priority)
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpy).toHaveBeenLastCalledWith(Buffer.from(testPacket));
+
+    // ACK for the first command
+    await vi.advanceTimersByTimeAsync(10);
+    eventBus.emit('state:changed', { entityId: 'test_light', state: {} });
+    await promise1;
+
+    // Now low priority command should be sent
+    await vi.advanceTimersByTimeAsync(1);
+    expect(writeSpy).toHaveBeenCalledTimes(2);
+    expect(writeSpy).toHaveBeenLastCalledWith(Buffer.from(testPacket));
+
+    // ACK for the second command
+    await vi.advanceTimersByTimeAsync(10);
+    eventBus.emit('state:changed', { entityId: 'test_light_2', state: {} });
+    await promise2;
+  });
+
+  it('should prioritize normal priority commands over low priority commands', async () => {
+    const writeSpy = vi.spyOn(serialPort, 'write');
+    const entityLow: EntityConfig = { id: 'low_prio', name: 'Low Prio', type: 'light' };
+    const entityHigh: EntityConfig = { id: 'high_prio', name: 'High Prio', type: 'light' };
+    const packetLow = [0xAA];
+    const packetHigh = [0xBB];
+
+    // Start a command to block the queue
+    const promise1 = commandManager.send(testEntity, testPacket);
+
+    // Queue a low priority command
+    const promiseLow = commandManager.send(entityLow, packetLow, { priority: 'low' });
+    // Queue a high priority command
+    const promiseHigh = commandManager.send(entityHigh, packetHigh, { priority: 'normal' });
+
+    // Only first command sent
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+
+    // ACK first command
+    await vi.advanceTimersByTimeAsync(10);
+    eventBus.emit('state:changed', { entityId: 'test_light', state: {} });
+    await promise1;
+
+    // Next should be high priority command, not low priority
+    await vi.advanceTimersByTimeAsync(1);
+    expect(writeSpy).toHaveBeenCalledTimes(2);
+    expect(writeSpy).toHaveBeenLastCalledWith(Buffer.from(packetHigh));
+
+    // ACK high priority command
+    await vi.advanceTimersByTimeAsync(10);
+    eventBus.emit('state:changed', { entityId: 'high_prio', state: {} });
+    await promiseHigh;
+
+    // Finally low priority command
+    await vi.advanceTimersByTimeAsync(1);
+    expect(writeSpy).toHaveBeenCalledTimes(3);
+    expect(writeSpy).toHaveBeenLastCalledWith(Buffer.from(packetLow));
+
+    // ACK low priority command
+    await vi.advanceTimersByTimeAsync(10);
+    eventBus.emit('state:changed', { entityId: 'low_prio', state: {} });
+    await promiseLow;
+  });
 });

@@ -343,7 +343,18 @@ export class AutomationManager {
       return;
     }
 
-    await this.commandManager.send(entity, packet);
+    let isLowPriority = action.low_priority;
+    if (isLowPriority === undefined) {
+      const commandKey = `command_${parsed.command}`;
+      const schema = (entity as any)[commandKey];
+      if (schema && typeof schema === 'object' && schema.low_priority) {
+        isLowPriority = true;
+      }
+    }
+
+    await this.commandManager.send(entity, packet, {
+      priority: isLowPriority ? 'low' : 'normal',
+    });
   }
 
   private async executePublishAction(action: AutomationActionPublish, context: TriggerContext) {

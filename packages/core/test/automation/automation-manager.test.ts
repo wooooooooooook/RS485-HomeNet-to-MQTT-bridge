@@ -121,6 +121,7 @@ describe('AutomationManager', () => {
     expect(commandManager.send).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'light_1', type: 'light' }),
       [0x01],
+      { priority: 'normal' },
     );
   });
 
@@ -393,5 +394,95 @@ describe('AutomationManager', () => {
     // 지연 시간 경과 후 두 번째 액션 실행 확인
     await vi.advanceTimersByTimeAsync(100);
     expect(mqttPublisher.publish).toHaveBeenCalledWith('step', '2', undefined);
+  });
+
+  it('should use command schema priority if automation priority is undefined', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      light: [
+        {
+          id: 'light_1',
+          name: 'Light 1',
+          type: 'light',
+          command_on: { data: [0x01], low_priority: true },
+        },
+      ],
+      automation: [
+        {
+          id: 'schema_priority_test',
+          trigger: [{ type: 'startup' }],
+          then: [
+            {
+              action: 'command',
+              target: 'id(light_1).command_on()',
+              // low_priority is undefined here
+            },
+          ],
+        },
+      ],
+    };
+
+    packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
+    automationManager.start();
+
+    await vi.runAllTimersAsync();
+
+    expect(commandManager.send).toHaveBeenCalledWith(
+      expect.anything(),
+      [0x01],
+      { priority: 'low' },
+    );
+  });
+
+  it('should override command schema priority with automation priority', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      light: [
+        {
+          id: 'light_1',
+          name: 'Light 1',
+          type: 'light',
+          command_on: { data: [0x01], low_priority: true },
+        },
+      ],
+      automation: [
+        {
+          id: 'override_priority_test',
+          trigger: [{ type: 'startup' }],
+          then: [
+            {
+              action: 'command',
+              target: 'id(light_1).command_on()',
+              low_priority: false, // Override to normal
+            },
+          ],
+        },
+      ],
+    };
+
+    packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
+    automationManager.start();
+
+    await vi.runAllTimersAsync();
+
+    expect(commandManager.send).toHaveBeenCalledWith(
+      expect.anything(),
+      [0x01],
+      { priority: 'normal' },
+    );
   });
 });

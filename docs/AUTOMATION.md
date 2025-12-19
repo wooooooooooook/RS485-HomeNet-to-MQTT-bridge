@@ -38,6 +38,7 @@ homenet_bridge:
 - `action: command`
   - `target`: `id(<entity>).command_<name>(<value?>)` 형태 문자열. 값은 생략하거나 `input`으로 별도 전달 가능.
   - `input`: 명령에 전달할 값(숫자/문자열/객체).
+  - `low_priority`: `true`로 설정 시 일반 명령 큐가 비어있을 때만 실행(기본값 `false`). 단, `schedule` 트리거에 의한 명령은 기본값이 `true`로 자동 설정됨.
 - `action: publish`
   - `topic`: 임의 MQTT 토픽.
   - `payload`: 문자열, 숫자, 객체(JSON 직렬화됨).

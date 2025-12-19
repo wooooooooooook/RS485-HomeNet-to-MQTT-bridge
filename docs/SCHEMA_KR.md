@@ -67,3 +67,28 @@ state:
   endian: 'little'
   precision: 1
 ```
+
+## CommandSchema
+
+`CommandSchema`는 장치로 전송할 명령 패킷을 정의하는 스키마입니다.
+
+| 속성              | 타입                   | 기본값   | 설명                                                                       |
+| ----------------- | ---------------------- | -------- | -------------------------------------------------------------------------- |
+| `data`            | `number[]`             | -        | 전송할 기본 패킷 데이터 (16진수 배열).                                     |
+| `value_offset`    | `number`               | -        | `data` 배열 내에서 입력값(value)이 삽입될 시작 인덱스.                     |
+| `length`          | `number`               | 1        | 입력값이 차지할 바이트 수.                                                 |
+| `endian`          | `'big'` \| `'little'`  | `'big'`  | 값의 바이트 순서.                                                          |
+| `value_encode`    | `DecodeEncodeType`     | `'none'` | 값 인코딩 방식 (`bcd`, `ascii`, `multiply` 등).                            |
+| `multiply_factor` | `number`               | -        | `value_encode: multiply` 사용 시 곱할 계수.                                |
+
+## Automation Action
+
+자동화(`automation`)에서 명령(`command`) 액션을 사용할 때 다음 옵션을 사용할 수 있습니다.
+
+### action: command
+
+| 속성           | 타입      | 설명                                                                                                                                              |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`       | `string`  | 대상 엔티티와 명령 (`id(entity).command_on()`).                                                                                                   |
+| `input`        | `any`     | 명령에 전달할 값.                                                                                                                                 |
+| `low_priority` | `boolean` | `true`로 설정 시 일반(높은 우선순위) 명령 큐가 비어있을 때만 실행됩니다. `schedule` 트리거에 의한 명령은 기본값이 `true`로 자동 설정됩니다. |

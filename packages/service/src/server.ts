@@ -97,8 +97,14 @@ const parseEnvList = (
 
   return { source, values };
 };
+const envConfigFiles = (() => {
+  const parsed = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+  if (parsed.values.length > 0) {
+    return parsed;
+  }
 
-const envConfigFiles = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
+  return { source: 'default', values: [DEFAULT_CONFIG_FILENAME] } as const;
+})();
 
 const listExampleConfigs = async (): Promise<string[]> => {
   try {

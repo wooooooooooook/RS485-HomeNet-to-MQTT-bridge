@@ -18,14 +18,14 @@ if [ -z "$CONFIG_FILES" ] && [ -n "$LEGACY_CONFIG_FILE" ] && [ "$LEGACY_CONFIG_F
   CONFIG_FILES="$LEGACY_CONFIG_FILE"
 fi
 
+if [ -z "$CONFIG_FILES" ] || [ "$CONFIG_FILES" == "null" ]; then
+  CONFIG_FILES="default.homenet_bridge.yaml"
+fi
+
 IFS=',' read -r -a CONFIG_FILE_LIST <<< "$CONFIG_FILES"
 
-if [ ${#CONFIG_FILE_LIST[@]} -eq 0 ]; then
-  echo "[addon-dev] config_files가 비어 있습니다. 기본 설정 마법사를 기다립니다."
-else
-  export CONFIG_FILES="$CONFIG_FILES"
-  export CONFIG_FILE="${CONFIG_FILE_LIST[0]}"
-fi
+export CONFIG_FILES="$CONFIG_FILES"
+export CONFIG_FILE="${CONFIG_FILE_LIST[0]}"
 
 # Setup configuration directory in Home Assistant config
 HA_CONFIG_DIR="/homeassistant/homenet2mqtt"

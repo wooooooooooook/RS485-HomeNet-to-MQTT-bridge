@@ -26,7 +26,7 @@
 
 4. 애드온 구성에서 `config_files` 배열과 `mqtt_topic_prefix`를 설정해주세요 (`config_file`는 하위 호환)
 
-   - `config_files`: 3번에서 수정한 설정 파일 이름을 나열합니다. 파일마다 단일 포트 구성을 담고 있으며, 항목별로 별도 브릿지가 뜹니다.
+   - `config_files`: 3번에서 수정한 설정 파일 이름을 나열합니다. 파일마다 단일 포트 구성을 담고 있으며, 항목별로 별도 브릿지가 뜹니다. 값을 비워두면 기본값으로 `default.homenet_bridge.yaml`이 사용됩니다.
 
    - `mqtt_topic_prefix`: MQTT 토픽 접두사. 기본값은 `homenet2mqtt`이며 최종 토픽은 `${mqtt_topic_prefix}/{portId}/{entityId}/...` 형태로 발행됩니다.
 
@@ -37,7 +37,7 @@
 6. 애드온의 webUI는 현재 패킷 수신상태 확인 및 등록된 엔티티의 상태, 명령패킷보내기 등의 기능이 있고 패킷간격분석이있는데, 명령이 계속 씹히는 경우에 패킷 간격과 겹치지 않는 딜레이를 설정해보시라고 넣었습니다.
 
 ## 초기화 및 기본 설정 파일
-- 기본 번들 설정 파일은 `packages/core/config/commax.homenet_bridge.yaml`이며 추가 예제는 `packages/core/config/examples/`에 있습니다.
+- 기본 번들 설정 파일은 `packages/core/config/commax.homenet_bridge.yaml`이며 추가 예제는 `packages/core/config/examples/`에 있습니다. `config_files` 옵션을 지정하지 않아도 `default.homenet_bridge.yaml`이 기본값으로 로딩됩니다.
 - `/homeassistant/homenet2mqtt`에 `default.homenet_bridge.yaml` 또는 `default.yaml`이 없고 `.initialized` 파일도 없으면 `/api/config/examples`에서 예제 목록을 내려주며, 선택한 항목이 `default.homenet_bridge.yaml`으로 복사된 뒤 `.initialized`/`.restart-required`가 생성됩니다. 서버 프로세스는 종료되고 애드온 루프가 이를 감지해 자동 재시작합니다.
 
 | 상황 | 설정 파일 우선순위 |

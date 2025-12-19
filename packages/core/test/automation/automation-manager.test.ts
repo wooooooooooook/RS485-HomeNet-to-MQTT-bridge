@@ -155,7 +155,7 @@ describe('AutomationManager', () => {
       automation: [
         {
           id: 'interval_test',
-          trigger: [{ type: 'schedule', every_ms: 100 }],
+          trigger: [{ type: 'schedule', every: 100 }],
           then: [{ action: 'publish', topic: 'tick', payload: 'tock' }],
         },
       ],

@@ -551,8 +551,8 @@ homenet_bridge:
 
 automation:
   - trigger:
-      - type: interval
-        every_ms: 2h
+      - type: schedule
+        every: 2h
     action:
       - type: command
         id: livingroom_light_1

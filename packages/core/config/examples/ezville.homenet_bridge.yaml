@@ -712,8 +712,8 @@ homenet_bridge:
 
 automation:
   - trigger:
-      - type: interval
-        every_ms: 10m
+      - type: schedule
+        every: 1m
     action:
       - type: command
         id: total_water_usage

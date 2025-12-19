@@ -29,8 +29,8 @@ homenet_bridge:
 - `type: packet`
   - `match`: [`StateSchema`](./config-schema/lambda.md#stateschema와-statenumschema-필드) 형태(`data`, `mask`, `offset`, `inverted`). `data`/`mask`로 패킷 바이트를 매칭한다.
 - `type: schedule`
-  - `every_ms`: 주기 실행 간격(ms 또는 `1s`/`5m`).
-  - `cron`: UTC 기준 5필드 cron(`"0 7 * * *"`). `every_ms`와 병행 가능.
+  - `every`: 주기 실행 간격(ms 또는 `1s`/`5m`).
+  - `cron`: UTC 기준 5필드 cron(`"0 7 * * *"`). `every`와 병행 가능.
 - `type: startup`
   - 브릿지 초기화 완료 후 한 번 실행.
 
@@ -73,7 +73,7 @@ homenet_bridge:
       description: "5분마다 상태 핑"
       trigger:
         - type: schedule
-          every_ms: 5m
+          every: 5m
       then:
         - action: publish
           topic: homenet/bridge/ping

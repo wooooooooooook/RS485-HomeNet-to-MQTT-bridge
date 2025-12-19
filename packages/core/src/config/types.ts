@@ -41,7 +41,7 @@ export interface AutomationTriggerPacket {
 
 export interface AutomationTriggerSchedule {
   type: 'schedule';
-  every_ms?: number | string;
+  every?: number | string;
   cron?: string;
   guard?: AutomationGuard;
 }

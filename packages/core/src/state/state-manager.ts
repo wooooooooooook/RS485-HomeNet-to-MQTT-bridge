@@ -94,11 +94,12 @@ export class StateManager {
 
     const topic = `${this.mqttTopicPrefix}/${deviceId}/state`;
     const payload = JSON.stringify(newState);
+    const shouldLogState = logger.isLevelEnabled('info') || logger.isLevelEnabled('debug');
+    const stateStr = shouldLogState ? payload.replace(/["{}]/g, '').replace(/,/g, ', ') : null; // Avoid double JSON serialization in hot path
 
     if (stateCache.get(topic) !== payload) {
       stateCache.set(topic, payload);
-      if (logger.isLevelEnabled('info')) {
-        const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
+      if (logger.isLevelEnabled('info') && stateStr) {
         logger.info(`[StateManager] ${deviceId}: {${stateStr}} → ${topic} [published]`);
       }
       this.mqttPublisher.publish(topic, payload, { retain: true });
@@ -115,8 +116,7 @@ export class StateManager {
       });
       eventBus.emit(`device:${deviceId}:state:changed`, newState);
     } else {
-      if (logger.isLevelEnabled('debug')) {
-        const stateStr = JSON.stringify(newState).replace(/["{}]/g, '').replace(/,/g, ', ');
+      if (logger.isLevelEnabled('debug') && stateStr) {
         logger.debug(`[StateManager] ${deviceId}: {${stateStr}} [unchanged]`);
       }
     }

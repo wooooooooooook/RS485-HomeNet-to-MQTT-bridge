@@ -709,3 +709,15 @@ homenet_bridge:
       icon: 'mdi:elevator'
       command_on:
         data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x24, 0x00]
+
+automation:
+  - trigger:
+      - type: schedule
+        every: 1m
+    action:
+      - type: command
+        id: total_water_usage
+        command: command_update
+      - type: command
+        id: total_gas_usage
+        command: command_update

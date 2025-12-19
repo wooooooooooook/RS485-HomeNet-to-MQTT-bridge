@@ -67,7 +67,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'livingroom_light_2'
       name: 'Living Room Light 2'
@@ -181,7 +180,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'room_1_heater'
       name: 'Room 1 Heater'
@@ -248,7 +246,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'room_2_heater'
       name: 'Room 2 Heater'
@@ -311,7 +308,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'room_3_heater'
       name: 'Room 3 Heater'
@@ -374,7 +370,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'room_4_heater'
       name: 'Room 4 Heater'
@@ -437,7 +432,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
     - id: 'room_5_heater'
       name: 'Room 5 Heater'
@@ -504,7 +498,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
   valve:
     - name: 'Gas Valve'
@@ -560,7 +553,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
   fan:
     - name: 'Navien Ventilator'
@@ -644,7 +636,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
-      update_interval: 2h
 
   sensor:
     - name: 'Elevator Floors'
@@ -760,3 +751,36 @@ homenet_bridge:
   button:
     - name: 'Refresh'
       icon: 'mdi:refresh-circle'
+
+automation:
+  - trigger:
+      - type: schedule
+        every: 2h
+    action:
+      - type: command
+        id: livingroom_light_1
+        command: command_update
+      - type: command
+        id: livingroom_heater
+        command: command_update
+      - type: command
+        id: room_1_heater
+        command: command_update
+      - type: command
+        id: room_2_heater
+        command: command_update
+      - type: command
+        id: room_3_heater
+        command: command_update
+      - type: command
+        id: room_4_heater
+        command: command_update
+      - type: command
+        id: room_5_heater
+        command: command_update
+      - type: command
+        id: gas_valve
+        command: command_update
+      - type: command
+        id: navien_ventilator
+        command: command_update

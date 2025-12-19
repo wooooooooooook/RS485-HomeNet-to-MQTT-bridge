@@ -58,7 +58,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x0e, 0x00]
-      update_interval: 2h
 
     - name: 'Livingroom Light 2'
       state:
@@ -151,7 +150,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x00]
-      update_interval: 2h
 
     - name: 'Bedroom Heater'
       visual:
@@ -217,7 +215,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x01]
-      update_interval: 2h
 
     - name: 'Room 1 Heater'
       visual:
@@ -279,7 +276,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x02]
-      update_interval: 2h
 
     - name: 'Room 2 Heater'
       visual:
@@ -341,7 +337,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x03]
-      update_interval: 2h
 
     - name: 'Livingroom 2 Heater'
       visual:
@@ -403,7 +398,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x04]
-      update_interval: 2h
 
   sensor:
     - name: 'Livingroom Temperature'
@@ -511,7 +505,6 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc, 0x00, 0x2c, 0x00]
-      update_interval: 2h
 
   text_sensor:
     - name: 'Elevator'
@@ -555,3 +548,30 @@ homenet_bridge:
       on_turn_on:
         - lambda: |-
             id(id_elevator_state).publish_state("호출")
+
+automation:
+  - trigger:
+      - type: schedule
+        every: 2h
+    action:
+      - type: command
+        id: livingroom_light_1
+        command: command_update
+      - type: command
+        id: livingroom_heater
+        command: command_update
+      - type: command
+        id: bedroom_heater
+        command: command_update
+      - type: command
+        id: room_1_heater
+        command: command_update
+      - type: command
+        id: room_2_heater
+        command: command_update
+      - type: command
+        id: livingroom_2_heater
+        command: command_update
+      - type: command
+        id: gas_buner_lock
+        command: command_update

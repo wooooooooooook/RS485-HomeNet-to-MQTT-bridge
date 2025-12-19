@@ -166,7 +166,7 @@ export class AutomationManager {
   }
 
   private setupScheduleTrigger(automation: AutomationConfig, trigger: AutomationTriggerSchedule) {
-    if (!trigger.every_ms && !trigger.cron) {
+    if (trigger.every === undefined && !trigger.cron) {
       logger.warn(
         { automation: automation.id },
         '[automation] schedule trigger missing interval or cron',
@@ -175,7 +175,7 @@ export class AutomationManager {
     }
 
     const every =
-      trigger.every_ms !== undefined ? parseDuration(trigger.every_ms as any) : undefined;
+      trigger.every !== undefined ? parseDuration(trigger.every as any) : undefined;
 
     if (every !== undefined) {
       const interval = setInterval(() => {

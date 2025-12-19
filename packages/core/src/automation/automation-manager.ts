@@ -174,8 +174,7 @@ export class AutomationManager {
       return;
     }
 
-    const every =
-      trigger.every !== undefined ? parseDuration(trigger.every as any) : undefined;
+    const every = trigger.every !== undefined ? parseDuration(trigger.every as any) : undefined;
 
     if (every !== undefined) {
       const interval = setInterval(() => {

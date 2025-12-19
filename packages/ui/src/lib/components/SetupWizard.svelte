@@ -256,12 +256,7 @@
               type="button"
               class="secondary-btn"
               onclick={handleSerialTest}
-              disabled={
-                submitting ||
-                testingSerial ||
-                !selectedExample ||
-                !serialPath.trim()
-              }
+              disabled={submitting || testingSerial || !selectedExample || !serialPath.trim()}
             >
               {testingSerial
                 ? $t('setup_wizard.serial_test_running')
@@ -549,7 +544,8 @@
     align-items: center;
     gap: 0.5rem;
     color: #e2e8f0;
-    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-family:
+      'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     word-break: break-all;
   }
 

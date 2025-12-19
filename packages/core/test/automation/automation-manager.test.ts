@@ -434,11 +434,9 @@ describe('AutomationManager', () => {
 
     await vi.runAllTimersAsync();
 
-    expect(commandManager.send).toHaveBeenCalledWith(
-      expect.anything(),
-      [0x01],
-      { priority: 'low' },
-    );
+    expect(commandManager.send).toHaveBeenCalledWith(expect.anything(), [0x01], {
+      priority: 'low',
+    });
   });
 
   it('should override command schema priority with automation priority', async () => {
@@ -479,10 +477,8 @@ describe('AutomationManager', () => {
 
     await vi.runAllTimersAsync();
 
-    expect(commandManager.send).toHaveBeenCalledWith(
-      expect.anything(),
-      [0x01],
-      { priority: 'normal' },
-    );
+    expect(commandManager.send).toHaveBeenCalledWith(expect.anything(), [0x01], {
+      priority: 'normal',
+    });
   });
 });

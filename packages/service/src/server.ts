@@ -89,7 +89,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-      ' 사용을 권장합니다.',
+        ' 사용을 권장합니다.',
     );
   }
 
@@ -995,10 +995,7 @@ const getInitializationState = async () => {
 
 app.get('/api/config/examples', async (_req, res) => {
   try {
-    const [state, examples] = await Promise.all([
-      getInitializationState(),
-      listExampleConfigs(),
-    ]);
+    const [state, examples] = await Promise.all([getInitializationState(), listExampleConfigs()]);
 
     res.json({
       configRoot: CONFIG_DIR,
@@ -1622,7 +1619,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -1806,13 +1803,14 @@ server.listen(port, async () => {
         /\.homenet_bridge\.ya?ml$/.test(file),
     );
 
-    const shouldPersistInitMarker = !initState.hasInitMarker && Boolean(initState.defaultConfigName);
+    const shouldPersistInitMarker =
+      !initState.hasInitMarker && Boolean(initState.defaultConfigName);
 
     const availableConfigFiles = (() => {
       if (!initState.hasInitMarker && initState.defaultConfigName) {
-        const remaining = (configFilesFromEnv.length > 0 ? configFilesFromEnv : discoveredConfigFiles).filter(
-          (file) => file !== initState.defaultConfigName,
-        );
+        const remaining = (
+          configFilesFromEnv.length > 0 ? configFilesFromEnv : discoveredConfigFiles
+        ).filter((file) => file !== initState.defaultConfigName);
         return [initState.defaultConfigName, ...remaining];
       }
 
@@ -1837,7 +1835,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
       logger.info('[service] Cleared .restart-required flag');
     }
 

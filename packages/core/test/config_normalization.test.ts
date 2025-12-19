@@ -44,9 +44,7 @@ describe('Config Normalization', () => {
         {
           id: 'auto1',
           trigger: [{ type: 'schedule', every_ms: '1s' }],
-          then: [
-            { action: 'command', target: 'id(light1).command_on()', low_priority: false },
-          ],
+          then: [{ action: 'command', target: 'id(light1).command_on()', low_priority: false }],
         },
       ],
     };
@@ -64,9 +62,7 @@ describe('Config Normalization', () => {
         {
           id: 'auto1',
           trigger: [{ type: 'state', entity_id: 'light1' }],
-          then: [
-            { action: 'command', target: 'id(light1).command_on()' },
-          ],
+          then: [{ action: 'command', target: 'id(light1).command_on()' }],
         },
       ],
     };

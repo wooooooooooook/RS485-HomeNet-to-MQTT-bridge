@@ -173,8 +173,8 @@ describe('CommandManager', () => {
     const writeSpy = vi.spyOn(serialPort, 'write');
     const entityLow: EntityConfig = { id: 'low_prio', name: 'Low Prio', type: 'light' };
     const entityHigh: EntityConfig = { id: 'high_prio', name: 'High Prio', type: 'light' };
-    const packetLow = [0xAA];
-    const packetHigh = [0xBB];
+    const packetLow = [0xaa];
+    const packetHigh = [0xbb];
 
     // Start a command to block the queue
     const promise1 = commandManager.send(testEntity, testPacket);

@@ -24,6 +24,7 @@ options:
   mqtt_topic_prefix: homenet2mqtt
 hassio_role: default
 hassio_api: true
+uart: true
 services:
   - mqtt:need
 schema:

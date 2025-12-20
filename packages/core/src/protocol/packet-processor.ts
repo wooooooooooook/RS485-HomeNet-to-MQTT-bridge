@@ -18,6 +18,7 @@ import { TextSensorDevice } from './devices/text-sensor.device.js';
 import { TextDevice } from './devices/text.device.js';
 import { ProtocolConfig } from './types.js';
 import { slugify } from '../utils/common.js';
+import { CommandGenerator } from './generators/command.generator.js';
 
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
@@ -29,6 +30,7 @@ export interface EntityStateProvider {
 export class PacketProcessor extends EventEmitter {
   private protocolManager: ProtocolManager;
   private states?: Map<string, Record<string, any>>;
+  private commandGenerator: CommandGenerator;
 
   constructor(
     config: HomenetBridgeConfig,
@@ -42,6 +44,7 @@ export class PacketProcessor extends EventEmitter {
       rx_priority: 'data', // Default to data priority
     };
     this.protocolManager = new ProtocolManager(protocolConfig);
+    this.commandGenerator = new CommandGenerator(config, stateProvider);
 
     // Register devices
     const deviceMap: Record<string, any> = {
@@ -116,16 +119,7 @@ export class PacketProcessor extends EventEmitter {
     commandName: string,
     value?: number | string,
   ): number[] | null {
-    // Find the device in protocol manager?
-    // Or just create a temporary device to construct command?
-    // Ideally we should look up the registered device.
-    // But ProtocolManager doesn't expose getDeviceById yet.
-    // For now, let's use a temporary GenericDevice since it's stateless for command construction usually.
-    // OR, better, add getDeviceById to ProtocolManager.
-
-    // Using temporary device for now to keep it simple
-    const device = new GenericDevice(entity, this.protocolManager['config']);
-    return device.constructCommand(commandName, value, this.states);
+    return this.commandGenerator.constructCommandPacket(entity, commandName, value);
   }
 
   // Deprecated/Legacy method support if needed, or remove if we update call sites

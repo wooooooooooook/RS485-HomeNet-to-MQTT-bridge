@@ -1,4 +1,8 @@
-serial device 매핑 누락 수정
+v1.0.2
+fix: ezville같은 2-byte checksum을 사용하는 구성에서 명령패킷에 체크섬이 포함되지 않는 문제 수정
+
+v1.0.1
+fix: ha addon환경에서 serial device 매핑 누락 수정 - usb시리얼장치 접근이 안되는 문제 수정입니다
 
 v1.0.0
 - **베타버전 진입**

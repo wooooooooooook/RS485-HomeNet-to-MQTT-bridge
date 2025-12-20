@@ -1,4 +1,5 @@
 import { Environment } from '@marcbachmann/cel-js';
+import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
 
 export class CelExecutor {
@@ -64,6 +65,18 @@ export class CelExecutor {
 
       if (Array.isArray(contextData.data)) {
         safeContext.data = contextData.data.map((d: any) => BigInt(d));
+      } else if (
+        Buffer.isBuffer(contextData.data) ||
+        contextData.data instanceof Uint8Array
+      ) {
+        // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
+        // to avoid intermediate array allocation and function call overhead.
+        const len = contextData.data.length;
+        const arr = new Array(len);
+        for (let i = 0; i < len; i++) {
+          arr[i] = BigInt(contextData.data[i]);
+        }
+        safeContext.data = arr;
       } else {
         safeContext.data = [];
       }

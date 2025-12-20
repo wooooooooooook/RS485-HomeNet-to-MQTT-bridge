@@ -22,6 +22,9 @@ import { slugify } from '../utils/common.js';
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
   getClimateState(entityId: string): { targetTemperature: number } | undefined;
+  // Methods for CEL context
+  getAllStates?(): Record<string, any>;
+  getEntityState?(entityId: string): Record<string, any>;
 }
 
 export class PacketProcessor extends EventEmitter {

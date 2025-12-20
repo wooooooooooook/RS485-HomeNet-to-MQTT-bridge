@@ -20,12 +20,12 @@ export type EndianType = 'big' | 'little';
 export interface PacketDefaults {
   rx_header?: number[];
   rx_footer?: number[];
-  rx_checksum?: ChecksumType | { type: 'custom'; algorithm: string } | string;
+  rx_checksum?: ChecksumType | string;
   rx_checksum2?: Checksum2Type | string;
   rx_length?: number;
   tx_header?: number[];
   tx_footer?: number[];
-  tx_checksum?: ChecksumType | { type: 'custom'; algorithm: string } | string;
+  tx_checksum?: ChecksumType | string;
   tx_checksum2?: Checksum2Type | string;
   tx_delay?: number;
   tx_retry_cnt?: number;

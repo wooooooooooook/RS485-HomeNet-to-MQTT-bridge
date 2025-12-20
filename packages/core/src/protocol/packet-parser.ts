@@ -262,12 +262,6 @@ export class PacketParser {
           });
           return result === checksumByte;
         }
-      } else if (
-        typeof this.defaults.rx_checksum === 'object' &&
-        (this.defaults.rx_checksum as any).type === 'custom'
-      ) {
-        // Custom algorithm handling (placeholder)
-        return false;
       }
       return false;
     }

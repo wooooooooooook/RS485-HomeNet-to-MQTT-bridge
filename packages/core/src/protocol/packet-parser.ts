@@ -179,13 +179,64 @@ export class PacketParser {
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + checksumLen;
         if (checksumLen > 0 && this.buffer.length >= minLen) {
-          for (let len = minLen; len <= this.buffer.length; len++) {
-            if (this.verifyChecksum(this.buffer, len)) {
-              const packet = this.buffer.subarray(0, len);
-              packets.push([...packet]);
-              this.buffer = this.buffer.subarray(len);
-              matchFound = true;
-              break;
+          const checksumType = this.defaults.rx_checksum;
+          const isStandard1Byte =
+            typeof checksumType === 'string' &&
+            ['add', 'xor', 'add_no_header', 'xor_no_header'].includes(checksumType);
+
+          if (isStandard1Byte) {
+            // Optimization: Incremental checksum calculation
+            // Instead of re-calculating the full checksum for every candidate length,
+            // we update the checksum incrementally as we advance the length.
+            let runningChecksum = 0;
+            const startIdx = (checksumType as string).includes('no_header') ? headerLen : 0;
+            const initialDataEnd = minLen - checksumLen;
+
+            // Calculate initial checksum for the shortest possible packet
+            if ((checksumType as string).startsWith('add')) {
+              for (let i = startIdx; i < initialDataEnd; i++) {
+                runningChecksum += this.buffer[i];
+              }
+            } else {
+              for (let i = startIdx; i < initialDataEnd; i++) {
+                runningChecksum ^= this.buffer[i];
+              }
+            }
+
+            for (let len = minLen; len <= this.buffer.length; len++) {
+              // Update checksum with the new byte added to the data section
+              if (len > minLen) {
+                // The byte that was previously the checksum (or part of future data)
+                // is now part of the data being checksummed.
+                // Packet length increased by 1, so data section extended by 1.
+                // The new data byte is at `len - 1 - checksumLen`.
+                const newByte = this.buffer[len - 1 - checksumLen];
+                if ((checksumType as string).startsWith('add')) {
+                  runningChecksum += newByte;
+                } else {
+                  runningChecksum ^= newByte;
+                }
+              }
+
+              const expected = this.buffer[len - 1];
+              if ((runningChecksum & 0xff) === expected) {
+                const packet = this.buffer.subarray(0, len);
+                packets.push([...packet]);
+                this.buffer = this.buffer.subarray(len);
+                matchFound = true;
+                break;
+              }
+            }
+          } else {
+            // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
+            for (let len = minLen; len <= this.buffer.length; len++) {
+              if (this.verifyChecksum(this.buffer, len)) {
+                const packet = this.buffer.subarray(0, len);
+                packets.push([...packet]);
+                this.buffer = this.buffer.subarray(len);
+                matchFound = true;
+                break;
+              }
             }
           }
         }

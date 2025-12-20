@@ -5,3 +5,7 @@
 ## 2025-12-18 - [PacketParser Footer Search]
 **Learning:** `Buffer.indexOf` provides massive speedup (~7x) for scanning specific byte sequences (footers) compared to manual nested loops, but only for sequences with low probability of random occurrence (e.g. 4+ bytes). For short sequences (2 bytes) in random data, the improvement is negligible due to frequent false positive matches requiring subsequent validation.
 **Action:** Prefer `Buffer.indexOf` for searching headers/footers, but be aware that its effectiveness scales with sequence uniqueness.
+
+## 2025-12-20 - [PacketParser Checksum Sweep]
+**Learning:** `PacketParser` Strategy C (variable length sweep) was O(N²) because it recalculated the full checksum for every candidate length. For standard checksums (add/xor), this can be O(N) using incremental updates.
+**Action:** When scanning data streams for variable length packets, always look for rolling/incremental checksum opportunities to avoid O(N²) complexity.

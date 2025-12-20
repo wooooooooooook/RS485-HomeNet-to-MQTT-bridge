@@ -445,6 +445,10 @@ export class HomeNetBridge {
         this.portContexts.get(portId)?.stateManager.getLightState(entityId),
       getClimateState: (entityId: string) =>
         this.portContexts.get(portId)?.stateManager.getClimateState(entityId),
+      getAllStates: () =>
+        this.portContexts.get(portId)?.stateManager.getAllStates() || {},
+      getEntityState: (entityId: string) =>
+        this.portContexts.get(portId)?.stateManager.getEntityState(entityId),
     };
   }
 

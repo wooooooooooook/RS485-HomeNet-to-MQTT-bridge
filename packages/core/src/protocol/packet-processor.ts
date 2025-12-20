@@ -22,6 +22,8 @@ import { slugify } from '../utils/common.js';
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
   getClimateState(entityId: string): { targetTemperature: number } | undefined;
+  getAllStates(): Record<string, any>;
+  getEntityState(entityId: string): any;
 }
 
 export class PacketProcessor extends EventEmitter {

@@ -18,6 +18,7 @@
     ToastMessage,
     FrontendSettings,
     ActivityLog,
+    StatusMessage,
   } from './lib/types';
   import Sidebar from './lib/components/Sidebar.svelte';
   import Header from './lib/components/Header.svelte';
@@ -58,7 +59,7 @@
   let deviceStates = $state(new Map<string, DeviceStateEntry>());
   let socket = $state<WebSocket | null>(null);
   let connectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle');
-  let statusMessage = $state('');
+  let statusMessage = $state<StatusMessage | null>(null);
   let isStreaming = $state(false);
 
   // Command buttons state
@@ -426,7 +427,7 @@
     closeStream();
 
     connectionStatus = 'connecting';
-    statusMessage = 'mqtt.connecting';
+    statusMessage = { key: 'mqtt.connecting' };
 
     // ingress 환경에서는 window.location을 기준으로 해야 Supervisor 토큰이 포함된다
     const baseUrl = typeof window !== 'undefined' ? window.location.href : document.baseURI;
@@ -448,32 +449,19 @@
       const state = data.state;
       if (state === 'connected') {
         connectionStatus = 'connected';
-        statusMessage = 'mqtt.connected';
+        statusMessage = { key: 'mqtt.connected' };
       } else if (state === 'subscribed') {
         connectionStatus = 'connected';
-        // params will be handled by translation component if we pass params separately,
-        // but currently Dashboard receives a single string.
-        // We can pre-interpolate here if we had access to $t inside script,
-        // OR we change statusMessage to be an object or use a convention.
-        // Given current architecture, let's keep it simple: pass a special string format or handle it in Dashboard.
-        // To support params like {topic}, we need to change how statusMessage is used.
-        // However, since we don't want to refactor Dashboard props too much right now,
-        // let's try to pass the key and rely on Dashboard to translate it.
-        // BUT 'subscribed' needs a param.
-        // Hack: We will store JSON string if params are needed, or handle it in Dashboard.
-        // Better: Dashboard uses $t(statusMessage)
-        // For params: statusMessage = JSON.stringify({ key: 'mqtt.subscribed', values: { topic: data.topic } })
-        // This is getting complicated for a simple status.
-        // Let's modify handleStatus to dispatch an object or simply use a dedicated store for status.
-        // For now, let's use the simplest approach compatible with Dashboard's string prop.
-        statusMessage = JSON.stringify({ key: 'mqtt.subscribed', values: { topic: data.topic } });
+        statusMessage = { key: 'mqtt.subscribed', values: { topic: data.topic } };
       } else if (state === 'error') {
         connectionStatus = 'error';
         // Error messages from server might be raw strings.
-        statusMessage = typeof data.message === 'string' ? data.message : 'mqtt.error';
+        statusMessage = {
+          key: typeof data.message === 'string' ? data.message : 'mqtt.error',
+        };
       } else if (state === 'connecting') {
         connectionStatus = 'connecting';
-        statusMessage = 'mqtt.connecting';
+        statusMessage = { key: 'mqtt.connecting' };
       }
     };
 
@@ -589,7 +577,7 @@
 
     socket.addEventListener('open', () => {
       connectionStatus = 'connected';
-      statusMessage = 'mqtt.connected';
+      statusMessage = { key: 'mqtt.connected' };
     });
 
     socket.addEventListener('message', (event) => {
@@ -604,7 +592,7 @@
 
     const handleDisconnect = () => {
       connectionStatus = 'connecting';
-      statusMessage = 'mqtt.disconnected';
+      statusMessage = { key: 'mqtt.disconnected' };
       socket = null;
       socketCloseHandler = null;
       socketErrorHandler = null;
@@ -647,7 +635,7 @@
       socketErrorHandler = null;
     }
     connectionStatus = 'idle';
-    statusMessage = '';
+    statusMessage = null;
     packetStatsByPort = new Map();
     hasIntervalPackets = false;
     lastRawPacketTimestamp = null;

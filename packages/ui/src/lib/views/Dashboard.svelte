@@ -5,6 +5,7 @@
     BridgeSerialInfo,
     ActivityLog,
     BridgeStatus,
+    StatusMessage,
   } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
@@ -22,7 +23,7 @@
     showInactive,
     activityLogs,
     connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
-    statusMessage = '',
+    statusMessage = null,
     portStatuses = [],
     onSelect,
     onToggleInactive,
@@ -44,7 +45,7 @@
     showInactive: boolean;
     activityLogs: ActivityLog[];
     connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
-    statusMessage?: string;
+    statusMessage?: StatusMessage | null;
     portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
     onSelect?: (entityId: string, portId?: string) => void;
     onToggleInactive?: () => void;
@@ -90,17 +91,6 @@
     onSelect?.(entityId, portId);
   }
 
-  const parseStatusMessage = (msg: string | undefined) => {
-    if (!msg) return { key: 'dashboard.mqtt_waiting', values: {} };
-    try {
-      const parsed = JSON.parse(msg);
-      if (parsed && typeof parsed === 'object' && parsed.key) {
-        return { key: parsed.key, values: parsed.values || {} };
-      }
-    } catch {}
-    // If not JSON, return as key with no values
-    return { key: msg, values: {} };
-  };
 </script>
 
 <div class="dashboard-view">
@@ -132,8 +122,7 @@
       <div class="mqtt-status" data-state={connectionStatus}>
         <span class="dot"></span>
         {#if statusMessage}
-          {@const status = parseStatusMessage(statusMessage)}
-          <span class="status-text">{$t(status.key, { values: status.values })}</span>
+          <span class="status-text">{$t(statusMessage.key, { values: statusMessage.values })}</span>
         {:else}
           <span class="status-text">{$t('dashboard.mqtt_waiting')}</span>
         {/if}

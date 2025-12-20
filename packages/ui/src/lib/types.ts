@@ -132,3 +132,8 @@ export type ToastMessage = {
   message: string;
   timestamp: string;
 };
+
+export type StatusMessage = {
+  key: string;
+  values?: Record<string, any>;
+};

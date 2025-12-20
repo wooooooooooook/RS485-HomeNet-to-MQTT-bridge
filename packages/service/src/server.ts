@@ -252,6 +252,7 @@ const MAX_PACKET_HISTORY = 1000;
 const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 seconds
 const configRateLimiter = new RateLimiter(60000, 5); // 5 requests per minute
 const serialTestRateLimiter = new RateLimiter(30000, 4); // 4 requests per 30 seconds
+const latencyTestRateLimiter = new RateLimiter(60000, 3); // 3 requests per minute
 
 eventBus.on('command-packet', (packet: unknown) => {
   commandPacketHistory.push(packet);
@@ -382,6 +383,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.post('/api/bridge/:portId/latency-test', async (req, res) => {
+  if (!latencyTestRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Latency test rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { portId } = req.params;
 
   if (bridges.length === 0) {

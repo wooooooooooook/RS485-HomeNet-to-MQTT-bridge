@@ -2,7 +2,14 @@ import { Device } from '../device.js';
 import { DeviceConfig, ProtocolConfig } from '../types.js';
 import { StateSchema, StateNumSchema } from '../types.js';
 import { CelExecutor } from '../cel-executor.js';
-import { calculateChecksum, ChecksumType } from '../utils/checksum.js';
+import {
+  calculateChecksum,
+  calculateChecksum2,
+  ChecksumType,
+  Checksum2Type,
+} from '../utils/checksum.js';
+import { logger } from '../../utils/logger.js';
+import { Buffer } from 'buffer';
 
 export class GenericDevice extends Device {
   private celExecutor: CelExecutor;
@@ -54,11 +61,6 @@ export class GenericDevice extends Device {
     }
 
     // Fallback to schema-based extraction if no lambda matched or as addition
-    // This is where we would use the schema to extract data
-    // For now, let's assume simple state extraction based on 'state' property in config if it exists
-    // The actual config structure for entities is in EntityConfig, which extends DeviceConfig (sort of)
-
-    // Example logic: check if packet matches 'state' pattern
     if (entityConfig.state && entityConfig.state.data) {
       // Check if packet contains the data pattern
       // This is a simplification. Uartex has complex matching logic.
@@ -77,7 +79,7 @@ export class GenericDevice extends Device {
     const commandKey = `command_${commandName}`;
     const commandConfig = entityConfig[commandKey];
 
-    let commandPacket: number[] | null = null;
+    let commandData: number[] | null = null;
 
     if (commandConfig) {
       if (typeof commandConfig === 'string') {
@@ -90,59 +92,90 @@ export class GenericDevice extends Device {
         });
 
         if (Array.isArray(result)) {
-          // Result might be array of arrays (packet + ack + mask) or just packet
-          // Uartex returns {{packet}, {ack}, {mask}}
-          // We need to handle this. For now assuming it returns just the packet data or the first element if array of arrays.
           if (Array.isArray(result[0])) {
-            commandPacket = result[0];
+            commandData = result[0];
           } else {
-            commandPacket = result;
+            commandData = result;
           }
         }
       } else if (commandConfig.data) {
-        commandPacket = [...commandConfig.data];
+        commandData = [...commandConfig.data];
       }
     }
 
-    if (commandPacket && this.protocolConfig.packet_defaults?.tx_checksum) {
-      const txHeader = this.protocolConfig.packet_defaults.tx_header || [];
+    if (commandData) {
+      const packetDefaults = this.protocolConfig.packet_defaults || {};
+      const txHeader = packetDefaults.tx_header || [];
+      const txFooter = packetDefaults.tx_footer || [];
+
       const headerPart = Buffer.from(txHeader);
-      const dataPart = Buffer.from(commandPacket);
-      const checksumType = this.protocolConfig.packet_defaults.tx_checksum as ChecksumType;
+      const dataPart = Buffer.from(commandData);
 
-      const standardChecksums = new Set([
-        'add',
-        'xor',
-        'add_no_header',
-        'xor_no_header',
-        'samsung_rx',
-        'samsung_tx',
-        'none',
-      ]);
+      let checksumPart: number[] = [];
 
-      if (typeof checksumType === 'string') {
-        if (standardChecksums.has(checksumType)) {
-          const checksum = calculateChecksum(headerPart, dataPart, checksumType);
-          commandPacket.push(checksum);
-        } else {
-          // CEL Expression
-          // Pass full packet (header + cmd) as 'data' for checksum calculation
-          const fullData = [...txHeader, ...commandPacket];
-          const result = this.celExecutor.execute(checksumType, {
-            data: fullData,
-            len: fullData.length,
-          });
-          if (typeof result === 'number') {
-            commandPacket.push(result);
-          } else if (Array.isArray(result)) {
-            // If returns array (like 2-byte checksum)
-            commandPacket.push(...result);
+      // Check for 1-byte checksum first
+      if (packetDefaults.tx_checksum && packetDefaults.tx_checksum !== 'none') {
+        const checksumType = packetDefaults.tx_checksum as ChecksumType | string;
+
+        const standardChecksums = new Set([
+          'add',
+          'xor',
+          'add_no_header',
+          'xor_no_header',
+          'samsung_rx',
+          'samsung_tx',
+          'none',
+        ]);
+
+        if (typeof checksumType === 'string') {
+          if (standardChecksums.has(checksumType)) {
+            const checksum = calculateChecksum(headerPart, dataPart, checksumType as ChecksumType);
+            checksumPart.push(checksum);
+          } else {
+            // CEL Expression
+            const fullData = [...txHeader, ...commandData];
+            const result = this.celExecutor.execute(checksumType, {
+              data: fullData,
+              len: fullData.length,
+            });
+            if (typeof result === 'number') {
+              checksumPart.push(result);
+            } else if (Array.isArray(result)) {
+              checksumPart.push(...result);
+            }
           }
         }
       }
+      // Check for 2-byte checksum if 1-byte checksum is not used
+      else if (packetDefaults.tx_checksum2) {
+         const checksumType = packetDefaults.tx_checksum2 as Checksum2Type | string;
+         const standardChecksums2 = new Set(['xor_add']);
+
+         if (typeof checksumType === 'string') {
+           if (standardChecksums2.has(checksumType)) {
+             const checksum = calculateChecksum2(headerPart, dataPart, checksumType as Checksum2Type);
+             checksumPart.push(...checksum);
+           } else {
+              // CEL Expression for 2-byte checksum
+              const fullData = [...txHeader, ...commandData];
+              const result = this.celExecutor.execute(checksumType, {
+                data: fullData,
+                len: fullData.length,
+              });
+              if (Array.isArray(result)) {
+                 checksumPart.push(...result);
+              } else {
+                 logger.warn(`CEL tx_checksum2 returned invalid result: ${result}`);
+              }
+           }
+         }
+      }
+
+      // Construct full packet: Header + Data + Checksum + Footer
+      return [...txHeader, ...commandData, ...checksumPart, ...txFooter];
     }
 
-    return commandPacket;
+    return null;
   }
 
   // --- Helper methods for parsing (moved from PacketParser) ---

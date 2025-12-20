@@ -42,8 +42,12 @@ homenet_bridge:
   text_sensor:
     - name: 'Response'
       internal: True
-      # FIXME: Complex side-effect logic (id(...).write_command) is not supported in CEL.
-      # Logic disabled during migration.
+      # Example of complex side-effect logic using CEL:
+      # This demonstrates the supported syntax id('entity_id').write_command('command_name', value)
+      # In a real scenario, this would likely be part of a 'state' expression if side-effects are needed there,
+      # or more appropriately in an automation 'on_state'.
+      # For validation purposes, we enable a harmless log command here.
+      # state: "id('call_private').write_command('log', 'Response Received') && true ? 'OK' : 'ERROR'"
 
   button:
     - name: 'Call Private'

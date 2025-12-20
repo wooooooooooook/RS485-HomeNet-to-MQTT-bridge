@@ -51,6 +51,10 @@ export class CelExecutor {
     this.env.registerFunction(name, impl);
   }
 
+  public registerType(name: string, impl: any) {
+    this.env.registerType(name, impl);
+  }
+
   public execute(script: string, contextData: Record<string, any>): any {
     try {
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'

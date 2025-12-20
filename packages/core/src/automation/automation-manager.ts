@@ -32,6 +32,11 @@ interface TriggerContext {
   timestamp: number;
 }
 
+// Helper class for CEL id(...) support
+class DeviceReference {
+  constructor(public id: string) {}
+}
+
 export class AutomationManager {
   private readonly automationList: AutomationConfig[];
   private readonly packetProcessor: PacketProcessor;
@@ -77,6 +82,21 @@ export class AutomationManager {
         // We catch the promise to avoid unhandled rejections.
         this.runCommandFromCel(entityId, command, value).catch((err) => {
           logger.error({ error: err }, '[automation] CEL command failed');
+        });
+        return true;
+      },
+    );
+
+    // Register DeviceReference type and functions for id(...).write_command(...)
+    this.celExecutor.registerType('DeviceReference', DeviceReference);
+    this.celExecutor.registerFunction('id(string): DeviceReference', (id: string) => {
+      return new DeviceReference(id);
+    });
+    this.celExecutor.registerFunction(
+      'DeviceReference.write_command(string, dyn): bool',
+      (device: DeviceReference, command: string, value: any) => {
+        this.runCommandFromCel(device.id, command, value).catch((err) => {
+          logger.error({ error: err }, '[automation] CEL write_command failed');
         });
         return true;
       },

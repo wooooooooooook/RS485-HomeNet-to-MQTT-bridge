@@ -76,6 +76,14 @@ export class StateManager {
     return undefined;
   }
 
+  public getAllStates(): Map<string, Record<string, any>> {
+    return this.deviceStates;
+  }
+
+  public getEntityState(entityId: string): Record<string, any> | undefined {
+    return this.deviceStates.get(entityId);
+  }
+
   private handleStateUpdate(event: { deviceId: string; state: any }) {
     const { deviceId, state } = event;
 

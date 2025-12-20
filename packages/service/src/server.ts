@@ -417,7 +417,14 @@ app.post('/api/bridge/:portId/latency-test', async (req, res) => {
 
   try {
     logger.info({ portId }, '[service] Starting latency test');
+    const startTime = Date.now();
     const stats = await targetBridgeInstance.bridge.runLatencyTest(portId);
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 5000) {
+      await new Promise((resolve) => setTimeout(resolve, 5000 - elapsed));
+    }
+
     res.json(stats);
   } catch (error) {
     logger.error({ err: error, portId }, '[service] Latency test failed');

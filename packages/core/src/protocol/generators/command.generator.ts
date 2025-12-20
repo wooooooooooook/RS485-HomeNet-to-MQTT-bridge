@@ -21,6 +21,15 @@ export class CommandGenerator {
   private stateProvider: EntityStateProvider;
   private celExecutor: CelExecutor;
 
+  private readonly checksumTypes = new Set([
+    'add',
+    'add_no_header',
+    'xor',
+    'xor_no_header',
+    'samsung_rx',
+    'samsung_tx',
+  ]);
+
   private readonly checksum2Types = new Set(['xor_add']);
 
   constructor(config: HomenetBridgeConfig, stateProvider: EntityStateProvider) {
@@ -223,13 +232,40 @@ export class CommandGenerator {
     const headerPart = Buffer.from(txHeader);
     const dataPart = Buffer.from(commandData);
 
-    // Check for 1-byte checksum first (more common)
+    // Check for 1-byte checksum first
     if (packetDefaults.tx_checksum && packetDefaults.tx_checksum !== 'none') {
-      const checksum = calculateChecksum(
-        headerPart,
-        dataPart,
-        packetDefaults.tx_checksum as ChecksumType,
-      );
+      const checksumOrScript = packetDefaults.tx_checksum as string;
+      let checksum = 0;
+
+      if (this.checksumTypes.has(checksumOrScript)) {
+        checksum = calculateChecksum(
+          headerPart,
+          dataPart,
+          packetDefaults.tx_checksum as ChecksumType,
+        );
+      } else {
+        // CEL Expression for 1-byte checksum
+        const fullData = [...txHeader, ...commandData];
+        // Pass global states to CEL for context if needed (though checksum usually depends on packet data)
+        const result = this.celExecutor.execute(checksumOrScript, {
+          data: fullData,
+          len: fullData.length,
+          states: this.stateProvider.getAllStates ? this.stateProvider.getAllStates() : {}, // Safety check
+          state: this.stateProvider.getEntityState
+            ? this.stateProvider.getEntityState(entity.id)
+            : {},
+        });
+
+        if (typeof result === 'number') {
+          checksum = result & 0xff;
+        } else {
+          logger.error(
+            `CEL tx_checksum returned invalid result. Expected number, got: ${JSON.stringify(result)}`,
+          );
+          checksum = 0;
+        }
+      }
+
       return [...txHeader, ...commandData, checksum, ...txFooter];
     }
 
@@ -248,6 +284,10 @@ export class CommandGenerator {
           const result = this.celExecutor.execute(checksumOrScript, {
             data: fullData,
             len: fullData.length,
+            states: this.stateProvider.getAllStates ? this.stateProvider.getAllStates() : {},
+            state: this.stateProvider.getEntityState
+              ? this.stateProvider.getEntityState(entity.id)
+              : {},
           });
 
           // Validate result is array of 2 bytes

@@ -90,7 +90,7 @@ LOG_LEVEL=debug
 ## 추가 리소스
 - Home Assistant MQTT Discovery: `docs/HOMEASSISTANT_DISCOVERY.md`
 - 엔티티 정의 예시: `docs/ENTITY_EXAMPLES.md`
-- Lambda DSL 참고: `docs/LAMBDA.md`
+- CEL 가이드: `docs/CEL_GUIDE.md`
 - 기기 타입별 설정: `docs/DEVICE_SETTINGS.md`
 - Hass.io 애드온: `hassio-addon/` (Home Assistant OS에서 직접 실행 시)
 

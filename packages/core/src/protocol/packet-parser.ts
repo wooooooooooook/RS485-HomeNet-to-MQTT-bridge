@@ -266,8 +266,28 @@ export class PacketParser {
         typeof this.defaults.rx_checksum === 'object' &&
         (this.defaults.rx_checksum as any).type === 'custom'
       ) {
-        // Custom algorithm handling (placeholder)
-        return false;
+        // Handle custom algorithm object same as string:
+        // Check if it's a known algorithm, otherwise treat as CEL
+        const algorithm = (this.defaults.rx_checksum as any).algorithm as string;
+
+        if (this.checksumTypes.has(algorithm)) {
+          // Standard algorithm (add, xor, etc.)
+          const headerLength = this.defaults.rx_header?.length || 0;
+          const calculated = calculateChecksumFromBuffer(
+            buffer,
+            algorithm as ChecksumType,
+            headerLength,
+            dataEnd,
+          );
+          return calculated === checksumByte;
+        } else {
+          // CEL Expression
+          const result = this.celExecutor.execute(algorithm, {
+            data: buffer.subarray(0, dataEnd), // Pass Buffer directly to avoid array spread
+            len: dataEnd,
+          });
+          return result === checksumByte;
+        }
       }
       return false;
     }

@@ -1,8 +1,10 @@
 import { Device } from '../device.js';
 import { DeviceConfig, ProtocolConfig } from '../types.js';
 import { StateSchema, StateNumSchema } from '../types.js';
+import { Buffer } from 'buffer';
 import { CelExecutor } from '../cel-executor.js';
-import { calculateChecksum, ChecksumType } from '../utils/checksum.js';
+import { logger } from '../../utils/logger.js';
+import { calculateChecksum, calculateChecksum2, ChecksumType, Checksum2Type } from '../utils/checksum.js';
 
 export class GenericDevice extends Device {
   private celExecutor: CelExecutor;
@@ -104,11 +106,13 @@ export class GenericDevice extends Device {
       }
     }
 
-    if (commandPacket && this.protocolConfig.packet_defaults?.tx_checksum) {
-      const txHeader = this.protocolConfig.packet_defaults.tx_header || [];
+    const packetDefaults = this.protocolConfig.packet_defaults;
+
+    if (commandPacket && packetDefaults?.tx_checksum && packetDefaults.tx_checksum !== 'none') {
+      const txHeader = packetDefaults.tx_header || [];
       const headerPart = Buffer.from(txHeader);
       const dataPart = Buffer.from(commandPacket);
-      const checksumType = this.protocolConfig.packet_defaults.tx_checksum as ChecksumType;
+      const checksumType = packetDefaults.tx_checksum as ChecksumType;
 
       const standardChecksums = new Set([
         'add',
@@ -139,6 +143,37 @@ export class GenericDevice extends Device {
             commandPacket.push(...result);
           }
         }
+      }
+    } else if (commandPacket && packetDefaults?.tx_checksum2) {
+      const txHeader = packetDefaults.tx_header || [];
+      const headerPart = Buffer.from(txHeader);
+      const dataPart = Buffer.from(commandPacket);
+
+      const checksum2Types = new Set(['xor_add']);
+
+      if (typeof packetDefaults.tx_checksum2 === 'string') {
+        const checksumOrScript = packetDefaults.tx_checksum2;
+
+        if (checksum2Types.has(checksumOrScript)) {
+          const checksum = calculateChecksum2(headerPart, dataPart, checksumOrScript as Checksum2Type);
+          commandPacket.push(...checksum);
+        } else {
+          const fullData = [...txHeader, ...commandPacket];
+          const result = this.celExecutor.execute(checksumOrScript, {
+            data: fullData,
+            len: fullData.length,
+          });
+
+          if (Array.isArray(result) && result.length === 2) {
+            commandPacket.push(...result);
+          } else {
+            logger.error(
+              `CEL tx_checksum2 returned invalid result. Expected array of 2 bytes, got: ${JSON.stringify(result)}`,
+            );
+          }
+        }
+      } else {
+        logger.warn('Unknown tx_checksum2 type');
       }
     }
 

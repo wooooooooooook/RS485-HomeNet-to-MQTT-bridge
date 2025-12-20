@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+import { Buffer } from 'buffer';
 import { calculateChecksum2 } from '../src/protocol/utils/checksum';
 import { PacketParser } from '../src/protocol/packet-parser';
 import { CommandGenerator } from '../src/protocol/generators/command.generator';
+import { GenericDevice } from '../src/protocol/devices/generic.device';
 
 describe('2-Byte Checksum', () => {
   it('should calculate xor_add checksum correctly', () => {
@@ -115,6 +117,32 @@ describe('2-Byte Checksum', () => {
 
       // Expected: 0xF7 0x01 [0xAA 0xBB]
       expect(packet).toEqual([0xf7, 0x01, 0xaa, 0xbb]);
+    });
+  });
+
+  describe('GenericDevice checksum2 support', () => {
+    it('should append tx_checksum2 when constructing command packets', () => {
+      const packetDefaults = { tx_header: [0xf7], tx_checksum2: 'xor_add' as const };
+
+      const deviceConfig = {
+        id: 'light_1_0',
+        name: 'Light 1 0',
+        command_on: {
+          data: [0x0e, 0x11, 0x41, 0x03, 0x0f, 0x01, 0x00],
+        },
+      };
+
+      const device = new GenericDevice(deviceConfig as any, { packet_defaults: packetDefaults });
+
+      const packet = device.constructCommand('on');
+
+      const expectedChecksum = calculateChecksum2(
+        Buffer.from(packetDefaults.tx_header),
+        Buffer.from(deviceConfig.command_on.data),
+        'xor_add',
+      );
+
+      expect(packet).toEqual([...deviceConfig.command_on.data, ...expectedChecksum]);
     });
   });
 });

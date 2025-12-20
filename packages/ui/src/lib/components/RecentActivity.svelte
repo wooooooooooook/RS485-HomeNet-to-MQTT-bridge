@@ -24,7 +24,12 @@
   {#if activities.length === 0}
     <p>{$t('dashboard.recent_activity.empty')}</p>
   {:else}
-    <ul>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <ul
+      tabindex="0"
+      role="log"
+      aria-label={$t('dashboard.recent_activity.title')}
+    >
       <!--
         Use a composite key of timestamp and code to identify unique items.
         Using index with reverse() causes the entire list to re-render/animate on every update.

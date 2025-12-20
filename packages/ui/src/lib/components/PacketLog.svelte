@@ -50,7 +50,13 @@
     </div>
   </div>
   <p class="description">{$t('analysis.packet_log.desc')}</p>
-  <div class="log-list unified-list">
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="log-list unified-list"
+    tabindex="0"
+    role="log"
+    aria-label={$t('analysis.packet_log.title')}
+  >
     {#if mergedPackets.length === 0}
       <p class="empty">{$t('analysis.packet_log.empty')}</p>
     {:else}

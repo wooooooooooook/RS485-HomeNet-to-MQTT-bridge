@@ -257,7 +257,7 @@ export class PacketParser {
         } else {
           // CEL Expression
           const result = this.celExecutor.execute(checksumOrScript, {
-            data: [...buffer.subarray(0, dataEnd)],
+            data: buffer.subarray(0, dataEnd), // Pass Buffer directly to avoid array spread
             len: dataEnd,
           });
           return result === checksumByte;
@@ -297,7 +297,7 @@ export class PacketParser {
         } else {
           // CEL Expression for 2-byte checksum
           const result = this.celExecutor.execute(checksumOrScript, {
-            data: [...buffer.subarray(0, checksumStart)],
+            data: buffer.subarray(0, checksumStart), // Pass Buffer directly to avoid array spread
             len: checksumStart,
           });
           if (Array.isArray(result) && result.length === 2) {

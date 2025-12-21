@@ -821,22 +821,27 @@
       entity.statePayload = payload;
     }
 
+    // Calculate isActive for all entities
+    for (const entity of entities.values()) {
+      let isActive = false;
+      if (entity.statePayload) {
+        isActive = true;
+      } else if (entity.discoveryAlways) {
+        isActive = true;
+      } else if (entity.discoveryLinkedId) {
+        // Check if the linked entity has state
+        const linkedKey = makeKey(entity.portId, entity.discoveryLinkedId);
+        const linkedEntity = entities.get(linkedKey);
+        if (linkedEntity && linkedEntity.statePayload) {
+          isActive = true;
+        }
+      }
+      entity.isActive = isActive;
+    }
+
     // Convert to array, filter only those with state, and sort
     const allEntities = Array.from(entities.values());
-    const filtered = showInactiveEntities
-      ? allEntities
-      : allEntities.filter((entity) => {
-          if (entity.statePayload) return true;
-          if (entity.discoveryAlways) return true;
-          if (entity.discoveryLinkedId) {
-            // Check if the linked entity has state
-            // discoveryLinkedId is typically just the ID string. We assume it's on the same port.
-            const linkedKey = makeKey(entity.portId, entity.discoveryLinkedId);
-            const linkedEntity = entities.get(linkedKey);
-            if (linkedEntity && linkedEntity.statePayload) return true;
-          }
-          return false;
-        });
+    const filtered = showInactiveEntities ? allEntities : allEntities.filter((entity) => entity.isActive);
     return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   });
 

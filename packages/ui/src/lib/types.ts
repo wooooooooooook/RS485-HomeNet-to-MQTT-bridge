@@ -114,6 +114,7 @@ export type UnifiedEntity = {
   portId?: string;
   discoveryAlways?: boolean;
   discoveryLinkedId?: string;
+  isActive?: boolean;
 };
 
 export type ParsedPayloadEntry = {

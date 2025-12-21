@@ -40,7 +40,7 @@
 
 <button
   class="entity-card"
-  class:inactive={!entity.statePayload}
+  class:inactive={!entity.isActive}
   onclick={() => onSelect?.()}
   onkeydown={(e) => ['Enter', ' '].includes(e.key) && onSelect?.()}
 >

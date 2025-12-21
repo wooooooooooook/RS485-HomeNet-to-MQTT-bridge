@@ -36,6 +36,7 @@
   let renameLocalError = $state<string | null>(null);
   let renameEntityId = $state<string | null>(null);
   let effectiveRenameError = $state('');
+  let idCopied = $state(false);
 
   let commandInputs = $state<Record<string, any>>({});
 
@@ -229,6 +230,16 @@
     }
     return [{ key: 'Raw', value: payload }];
   }
+
+  async function handleCopyId() {
+    try {
+      await navigator.clipboard.writeText(entity.id);
+      idCopied = true;
+      setTimeout(() => (idCopied = false), 2000);
+    } catch (err) {
+      console.error('Failed to copy ID', err);
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -255,7 +266,17 @@
       <header class="modal-header">
         <div class="header-info">
           <h2 id="modal-title">{entity.displayName}</h2>
-          <span class="entity-id">{entity.id}</span>
+          <button
+            class="entity-id-btn"
+            onclick={handleCopyId}
+            title={$t('entity_detail.copy_id') || 'Click to copy ID'}
+            aria-label={$t('entity_detail.copy_id_aria', { values: { id: entity.id } }) || `Copy ID ${entity.id}`}
+          >
+            <span class="entity-id">{entity.id}</span>
+            {#if idCopied}
+              <span class="copy-feedback" transition:fade={{ duration: 200 }}>{$t('common.copied') || 'Copied!'}</span>
+            {/if}
+          </button>
         </div>
         <button class="close-btn" onclick={close} aria-label={$t('entity_detail.close_aria')}
           >&times;</button
@@ -396,7 +417,8 @@
                   </div>
                 </div>
               </div>
-              <div class="log-list unified-list">
+              <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+              <div class="log-list unified-list" role="log" tabindex="0" aria-label={$t('entity_detail.packets.title')}>
                 {#if mergedPackets.length === 0}
                   <div class="no-data">{$t('entity_detail.packets.no_packets')}</div>
                 {:else}
@@ -528,6 +550,39 @@
     font-size: 0.9rem;
     margin-top: 0.25rem;
     display: block;
+    transition: color 0.2s;
+  }
+
+  .entity-id-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: left;
+    display: block;
+    position: relative;
+  }
+
+  .entity-id-btn:hover .entity-id {
+    color: #38bdf8;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+
+  .copy-feedback {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0.5rem;
+    background: #10b981;
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-weight: 500;
   }
 
   .close-btn {

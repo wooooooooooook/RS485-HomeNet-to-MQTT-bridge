@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import yaml, { Type } from 'js-yaml';
 import { WebSocket, WebSocketServer } from 'ws';
+import { dumpConfigToYaml } from './utils/yaml-dumper.js';
 import {
   createBridge,
   HomeNetBridge,
@@ -1130,7 +1131,7 @@ app.post('/api/config/examples/select', async (req, res) => {
       return res.status(400).json({ error: 'SERIAL_CONFIG_MISSING' });
     }
 
-    const updatedYaml = yaml.dump(parsedConfig, { lineWidth: 120, noRefs: true });
+    const updatedYaml = dumpConfigToYaml(parsedConfig, { lineWidth: 120 });
 
     await fs.mkdir(CONFIG_DIR, { recursive: true });
     await fs.writeFile(targetPath, updatedYaml, 'utf-8');
@@ -1190,9 +1191,7 @@ app.get('/api/config/raw/:entityId', (req, res) => {
 
   if (foundEntity) {
     res.json({
-      yaml: yaml
-        .dump(foundEntity, { styles: { '!!int': 'hexadecimal' } })
-        .replace(/\b0x([0-9a-fA-F])\b/g, '0x0$1'),
+      yaml: dumpConfigToYaml(foundEntity),
     });
   } else {
     res.status(404).json({ error: 'Entity not found in config' });
@@ -1287,12 +1286,7 @@ app.post('/api/config/update', async (req, res) => {
 
     // 5. Write new config
     // Note: This will strip comments and might alter formatting.
-    const newFileContent = yaml.dump(loadedYamlFromFile, {
-      // Dump the full object
-      styles: { '!!int': 'hexadecimal' },
-      noRefs: true,
-      lineWidth: -1, // Try to avoid wrapping lines excessively
-    });
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
 
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
@@ -1377,11 +1371,7 @@ app.post('/api/entities/rename', async (req, res) => {
     const backupPath = `${configPath}.${timestamp}.bak`;
     await fs.copyFile(configPath, backupPath);
 
-    const newFileContent = yaml.dump(loadedYamlFromFile, {
-      styles: { '!!int': 'hexadecimal' },
-      noRefs: true,
-      lineWidth: -1,
-    });
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
 
     await fs.writeFile(configPath, newFileContent, 'utf8');
 
@@ -1480,11 +1470,7 @@ app.delete('/api/entities/:entityId', async (req, res) => {
     await fs.copyFile(configPath, backupPath);
 
     // Write new config
-    const newFileContent = yaml.dump(loadedYamlFromFile, {
-      styles: { '!!int': 'hexadecimal' },
-      noRefs: true,
-      lineWidth: -1,
-    });
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
 
     await fs.writeFile(configPath, newFileContent, 'utf8');
 

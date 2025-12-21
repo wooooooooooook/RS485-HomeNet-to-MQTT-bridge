@@ -14,7 +14,7 @@ trigger:
     entity_id: light_1
     property: state_on  # 선택사항. 생략 시 전체 상태 객체 비교
     match: true         # 값 또는 조건 객체 { gt: 10, lt: 20 }
-    debounce_ms: 100    # 선택사항. 연속된 이벤트 방지
+    debounce_ms: 100    # 선택사항. 기본값: 0 (즉시 실행)
 ```
 
 ### 패킷 트리거 (Packet Trigger)
@@ -55,6 +55,8 @@ action: command
 target: id(light_1).command_on()
 # 또는
 target: id(climate_1).command_target_temp(24)
+low_priority: true # 선택사항. 기본값: false (일반 우선순위)
+# true로 설정 시, 일반 큐가 비어있을 때만 명령이 전송됩니다. (Polling 등 중요도가 낮은 명령에 사용)
 ```
 
 ### 발행 (Publish - MQTT)
@@ -63,7 +65,7 @@ MQTT 토픽으로 메시지를 발행합니다.
 action: publish
 topic: homenet/event
 payload: "something happened"
-retain: true # 선택사항
+retain: true # 선택사항. 기본값: false
 ```
 
 ### 패킷 전송 (Send Packet - Raw)
@@ -73,6 +75,7 @@ action: send_packet
 data: [0x02, 0x01, 0xFF]
 # 또는 CEL 사용
 data: "[0x02, x, 0xFF]" # x 변수 사용 가능 (문맥에 따라)
+checksum: false # 선택사항. 기본값: true (설정된 체크섬 알고리즘 자동 적용)
 
 # 응답 대기 (ACK) 설정
 # 단순 배열 또는 CEL 표현식을 사용하여 수신될 응답 패킷을 정의합니다.
@@ -92,7 +95,7 @@ milliseconds: 1000 # 또는 '1s'
 시스템 로그에 메시지를 기록합니다. 디버깅 용도로 유용합니다.
 ```yaml
 action: log
-level: info # trace, debug, info, warn, error
+level: info # trace, debug, info, warn, error. 기본값: info
 message: "자동화가 실행되었습니다."
 ```
 

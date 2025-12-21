@@ -12,11 +12,17 @@ import { logger } from '../../utils/logger.js';
 import { Buffer } from 'buffer';
 
 export class GenericDevice extends Device {
-  private celExecutor: CelExecutor;
+  private celExecutor?: CelExecutor;
 
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     super(config, protocolConfig);
-    this.celExecutor = new CelExecutor();
+  }
+
+  private getExecutor(): CelExecutor {
+    if (!this.celExecutor) {
+      this.celExecutor = new CelExecutor();
+    }
+    return this.celExecutor;
   }
 
   public parseData(
@@ -42,7 +48,7 @@ export class GenericDevice extends Device {
     for (const key in entityConfig) {
       if (key.startsWith('state_') && typeof entityConfig[key] === 'string') {
         const script = entityConfig[key] as string;
-        const result = this.celExecutor.execute(script, {
+        const result = this.getExecutor().execute(script, {
           data: packet,
           x: null, // No previous value for state extraction usually
           states: states ? Object.fromEntries(states) : {}, // Pass global states if available
@@ -84,7 +90,7 @@ export class GenericDevice extends Device {
     if (commandConfig) {
       if (typeof commandConfig === 'string') {
         const script = commandConfig as string;
-        const result = this.celExecutor.execute(script, {
+        const result = this.getExecutor().execute(script, {
           x: value,
           data: [], // No packet data for command construction
           state: this.getState() || {},
@@ -134,7 +140,7 @@ export class GenericDevice extends Device {
           } else {
             // CEL Expression
             const fullData = [...txHeader, ...commandData];
-            const result = this.celExecutor.execute(checksumType, {
+            const result = this.getExecutor().execute(checksumType, {
               data: fullData,
               len: fullData.length,
             });
@@ -162,7 +168,7 @@ export class GenericDevice extends Device {
           } else {
             // CEL Expression for 2-byte checksum
             const fullData = [...txHeader, ...commandData];
-            const result = this.celExecutor.execute(checksumType, {
+            const result = this.getExecutor().execute(checksumType, {
               data: fullData,
               len: fullData.length,
             });

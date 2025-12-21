@@ -28,6 +28,10 @@ function markHex(obj: any): any {
     return obj.map(markHex);
   }
   if (obj && typeof obj === 'object') {
+    // Only traverse plain objects to avoid breaking Date, RegExp, etc.
+    if (obj.constructor !== Object) {
+      return obj;
+    }
     const newObj: Record<string, any> = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -38,6 +42,8 @@ function markHex(obj: any): any {
             key.startsWith('command') ||
             key.includes('header') ||
             key.includes('footer') ||
+            key === 'ack' ||
+            key === 'mask' ||
             key === 'data') &&
           Array.isArray(value)
         ) {
@@ -75,8 +81,8 @@ export function dumpConfigToYaml(config: any, options: yaml.DumpOptions = {}): s
   const dump = yaml.dump(markedConfig, {
     schema: SCHEMA,
     noRefs: true,
-    lineWidth: -1,
     ...options,
+    lineWidth: -1, // Force infinite line width to ensure hex arrays are not wrapped, which would break the regex replacement
   });
 
   // Remove the !hexSeq tag and quotes around the flow array string

@@ -65,10 +65,7 @@ export class CelExecutor {
 
       if (Array.isArray(contextData.data)) {
         safeContext.data = contextData.data.map((d: any) => BigInt(d));
-      } else if (
-        Buffer.isBuffer(contextData.data) ||
-        contextData.data instanceof Uint8Array
-      ) {
+      } else if (Buffer.isBuffer(contextData.data) || contextData.data instanceof Uint8Array) {
         // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
         // to avoid intermediate array allocation and function call overhead.
         const len = contextData.data.length;

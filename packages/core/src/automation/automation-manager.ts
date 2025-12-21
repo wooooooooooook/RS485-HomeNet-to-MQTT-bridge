@@ -137,10 +137,16 @@ export class AutomationManager {
           this.setupScheduleTrigger(automation, trigger);
         }
         if (trigger.type === 'startup') {
+          const delay =
+            typeof trigger.delay === 'number'
+              ? trigger.delay
+              : trigger.delay
+                ? parseDuration(trigger.delay)
+                : 0;
           setTimeout(
             () =>
               this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
-            0,
+            delay,
           );
         }
       }

@@ -48,6 +48,7 @@ export interface AutomationTriggerSchedule {
 
 export interface AutomationTriggerStartup {
   type: 'startup';
+  delay?: number | string;
   guard?: AutomationGuard;
 }
 

@@ -90,7 +90,6 @@
   function handleSelect(entityId: string, portId?: string) {
     onSelect?.(entityId, portId);
   }
-
 </script>
 
 <div class="dashboard-view">

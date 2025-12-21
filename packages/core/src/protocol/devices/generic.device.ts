@@ -148,27 +148,31 @@ export class GenericDevice extends Device {
       }
       // Check for 2-byte checksum if 1-byte checksum is not used
       else if (packetDefaults.tx_checksum2) {
-         const checksumType = packetDefaults.tx_checksum2 as Checksum2Type | string;
-         const standardChecksums2 = new Set(['xor_add']);
+        const checksumType = packetDefaults.tx_checksum2 as Checksum2Type | string;
+        const standardChecksums2 = new Set(['xor_add']);
 
-         if (typeof checksumType === 'string') {
-           if (standardChecksums2.has(checksumType)) {
-             const checksum = calculateChecksum2(headerPart, dataPart, checksumType as Checksum2Type);
-             checksumPart.push(...checksum);
-           } else {
-              // CEL Expression for 2-byte checksum
-              const fullData = [...txHeader, ...commandData];
-              const result = this.celExecutor.execute(checksumType, {
-                data: fullData,
-                len: fullData.length,
-              });
-              if (Array.isArray(result)) {
-                 checksumPart.push(...result);
-              } else {
-                 logger.warn(`CEL tx_checksum2 returned invalid result: ${result}`);
-              }
-           }
-         }
+        if (typeof checksumType === 'string') {
+          if (standardChecksums2.has(checksumType)) {
+            const checksum = calculateChecksum2(
+              headerPart,
+              dataPart,
+              checksumType as Checksum2Type,
+            );
+            checksumPart.push(...checksum);
+          } else {
+            // CEL Expression for 2-byte checksum
+            const fullData = [...txHeader, ...commandData];
+            const result = this.celExecutor.execute(checksumType, {
+              data: fullData,
+              len: fullData.length,
+            });
+            if (Array.isArray(result)) {
+              checksumPart.push(...result);
+            } else {
+              logger.warn(`CEL tx_checksum2 returned invalid result: ${result}`);
+            }
+          }
+        }
       }
 
       // Construct full packet: Header + Data + Checksum + Footer

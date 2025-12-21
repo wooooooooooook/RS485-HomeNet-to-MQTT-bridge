@@ -33,6 +33,7 @@ homenet_bridge:
   - `cron`: UTC 기준 5필드 cron(`"0 7 * * *"`). `every`와 병행 가능.
 - `type: startup`
   - 브릿지 초기화 완료 후 한 번 실행.
+  - `delay`: 실행 전 대기 시간(ms 또는 `5s` 등 단위 문자열). 선택 사항.
 
 ### 액션
 - `action: command`

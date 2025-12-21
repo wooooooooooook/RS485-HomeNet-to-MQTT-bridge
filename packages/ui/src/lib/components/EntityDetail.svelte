@@ -359,10 +359,7 @@
                 <div class="loading">{$t('entity_detail.config.loading')}</div>
               {:else}
                 <div class="config-editor-container">
-                  <textarea
-                    class="config-editor"
-                    bind:value={editingConfig}
-                    spellcheck="false"
+                  <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
                   ></textarea>
                   <div class="config-actions">
                     <button class="save-btn" onclick={saveConfig} disabled={isSaving}>

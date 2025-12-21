@@ -8,14 +8,66 @@ describe('HomeNet to MQTT - CVNet Protocol', () => {
     const ctx = await setupTest('cvnet.homenet_bridge.yaml');
     const { stateManager, publishMock } = ctx;
 
-    // Room 0 Light 1 (ON) - Index 0
-    // Actually the packet results in OFF state as discovered.
-    processPacket(stateManager, CVNET_PACKETS[0]);
+    // Room 0 Light 1 (ON) - Index 1
+    processPacket(stateManager, CVNET_PACKETS[1]);
+
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/room_0_light_1/state',
+      JSON.stringify({ state: 'ON' }),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Room 0 Light 1 (OFF) - Index 2
+    processPacket(stateManager, CVNET_PACKETS[2]);
+
     expect(publishMock).toHaveBeenCalledWith(
       'homenet2mqtt/homedevice1/room_0_light_1/state',
       JSON.stringify({ state: 'OFF' }),
       expect.objectContaining({ retain: true }),
     );
+
+    // Fan 1 (ON) - Index 13
+    processPacket(stateManager, CVNET_PACKETS[13]);
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/fan_1/state',
+      expect.stringMatching(/"state":"ON"/),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Fan 1 (Speed 1) - Index 15
+    processPacket(stateManager, CVNET_PACKETS[15]);
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/fan_1/state',
+      expect.stringMatching(/\"speed\":1/),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Heater 1 (HEAT) - Index 19
+    processPacket(stateManager, CVNET_PACKETS[19]);
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/heater_1/state',
+      expect.stringMatching(/"mode":"heat"/),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Heater 1 (Temp 25C/26C) - Index 20
+    processPacket(stateManager, CVNET_PACKETS[20]);
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/heater_1/state',
+      expect.stringMatching(/\"current_temperature\":25/),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Gas Valve (OPEN) - Index 34
+    processPacket(stateManager, CVNET_PACKETS[34]);
+    expect(publishMock).toHaveBeenCalledWith(
+      'homenet2mqtt/homedevice1/gas_valve/state',
+      expect.stringMatching(/\"state\":\"OPEN\"/),
+      expect.objectContaining({ retain: true }),
+    );
+
+    // Elevator Floors (Base State - just to check parsing) - Index 36
+    processPacket(stateManager, CVNET_PACKETS[36]);
   });
 
   it('should generate command packets', async () => {

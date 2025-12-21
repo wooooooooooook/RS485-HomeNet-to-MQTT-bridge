@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { setupTest, processPacket, executeCommand } from './utils';
 import { KOCOM_PACKETS } from '../../../simulator/src/kocom';
+import { Buffer } from 'buffer';
 
 describe('HomeNet to MQTT - Kocom Protocol', () => {
   it('should process Kocom packets and publish state', async () => {

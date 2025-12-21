@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { setupTest, processPacket, executeCommand } from './utils';
 import { COMMAX_PACKETS } from '../../../simulator/src/commax';
+import { Buffer } from 'buffer';
 
 describe('HomeNet to MQTT - Commax Protocol', () => {
   it('should process light packets', async () => {

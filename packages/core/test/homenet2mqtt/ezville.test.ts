@@ -50,9 +50,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     // Checksum: XOR_ADD (2 bytes) -> A4 0E
     // Header: F7
     await executeCommand(ctx, 'light_1_0', 'on', null);
-    const expectedLight = Buffer.from([
-      0xf7, 0x0e, 0x11, 0x41, 0x03, 0x0f, 0x01, 0x00, 0xa4, 0x0e,
-    ]);
+    const expectedLight = Buffer.from([0xf7, 0x0e, 0x11, 0x41, 0x03, 0x0f, 0x01, 0x00, 0xa4, 0x0e]);
     expect(ctx.mockSerialPort.write).toHaveBeenCalledWith(expectedLight);
 
     // Command Close for gas_valve
@@ -60,9 +58,7 @@ describe('HomeNet to MQTT - Ezville Protocol', () => {
     // Checksum: XOR_ADD -> 42 F6
     // Header: F7
     await executeCommand(ctx, 'gas_valve', 'close', null);
-    const expectedGas = Buffer.from([
-      0xf7, 0x33, 0x01, 0x81, 0x03, 0x00, 0x05, 0x00, 0x42, 0xf6,
-    ]);
+    const expectedGas = Buffer.from([0xf7, 0x33, 0x01, 0x81, 0x03, 0x00, 0x05, 0x00, 0x42, 0xf6]);
     expect(ctx.mockSerialPort.write).toHaveBeenCalledWith(expectedGas);
   });
 });

@@ -81,6 +81,8 @@ export type CommandInfo = {
   options?: string[];
   configFile?: string;
   portId?: string;
+  discoveryAlways?: boolean;
+  discoveryLinkedId?: string;
 };
 
 export type RawPacketWithInterval = {
@@ -110,6 +112,8 @@ export type UnifiedEntity = {
   commands: CommandInfo[];
   isStatusDevice: boolean;
   portId?: string;
+  discoveryAlways?: boolean;
+  discoveryLinkedId?: string;
 };
 
 export type ParsedPayloadEntry = {

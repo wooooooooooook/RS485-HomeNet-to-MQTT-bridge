@@ -785,10 +785,15 @@
           commands: [],
           isStatusDevice: false,
           portId,
+          discoveryAlways: cmd.discoveryAlways,
+          discoveryLinkedId: cmd.discoveryLinkedId,
         });
       }
       const entity = entities.get(key)!;
       entity.commands.push({ ...cmd, portId });
+      // Merge discovery flags if present on any command (though they should be consistent per entity)
+      if (cmd.discoveryAlways) entity.discoveryAlways = true;
+      if (cmd.discoveryLinkedId) entity.discoveryLinkedId = cmd.discoveryLinkedId;
     }
 
     // 2. Merge States
@@ -820,7 +825,18 @@
     const allEntities = Array.from(entities.values());
     const filtered = showInactiveEntities
       ? allEntities
-      : allEntities.filter((entity) => entity.statePayload);
+      : allEntities.filter((entity) => {
+          if (entity.statePayload) return true;
+          if (entity.discoveryAlways) return true;
+          if (entity.discoveryLinkedId) {
+            // Check if the linked entity has state
+            // discoveryLinkedId is typically just the ID string. We assume it's on the same port.
+            const linkedKey = makeKey(entity.portId, entity.discoveryLinkedId);
+            const linkedEntity = entities.get(linkedKey);
+            if (linkedEntity && linkedEntity.statePayload) return true;
+          }
+          return false;
+        });
     return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   });
 

@@ -839,6 +839,8 @@ interface CommandInfo {
   max?: number;
   step?: number;
   options?: string[];
+  discoveryAlways?: boolean;
+  discoveryLinkedId?: string;
 }
 
 function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
@@ -886,6 +888,14 @@ function extractCommands(config: HomenetBridgeConfig): CommandInfo[] {
           commandName: key,
           displayName: `${entityName} ${displayCommandName}`,
         };
+
+        if (entity.discovery_always === true) {
+          cmdInfo.discoveryAlways = true;
+        }
+
+        if (typeof entity.discovery_linked_id === 'string') {
+          cmdInfo.discoveryLinkedId = entity.discovery_linked_id;
+        }
 
         // Detect input types based on command name and entity type
         if (

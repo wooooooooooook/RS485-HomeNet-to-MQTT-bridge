@@ -14,7 +14,7 @@ homenet_bridge:
           ...                     # 트리거별 세부 필드
           guard: "data[0] == 1"   # 선택, CEL 표현식이 true 일 때만 then 실행
       then:                       # 필수, guard 통과 시 순차 실행
-        - action: command | publish | log | delay
+        - action: command | publish | log | delay | send_packet
           ...                     # 액션별 세부 필드
       else: []                    # 선택, guard=false 일 때 실행
       enabled: true               # 기본값
@@ -48,13 +48,24 @@ homenet_bridge:
   - `message`: 로그 메시지.
 - `action: delay`
   - `milliseconds`: 대기 시간(ms 또는 `500ms`/`2s`).
+- `action: send_packet`
+  - `data`: 전송할 데이터. `number[]` 또는 CEL 표현식(숫자 배열 반환) 사용 가능.
+  - `checksum`: `true`일 경우 설정된 알고리즘으로 체크섬을 계산하여 추가 (기본값 `true`).
+  - `portId`: 전송할 포트 ID (선택). 기본값은 자동화 설정의 `portId` 또는 실행 컨텍스트의 포트.
+  - `ack`: 응답 대기 및 재시도 설정 (선택).
+    - `match`: 응답 패킷 매칭 규칙 ([`StateSchema`](./config-schema/schemas.md#stateschema)).
+    - `retry`: 재시도 횟수 (기본 5회).
+    - `timeout`: 응답 대기 시간(ms, 기본 2000ms).
+    - `interval`: 재시도 간격(ms, 기본 125ms).
 
-### Guard (CEL 표현식)
-`guard`는 CEL(Common Expression Language)로 평가되며, 현재 다음 변수에 접근할 수 있습니다.
+### Guard 및 CEL 컨텍스트
+`guard`나 `send_packet.data` 등의 CEL 표현식에서는 다음 변수에 접근할 수 있습니다.
+- `trigger`: 트리거 이벤트 정보 (`trigger.state.value` 등).
 - `state`: 트리거된 엔티티의 상태 객체 (state 트리거인 경우).
 - `data`: 수신된 패킷 배열 (packet 트리거인 경우).
+- `states`: 전체 엔티티 상태 맵.
 
-> **주의**: 기존의 `id()`, `states` 등의 헬퍼 함수는 CEL 환경에서 지원되지 않습니다.
+> **주의**: 기존의 `id()` 헬퍼 함수는 CEL 환경에서 지원되지 않습니다.
 
 ### 예시
 ```yaml

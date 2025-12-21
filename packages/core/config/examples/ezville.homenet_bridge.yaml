@@ -526,9 +526,9 @@ homenet_bridge:
       state:
         data: [0x36, 0x1f, 0x81]
       state_temperature_target: >-
-        bitAnd(data[9], 0x7F) + (bitAnd(data[9], 0x80) != 0 ? 0.5 : 0)
+        double(bitAnd(data[9], 0x7F)) + (bitAnd(data[9], 0x80) != 0 ? 0.5 : 0.0)
       state_temperature_current: >-
-        bitAnd(data[10], 0x7F) + (bitAnd(data[10], 0x80) != 0 ? 0.5 : 0)
+        double(bitAnd(data[10], 0x7F)) + (bitAnd(data[10], 0x80) != 0 ? 0.5 : 0.0)
       state_off:
         offset: 5
         data: [0x00]
@@ -569,9 +569,9 @@ homenet_bridge:
       state:
         data: [0x36, 0x1f, 0x81]
       state_temperature_target: >-
-        bitAnd(data[11], 0x7F) + (bitAnd(data[11], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[11], 0x7F)) + (bitAnd(data[11], 0x80) != 0 ? 0.5 : 0.0)
       state_temperature_current: >-
-        bitAnd(data[12], 0x7F) + (bitAnd(data[12], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[12], 0x7F)) + (bitAnd(data[12], 0x80) != 0 ? 0.5 : 0.0)
       state_off:
         offset: 5
         data: [0x00]
@@ -612,9 +612,9 @@ homenet_bridge:
       state:
         data: [0x36, 0x1f, 0x81]
       state_temperature_target: >-
-        bitAnd(data[13], 0x7F) + (bitAnd(data[13], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[13], 0x7F)) + (bitAnd(data[13], 0x80) != 0 ? 0.5 : 0.0)
       state_temperature_current: >-
-        bitAnd(data[14], 0x7F) + (bitAnd(data[14], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[14], 0x7F)) + (bitAnd(data[14], 0x80) != 0 ? 0.5 : 0.0)
       state_off:
         offset: 5
         data: [0x00]
@@ -655,9 +655,9 @@ homenet_bridge:
       state:
         data: [0x36, 0x1f, 0x81]
       state_temperature_target: >-
-        bitAnd(data[15], 0x7F) + (bitAnd(data[15], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[15], 0x7F)) + (bitAnd(data[15], 0x80) != 0 ? 0.5 : 0.0)
       state_temperature_current: >-
-        bitAnd(data[16], 0x7F) + (bitAnd(data[16], 0x80) != 0 ? 0.5 : 0.0)
+        double(bitAnd(data[16], 0x7F)) + (bitAnd(data[16], 0x80) != 0 ? 0.5 : 0.0)
       state_off:
         offset: 5
         data: [0x00]

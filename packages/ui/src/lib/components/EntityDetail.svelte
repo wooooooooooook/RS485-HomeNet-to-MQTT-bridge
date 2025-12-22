@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from 'svelte-i18n';
+  import Button from './Button.svelte';
   import type { UnifiedEntity, CommandInfo, ParsedPacket, CommandPacket } from '../types';
 
   let {
@@ -386,11 +387,16 @@
                   <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
                   ></textarea>
                   <div class="config-actions">
-                    <button class="save-btn" onclick={saveConfig} disabled={isSaving}>
-                      {isSaving
+                    <Button
+                      variant="success"
+                      onclick={saveConfig}
+                      isLoading={isSaving}
+                      ariaLabel={isSaving
                         ? $t('entity_detail.config.saving')
                         : $t('entity_detail.config.save')}
-                    </button>
+                    >
+                      {$t('entity_detail.config.save')}
+                    </Button>
                     {#if saveMessage}
                       <span class="save-message success">{saveMessage}</span>
                     {/if}
@@ -470,11 +476,16 @@
                   aria-label={$t('entity_detail.manage.rename.placeholder')}
                   oninput={() => (renameLocalError = null)}
                 />
-                <button class="save-btn" onclick={handleRename} disabled={isRenaming}>
-                  {isRenaming
+                <Button
+                  variant="success"
+                  onclick={handleRename}
+                  isLoading={isRenaming}
+                  ariaLabel={isRenaming
                     ? $t('entity_detail.manage.rename.saving')
                     : $t('entity_detail.manage.rename.save')}
-                </button>
+                >
+                  {$t('entity_detail.manage.rename.save')}
+                </Button>
               </div>
               {#if effectiveRenameError}
                 <div class="rename-error">{effectiveRenameError}</div>
@@ -486,9 +497,9 @@
               <p class="subtle">
                 {@html $t('entity_detail.manage.revoke.desc')}
               </p>
-              <button class="action-btn-secondary" onclick={handleRevokeDiscovery}>
+              <Button variant="secondary" onclick={handleRevokeDiscovery}>
                 {$t('entity_detail.manage.revoke.button')}
-              </button>
+              </Button>
             </div>
 
             <div class="section manage-card danger-zone">
@@ -496,9 +507,9 @@
               <p class="subtle">
                 {@html $t('entity_detail.manage.delete.desc')}
               </p>
-              <button class="danger-btn" onclick={handleDeleteEntity}>
+              <Button variant="danger" onclick={handleDeleteEntity}>
                 {$t('entity_detail.manage.delete.button')}
-              </button>
+              </Button>
             </div>
           </div>
         {/if}
@@ -824,26 +835,6 @@
     gap: 1rem;
   }
 
-  .save-btn {
-    background: #10b981;
-    border: none;
-    color: white;
-    padding: 0.5rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-
-  .save-btn:hover:not(:disabled) {
-    background: #059669;
-  }
-
-  .save-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   .save-message {
     font-size: 0.9rem;
   }
@@ -854,31 +845,6 @@
 
   .save-message.error {
     color: #f87171;
-  }
-
-  .danger-btn {
-    background: #ef4444;
-    border: none;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-
-  .danger-btn:hover {
-    background: #dc2626;
-  }
-
-  .danger-btn.outline {
-    background: transparent;
-    border: 1px solid #ef4444;
-    color: #ef4444;
-  }
-
-  .danger-btn.outline:hover {
-    background: rgba(239, 68, 68, 0.1);
   }
 
   /* Unified Log Styles */
@@ -1010,22 +976,6 @@
 
   .manage-card .rename-form {
     margin-top: 1rem;
-  }
-
-  .action-btn-secondary {
-    background: #334155;
-    border: 1px solid #475569;
-    color: #fff;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-
-  .action-btn-secondary:hover {
-    background: #475569;
-    border-color: #64748b;
   }
 
   .danger-zone {

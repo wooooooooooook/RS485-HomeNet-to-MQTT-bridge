@@ -12,7 +12,7 @@
     children,
     onclick,
   } = $props<{
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'danger' | 'success';
     disabled?: boolean;
     isLoading?: boolean;
     ariaLabel?: string;
@@ -89,6 +89,14 @@
   }
   .danger:hover:not(:disabled) {
     background-color: #dc2626;
+  }
+
+  /* Success Green */
+  .success {
+    background-color: #10b981;
+  }
+  .success:hover:not(:disabled) {
+    background-color: #059669;
   }
 
   .btn:disabled {

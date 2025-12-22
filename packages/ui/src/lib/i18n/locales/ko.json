@@ -62,6 +62,16 @@
       "title": "Raw 패킷 로그",
       "start": "로깅 시작",
       "stop": "로깅 중지",
+      "start_rec": "녹화 시작",
+      "stop_rec": "녹화 중지",
+      "saved_title": "로그 저장 완료",
+      "saved_path": "서버 경로",
+      "download": "다운로드",
+      "copy_log": "로그 복사",
+      "delete": "로그 삭제",
+      "delete_confirm": "이 로그 파일을 삭제하시겠습니까?",
+      "deleted": "로그가 삭제되었습니다",
+      "ha_app_download_warning": "Home Assistant 앱에서는 다운로드가 지원되지 않을 수 있습니다. 웹 브라우저를 이용해주세요.",
       "desc": "RS485 장치에서 수신된 raw 패킷 목록을 interval과 함께 표시합니다.",
       "empty": "실시간 Raw 패킷 로그를 확인하려면 로깅을 시작해주세요."
     },
@@ -77,7 +87,8 @@
   "common": {
     "language": "언어",
     "english": "English",
-    "korean": "한국어"
+    "korean": "한국어",
+    "close": "닫기"
   },
   "header": {
     "toggle_menu": "메뉴 열기",

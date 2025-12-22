@@ -93,7 +93,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
 
     for (const context of this.portContexts.values()) {
@@ -621,6 +621,30 @@ export class HomeNetBridge {
       );
       automationManager.start();
 
+      // Intercept write for logging
+      const originalWrite = port.write.bind(port);
+      port.write = (
+        chunk: any,
+        encoding?: BufferEncoding | ((error: Error | null | undefined) => void),
+        cb?: (error: Error | null | undefined) => void,
+      ): boolean => {
+        // Handle argument shifting for write(chunk, cb)
+        if (typeof encoding === 'function') {
+          cb = encoding;
+          encoding = undefined;
+        }
+
+        if (Buffer.isBuffer(chunk)) {
+          const hexData = chunk.toString('hex');
+          eventBus.emit('raw-tx-packet', {
+            portId: normalizedPortId,
+            payload: hexData,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return originalWrite(chunk, encoding as BufferEncoding, cb);
+      };
+
       const context: PortContext = {
         portId: normalizedPortId,
         serialConfig,
@@ -711,14 +735,40 @@ export class HomeNetBridge {
       logger.info({ portId: context.portId }, '[core] Stopping raw packet listener.');
       context.port.off('data', context.rawPacketListener);
       context.rawPacketListener = null;
-      context.packetIntervals = [];
+      // Do not clear packetIntervals so we can recall stats in log metadata even if stream paused
       context.lastPacketTimestamp = null;
     }
   }
 
+  public getPacketIntervalStats(): Record<string, any> {
+    const stats: Record<string, any> = {};
+    for (const context of this.portContexts.values()) {
+      stats[context.portId] = this.calculateStatsForContext(context);
+    }
+    return stats;
+  }
+
   private analyzeAndEmitPacketStats(context: PortContext) {
+    const stats = this.calculateStatsForContext(context);
+    eventBus.emit('packet-interval-stats', stats);
+  }
+
+  private calculateStatsForContext(context: PortContext) {
     const intervals = [...context.packetIntervals];
     // Do not clear the buffer; it's a rolling window managed in attachRawListener
+
+    if (intervals.length === 0) {
+      return {
+        portId: context.portId,
+        packetAvg: 0,
+        packetStdDev: 0,
+        idleAvg: 0,
+        idleStdDev: 0,
+        idleOccurrenceAvg: 0,
+        idleOccurrenceStdDev: 0,
+        sampleSize: 0,
+      };
+    }
 
     const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
     const stdDev = Math.sqrt(
@@ -768,7 +818,7 @@ export class HomeNetBridge {
 
     const round = (num: number) => Math.round(num * 100) / 100;
 
-    eventBus.emit('packet-interval-stats', {
+    return {
       portId: context.portId,
       packetAvg: round(packetStats.avg),
       packetStdDev: round(packetStats.stdDev),
@@ -777,7 +827,7 @@ export class HomeNetBridge {
       idleOccurrenceAvg: round(idleOccurrenceStats.avg),
       idleOccurrenceStdDev: round(idleOccurrenceStats.stdDev),
       sampleSize: intervals.length,
-    });
+    };
   }
 
   private findEntityConfig(

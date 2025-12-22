@@ -23,6 +23,7 @@ import type { SerialConfig } from '@rs485-homenet/core/config/types';
 import { createSerialPortConnection } from '@rs485-homenet/core/transports/serial/serial.factory';
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
+import { RawPacketLoggerService } from './raw-packet-logger.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
 
 dotenv.config();
@@ -90,7 +91,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -562,6 +563,97 @@ app.post('/api/log-sharing/consent', async (req, res) => {
   res.json(status);
 });
 
+// --- Raw Packet Text Logging API ---
+app.post('/api/logs/packet/start', (_req, res) => {
+  try {
+    // Gather Metadata
+    const serials = currentConfigs
+      .flatMap((conf) => conf.serials || [])
+      .map((s) => ({ portId: s.portId, path: s.path, baudRate: s.baud_rate }));
+
+    const stats: Record<string, any> = {};
+    bridges.forEach((b) => {
+      const bridgeStats =
+        (b.bridge as any).getPacketIntervalStats?.() || {};
+      Object.assign(stats, bridgeStats);
+    });
+
+    const meta = {
+      configFiles: currentConfigFiles,
+      serials,
+      stats,
+    };
+
+    rawPacketLogger.start(meta);
+    // Also ensuring raw packet listeners are active so data flows
+    startAllRawPacketListeners();
+    res.json({ success: true, message: 'Logging started' });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to start packet logging');
+    res.status(500).json({ error: 'Failed to start logging' });
+  }
+});
+
+app.post('/api/logs/packet/stop', (_req, res) => {
+  try {
+    const result = rawPacketLogger.stop();
+    // note: we do NOT stop raw listeners here as UI might be streaming
+    // stopAllRawPacketListeners(); 
+    if (result) {
+      res.json({ success: true, result });
+    } else {
+      res.status(400).json({ error: 'Logging was not active' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to stop packet logging');
+    res.status(500).json({ error: 'Failed to stop logging' });
+  }
+});
+
+app.get('/api/logs/packet/download/:filename', async (req, res) => {
+  const { filename } = req.params;
+  const filePath = rawPacketLogger.getFilePath(filename);
+
+  // Security check: ensure path is within config/logs
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'logs'))) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    if (await fileExists(filePath)) {
+      res.download(filePath, filename);
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Download failed');
+    res.status(500).json({ error: 'Download failed' });
+    res.status(500).json({ error: 'Download failed' });
+  }
+});
+
+app.delete('/api/logs/packet/:filename', async (req, res) => {
+  const { filename } = req.params;
+  const filePath = rawPacketLogger.getFilePath(filename);
+
+  // Security check: ensure path is within config/logs
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'logs'))) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    if (await fileExists(filePath)) {
+      await fs.unlink(filePath);
+      res.json({ success: true, message: 'File deleted' });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Delete failed');
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
 type StreamEvent =
   | 'status'
   | 'mqtt-message'
@@ -752,6 +844,7 @@ const registerGlobalEventHandlers = () => {
 };
 
 activityLogService.addLog('log.service_started');
+const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
 
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
@@ -1623,7 +1716,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {});
+    await bridgeStartPromise.catch(() => { });
   }
 
   bridgeStartPromise = (async () => {
@@ -1839,7 +1932,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
       logger.info('[service] Cleared .restart-required flag');
     }
 

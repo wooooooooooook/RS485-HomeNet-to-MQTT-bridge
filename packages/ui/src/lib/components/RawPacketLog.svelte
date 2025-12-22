@@ -79,9 +79,14 @@
           downloadError = null;
           // Always call onStart to ensure stats and packets are reset for the new recording session
           onStart?.();
+        } else {
+          // If server returns error (e.g. 500), try to show it
+          const errData = await response.json();
+          alert(`Failed to start recording: ${errData.error || response.statusText}`);
         }
       } catch (e) {
         console.error('API Error:', e);
+        alert('Failed to start recording. Please check console for details.');
       }
     }
   }

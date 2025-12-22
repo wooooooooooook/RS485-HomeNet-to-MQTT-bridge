@@ -20,44 +20,55 @@ export class RawPacketLoggerService {
     public start(meta?: any) {
         if (this.isLogging) return;
 
-        const logDir = path.join(this.configDir, 'logs');
-        if (!fs.existsSync(logDir)) {
-            fs.mkdirSync(logDir, { recursive: true });
+        try {
+            const logDir = path.join(this.configDir, 'logs');
+            if (!fs.existsSync(logDir)) {
+                fs.mkdirSync(logDir, { recursive: true });
+            }
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `packet_log_${timestamp}.txt`;
+            this.currentLogFile = path.join(logDir, filename);
+
+            this.writeStream = fs.createWriteStream(this.currentLogFile, { flags: 'a' });
+
+            // Handle write stream errors
+            this.writeStream.on('error', (err) => {
+                logger.error({ err }, '[RawPacketLogger] Write stream error');
+                this.stop();
+            });
+
+            // Write Metadata Header
+            if (meta) {
+                const header = [
+                    '==================================================',
+                    '[METADATA]',
+                    `Log Started: ${new Date().toISOString()}`,
+                    `Config Files: ${Array.isArray(meta.configFiles) ? meta.configFiles.join(', ') : 'N/A'}`,
+                    'Serials:',
+                    ...(Array.isArray(meta.serials)
+                        ? meta.serials.map((s: any) => ` - ${s.portId}: ${s.path} (Baud: ${s.baudRate || 'N/A'})`)
+                        : [' - N/A']),
+                    'Packet Stats:',
+                    ...(meta.stats
+                        ? Object.entries(meta.stats).map(([portId, s]: [string, any]) =>
+                            ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), Samples=${s.sampleSize}`)
+                        : [' - Stats not available']),
+                    '==================================================',
+                    '', // Empty line
+                ].join('\n');
+                this.writeStream.write(header);
+            }
+
+            this.isLogging = true;
+            logger.info(`[RawPacketLogger] Started logging to ${filename}`);
+
+            this.setupListeners();
+        } catch (error) {
+            logger.error({ err: error, configDir: this.configDir }, '[RawPacketLogger] Failed to start logging');
+            this.stop(); // Cleanup if partial failure
+            throw error; // Re-throw to let API know it failed
         }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `packet_log_${timestamp}.txt`;
-        this.currentLogFile = path.join(logDir, filename);
-
-        this.writeStream = fs.createWriteStream(this.currentLogFile, { flags: 'a' });
-
-        // Write Metadata Header
-        if (meta) {
-            const header = [
-                '==================================================',
-                '[METADATA]',
-                `Log Started: ${new Date().toISOString()}`,
-                `Config Files: ${Array.isArray(meta.configFiles) ? meta.configFiles.join(', ') : 'N/A'}`,
-                'Serials:',
-                ...(Array.isArray(meta.serials)
-                    ? meta.serials.map((s: any) => ` - ${s.portId}: ${s.path} (Baud: ${s.baudRate || 'N/A'})`)
-                    : [' - N/A']),
-                'Packet Stats:',
-                ...(meta.stats
-                    ? Object.entries(meta.stats).map(([portId, s]: [string, any]) =>
-                        ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), Samples=${s.sampleSize}`)
-                    : [' - Stats not available']),
-                '==================================================',
-                '', // Empty line
-            ].join('\n');
-            this.writeStream.write(header);
-        }
-
-        this.isLogging = true;
-
-        logger.info(`[RawPacketLogger] Started logging to ${filename}`);
-
-        this.setupListeners();
     }
 
     public stop(): { filename: string; path: string } | null {

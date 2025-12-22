@@ -67,21 +67,25 @@ export class LightDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null {
     const entityConfig = this.config as LightEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda, let GenericDevice handle it
-    if (commandConfig && commandConfig.type === 'lambda') {
-      return super.constructCommand(commandName, value);
+    // If lambda or CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+      return super.constructCommand(commandName, value, states);
     }
 
-    // Handle standard on/off commands
+    // Handle standard on/off commands - Let GenericDevice handle simple data commands
     if (commandName === 'on' && entityConfig.command_on?.data) {
-      return [...entityConfig.command_on.data];
+      return super.constructCommand(commandName, value, states);
     }
     if (commandName === 'off' && entityConfig.command_off?.data) {
-      return [...entityConfig.command_off.data];
+      return super.constructCommand(commandName, value, states);
     }
 
     // Handle brightness command
@@ -95,7 +99,7 @@ export class LightDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle color temperature command
@@ -116,7 +120,7 @@ export class LightDevice extends GenericDevice {
           command[valueOffset] = val;
         }
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle RGB commands
@@ -126,7 +130,7 @@ export class LightDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
     if (commandName === 'green' && entityConfig.command_green?.data && value !== undefined) {
       const command = [...entityConfig.command_green.data];
@@ -134,7 +138,7 @@ export class LightDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
     if (commandName === 'blue' && entityConfig.command_blue?.data && value !== undefined) {
       const command = [...entityConfig.command_blue.data];
@@ -142,7 +146,7 @@ export class LightDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle white value command
@@ -152,7 +156,7 @@ export class LightDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
 
     return null;

@@ -23,6 +23,15 @@ class FakeSerialPort extends EventEmitter {
     this.emit('open');
     callback?.(null);
   }
+
+  write(data: any, callback?: (error?: Error | null) => void) {
+    callback?.(null);
+    return true;
+  }
+
+  destroy() {
+    this.removeAllListeners();
+  }
 }
 
 const serialPortInstances: FakeSerialPort[] = [];

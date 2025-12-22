@@ -62,20 +62,24 @@ export class FanDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null {
     const entityConfig = this.config as FanEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda, let GenericDevice handle it
-    if (commandConfig && commandConfig.type === 'lambda') {
-      return super.constructCommand(commandName, value);
+    // If lambda or CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+      return super.constructCommand(commandName, value, states);
     }
 
     if (commandName === 'on' && entityConfig.command_on?.data) {
-      return [...entityConfig.command_on.data];
+      return super.constructCommand(commandName, value, states);
     }
     if (commandName === 'off' && entityConfig.command_off?.data) {
-      return [...entityConfig.command_off.data];
+      return super.constructCommand(commandName, value, states);
     }
 
     // Handle speed command
@@ -85,7 +89,7 @@ export class FanDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle percentage command
@@ -99,7 +103,7 @@ export class FanDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = Math.round(value);
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle preset mode command
@@ -110,7 +114,7 @@ export class FanDevice extends GenericDevice {
     ) {
       const command = [...entityConfig.command_preset_mode.data];
       // Value would be preset name, needs mapping to byte value
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle oscillation command
@@ -124,7 +128,7 @@ export class FanDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = value ? 1 : 0;
       }
-      return command;
+      return this.framePacket(command);
     }
 
     // Handle direction command
@@ -138,7 +142,7 @@ export class FanDevice extends GenericDevice {
       if (valueOffset !== undefined) {
         command[valueOffset] = value === 'forward' ? 0 : 1;
       }
-      return command;
+      return this.framePacket(command);
     }
 
     return null;

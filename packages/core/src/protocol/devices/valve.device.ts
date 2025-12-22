@@ -46,25 +46,29 @@ export class ValveDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null {
     const entityConfig = this.config as ValveEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda, let GenericDevice handle it
-    if (commandConfig && commandConfig.type === 'lambda') {
-      return super.constructCommand(commandName, value);
+    // If lambda or CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+      return super.constructCommand(commandName, value, states);
     }
 
     if (commandName === 'open' && entityConfig.command_open?.data) {
-      return [...entityConfig.command_open.data];
+      return super.constructCommand(commandName, value, states);
     }
     if (commandName === 'close' && entityConfig.command_close?.data) {
-      return [...entityConfig.command_close.data];
+      return super.constructCommand(commandName, value, states);
     }
 
     // Handle stop command
     if (commandName === 'stop' && entityConfig.command_stop?.data) {
-      return [...entityConfig.command_stop.data];
+      return super.constructCommand(commandName, value, states);
     }
 
     // Handle position command (0-100%)
@@ -75,7 +79,7 @@ export class ValveDevice extends GenericDevice {
         const position = Math.min(100, Math.max(0, Math.round(value)));
         command[valueOffset] = position;
       }
-      return command;
+      return this.framePacket(command);
     }
 
     return null;

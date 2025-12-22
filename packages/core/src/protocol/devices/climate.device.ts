@@ -58,16 +58,20 @@ export class ClimateDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
-    const cmd = super.constructCommand(commandName, value);
+  public constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null {
+    const cmd = super.constructCommand(commandName, value, states);
     if (cmd) return cmd;
 
     const entityConfig = this.config as any;
     if (commandName === 'off' && entityConfig.command_off?.data) {
-      return [...entityConfig.command_off.data];
+      return this.framePacket([...entityConfig.command_off.data]);
     }
     if (commandName === 'heat' && entityConfig.command_heat?.data) {
-      return [...entityConfig.command_heat.data];
+      return this.framePacket([...entityConfig.command_heat.data]);
     }
 
     // command_temperature is usually a lambda, handled by super

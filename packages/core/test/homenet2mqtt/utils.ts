@@ -47,6 +47,9 @@ export async function setupTest(configPath: string): Promise<TestContext> {
   config.packet_defaults.tx_retry_cnt = 0;
   config.packet_defaults.tx_timeout = 10;
   config.packet_defaults.tx_delay = 5;
+  // IMPORTANT: Do NOT blindly overwrite header/footer here, or preserve them if needed.
+  // The loadConfig should have already populated them.
+  // We only touch retry/timeout/delay settings.
 
   const portId = config.serials[0]?.portId || 'default';
   clearStateCache();

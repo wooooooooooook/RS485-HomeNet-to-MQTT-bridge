@@ -12,7 +12,11 @@ export abstract class Device {
 
   public abstract parseData(packet: number[]): Record<string, any> | null;
 
-  public abstract constructCommand(commandName: string, value?: any): number[] | null;
+  public abstract constructCommand(
+    commandName: string,
+    value?: any,
+    states?: Map<string, Record<string, any>>,
+  ): number[] | null;
 
   public getOptimisticState(commandName: string, value?: any): Record<string, any> | null {
     return null;

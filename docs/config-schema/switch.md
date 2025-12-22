@@ -8,6 +8,7 @@ On/Off 토글 장치는 `switch` 엔티티를 사용합니다. `type`은 `switch
 ## 옵션 필드
 - 전원 상태: `state_on`, `state_off` — [`StateSchema`](./schemas.md#stateschema) 또는 CEL 표현식.
 - 명령: `command_on`, `command_off`(필요 시 `value_offset` 또는 CEL 표현식 사용), `command_update`(상태 재요청).
+- 동작 모드: `optimistic` (true 설정 시 즉시 상태 반영 및 가상 스위치 지원)
 
 ## 예제: 도어 호출 스위치
 `hyundai_door.homenet_bridge.yaml`은 호출 스위치에 온/오프 패킷을 배치하고 상태 비트로 켜짐 여부를 확인합니다.【F:packages/core/config/hyundai_door.homenet_bridge.yaml†L52-L69】

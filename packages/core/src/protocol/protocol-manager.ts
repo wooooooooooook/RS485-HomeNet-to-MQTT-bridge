@@ -26,6 +26,10 @@ export class ProtocolManager extends EventEmitter {
     );
   }
 
+  public getDevice(id: string): Device | undefined {
+    return this.devices.find((d) => d.getId() === id);
+  }
+
   public handleIncomingByte(byte: number): void {
     const packet = this.parser.parse(byte);
     if (packet) {

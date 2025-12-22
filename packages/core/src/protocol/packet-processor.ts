@@ -116,16 +116,32 @@ export class PacketProcessor extends EventEmitter {
     commandName: string,
     value?: number | string,
   ): number[] | null {
-    // Find the device in protocol manager?
-    // Or just create a temporary device to construct command?
-    // Ideally we should look up the registered device.
-    // But ProtocolManager doesn't expose getDeviceById yet.
-    // For now, let's use a temporary GenericDevice since it's stateless for command construction usually.
-    // OR, better, add getDeviceById to ProtocolManager.
+    // Try to find the registered device
+    let device = this.protocolManager.getDevice(entity.id);
 
-    // Using temporary device for now to keep it simple
-    const device = new GenericDevice(entity, this.protocolManager['config']);
-    return device.constructCommand(commandName, value, this.states);
+    // If not found, fallback to temporary GenericDevice (legacy behavior)
+    if (!device) {
+      device = new GenericDevice(entity, this.protocolManager['config']);
+    }
+
+    const cmd = device.constructCommand(commandName, value, this.states);
+
+    // Handle Optimistic Updates
+    if (entity.optimistic) {
+      const optimisticState = device.getOptimisticState(commandName, value);
+      if (optimisticState) {
+        // Emit state update immediately
+        this.emit('state', { deviceId: entity.id, state: optimisticState });
+      }
+
+      // If no command packet was generated (virtual switch), return empty array
+      // so the caller treats it as "processed" instead of "failed"
+      if (!cmd) {
+        return [];
+      }
+    }
+
+    return cmd;
   }
 
   // Deprecated/Legacy method support if needed, or remove if we update call sites

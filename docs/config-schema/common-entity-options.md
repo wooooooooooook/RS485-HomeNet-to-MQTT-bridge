@@ -70,3 +70,20 @@ light:
       tx_timeout: 500
       tx_checksum: "xor_0xFF" # 이 장치만 다른 체크섬 사용
 ```
+
+## 낙관적 상태 업데이트 (`optimistic`)
+
+명령을 보낸 후 장치로부터 상태 변경 응답을 기다리지 않고, 즉시 상태가 변경된 것으로 가정하여 반영합니다.
+
+- **타입**: `boolean`
+- **기본값**: `false`
+- **설명**: `true`로 설정하면 명령 전송 즉시 UI 상태가 업데이트됩니다.
+    - 실제 장치의 응답 속도가 느릴 때 UI 반응성을 높이는 데 유용합니다.
+    - `command_on`/`command_off` 등이 정의되지 않은 경우, 패킷을 전송하지 않고 상태만 유지하는 **가상 스위치(Virtual Switch)** 또는 플래그로 활용할 수 있습니다.
+
+```yaml
+switch:
+  - name: "외출 모드 플래그"
+    id: "away_mode_flag"
+    optimistic: true  # 가상 스위치로 동작 (패킷 전송 없음)
+```

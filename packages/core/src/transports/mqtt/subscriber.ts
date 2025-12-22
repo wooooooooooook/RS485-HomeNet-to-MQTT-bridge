@@ -181,6 +181,15 @@ export class MqttSubscriber {
       );
 
       if (commandPacket) {
+        // If empty packet (virtual switch/optimistic only), we skip sending but consider it success
+        if (commandPacket.length === 0) {
+          logger.debug(
+            { entity: targetEntity.name, command: commandName },
+            `[mqtt-subscriber] Virtual/Optimistic command processed (no packet sent)`,
+          );
+          return;
+        }
+
         const hexPacket = Buffer.from(commandPacket).toString('hex');
         eventBus.emit('command-packet', {
           entity: targetEntity.name || targetEntity.id,

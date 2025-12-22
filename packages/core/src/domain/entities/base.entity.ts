@@ -26,4 +26,5 @@ export interface EntityConfig {
   icon?: string;
   discovery_always?: boolean;
   discovery_linked_id?: string;
+  optimistic?: boolean;
 }

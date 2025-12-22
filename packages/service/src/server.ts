@@ -547,6 +547,10 @@ app.get('/api/log-sharing/status', async (_req, res) => {
 });
 
 app.post('/api/log-sharing/consent', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { consent } = req.body;
   if (typeof consent !== 'boolean') {
     return res.status(400).json({ error: 'consent must be boolean' });
@@ -1420,6 +1424,11 @@ app.post('/api/config/update', async (req, res) => {
 });
 
 app.post('/api/entities/rename', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Rename entity rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { entityId, newName, portId } = req.body as {
     entityId?: string;
     newName?: string;
@@ -1514,6 +1523,10 @@ app.post('/api/entities/rename', async (req, res) => {
 });
 
 app.post('/api/entities/:entityId/revoke-discovery', (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { entityId } = req.params;
   if (!entityId) return res.status(400).json({ error: 'entityId required' });
 
@@ -1531,6 +1544,11 @@ app.post('/api/entities/:entityId/revoke-discovery', (req, res) => {
 });
 
 app.delete('/api/entities/:entityId', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Delete entity rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { entityId } = req.params;
   const portId = req.query.portId as string | undefined;
 

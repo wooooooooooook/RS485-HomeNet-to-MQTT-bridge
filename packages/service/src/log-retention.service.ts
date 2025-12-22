@@ -17,7 +17,6 @@ export interface LogRetentionSettings {
 export interface LogRetentionStats {
     enabled: boolean;
     packetLogCount: number;
-    rawPacketLogCount: number;
     activityLogCount: number;
     memoryUsageBytes: number;
     oldestLogTimestamp: number | null;
@@ -47,14 +46,6 @@ type CommandLogEntry = {
     portId?: string;
 };
 
-type RawPacketLogEntry = {
-    payload: string;
-    receivedAt: string;
-    interval: number | null;
-    portId?: string;
-    direction: 'RX' | 'TX';
-};
-
 type ActivityLogEntry = {
     timestamp: number;
     code: string;
@@ -72,7 +63,6 @@ export class LogRetentionService {
     // Cached logs
     private parsedPacketLogs: PacketLogEntry[] = [];
     private commandPacketLogs: CommandLogEntry[] = [];
-    private rawPacketLogs: RawPacketLogEntry[] = [];
     private activityLogs: ActivityLogEntry[] = [];
 
     // Timers
@@ -194,7 +184,6 @@ export class LogRetentionService {
         return {
             enabled: this.enabled,
             packetLogCount: this.parsedPacketLogs.length + this.commandPacketLogs.length,
-            rawPacketLogCount: this.rawPacketLogs.length,
             activityLogCount: this.activityLogs.length,
             memoryUsageBytes: memoryUsage,
             oldestLogTimestamp: oldestTimestamp,
@@ -205,13 +194,12 @@ export class LogRetentionService {
         // Rough estimation of memory usage
         // Each log entry is estimated based on typical object sizes
         const packetLogSize = (this.parsedPacketLogs.length + this.commandPacketLogs.length) * 200; // ~200 bytes per entry
-        const rawPacketLogSize = this.rawPacketLogs.length * 150; // ~150 bytes per entry
         const activityLogSize = this.activityLogs.length * 250; // ~250 bytes per entry
 
         // Dictionary overhead
         const dictSize = this.packetDictionary.size * 100; // ~100 bytes per entry
 
-        return packetLogSize + rawPacketLogSize + activityLogSize + dictSize;
+        return packetLogSize + activityLogSize + dictSize;
     }
 
     private getOldestLogTimestamp(): number | null {
@@ -223,9 +211,6 @@ export class LogRetentionService {
         if (this.commandPacketLogs.length > 0) {
             timestamps.push(new Date(this.commandPacketLogs[0].timestamp).getTime());
         }
-        if (this.rawPacketLogs.length > 0) {
-            timestamps.push(new Date(this.rawPacketLogs[0].receivedAt).getTime());
-        }
         if (this.activityLogs.length > 0) {
             timestamps.push(this.activityLogs[0].timestamp);
         }
@@ -236,7 +221,6 @@ export class LogRetentionService {
     private clearLogs(): void {
         this.parsedPacketLogs = [];
         this.commandPacketLogs = [];
-        this.rawPacketLogs = [];
         this.activityLogs = [];
     }
 
@@ -255,18 +239,12 @@ export class LogRetentionService {
             (log) => new Date(log.timestamp).getTime() >= cutoff,
         );
 
-        const originalRawCount = this.rawPacketLogs.length;
-        this.rawPacketLogs = this.rawPacketLogs.filter(
-            (log) => new Date(log.receivedAt).getTime() >= cutoff,
-        );
-
         const originalActivityCount = this.activityLogs.length;
         this.activityLogs = this.activityLogs.filter((log) => log.timestamp >= cutoff);
 
         const removed =
             originalParsedCount - this.parsedPacketLogs.length +
             originalCommandCount - this.commandPacketLogs.length +
-            originalRawCount - this.rawPacketLogs.length +
             originalActivityCount - this.activityLogs.length;
 
         if (removed > 0) {
@@ -337,43 +315,6 @@ export class LogRetentionService {
         });
     };
 
-    private handleRawPacket = (data: unknown) => {
-        if (!this.enabled) return;
-
-        const pkt = data as {
-            payload?: string;
-            receivedAt?: string;
-            interval?: number | null;
-            portId?: string;
-        };
-
-        this.rawPacketLogs.push({
-            payload: pkt.payload || '',
-            receivedAt: pkt.receivedAt || new Date().toISOString(),
-            interval: pkt.interval ?? null,
-            portId: pkt.portId,
-            direction: 'RX',
-        });
-    };
-
-    private handleRawTxPacket = (data: unknown) => {
-        if (!this.enabled) return;
-
-        const pkt = data as {
-            payload?: string;
-            timestamp?: string;
-            portId?: string;
-        };
-
-        this.rawPacketLogs.push({
-            payload: pkt.payload || '',
-            receivedAt: pkt.timestamp || new Date().toISOString(),
-            interval: null,
-            portId: pkt.portId,
-            direction: 'TX',
-        });
-    };
-
     private handleActivityLog = (data: unknown) => {
         if (!this.enabled) return;
 
@@ -384,16 +325,12 @@ export class LogRetentionService {
     private setupListeners() {
         eventBus.on('parsed-packet', this.handleParsedPacket);
         eventBus.on('command-packet', this.handleCommandPacket);
-        eventBus.on('raw-data-with-interval', this.handleRawPacket);
-        eventBus.on('raw-tx-packet', this.handleRawTxPacket);
         eventBus.on('activity-log:added', this.handleActivityLog);
     }
 
     private removeListeners() {
         eventBus.off('parsed-packet', this.handleParsedPacket);
         eventBus.off('command-packet', this.handleCommandPacket);
-        eventBus.off('raw-data-with-interval', this.handleRawPacket);
-        eventBus.off('raw-tx-packet', this.handleRawTxPacket);
         eventBus.off('activity-log:added', this.handleActivityLog);
     }
 
@@ -448,7 +385,6 @@ export class LogRetentionService {
             packetDictionary: dict,
             parsedPacketLogs: this.parsedPacketLogs,
             commandPacketLogs: this.commandPacketLogs,
-            rawPacketLogs: this.rawPacketLogs,
             activityLogs: this.activityLogs,
         };
 

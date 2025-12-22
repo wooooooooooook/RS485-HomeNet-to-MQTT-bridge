@@ -41,7 +41,6 @@ export type LogRetentionSettings = {
 export type LogRetentionStats = {
   enabled: boolean;
   packetLogCount: number;
-  rawPacketLogCount: number;
   activityLogCount: number;
   memoryUsageBytes: number;
   oldestLogTimestamp: number | null;

@@ -373,7 +373,6 @@
               <span class="stat-value">{formatBytes(cacheStats.memoryUsageBytes)}</span>
               <span class="stat-detail">
                 ({$t('settings.log_retention.packets')}: {cacheStats.packetLogCount.toLocaleString()},
-                Raw: {cacheStats.rawPacketLogCount.toLocaleString()},
                 {$t('settings.log_retention.activity')}: {cacheStats.activityLogCount.toLocaleString()})
               </span>
             </div>

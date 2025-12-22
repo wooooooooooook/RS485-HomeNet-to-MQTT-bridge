@@ -84,4 +84,5 @@ export interface DeviceConfig {
   name: string;
   // Add other common device properties here
   state?: StateSchema;
+  optimistic?: boolean;
 }

@@ -14,6 +14,10 @@ export abstract class Device {
 
   public abstract constructCommand(commandName: string, value?: any): number[] | null;
 
+  public getOptimisticState(commandName: string, value?: any): Record<string, any> | null {
+    return null;
+  }
+
   public getId(): string {
     return this.config.id;
   }

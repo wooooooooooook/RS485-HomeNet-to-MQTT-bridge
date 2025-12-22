@@ -19,11 +19,9 @@ services:
     volumes:
       # 설정 파일 볼륨
       - ./h2m-config:/config
-      # 시리얼 포트 접근 (필요한 경우 주석 해제)
-      # - /dev/ttyUSB0:/dev/ttyUSB0
+    # 시리얼 포트 장치 (필요한 경우 주석 해제)
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
     ports:
       - '3000:3000'
     restart: unless-stopped
-    # 시리얼 포트 사용 시 privileged 모드 필요
-    # privileged: true
-

@@ -91,6 +91,7 @@ export type RawPacketWithInterval = {
   receivedAt: string;
   interval: number | null;
   portId?: string;
+  direction?: 'RX' | 'TX';
 };
 
 export type PacketStats = {

@@ -19,8 +19,6 @@
     isStreaming,
     portMetadata,
     selectedPortId,
-    onStart,
-    onStop,
     onPortChange,
   }: {
     stats: PacketStatsType | null;
@@ -30,13 +28,8 @@
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
     selectedPortId: string | null;
-    onStart?: () => void;
-    onStop?: () => void;
     onPortChange?: (portId: string) => void;
   } = $props();
-
-  const startStreaming = () => onStart?.();
-  const stopStreaming = () => onStop?.();
 
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
@@ -64,13 +57,7 @@
   </div>
 
   <PacketLog {commandPackets} {parsedPackets} />
-  <RawPacketLog
-    {rawPackets}
-    {isStreaming}
-    {stats}
-    onStart={startStreaming}
-    onStop={stopStreaming}
-  />
+  <RawPacketLog {rawPackets} {isStreaming} {stats} />
 
   {#if activePortId}
     <LatencyTest portId={activePortId} />

@@ -29,7 +29,7 @@
   import ToastContainer from './lib/components/ToastContainer.svelte';
   import SettingsView from './lib/views/Settings.svelte';
 
-  const MAX_PACKETS = 1000;
+  const MAX_PACKETS = 500000; // ~24 hours at 5 packets/sec
 
   // -- State --
   let activeView = $state<'dashboard' | 'analysis' | 'settings'>('dashboard');
@@ -249,6 +249,26 @@
     loadBridgeInfo(true);
     loadFrontendSettings();
     loadActivityLogs();
+  });
+
+  // Analysis 페이지 진입/이탈 시 자동으로 스트리밍 시작/중지
+  $effect(() => {
+    // connectionStatus와 activeView를 의존성으로 사용하여 reactive하게 동작
+    if (connectionStatus !== 'connected') return;
+
+    if (activeView === 'analysis') {
+      // 스트리밍 시작 & 데이터 초기화
+      sendStreamCommand('start');
+      isStreaming = true;
+      rawPackets = [];
+      packetStatsByPort = new Map();
+    } else {
+      // Analysis가 아닌 다른 뷰로 이동 시 스트리밍 중지
+      if (isStreaming) {
+        sendStreamCommand('stop');
+        isStreaming = false;
+      }
+    }
   });
 
   // API 요청 helper 함수
@@ -841,7 +861,9 @@
 
     // Convert to array, filter only those with state, and sort
     const allEntities = Array.from(entities.values());
-    const filtered = showInactiveEntities ? allEntities : allEntities.filter((entity) => entity.isActive);
+    const filtered = showInactiveEntities
+      ? allEntities
+      : allEntities.filter((entity) => entity.isActive);
     return filtered.sort((a, b) => a.displayName.localeCompare(b.displayName));
   });
 
@@ -1044,16 +1066,6 @@
             {portMetadata}
             selectedPortId={activePortId}
             onPortChange={(portId) => (selectedPortId = portId)}
-            onStart={() => {
-              sendStreamCommand('start');
-              isStreaming = true;
-              rawPackets = [];
-              packetStatsByPort = new Map();
-            }}
-            onStop={() => {
-              sendStreamCommand('stop');
-              isStreaming = false;
-            }}
           />
         {:else if activeView === 'settings'}
           <SettingsView

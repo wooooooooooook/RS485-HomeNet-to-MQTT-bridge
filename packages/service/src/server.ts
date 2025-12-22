@@ -248,7 +248,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 // --- Packet History Cache ---
 const commandPacketHistory: unknown[] = [];
 const parsedPacketHistory: unknown[] = [];
-const MAX_PACKET_HISTORY = 1000;
+const MAX_PACKET_HISTORY = 500000; // ~24 hours at 5 packets/sec
 
 // Security: Rate Limiters
 const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 seconds
@@ -564,19 +564,27 @@ app.post('/api/log-sharing/consent', async (req, res) => {
 });
 
 // --- Raw Packet Text Logging API ---
-app.post('/api/logs/packet/start', (_req, res) => {
+app.post('/api/logs/packet/start', (req, res) => {
   try {
     // Gather Metadata
     const serials = currentConfigs
       .flatMap((conf) => conf.serials || [])
       .map((s) => ({ portId: s.portId, path: s.path, baudRate: s.baud_rate }));
 
-    const stats: Record<string, any> = {};
-    bridges.forEach((b) => {
-      const bridgeStats =
-        (b.bridge as any).getPacketIntervalStats?.() || {};
-      Object.assign(stats, bridgeStats);
-    });
+    // Prefer UI-provided stats (accumulated on client-side) over server-side stats
+    // UI stats are populated while user is streaming and reflect accurate data at recording start
+    let stats: Record<string, any> = {};
+    const uiStats = req.body?.uiStats;
+    if (uiStats && uiStats.portId) {
+      stats[uiStats.portId] = uiStats;
+    } else {
+      // Fallback to server-side stats (may be empty if listener wasn't active)
+      bridges.forEach((b) => {
+        const bridgeStats =
+          (b.bridge as any).getPacketIntervalStats?.() || {};
+        Object.assign(stats, bridgeStats);
+      });
+    }
 
     const meta = {
       configFiles: currentConfigFiles,
@@ -585,8 +593,7 @@ app.post('/api/logs/packet/start', (_req, res) => {
     };
 
     rawPacketLogger.start(meta);
-    // Also ensuring raw packet listeners are active so data flows
-    startAllRawPacketListeners();
+    // 스트리밍은 UI에서 Analysis 페이지 진입 시 자동으로 시작되므로 별도로 리스너를 시작하지 않음
     res.json({ success: true, message: 'Logging started' });
   } catch (error) {
     logger.error({ err: error }, '[service] Failed to start packet logging');
@@ -684,6 +691,7 @@ type RawPacketEvent = {
   receivedAt: string;
   interval: number | null;
   portId?: string;
+  direction?: 'RX' | 'TX';
 };
 
 type StateChangeEvent = {
@@ -744,7 +752,7 @@ const isStateTopic = (topic: string) => {
   return parts.length >= 3 && parts[parts.length - 1] === 'state';
 };
 
-const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => {
+const normalizeRawPacket = (data: RawPacketPayload & { direction?: 'RX' | 'TX' }): RawPacketEvent => {
   const portId = data.portId ?? 'raw';
   const topic = data.topic ?? `${BASE_MQTT_PREFIX}/${portId}/raw`;
 
@@ -754,6 +762,7 @@ const normalizeRawPacket = (data: RawPacketPayload): RawPacketEvent => {
     receivedAt: data.receivedAt ?? new Date().toISOString(),
     interval: typeof data.interval === 'number' ? data.interval : null,
     portId,
+    direction: data.direction ?? 'RX',
   };
 };
 
@@ -833,7 +842,16 @@ const registerGlobalEventHandlers = () => {
     broadcastStreamEvent('parsed-packet', data);
   });
   eventBus.on('raw-data-with-interval', (data: RawPacketPayload) => {
-    sendToRawSubscribers('raw-data-with-interval', normalizeRawPacket(data));
+    sendToRawSubscribers('raw-data-with-interval', normalizeRawPacket({ ...data, direction: 'RX' }));
+  });
+  eventBus.on('raw-tx-packet', (data: { portId: string; payload: string; timestamp: string }) => {
+    sendToRawSubscribers('raw-data-with-interval', normalizeRawPacket({
+      portId: data.portId,
+      payload: data.payload,
+      receivedAt: data.timestamp,
+      interval: null, // TX 패킷은 interval 계산하지 않음
+      direction: 'TX',
+    }));
   });
   eventBus.on('packet-interval-stats', (data: unknown) => {
     sendToRawSubscribers('packet-interval-stats', data);

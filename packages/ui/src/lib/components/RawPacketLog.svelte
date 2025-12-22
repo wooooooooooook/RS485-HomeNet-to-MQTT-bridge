@@ -4,6 +4,7 @@
   import PacketStats from './PacketStats.svelte';
   import { fade } from 'svelte/transition';
   import Button from './Button.svelte';
+  import VirtualList from '@humanspeak/svelte-virtual-list';
 
   let {
     rawPackets = [],
@@ -23,6 +24,9 @@
   let recordedFile = $state<{ filename: string; path: string } | null>(null);
   let showSaveDialog = $state(false);
   let downloadError = $state<string | null>(null);
+
+  // 가상 스크롤용 역순 패킷 목록 (최신 패킷이 위에 표시)
+  const reversedPackets = $derived([...rawPackets].reverse());
 
   const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 
@@ -50,7 +54,24 @@
     } else {
       // Start recording
       try {
-        const response = await fetch('/api/logs/packet/start', { method: 'POST' });
+        // Send UI stats to server so log metadata reflects what user has seen
+        const statsPayload = stats
+          ? {
+              portId: stats.portId,
+              packetAvg: stats.packetAvg,
+              packetStdDev: stats.packetStdDev,
+              idleAvg: stats.idleAvg,
+              idleStdDev: stats.idleStdDev,
+              idleOccurrenceAvg: stats.idleOccurrenceAvg,
+              idleOccurrenceStdDev: stats.idleOccurrenceStdDev,
+              sampleSize: stats.sampleSize,
+            }
+          : null;
+        const response = await fetch('/api/logs/packet/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uiStats: statsPayload }),
+        });
         if (response.ok) {
           isRecording = true;
           recordedFile = null;
@@ -127,6 +148,21 @@
   }
 </script>
 
+{#snippet renderPacketItem(packet: RawPacketWithInterval, _index: number)}
+  <div class="log-item" class:tx-packet={packet.direction === 'TX'}>
+    <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
+    <span class="direction" class:tx={packet.direction === 'TX'}>{packet.direction ?? 'RX'}</span>
+    <span class="interval"
+      >{packet.interval !== null
+        ? `${packet.interval >= 0 ? '+' : ''}${packet.interval}ms`
+        : ''}</span
+    >
+    <code class="payload" class:tx-payload={packet.direction === 'TX'}
+      >{toHexPairs(packet.payload).join(' ')}</code
+    >
+  </div>
+{/snippet}
+
 <div class="log-section">
   <div class="log-header">
     <h2>{$t('analysis.raw_log.title')}</h2>
@@ -178,17 +214,13 @@
     {#if rawPackets.length === 0}
       <p class="empty">{$t('analysis.raw_log.empty')}</p>
     {:else}
-      {#each [...rawPackets].reverse() as packet, index (`${packet.receivedAt}-${packet.topic}-${index}`)}
-        <div class="log-item">
-          <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
-          <span class="interval"
-            >{packet.interval !== null
-              ? `${packet.interval >= 0 ? '+' : ''}${packet.interval}ms`
-              : ''}</span
-          >
-          <code class="payload">{toHexPairs(packet.payload).join(' ')}</code>
-        </div>
-      {/each}
+      <VirtualList
+        items={reversedPackets}
+        renderItem={renderPacketItem}
+        defaultEstimatedItemHeight={32}
+        viewportClass="virtual-viewport"
+        itemsClass="virtual-items"
+      />
     {/if}
   </div>
 </div>
@@ -261,6 +293,28 @@
     color: #10b981;
     font-weight: 600;
     font-family: monospace;
+  }
+
+  .direction {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  .direction.tx {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+  }
+
+  .tx-payload {
+    color: #60a5fa;
+  }
+
+  .tx-packet {
+    background: rgba(59, 130, 246, 0.05);
   }
 
   .empty {
@@ -349,5 +403,14 @@
     border-radius: 6px;
     margin-bottom: 1rem;
     font-size: 0.9rem;
+  }
+
+  /* 가상 스크롤용 스타일 */
+  :global(.virtual-viewport) {
+    height: 100% !important;
+  }
+
+  :global(.virtual-items) {
+    font-family: monospace;
   }
 </style>

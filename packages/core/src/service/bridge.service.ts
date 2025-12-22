@@ -702,6 +702,7 @@ export class HomeNetBridge {
         if (context.packetIntervals.length > 1000) {
           context.packetIntervals.shift();
         }
+        // logger.debug({ portId: context.portId, interval, count: context.packetIntervals.length }, '[core] Interval Pushed');
       }
 
       context.lastPacketTimestamp = now;
@@ -743,6 +744,7 @@ export class HomeNetBridge {
   public getPacketIntervalStats(): Record<string, any> {
     const stats: Record<string, any> = {};
     for (const context of this.portContexts.values()) {
+      logger.info({ portId: context.portId, intervalCount: context.packetIntervals.length }, '[core] getPacketIntervalStats called');
       stats[context.portId] = this.calculateStatsForContext(context);
     }
     return stats;

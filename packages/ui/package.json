@@ -11,6 +11,7 @@
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
+    "@humanspeak/svelte-virtual-list": "^0.3.6",
     "svelte": "^5.0.0",
     "svelte-i18n": "^4.0.1"
   },

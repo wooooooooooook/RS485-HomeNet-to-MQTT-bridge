@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import type { CommandPacket, ParsedPacket } from '../types';
+  import VirtualList from '@humanspeak/svelte-virtual-list';
 
   let { parsedPackets = [], commandPackets = [] } = $props<{
     parsedPackets?: ParsedPacket[];
@@ -32,6 +33,29 @@
   });
 </script>
 
+{#snippet renderPacketItem(packet: MergedPacket, _index: number)}
+  <div class="log-item {packet.type}">
+    <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
+
+    {#if packet.type === 'rx'}
+      <span class="direction rx">RX</span>
+      <span class="entity">{packet.entityId}</span>
+      <span class="payload">{packet.packet.toUpperCase()}</span>
+      {#if packet.state}
+        <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
+      {/if}
+    {:else}
+      <span class="direction tx">TX</span>
+      <span class="entity">{packet.entityId}</span>
+      <span class="payload">{packet.packet.toUpperCase()}</span>
+      <span class="command-info">
+        {packet.command}
+        {#if packet.value !== undefined}<span class="value">({packet.value})</span>{/if}
+      </span>
+    {/if}
+  </div>
+{/snippet}
+
 <!-- Unified Packet Log Section -->
 <div class="log-section">
   <div class="log-header">
@@ -60,28 +84,13 @@
     {#if mergedPackets.length === 0}
       <p class="empty">{$t('analysis.packet_log.empty')}</p>
     {:else}
-      {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
-        <div class="log-item {packet.type}">
-          <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
-
-          {#if packet.type === 'rx'}
-            <span class="direction rx">RX</span>
-            <span class="entity">{packet.entityId}</span>
-            <span class="payload">{packet.packet.toUpperCase()}</span>
-            {#if packet.state}
-              <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
-            {/if}
-          {:else}
-            <span class="direction tx">TX</span>
-            <span class="entity">{packet.entityId}</span>
-            <span class="payload">{packet.packet.toUpperCase()}</span>
-            <span class="command-info">
-              {packet.command}
-              {#if packet.value !== undefined}<span class="value">({packet.value})</span>{/if}
-            </span>
-          {/if}
-        </div>
-      {/each}
+      <VirtualList
+        items={mergedPackets}
+        renderItem={renderPacketItem}
+        defaultEstimatedItemHeight={32}
+        viewportClass="virtual-viewport"
+        itemsClass="virtual-items"
+      />
     {/if}
   </div>
 </div>
@@ -218,5 +227,14 @@
     text-align: center;
     color: #64748b;
     font-style: italic;
+  }
+
+  /* 가상 스크롤용 스타일 */
+  :global(.virtual-viewport) {
+    height: 100% !important;
+  }
+
+  :global(.virtual-items) {
+    font-family: monospace;
   }
 </style>

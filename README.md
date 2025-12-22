@@ -26,7 +26,37 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 
 직접 서버를 운영하거나 Docker 환경을 선호하는 경우입니다.
 
-1. [deploy/docker/docker-compose.yml](deploy/docker/docker-compose.yml) 파일을 다운로드합니다.
+1. docker compose 파일을 작성합니다.
+    ```docker-compose.yml
+    services:
+    homenet2mqtt:
+        image: nubiz/homenet2mqtt:latest
+        container_name: homenet2mqtt
+        environment:
+        # 설정 파일 목록 (쉼표로 구분)
+        CONFIG_FILES: default.homenet_bridge.yaml,
+        # MQTT 브로커 URL
+        MQTT_URL: mqtt://localhost:1883
+        # 웹 UI 포트
+        PORT: '3000'
+        # 로그 레벨 (debug, info, warn, error)
+        LOG_LEVEL: info
+        # MQTT 인증 설정
+        MQTT_NEED_LOGIN: 'false'
+        MQTT_USER: ''
+        MQTT_PASSWD: ''
+        MQTT_TOPIC_PREFIX: homenet2mqtt
+        volumes:
+        # 설정 파일 볼륨
+        - ./h2m-config:/config
+        # 시리얼 포트 장치 (필요한 경우 주석 해제)
+        # devices:
+        #   - /dev/ttyUSB0:/dev/ttyUSB0
+        ports:
+        - '3000:3000'
+        restart: unless-stopped
+    ```
+
 2. 아래 명령어로 서비스를 시작합니다.
    ```bash
    docker-compose up -d

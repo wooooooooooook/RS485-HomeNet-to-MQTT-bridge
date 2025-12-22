@@ -129,6 +129,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@humanspeak/svelte-virtual-list':
+        specifier: ^0.3.6
+        version: 0.3.6(svelte@5.45.8)
       svelte:
         specifier: ^5.0.0
         version: 5.45.8
@@ -615,6 +618,11 @@ packages:
   '@homebridge/node-pty-prebuilt-multiarch@0.13.1':
     resolution: {integrity: sha512-ccQ60nMcbEGrQh0U9E6x0ajW9qJNeazpcM/9CH6J8leyNtJgb+gu24WTBAfBUVeO486ZhscnaxLEITI2HXwhow==}
     engines: {node: '>=18.0.0 <25.0.0'}
+
+  '@humanspeak/svelte-virtual-list@0.3.6':
+    resolution: {integrity: sha512-ls5FicD5b8nXi87GG7mj9nIoTkIl0M/JkmmE21KWnTabtDRnqEjZ7kOsU3ZEAWc0/HW8PlRwF50yqKwpaLeBMw==}
+    peerDependencies:
+      svelte: ^5.0.0
 
   '@jest/schemas@29.6.3':
     resolution: {integrity: sha512-mo5j5X+jIZmJQveBKeS/clAueipV7KgiX1vMgCxam1RNYiqE1w62n0/tJJnHtjW8ZHcQco5gY85jA3mi0L+nSA==}
@@ -2305,6 +2313,11 @@ snapshots:
     dependencies:
       node-addon-api: 7.1.1
       prebuild-install: 7.1.3
+
+  '@humanspeak/svelte-virtual-list@0.3.6(svelte@5.45.8)':
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.45.8
 
   '@jest/schemas@29.6.3':
     dependencies:

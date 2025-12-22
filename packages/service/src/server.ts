@@ -24,6 +24,7 @@ import { createSerialPortConnection } from '@rs485-homenet/core/transports/seria
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
 import { RawPacketLoggerService } from './raw-packet-logger.service.js';
+import { LogRetentionService, type LogRetentionSettings } from './log-retention.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
 
 dotenv.config();
@@ -270,9 +271,8 @@ type CompactParsedPacket = {
   portId?: string;
 };
 
-const commandPacketHistory: CompactCommandPacket[] = [];
-const parsedPacketHistory: CompactParsedPacket[] = [];
-const MAX_PACKET_HISTORY = 500000; // ~24 hours at 5 packets/sec
+// Packet history is now managed by LogRetentionService
+// Keep dictionary here as it's shared with LogRetentionService
 
 // 패킷을 사전에 등록하거나 기존 ID 반환
 function getOrCreatePacketId(payload: string): string {
@@ -296,45 +296,7 @@ const configRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
 const serialTestRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
 const latencyTestRateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
 
-eventBus.on('command-packet', (packet: unknown) => {
-  const pkt = packet as { packet?: string; entity?: string; entityId?: string; command?: string; value?: unknown; timestamp?: string; portId?: string };
-  if (!pkt.packet) return;
-
-  const packetId = getOrCreatePacketId(pkt.packet);
-  const compact: CompactCommandPacket = {
-    packetId,
-    entity: pkt.entity || '',
-    entityId: pkt.entityId || '',
-    command: pkt.command || '',
-    value: pkt.value,
-    timestamp: pkt.timestamp || new Date().toISOString(),
-    portId: pkt.portId,
-  };
-
-  commandPacketHistory.push(compact);
-  if (commandPacketHistory.length > MAX_PACKET_HISTORY) {
-    commandPacketHistory.shift();
-  }
-});
-
-eventBus.on('parsed-packet', (packet: unknown) => {
-  const pkt = packet as { packet?: string; entityId?: string; state?: unknown; timestamp?: string; portId?: string };
-  if (!pkt.packet) return;
-
-  const packetId = getOrCreatePacketId(pkt.packet);
-  const compact: CompactParsedPacket = {
-    packetId,
-    entityId: pkt.entityId || '',
-    state: pkt.state,
-    timestamp: pkt.timestamp || new Date().toISOString(),
-    portId: pkt.portId,
-  };
-
-  parsedPacketHistory.push(compact);
-  if (parsedPacketHistory.length > MAX_PACKET_HISTORY) {
-    parsedPacketHistory.shift();
-  }
-});
+// Removed duplicate packet history event handlers - now handled by LogRetentionService
 
 type BridgeInstance = {
   bridge: HomeNetBridge;
@@ -360,12 +322,18 @@ type FrontendSettings = {
     command: boolean;
   };
   locale?: string;
+  logRetention?: LogRetentionSettings;
 };
 
 const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
   toast: {
     stateChange: false,
     command: true,
+  },
+  logRetention: {
+    enabled: false,
+    autoSaveEnabled: false,
+    retentionCount: 7,
   },
 };
 
@@ -401,6 +369,20 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           : DEFAULT_FRONTEND_SETTINGS.toast.command,
     },
     locale: typeof value?.locale === 'string' ? value.locale : undefined,
+    logRetention: {
+      enabled:
+        typeof value?.logRetention?.enabled === 'boolean'
+          ? value.logRetention.enabled
+          : DEFAULT_FRONTEND_SETTINGS.logRetention!.enabled,
+      autoSaveEnabled:
+        typeof value?.logRetention?.autoSaveEnabled === 'boolean'
+          ? value.logRetention.autoSaveEnabled
+          : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
+      retentionCount:
+        typeof value?.logRetention?.retentionCount === 'number' && value.logRetention.retentionCount > 0
+          ? value.logRetention.retentionCount
+          : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
+    },
   };
 };
 
@@ -454,30 +436,14 @@ app.get('/api/packets/dictionary', (_req, res) => {
   res.json(dict);
 });
 
-// 명령 패킷 히스토리 (복원된 형식)
+// 명령 패킷 히스토리 (LogRetentionService에서 가져옴)
 app.get('/api/packets/command/history', (_req, res) => {
-  const restored = commandPacketHistory.map((compact) => ({
-    entity: compact.entity,
-    entityId: compact.entityId,
-    command: compact.command,
-    value: compact.value,
-    packet: getPayloadById(compact.packetId) || '',
-    timestamp: compact.timestamp,
-    portId: compact.portId,
-  }));
-  res.json(restored);
+  res.json(logRetentionService.getCommandPacketHistory());
 });
 
-// 파싱된 패킷 히스토리 (복원된 형식)
+// 파싱된 패킷 히스토리 (LogRetentionService에서 가져옴)
 app.get('/api/packets/parsed/history', (_req, res) => {
-  const restored = parsedPacketHistory.map((compact) => ({
-    entityId: compact.entityId,
-    packet: getPayloadById(compact.packetId) || '',
-    state: compact.state,
-    timestamp: compact.timestamp,
-    portId: compact.portId,
-  }));
-  res.json(restored);
+  res.json(logRetentionService.getParsedPacketHistory());
 });
 
 app.get('/api/activity/recent', (_req, res) => {
@@ -758,6 +724,126 @@ app.delete('/api/logs/packet/:filename', async (req, res) => {
   }
 });
 
+// --- Log Cache API Endpoints ---
+app.get('/api/logs/cache/settings', async (_req, res) => {
+  try {
+    const settings = logRetentionService.getSettings();
+    res.json({ settings });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to get cache settings');
+    res.status(500).json({ error: 'Failed to get cache settings' });
+  }
+});
+
+app.put('/api/logs/cache/settings', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  try {
+    const settings = req.body?.settings ?? req.body;
+    const updated = await logRetentionService.updateSettings(settings);
+
+    // Clear activity logs if caching was disabled
+    if (!updated.enabled) {
+      activityLogService.clearLogs();
+    }
+
+    // Also update frontend settings file to persist
+    const frontendSettings = await loadFrontendSettings();
+    frontendSettings.logRetention = updated;
+    await saveFrontendSettings(frontendSettings);
+
+    res.json({ settings: updated });
+
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to update cache settings');
+    res.status(500).json({ error: 'Failed to update cache settings' });
+  }
+});
+
+app.get('/api/logs/cache/stats', (_req, res) => {
+  try {
+    const stats = logRetentionService.getStats();
+    res.json(stats);
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to get cache stats');
+    res.status(500).json({ error: 'Failed to get cache stats' });
+  }
+});
+
+app.get('/api/logs/cache/files', async (_req, res) => {
+  try {
+    const files = await logRetentionService.listSavedFiles();
+    res.json({ files });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to list cache files');
+    res.status(500).json({ error: 'Failed to list files' });
+  }
+});
+
+app.get('/api/logs/cache/download/:filename', async (req, res) => {
+  const { filename } = req.params;
+  const filePath = logRetentionService.getFilePath(filename);
+
+  // Security check: ensure path is within cache-logs
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'cache-logs'))) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    if (await fileExists(filePath)) {
+      res.download(filePath, filename);
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Cache download failed');
+    res.status(500).json({ error: 'Download failed' });
+  }
+});
+
+app.delete('/api/logs/cache/:filename', async (req, res) => {
+  const { filename } = req.params;
+  const filePath = logRetentionService.getFilePath(filename);
+
+  // Security check: ensure path is within cache-logs
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'cache-logs'))) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    const deleted = await logRetentionService.deleteFile(filename);
+    if (deleted) {
+      res.json({ success: true, message: 'File deleted' });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Cache delete failed');
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
+app.post('/api/logs/cache/save', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  try {
+    const stats = logRetentionService.getStats();
+    if (!stats.enabled) {
+      return res.status(400).json({ error: 'Log caching is not enabled' });
+    }
+
+    const result = await logRetentionService.saveToFile();
+    res.json({ success: true, result });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Manual cache save failed');
+    res.status(500).json({ error: 'Save failed' });
+  }
+});
+
 type StreamEvent =
   | 'status'
   | 'mqtt-message'
@@ -768,6 +854,7 @@ type StreamEvent =
   | 'parsed-packet'
   | 'state-change'
   | 'activity-log-added';
+
 
 type StreamMessage<T = unknown> = {
   event: StreamEvent;
@@ -960,6 +1047,8 @@ const registerGlobalEventHandlers = () => {
 
 activityLogService.addLog('log.service_started');
 const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
+const logRetentionService = new LogRetentionService(CONFIG_DIR, packetDictionary, packetDictionaryReverse);
+
 
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
@@ -2008,8 +2097,20 @@ function resolveMqttUrl(queryValue: unknown, defaultValue?: string) {
 server.listen(port, async () => {
   logger.info(`Service listening on port ${port}`);
   try {
+    // Initialize log cache service with saved settings
+    const frontendSettings = await loadFrontendSettings();
+    await logRetentionService.init(frontendSettings.logRetention);
+
+    // Connect activity log service to respect caching enabled state
+    activityLogService.setEnabledCallback(() => logRetentionService.isEnabled());
+    if (!logRetentionService.isEnabled()) {
+      activityLogService.clearLogs();
+    }
+
+
     logger.info('[service] Initializing bridge on startup...');
     const initState = await getInitializationState();
+
 
     if (initState.requiresInitialization) {
       bridgeStatus = 'error';

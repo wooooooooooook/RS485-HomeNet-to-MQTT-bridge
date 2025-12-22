@@ -29,7 +29,30 @@ export type FrontendSettings = {
     command: boolean;
   };
   locale?: string;
+  logRetention?: LogRetentionSettings;
 };
+
+export type LogRetentionSettings = {
+  enabled: boolean;
+  autoSaveEnabled: boolean;
+  retentionCount: number;
+};
+
+export type LogRetentionStats = {
+  enabled: boolean;
+  packetLogCount: number;
+  rawPacketLogCount: number;
+  activityLogCount: number;
+  memoryUsageBytes: number;
+  oldestLogTimestamp: number | null;
+};
+
+export type SavedLogFile = {
+  filename: string;
+  size: number;
+  createdAt: string;
+};
+
 
 export interface ActivityLog {
   timestamp: number;

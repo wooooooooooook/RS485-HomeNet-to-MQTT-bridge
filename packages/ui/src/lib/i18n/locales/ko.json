@@ -36,7 +36,25 @@
       }
     },
     "loading": "설정을 불러오는 중...",
-    "saving": "저장 중..."
+    "saving": "저장 중...",
+    "log_retention": {
+      "title": "로그 보관",
+      "desc": "24시간 로그(패킷, Raw 패킷, 활동 로그)를 서버에 저장합니다.",
+      "enable": "로그 보관 활성화",
+      "enable_desc": "활성화 시 서버 메모리를 사용합니다. 비활성화 시 UI를 열고 있는 동안의 로그만 확인할 수 있습니다.",
+      "memory_usage": "현재 메모리 사용량",
+      "packets": "패킷",
+      "activity": "활동",
+      "auto_save": "24시간마다 파일 저장",
+      "auto_save_desc": "활성화 시 24시간마다 로그를 파일로 자동 저장합니다.",
+      "retention_count": "유지할 파일 개수",
+      "retention_count_desc": "오래된 파일은 자동으로 삭제됩니다.",
+      "saved_files": "저장된 로그 파일",
+      "no_files": "저장된 파일이 없습니다.",
+      "download": "다운로드",
+      "delete": "삭제",
+      "delete_confirm": "이 로그 파일을 삭제하시겠습니까?"
+    }
   },
   "analysis": {
     "port_tabs_aria": "포트별 로그 보기",

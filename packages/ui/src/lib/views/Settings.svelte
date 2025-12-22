@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
-  import type { FrontendSettings } from '../types';
+  import type { FrontendSettings, LogRetentionStats, SavedLogFile } from '../types';
 
   type ToastSettingKey = 'stateChange' | 'command';
 
@@ -88,6 +88,136 @@
         logSharingStatus = { ...logSharingStatus, consented: true };
       }
     }
+  };
+
+  // Log Caching State
+  let cacheSettings = $state<{
+    enabled: boolean;
+    autoSaveEnabled: boolean;
+    retentionCount: number;
+  } | null>(null);
+  let cacheStats = $state<LogRetentionStats | null>(null);
+  let cacheFiles = $state<SavedLogFile[]>([]);
+  let isCacheSaving = $state(false);
+
+  const fetchCacheSettings = async () => {
+    try {
+      const res = await fetch(`./api/logs/cache/settings?_=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        cacheSettings = data.settings;
+      }
+    } catch (err) {
+      console.error('Failed to fetch cache settings', err);
+    }
+  };
+
+  const fetchCacheStats = async () => {
+    try {
+      const res = await fetch(`./api/logs/cache/stats?_=${Date.now()}`);
+      if (res.ok) {
+        cacheStats = await res.json();
+      }
+    } catch (err) {
+      console.error('Failed to fetch cache stats', err);
+    }
+  };
+
+  const fetchCacheFiles = async () => {
+    try {
+      const res = await fetch(`./api/logs/cache/files?_=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        cacheFiles = data.files || [];
+      }
+    } catch (err) {
+      console.error('Failed to fetch cache files', err);
+    }
+  };
+
+  $effect(() => {
+    fetchCacheSettings();
+    fetchCacheStats();
+    fetchCacheFiles();
+
+    // Refresh stats every 30 seconds if caching is enabled
+    const interval = setInterval(() => {
+      if (cacheSettings?.enabled) {
+        fetchCacheStats();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  });
+
+  const updateCacheSettings = async (updates: Partial<typeof cacheSettings>) => {
+    if (!cacheSettings) return;
+
+    isCacheSaving = true;
+    const newSettings = { ...cacheSettings, ...updates };
+
+    try {
+      const res = await fetch('./api/logs/cache/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: newSettings }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        cacheSettings = data.settings;
+        // Refresh stats after enabling/disabling
+        await fetchCacheStats();
+      }
+    } catch (err) {
+      console.error('Failed to update cache settings', err);
+    } finally {
+      isCacheSaving = false;
+    }
+  };
+
+  const handleCacheToggle = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    updateCacheSettings({ enabled: input.checked });
+  };
+
+  const handleAutoSaveToggle = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    updateCacheSettings({ autoSaveEnabled: input.checked });
+  };
+
+  const handleRetentionChange = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    const value = parseInt(input.value, 10);
+    if (value > 0 && value <= 30) {
+      updateCacheSettings({ retentionCount: value });
+    }
+  };
+
+  const downloadCacheFile = (filename: string) => {
+    window.open(`./api/logs/cache/download/${filename}`, '_blank');
+  };
+
+  const deleteCacheFile = async (filename: string) => {
+    if (!confirm($t('settings.log_retention.delete_confirm'))) return;
+
+    try {
+      const res = await fetch(`./api/logs/cache/${filename}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchCacheFiles();
+      }
+    } catch (err) {
+      console.error('Failed to delete cache file', err);
+    }
+  };
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 </script>
 
@@ -199,6 +329,123 @@
               {$t('settings.log_sharing.uid_desc', { values: { uid: logSharingStatus.uid } })}
             </div>
           </div>
+        </div>
+      {/if}
+    {/if}
+  </div>
+
+  <!-- Log Caching Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>{$t('settings.log_retention.title')}</h2>
+        <p>{$t('settings.log_retention.desc')}</p>
+      </div>
+      {#if isCacheSaving}
+        <span class="badge">{$t('settings.saving')}</span>
+      {/if}
+    </div>
+
+    {#if !cacheSettings}
+      <div class="loading">{$t('settings.loading')}</div>
+    {:else}
+      <div class="setting">
+        <div>
+          <div class="setting-title">{$t('settings.log_retention.enable')}</div>
+          <div class="setting-desc">{$t('settings.log_retention.enable_desc')}</div>
+        </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={cacheSettings.enabled}
+            onchange={handleCacheToggle}
+            disabled={isCacheSaving}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      {#if cacheSettings.enabled && cacheStats}
+        <div class="setting sub-setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.memory_usage')}</div>
+            <div class="setting-desc stats">
+              <span class="stat-value">{formatBytes(cacheStats.memoryUsageBytes)}</span>
+              <span class="stat-detail">
+                ({$t('settings.log_retention.packets')}: {cacheStats.packetLogCount.toLocaleString()},
+                Raw: {cacheStats.rawPacketLogCount.toLocaleString()},
+                {$t('settings.log_retention.activity')}: {cacheStats.activityLogCount.toLocaleString()})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.auto_save')}</div>
+            <div class="setting-desc">{$t('settings.log_retention.auto_save_desc')}</div>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={cacheSettings.autoSaveEnabled}
+              onchange={handleAutoSaveToggle}
+              disabled={isCacheSaving}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        {#if cacheSettings.autoSaveEnabled}
+          <div class="setting sub-setting">
+            <div>
+              <div class="setting-title">{$t('settings.log_retention.retention_count')}</div>
+              <div class="setting-desc">{$t('settings.log_retention.retention_count_desc')}</div>
+            </div>
+            <input
+              type="number"
+              class="number-input"
+              min="1"
+              max="30"
+              value={cacheSettings.retentionCount}
+              onchange={handleRetentionChange}
+              disabled={isCacheSaving}
+            />
+          </div>
+        {/if}
+      {/if}
+
+      {#if cacheFiles.length > 0}
+        <div class="setting files-section">
+          <div class="setting-title">{$t('settings.log_retention.saved_files')}</div>
+          <div class="files-list">
+            {#each cacheFiles as file}
+              <div class="file-row">
+                <span class="file-name">{file.filename}</span>
+                <span class="file-size">{formatBytes(file.size)}</span>
+                <div class="file-actions">
+                  <button
+                    class="btn-icon"
+                    onclick={() => downloadCacheFile(file.filename)}
+                    title={$t('settings.log_retention.download')}
+                  >
+                    ⬇
+                  </button>
+                  <button
+                    class="btn-icon danger"
+                    onclick={() => deleteCacheFile(file.filename)}
+                    title={$t('settings.log_retention.delete')}
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {:else if cacheSettings.autoSaveEnabled}
+        <div class="setting sub-setting">
+          <div class="setting-desc muted">{$t('settings.log_retention.no_files')}</div>
         </div>
       {/if}
     {/if}
@@ -357,5 +604,106 @@
   .loading {
     color: #94a3b8;
     font-size: 0.95rem;
+  }
+
+  /* Log Caching Styles */
+  .number-input {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    width: 80px;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .number-input:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #60a5fa;
+  }
+
+  .stat-detail {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .muted {
+    color: #64748b;
+    font-style: italic;
+  }
+
+  .files-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+  }
+
+  .file-name {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+
+  .file-size {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .file-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-icon {
+    background: rgba(59, 130, 246, 0.15);
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s;
+  }
+
+  .btn-icon:hover {
+    background: rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-icon.danger {
+    background: rgba(248, 113, 113, 0.15);
+  }
+
+  .btn-icon.danger:hover {
+    background: rgba(248, 113, 113, 0.3);
   }
 </style>

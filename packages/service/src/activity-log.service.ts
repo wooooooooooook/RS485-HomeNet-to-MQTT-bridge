@@ -28,10 +28,23 @@ const formatStateValue = (value: unknown): string => {
 
 export class ActivityLogService {
   private logs: ActivityLog[] = [];
+  private isEnabledCallback: (() => boolean) | null = null;
 
   constructor() {
     this.subscribeToEvents();
     setInterval(() => this.cleanupOldLogs(), 60 * 60 * 1000); // Cleanup every hour
+  }
+
+  /**
+   * Set a callback to check if caching is enabled.
+   * If not set, logs will always be stored.
+   */
+  public setEnabledCallback(callback: () => boolean) {
+    this.isEnabledCallback = callback;
+  }
+
+  private isEnabled(): boolean {
+    return this.isEnabledCallback ? this.isEnabledCallback() : true;
   }
 
   private subscribeToEvents() {
@@ -88,14 +101,24 @@ export class ActivityLogService {
       params,
       portId,
     };
-    this.logs.push(logEntry); // Add to the end of the array
+    // Always emit the event (for real-time streaming)
     eventBus.emit('activity-log:added', logEntry);
+
+    // Only store if caching is enabled
+    if (!this.isEnabled()) return;
+
+    this.logs.push(logEntry);
     this.cleanupOldLogs();
   }
 
   public getRecentLogs(): ActivityLog[] {
     return this.logs;
   }
+
+  public clearLogs(): void {
+    this.logs = [];
+  }
+
 
   private cleanupOldLogs(): void {
     const now = Date.now();

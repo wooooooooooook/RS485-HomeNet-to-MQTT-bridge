@@ -36,7 +36,25 @@
       }
     },
     "loading": "Loading settings...",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "log_retention": {
+      "title": "Log Retention",
+      "desc": "Store 24-hour logs (packet, raw packet, activity) on the server.",
+      "enable": "Enable Log Retention",
+      "enable_desc": "Uses server memory when enabled. When disabled, only logs during the current UI session are available.",
+      "memory_usage": "Current Memory Usage",
+      "packets": "Packets",
+      "activity": "Activity",
+      "auto_save": "Auto-save every 24 hours",
+      "auto_save_desc": "Automatically saves logs to file every 24 hours when enabled.",
+      "retention_count": "Files to retain",
+      "retention_count_desc": "Older files will be automatically deleted.",
+      "saved_files": "Saved Log Files",
+      "no_files": "No saved files.",
+      "download": "Download",
+      "delete": "Delete",
+      "delete_confirm": "Are you sure you want to delete this log file?"
+    }
   },
   "analysis": {
     "port_tabs_aria": "View logs by port",

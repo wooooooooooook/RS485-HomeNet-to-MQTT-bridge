@@ -7,7 +7,7 @@ import { EntityConfig } from '../domain/entities/base.entity.js';
 
 interface DiscoveryPayload {
   name: string | null;
-  object_id?: string;
+  default_entity_id?: string;
   unique_id: string;
   availability?: { topic: string }[];
   device: {
@@ -299,7 +299,7 @@ export class DiscoveryManager {
     // Base payload with mandatory fields only
     const payload: DiscoveryPayload = {
       name: name || null,
-      object_id: objectId,
+      default_entity_id: `${type}.${objectId}`,
       unique_id: uniqueId,
       state_topic: `${this.mqttTopicPrefix}/${id}/state`,
       availability: [{ topic: this.bridgeStatusTopic }],

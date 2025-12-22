@@ -121,7 +121,7 @@ describe('DiscoveryManager', () => {
 
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_main_switch1');
-    expect(payload.object_id).toBe('test_switch');
+    expect(payload.default_entity_id).toBe('switch.test_switch');
     expect(payload.device.identifiers).toEqual(['homenet_bridge_device_main']);
     expect(payload.device.name).toBe('Homenet Bridge (main)');
     expect(payload.value_template).toBe('{{ value_json.state }}');
@@ -145,7 +145,7 @@ describe('DiscoveryManager', () => {
     const payload = JSON.parse(call[1]);
 
     expect(payload.unique_id).toBe('homenet_main_linked_sensor');
-    expect(payload.object_id).toBe('linked_sensor');
+    expect(payload.default_entity_id).toBe('sensor.linked_sensor');
     expect(payload.value_template).toBe('{{ value_json.value }}');
   });
 
@@ -212,7 +212,7 @@ describe('DiscoveryManager', () => {
 
     const payload = JSON.parse(publishCalls[publishCalls.length - 1][1]);
     expect(payload.name).toBe('Renamed Switch');
-    expect(payload.object_id).toBe('renamed_switch');
+    expect(payload.default_entity_id).toBe('switch.renamed_switch');
 
     vi.useRealTimers();
   });

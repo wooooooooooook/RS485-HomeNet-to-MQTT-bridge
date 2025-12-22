@@ -292,9 +292,9 @@ function getPayloadById(packetId: string): string | undefined {
 
 // Security: Rate Limiters
 const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 seconds
-const configRateLimiter = new RateLimiter(60000, 5); // 5 requests per minute
-const serialTestRateLimiter = new RateLimiter(30000, 4); // 4 requests per 30 seconds
-const latencyTestRateLimiter = new RateLimiter(60000, 3); // 3 requests per minute
+const configRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
+const serialTestRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
+const latencyTestRateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
 
 eventBus.on('command-packet', (packet: unknown) => {
   const pkt = packet as { packet?: string; entity?: string; entityId?: string; command?: string; value?: unknown; timestamp?: string; portId?: string };

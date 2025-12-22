@@ -7,6 +7,11 @@
 
 RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home Assistant에서 제어하고 모니터링할 수 있게 해주는 브릿지 솔루션입니다.
 
+## 🛠️ 준비물
+- **RS485 USB Serial 장치** 또는 **EW11** 같은 TCP-Serial 변환 장치
+- **USB 장치**: HA에 연결한 후 `설정` > `시스템` > `하드웨어` > `모든 하드웨어`에서 `tty`로 검색했을 때 나오는 경로(예: `/dev/ttyUSB0`)를 사용합니다.
+- **TCP-Serial 변환 장치(EW11 등)**: 장치의 IP 주소와 포트 번호를 사용합니다. (EW11 기본값: `아이피주소:8899`)
+
 ## 🚀 시작하기
 
 ### 1. Home Assistant 애드온 (권장)
@@ -16,9 +21,10 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 1. **애드온 저장소 추가**: Home Assistant의 `설정` > `애드온` > `애드온 스토어` > 우측 상단 `점 세개(...)` > `저장소`에 아래 주소를 추가합니다.
    - `https://github.com/wooooooooooook/HAaddons`
 2. **H2M 애드온 설치**: 목록에서 `Homenet2MQTT`를 찾아 설치한 후 **실행**합니다.
-3. **웹 UI 설정 마법사**: 애드온 상단의 `WEB UI 열기` 버튼을 클릭하면 설정 마법사가 나타납니다.
-4. **월패드 종류 선택**: 안내에 따라 본인의 월패드 종류(Commax, Kocom 등)를 선택하면 기본 설정 파일이 자동으로 생성됩니다.
-5. **커스텀 설정 (필요 시)**: `/homeassistant/homenet2mqtt/` 경로에 생성된 YAML 파일을 우리 집 환경(방 개수, 기기 ID 등)에 맞춰 수정하면 설정이 완료됩니다!
+3. **초기 설정 마법사**: 애드온 상단의 `WEB UI 열기` 버튼을 클릭하여 설정 마법사를 통해 월패드 종류를 선택합니다.
+4. **설정 파일 확인/수정**: `/homeassistant/homenet2mqtt/` 경로에 생성된 설정 파일을 우리 집 환경에 맞춰 수정합니다.
+5. **상세 구성**: 애드온의 **[구성(Configuration)]** 탭에서 MQTT 로그인 정보(아이디/비밀번호 등)를 입력합니다.
+6. **재시작**: 설정을 마친 후 애드온을 재시작하면 기기들이 자동으로 Home Assistant에 등록됩니다.
 
 ---
 
@@ -70,7 +76,14 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 - **다양한 프로토콜 지원**: Commax, Kocom 등 국내 주요 월패드 프로토콜 지원 및 확장 가능.
 - **실시간 모니터링**: Web UI를 통해 RS485 패킷의 흐름을 실시간으로 확인 가능.
 
-## 📚 추가 리소스
+## 💡 고급 사용법
+
+### 멀티 포트(Multi-port) 사용하기
+- 여러 개의 RS485 포트를 사용하는 경우, `homenet2mqtt` 폴더 내에 각각의 설정 파일을 생성합니다 (예: `livingroom.yaml`, `room1.yaml`).
+- 각 파일의 `serial.path`에 해당 장치 경로를 입력하고, `serial.portId`가 중복되지 않도록 설정합니다.
+- 애드온 구성(또는 Docker 환경 변수)의 `CONFIG_FILES`에 파일 이름들을 쉼표로 구분하여 입력한 후 재시작합니다.
+
+- [Config 작성법 (상세 스키마)](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/tree/main/docs/config-schema)
 - [Home Assistant Discovery 상세 가이드](docs/HOMEASSISTANT_DISCOVERY.md)
 - [기기별 설정 예시](docs/ENTITY_EXAMPLES.md)
 - [CEL (Common Expression Language) 가이드](docs/CEL_GUIDE.md)

@@ -2,6 +2,31 @@ import { Environment } from '@marcbachmann/cel-js';
 import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
 
+/**
+ * Executes Common Expression Language (CEL) scripts for protocol logic.
+ *
+ * This singleton class manages the CEL environment and provides a set of custom
+ * helper functions tailored for byte-level protocol manipulation.
+ *
+ * **Available Variables in Context:**
+ * - `x` (int): The primary input value (e.g., a candidate byte or current state).
+ * - `data` (list<int>): The raw packet data buffer as a list of integers.
+ * - `state` (map): The current entity's state object.
+ * - `states` (map): The global state map of all entities.
+ * - `trigger` (map): Context specific to automation triggers.
+ *
+ * **Registered Helper Functions:**
+ * - `bcd_to_int(int) -> int`: Converts a BCD encoded byte to an integer (e.g., `0x12` -> `12`).
+ * - `int_to_bcd(int) -> int`: Converts an integer to a BCD encoded byte (e.g., `12` -> `0x12`).
+ * - `bitAnd(int, int) -> int`: Bitwise AND (`&`).
+ * - `bitOr(int, int) -> int`: Bitwise OR (`|`).
+ * - `bitXor(int, int) -> int`: Bitwise XOR (`^`).
+ * - `bitNot(int) -> int`: Bitwise NOT (`~`).
+ * - `bitShiftLeft(int, int) -> int`: Bitwise Left Shift (`<<`).
+ * - `bitShiftRight(int, int) -> int`: Bitwise Right Shift (`>>`).
+ *
+ * @see {@link ../../../docs/CEL_GUIDE.md} for comprehensive usage examples.
+ */
 export class CelExecutor {
   private static sharedInstance?: CelExecutor;
   private env: Environment;
@@ -56,10 +81,27 @@ export class CelExecutor {
     );
   }
 
+  /**
+   * Registers a custom function in the CEL environment.
+   *
+   * @param name - The function signature (e.g., 'myFunc(int): int').
+   * @param impl - The implementation of the function.
+   */
   public registerFunction(name: string, impl: (...args: any[]) => any) {
     this.env.registerFunction(name, impl);
   }
 
+  /**
+   * Evaluates a CEL script against the provided context.
+   *
+   * Automatically handles type conversions required by the CEL engine:
+   * - `Buffer` or `Uint8Array` in `contextData.data` are converted to `BigInt[]`.
+   * - `number` in `contextData.x` is converted to `BigInt`.
+   *
+   * @param script - The CEL expression string to evaluate.
+   * @param contextData - A dictionary of variables to expose to the script.
+   * @returns The result of the expression, with BigInts converted back to Numbers.
+   */
   public execute(script: string, contextData: Record<string, any>): any {
     try {
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'

@@ -195,7 +195,7 @@ homenet_bridge:
         data: [0x30, 0x01, 0x81]
       accuracy_decimals: 2
       unit_of_measurement: 'm³'
-      command_update: 
+      command_update:
         data: [0x30, 0x01, 0x01, 0x00]
       state_number:
         offset: 9
@@ -209,7 +209,7 @@ homenet_bridge:
         data: [0x30, 0x02, 0x81]
       accuracy_decimals: 2
       unit_of_measurement: 'm³'
-      command_update: 
+      command_update:
         data: [0x30, 0x02, 0x01, 0x00]
       state_number:
         offset: 9

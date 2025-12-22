@@ -218,8 +218,6 @@
         items={reversedPackets}
         renderItem={renderPacketItem}
         defaultEstimatedItemHeight={32}
-        viewportClass="virtual-viewport"
-        itemsClass="virtual-items"
       />
     {/if}
   </div>
@@ -257,8 +255,8 @@
     border-radius: 8px;
     border: 1px solid rgba(148, 163, 184, 0.1);
     height: 400px;
-    overflow-y: auto;
     padding: 0.5rem;
+    overflow: hidden;
     font-family: monospace;
     font-size: 0.85rem;
   }
@@ -403,14 +401,5 @@
     border-radius: 6px;
     margin-bottom: 1rem;
     font-size: 0.9rem;
-  }
-
-  /* 가상 스크롤용 스타일 */
-  :global(.virtual-viewport) {
-    height: 100% !important;
-  }
-
-  :global(.virtual-items) {
-    font-family: monospace;
   }
 </style>

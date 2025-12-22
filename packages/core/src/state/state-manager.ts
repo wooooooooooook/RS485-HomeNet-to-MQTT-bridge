@@ -92,6 +92,26 @@ export class StateManager {
     }
 
     const currentState = this.deviceStates.get(deviceId) || {};
+
+    // Optimization: Check if state actually changed
+    // Most updates are redundant (repeating the same values).
+    // We do a shallow comparison of primitives to avoid expensive object creation and JSON.stringify.
+    let hasChanges = false;
+    for (const key in state) {
+      if (currentState[key] !== state[key]) {
+        hasChanges = true;
+        break;
+      }
+    }
+
+    // If no changes detected and we already have state, skip processing
+    if (!hasChanges && Object.keys(currentState).length > 0) {
+      if (logger.isLevelEnabled('debug')) {
+        logger.debug(`[StateManager] ${deviceId}: [unchanged]`);
+      }
+      return;
+    }
+
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
 
@@ -105,6 +125,7 @@ export class StateManager {
     const shouldLogState = logger.isLevelEnabled('info') || logger.isLevelEnabled('debug');
     const stateStr = shouldLogState ? payload.replace(/["{}]/g, '').replace(/,/g, ', ') : null; // Avoid double JSON serialization in hot path
 
+    // Double check with cache (handles reference types like arrays that always fail strict equality)
     if (stateCache.get(topic) !== payload) {
       stateCache.set(topic, payload);
       if (logger.isLevelEnabled('info') && stateStr) {

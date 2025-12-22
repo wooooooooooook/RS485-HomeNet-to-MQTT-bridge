@@ -13,3 +13,7 @@
 ## 2024-12-21 - [Singleton Pattern for Heavy Stateless Components]
 **Learning:** `CelExecutor` relies on `cel-js` which has a high initialization cost (creating `Environment`). Since CEL execution is context-driven (stateless per execution), creating an instance per device (N=50+) is wasteful.
 **Action:** Use a Singleton pattern (shared static instance) for heavy, stateless utility classes instead of instantiating them per consumer, especially when the utility is used pervasively across the system. This provides O(1) memory usage regardless of N consumers.
+
+## 2025-12-22 - [StateManager Redundant Updates]
+**Learning:** `StateManager.handleStateUpdate` was serializing every state update to JSON (`JSON.stringify`) to compare against a cache, even when the update contained identical values (e.g. steady sensor readings). This created unnecessary CPU overhead in the hot path.
+**Action:** Implement a shallow equality check for incoming partial updates against the current state before attempting serialization. This serves as a fast path for the 99% case of steady-state updates, while preserving correctness for reference types.

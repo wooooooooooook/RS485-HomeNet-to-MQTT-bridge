@@ -1,0 +1,42 @@
+meta:
+  name: "대림 엘리베이터 호출 설정"
+  name_en: "Daerim Elevator Call"
+  description: "CVNet 대림 엘리베이터 호출 버튼과 층수 센서 설정입니다."
+  description_en: "CVNet Daerim elevator call button and floor sensor."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "button", "sensor", "cvnet", "daerim"]
+
+scripts:
+  - id: 'elevator_call_sequence'
+    actions:
+      - action: send_packet
+        # Full packet including Header(F7), Checksum(EC), Footer(AA)
+        data: [0xF7, 0x20, 0x01, 0xE1, 0x81, 0x02, 0x00, 0x01, 0x00, 0x00, 0x02, 0x31, 0x33, 0xEC, 0xAA]
+        checksum: false
+      - action: delay
+        milliseconds: 100
+      - action: send_packet
+        # Full packet including Header(F7), Checksum(F2), Footer(AA)
+        data: [0xF7, 0x20, 0x01, 0xE1, 0x81, 0x02, 0x00, 0x01, 0x00, 0x00, 0x04, 0x30, 0x38, 0xF2, 0xAA]
+        checksum: false
+
+entities:
+  sensor:
+    - id: 'elevator_floor'
+      name: 'Elevator Floor'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x20, 0x01, 0xE1, 0x81]
+      state_number:
+        offset: 5
+        length: 2
+        decode: ascii
+
+  button:
+    - id: 'elevator_call_button'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator-up'
+      command_press:
+        script: elevator_call_sequence
+      discovery_linked_id: 'elevator_floor'

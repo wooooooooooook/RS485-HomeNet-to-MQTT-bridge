@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-23T06:09:43.390Z",
+  "generated_at": "2025-12-23T23:01:17.595Z",
   "vendors": [
     {
       "id": "commax",
@@ -191,6 +191,29 @@
             "button",
             "sensor",
             "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 1,
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "cvnet/elevator_daerim.yaml",
+          "name": "대림 엘리베이터 호출 설정",
+          "name_en": "Daerim Elevator Call",
+          "description": "CVNet 대림 엘리베이터 호출 버튼과 층수 센서 설정입니다.",
+          "description_en": "CVNet Daerim elevator call button and floor sensor.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "button",
+            "sensor",
+            "cvnet",
+            "daerim"
           ],
           "content_summary": {
             "entities": {

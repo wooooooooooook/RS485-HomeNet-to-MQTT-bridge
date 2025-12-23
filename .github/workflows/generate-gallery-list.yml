@@ -1,0 +1,131 @@
+name: Generate Gallery List
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/**/*.yaml'
+      - 'gallery/**/*.yml'
+  workflow_dispatch:
+
+jobs:
+  generate-list:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install js-yaml
+        run: npm install js-yaml
+
+      - name: Generate list.json
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const yaml = require('js-yaml');
+
+          const galleryDir = './gallery';
+          const vendors = {};
+
+          // Vendor display names
+          const vendorNames = {
+            kocom: '코콤 (Kocom)',
+            commax: '코맥스 (Commax)',
+            hyundai: '현대 (Hyundai)',
+            ezville: '이지빌 (Ezville)',
+            samsung: '삼성 (Samsung)',
+            cvnet: 'CVNet',
+          };
+
+          // Find all YAML files in gallery subdirectories
+          const vendorDirs = fs.readdirSync(galleryDir, { withFileTypes: true })
+            .filter(d => d.isDirectory())
+            .map(d => d.name);
+
+          for (const vendorId of vendorDirs) {
+            const vendorPath = path.join(galleryDir, vendorId);
+            const files = fs.readdirSync(vendorPath)
+              .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+
+            if (files.length === 0) continue;
+
+            vendors[vendorId] = {
+              id: vendorId,
+              name: vendorNames[vendorId] || vendorId,
+              items: []
+            };
+
+            for (const file of files) {
+              const filePath = path.join(vendorPath, file);
+              const content = fs.readFileSync(filePath, 'utf8');
+              
+              try {
+                const doc = yaml.load(content);
+                if (!doc.meta) continue;
+
+                // Count entities and automations
+                const contentSummary = {
+                  entities: {},
+                  automations: 0
+                };
+
+                if (doc.entities) {
+                  for (const [type, items] of Object.entries(doc.entities)) {
+                    if (Array.isArray(items)) {
+                      contentSummary.entities[type] = items.length;
+                    }
+                  }
+                }
+
+                if (doc.automation && Array.isArray(doc.automation)) {
+                  contentSummary.automations = doc.automation.length;
+                }
+
+                vendors[vendorId].items.push({
+                  file: `${vendorId}/${file}`,
+                  name: doc.meta.name || file,
+                  name_en: doc.meta.name_en || null,
+                  description: doc.meta.description || '',
+                  description_en: doc.meta.description_en || null,
+                  version: doc.meta.version || '1.0.0',
+                  author: doc.meta.author || 'unknown',
+                  tags: doc.meta.tags || [],
+                  content_summary: contentSummary
+                });
+              } catch (err) {
+                console.error(`Error parsing ${filePath}:`, err.message);
+              }
+            }
+          }
+
+          const result = {
+            generated_at: new Date().toISOString(),
+            vendors: Object.values(vendors).filter(v => v.items.length > 0)
+          };
+
+          fs.writeFileSync(
+            path.join(galleryDir, 'list.json'),
+            JSON.stringify(result, null, 2)
+          );
+
+          console.log('Generated list.json with', result.vendors.length, 'vendors');
+          EOF
+
+      - name: Commit list.json
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add gallery/list.json
+          git diff --staged --quiet || git commit -m "chore: update gallery list.json [skip ci]"
+          git push

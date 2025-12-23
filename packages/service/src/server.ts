@@ -1814,6 +1814,179 @@ app.patch('/api/entities/:entityId/discovery-always', async (req, res) => {
   }
 });
 
+// --- Gallery API ---
+app.post('/api/gallery/apply', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  try {
+    const { portId, yamlContent, fileName } = req.body;
+
+    if (!portId || !yamlContent) {
+      return res.status(400).json({ error: 'portId and yamlContent are required' });
+    }
+
+    // Find the config file for this portId
+    let targetConfigFile: string | null = null;
+    let configIndex = -1;
+
+    for (let i = 0; i < currentConfigs.length; i++) {
+      const config = currentConfigs[i];
+      if (!config?.serials) continue;
+
+      for (let j = 0; j < config.serials.length; j++) {
+        const pId = normalizePortId(config.serials[j].portId, j);
+        if (pId === portId) {
+          targetConfigFile = currentConfigFiles[i];
+          configIndex = i;
+          break;
+        }
+      }
+      if (targetConfigFile) break;
+    }
+
+    if (!targetConfigFile || configIndex === -1) {
+      return res.status(404).json({ error: 'Port not found', portId });
+    }
+
+    // Parse the gallery YAML content
+    const galleryYaml = yaml.load(yamlContent) as {
+      meta?: Record<string, unknown>;
+      entities?: Record<string, unknown[]>;
+      automation?: unknown[];
+    };
+
+    if (!galleryYaml) {
+      return res.status(400).json({ error: 'Invalid YAML content' });
+    }
+
+    // Read the current config file
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent) as {
+      homenet_bridge: PersistableHomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      return res.status(500).json({ error: 'Invalid config file structure' });
+    }
+
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
+
+    let addedEntities = 0;
+    let addedAutomations = 0;
+
+    // Add entities from gallery snippet
+    if (galleryYaml.entities) {
+      for (const [entityType, entities] of Object.entries(galleryYaml.entities)) {
+        if (!Array.isArray(entities)) continue;
+
+        const typeKey = entityType as keyof HomenetBridgeConfig;
+        if (!ENTITY_TYPE_KEYS.includes(typeKey)) {
+          logger.warn(`[gallery] Unknown entity type: ${entityType}`);
+          continue;
+        }
+
+        // Initialize array if not exists
+        if (!normalizedConfig[typeKey]) {
+          (normalizedConfig as any)[typeKey] = [];
+        }
+
+        const targetList = normalizedConfig[typeKey] as unknown[];
+
+        for (const entity of entities) {
+          if (!entity || typeof entity !== 'object') continue;
+
+          const entityObj = entity as Record<string, unknown>;
+          const entityId = entityObj.id as string | undefined;
+
+          // Check for existing entity with same ID
+          const existingIndex = targetList.findIndex(
+            (e: any) => e.id === entityId
+          );
+
+          if (existingIndex !== -1) {
+            // For now, we'll overwrite. Future: handle conflict resolution from UI
+            targetList[existingIndex] = entityObj;
+            logger.info(`[gallery] Updated existing entity: ${entityId}`);
+          } else {
+            targetList.push(entityObj);
+            logger.info(`[gallery] Added new entity: ${entityId}`);
+          }
+          addedEntities++;
+        }
+      }
+    }
+
+    // Add automations from gallery snippet
+    if (galleryYaml.automation && Array.isArray(galleryYaml.automation)) {
+      if (!normalizedConfig.automation) {
+        (normalizedConfig as any).automation = [];
+      }
+
+      const automationList = (normalizedConfig as any).automation as unknown[];
+
+      for (const automation of galleryYaml.automation) {
+        if (!automation || typeof automation !== 'object') continue;
+
+        const automationObj = automation as Record<string, unknown>;
+        const automationId = automationObj.id as string | undefined;
+
+        if (automationId) {
+          // Check for existing automation with same ID
+          const existingIndex = automationList.findIndex(
+            (a: any) => a.id === automationId
+          );
+
+          if (existingIndex !== -1) {
+            automationList[existingIndex] = automationObj;
+            logger.info(`[gallery] Updated existing automation: ${automationId}`);
+          } else {
+            automationList.push(automationObj);
+            logger.info(`[gallery] Added new automation: ${automationId}`);
+          }
+        } else {
+          automationList.push(automationObj);
+          logger.info('[gallery] Added automation without ID');
+        }
+        addedAutomations++;
+      }
+    }
+
+    // Create backup
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${configPath}.${timestamp}.bak`;
+    await fs.copyFile(configPath, backupPath);
+
+    // Write updated config
+    loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    // Update in-memory configs
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
+    rebuildPortMappings();
+
+    logger.info(
+      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added ${addedEntities} entities, ${addedAutomations} automations. Backup: ${path.basename(backupPath)}`
+    );
+
+    res.json({
+      success: true,
+      addedEntities,
+      addedAutomations,
+      backup: path.basename(backupPath),
+    });
+  } catch (error) {
+    logger.error({ err: error }, '[gallery] Failed to apply gallery snippet');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Apply failed' });
+  }
+});
+
 app.post('/api/entities/:entityId/revoke-discovery', (req, res) => {
   if (!configRateLimiter.check(req.ip || 'unknown')) {
     return res.status(429).json({ error: 'Too many requests' });

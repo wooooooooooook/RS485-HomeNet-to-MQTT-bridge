@@ -1,0 +1,42 @@
+meta:
+  name: "엘리베이터 센서 세트"
+  name_en: "Elevator Sensor Set"
+  description: "코콤 월패드용 엘리베이터 센서와 호출 버튼 설정입니다."
+  description_en: "Elevator sensors and call button for Kocom wallpad."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "sensor", "button"]
+
+entities:
+  sensor:
+    - id: elevator_floors
+      name: 'Elevator Floors'
+      icon: 'mdi:elevator'
+      unit_of_measurement: '층'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 9
+
+    - id: elevator_direction
+      name: 'Elevator Direction'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 8
+        mapping:
+          0: '정지'
+          1: '하강'
+          2: '상승'
+          3: '도착'
+
+  button:
+    - id: elevator_call
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      command_press:
+        data: [0x30, 0xbc, 0x00, 0x01, 0x00, 0x44, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]

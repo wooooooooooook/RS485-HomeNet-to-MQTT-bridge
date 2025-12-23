@@ -2,11 +2,11 @@
   import { t } from 'svelte-i18n';
 
   let {
-    activeView = $bindable<'dashboard' | 'analysis' | 'settings'>('dashboard'),
+    activeView = $bindable<'dashboard' | 'analysis' | 'gallery' | 'settings'>('dashboard'),
     isOpen = false,
     onClose,
   }: {
-    activeView: 'dashboard' | 'analysis' | 'settings';
+    activeView: 'dashboard' | 'analysis' | 'gallery' | 'settings';
     isOpen?: boolean;
     onClose?: () => void;
   } = $props();
@@ -45,6 +45,15 @@
     >
       <span class="icon">📈</span>
       <span class="label">{$t('sidebar.analysis')}</span>
+    </button>
+    <button
+      class="nav-item"
+      class:active={activeView === 'gallery'}
+      aria-current={activeView === 'gallery' ? 'page' : undefined}
+      onclick={() => handleNavClick('gallery')}
+    >
+      <span class="icon">📦</span>
+      <span class="label">{$t('sidebar.gallery')}</span>
     </button>
     <button
       class="nav-item"

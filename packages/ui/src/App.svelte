@@ -24,6 +24,7 @@
   import Header from './lib/components/Header.svelte';
   import Dashboard from './lib/views/Dashboard.svelte';
   import Analysis from './lib/views/Analysis.svelte';
+  import Gallery from './lib/views/Gallery.svelte';
 
   import EntityDetail from './lib/components/EntityDetail.svelte';
   import ToastContainer from './lib/components/ToastContainer.svelte';
@@ -32,7 +33,7 @@
   const MAX_PACKETS = 500000; // ~24 hours at 5 packets/sec
 
   // -- State --
-  let activeView = $state<'dashboard' | 'analysis' | 'settings'>('dashboard');
+  let activeView = $state<'dashboard' | 'analysis' | 'gallery' | 'settings'>('dashboard');
   // Entity selection uses a composite key: "portId:entityId" to distinguish entities across ports
   let selectedEntityKey = $state<string | null>(null);
   let isSidebarOpen = $state(false);
@@ -1115,6 +1116,8 @@
             bind:recordingStartTime
             bind:recordedFile
           />
+        {:else if activeView === 'gallery'}
+          <Gallery {bridgeInfo} />
         {:else if activeView === 'settings'}
           <SettingsView
             {frontendSettings}

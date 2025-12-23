@@ -14,6 +14,7 @@
 
 ## 엔티티 예제 및 참조
 - **예제 모음**: [ENTITY_EXAMPLES.md](./ENTITY_EXAMPLES.md) – 엔티티별 YAML 스니펫.
+- **스니펫 갤러리**: [GALLERY.md](./GALLERY.md) – 갤러리 스니펫 구조와 적용 흐름.
 - **구형 람다 안내(참고용)**: [LAMBDA.md](./LAMBDA.md) – CEL 이전 문법. 신규 작성 시 CEL 문서를 사용하세요.
 
 ## 기타

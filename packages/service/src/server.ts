@@ -1887,6 +1887,7 @@ app.post('/api/gallery/check-conflicts', async (req, res) => {
       meta?: Record<string, unknown>;
       entities?: Record<string, unknown[]>;
       automation?: unknown[];
+      scripts?: unknown[];
     };
 
     if (!galleryYaml) {
@@ -1895,14 +1896,14 @@ app.post('/api/gallery/check-conflicts', async (req, res) => {
 
     const currentConfig = currentConfigs[configIndex];
     const conflicts: Array<{
-      type: 'entity' | 'automation';
+      type: 'entity' | 'automation' | 'script';
       entityType?: string;
       id: string;
       existingYaml: string;
       newYaml: string;
     }> = [];
     const newItems: Array<{
-      type: 'entity' | 'automation';
+      type: 'entity' | 'automation' | 'script';
       entityType?: string;
       id: string;
     }> = [];
@@ -1977,6 +1978,42 @@ app.post('/api/gallery/check-conflicts', async (req, res) => {
           newItems.push({
             type: 'automation',
             id: automationId,
+          });
+        }
+      }
+    }
+
+    // Check scripts for conflicts
+    if (galleryYaml.scripts && Array.isArray(galleryYaml.scripts)) {
+      const existingScripts = ((currentConfig as any).scripts as unknown[]) || [];
+
+      for (const script of galleryYaml.scripts) {
+        if (!script || typeof script !== 'object') continue;
+
+        const scriptObj = script as Record<string, unknown>;
+        const scriptId = scriptObj.id as string | undefined;
+
+        if (!scriptId) {
+          newItems.push({
+            type: 'script',
+            id: 'unnamed',
+          });
+          continue;
+        }
+
+        const existingScript = existingScripts.find((s: any) => s.id === scriptId);
+
+        if (existingScript) {
+          conflicts.push({
+            type: 'script',
+            id: scriptId,
+            existingYaml: dumpConfigToYaml(existingScript),
+            newYaml: dumpConfigToYaml(scriptObj),
+          });
+        } else {
+          newItems.push({
+            type: 'script',
+            id: scriptId,
           });
         }
       }
@@ -2112,6 +2149,7 @@ app.post('/api/gallery/apply', async (req, res) => {
       meta?: Record<string, unknown>;
       entities?: Record<string, unknown[]>;
       automation?: unknown[];
+      scripts?: unknown[];
     };
 
     if (!galleryYaml) {
@@ -2142,6 +2180,9 @@ app.post('/api/gallery/apply', async (req, res) => {
     let addedAutomations = 0;
     let updatedAutomations = 0;
     let skippedAutomations = 0;
+    let addedScripts = 0;
+    let updatedScripts = 0;
+    let skippedScripts = 0;
 
     // Add entities from gallery snippet
     if (galleryYaml.entities) {
@@ -2275,6 +2316,64 @@ app.post('/api/gallery/apply', async (req, res) => {
       }
     }
 
+    // Add scripts from gallery snippet
+    if (galleryYaml.scripts && Array.isArray(galleryYaml.scripts)) {
+      if (!normalizedConfig.scripts) {
+        (normalizedConfig as any).scripts = [];
+      }
+
+      const scriptsList = (normalizedConfig as any).scripts as unknown[];
+
+      for (const script of galleryYaml.scripts) {
+        if (!script || typeof script !== 'object') continue;
+
+        const scriptObj = { ...(script as Record<string, unknown>) };
+        const scriptId = scriptObj.id as string | undefined;
+
+        if (scriptId) {
+          const existingIndex = scriptsList.findIndex((s: any) => s.id === scriptId);
+
+          if (existingIndex !== -1) {
+            const resolution = resolutions?.[scriptId] || 'overwrite';
+
+            if (resolution === 'skip') {
+              skippedScripts++;
+              logger.info(`[gallery] Skipped script: ${scriptId}`);
+              continue;
+            } else if (resolution === 'rename') {
+              const newId = renames?.[scriptId];
+              if (!newId) {
+                logger.warn(`[gallery] Rename requested but no new ID provided for ${scriptId}`);
+                continue;
+              }
+              const newIdExists = scriptsList.some((s: any) => s.id === newId);
+              if (newIdExists) {
+                logger.warn(`[gallery] New ID ${newId} already exists, skipping`);
+                skippedScripts++;
+                continue;
+              }
+              scriptObj.id = newId;
+              scriptsList.push(scriptObj);
+              addedScripts++;
+              logger.info(`[gallery] Added script with new ID: ${newId} (was ${scriptId})`);
+            } else {
+              scriptsList[existingIndex] = scriptObj;
+              updatedScripts++;
+              logger.info(`[gallery] Updated existing script: ${scriptId}`);
+            }
+          } else {
+            scriptsList.push(scriptObj);
+            addedScripts++;
+            logger.info(`[gallery] Added new script: ${scriptId}`);
+          }
+        } else {
+          scriptsList.push(scriptObj);
+          addedScripts++;
+          logger.info('[gallery] Added script without ID');
+        }
+      }
+    }
+
     // Write updated config
     loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
     const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
@@ -2286,7 +2385,7 @@ app.post('/api/gallery/apply', async (req, res) => {
     rebuildPortMappings();
 
     logger.info(
-      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations. Updated: ${updatedEntities} entities, ${updatedAutomations} automations. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations. Backup: ${path.basename(backupPath)}`,
+      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations, ${addedScripts} scripts. Updated: ${updatedEntities} entities, ${updatedAutomations} automations, ${updatedScripts} scripts. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations, ${skippedScripts} scripts. Backup: ${path.basename(backupPath)}`,
     );
 
     res.json({
@@ -2297,6 +2396,9 @@ app.post('/api/gallery/apply', async (req, res) => {
       addedAutomations,
       updatedAutomations,
       skippedAutomations,
+      addedScripts,
+      updatedScripts,
+      skippedScripts,
       backup: path.basename(backupPath),
     });
   } catch (error) {

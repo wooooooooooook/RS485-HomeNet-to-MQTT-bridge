@@ -5,6 +5,7 @@
   interface ContentSummary {
     entities: Record<string, number>;
     automations: number;
+    scripts?: number;
   }
 
   interface GalleryItem {
@@ -31,7 +32,7 @@
   }
 
   interface Conflict {
-    type: 'entity' | 'automation';
+    type: 'entity' | 'automation' | 'script';
     entityType?: string;
     id: string;
     existingYaml: string;
@@ -39,7 +40,7 @@
   }
 
   interface NewItem {
-    type: 'entity' | 'automation';
+    type: 'entity' | 'automation' | 'script';
     entityType?: string;
     id: string;
   }
@@ -89,6 +90,18 @@
   const displayDescription = $derived(
     $locale?.startsWith('en') && item.description_en ? item.description_en : item.description,
   );
+
+  const scriptCount = $derived(item.content_summary.scripts ?? 0);
+
+  function formatItemLabel(itemType: 'entity' | 'automation' | 'script', entityType?: string) {
+    if (itemType === 'entity') {
+      return `[${entityType}]`;
+    }
+    if (itemType === 'automation') {
+      return '[automation]';
+    }
+    return '[script]';
+  }
 
   async function loadYamlContent() {
     loadingYaml = true;
@@ -281,6 +294,11 @@
                 })}</span
               >
             {/if}
+            {#if scriptCount > 0}
+              <span class="badge script"
+                >{$t('gallery.preview.script_count', { values: { count: scriptCount } })}</span
+              >
+            {/if}
           </div>
         </div>
 
@@ -415,8 +433,7 @@
             <div class="conflict-item">
               <div class="conflict-header">
                 <span class="conflict-id">
-                  {conflict.type === 'entity' ? `[${conflict.entityType}]` : '[automation]'}
-                  {conflict.id}
+                  {formatItemLabel(conflict.type, conflict.entityType)} {conflict.id}
                 </span>
                 <button class="toggle-diff-btn" onclick={() => toggleDiff(conflict.id)}>
                   {expandedDiffs.has(conflict.id) ? '▲' : '▼'}
@@ -488,8 +505,7 @@
           <ul class="new-items-list">
             {#each newItems as newItem}
               <li>
-                {newItem.type === 'entity' ? `[${newItem.entityType}]` : '[automation]'}
-                {newItem.id}
+                {formatItemLabel(newItem.type, newItem.entityType)} {newItem.id}
               </li>
             {/each}
           </ul>
@@ -654,6 +670,12 @@
     background: rgba(168, 85, 247, 0.15);
     color: #c084fc;
     border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+
+  .badge.script {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
   }
 
   .tags-section {

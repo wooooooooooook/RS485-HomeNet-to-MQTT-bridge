@@ -134,6 +134,7 @@
     "filter_all": "전체",
     "filter_entities": "엔티티",
     "filter_automation": "자동화",
+    "filter_scripts": "스크립트",
     "no_items": "검색 결과가 없습니다.",
     "vendor": "제조사",
     "type": "타입",
@@ -141,6 +142,7 @@
     "author": "작성자",
     "entities": "엔티티",
     "automations": "자동화",
+    "scripts": "스크립트",
     "tags": "태그",
     "view_details": "상세보기",
     "preview": {
@@ -149,6 +151,7 @@
       "contents": "포함된 항목",
       "entity_count": "{type} {count}개",
       "automation_count": "자동화 {count}개",
+      "script_count": "스크립트 {count}개",
       "conflict_detected": "충돌 감지",
       "conflict_desc": "ID '{id}'인 기존 항목이 있습니다.",
       "no_conflict": "충돌 없음",

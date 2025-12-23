@@ -134,6 +134,7 @@
     "filter_all": "All",
     "filter_entities": "Entities",
     "filter_automation": "Automation",
+    "filter_scripts": "Scripts",
     "no_items": "No results found.",
     "vendor": "Vendor",
     "type": "Type",
@@ -141,6 +142,7 @@
     "author": "Author",
     "entities": "Entities",
     "automations": "Automations",
+    "scripts": "Scripts",
     "tags": "Tags",
     "view_details": "View Details",
     "preview": {
@@ -149,6 +151,7 @@
       "contents": "Contents",
       "entity_count": "{count} {type}",
       "automation_count": "{count} automation(s)",
+      "script_count": "{count} script(s)",
       "conflict_detected": "Conflict Detected",
       "conflict_desc": "An existing item with ID '{id}' was found.",
       "no_conflict": "No conflict",

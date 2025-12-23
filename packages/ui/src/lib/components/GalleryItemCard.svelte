@@ -4,6 +4,7 @@
   interface ContentSummary {
     entities: Record<string, number>;
     automations: number;
+    scripts?: number;
   }
 
   interface GalleryItem {
@@ -43,6 +44,8 @@
   const entityTypes = $derived(Object.entries(item.content_summary.entities));
   const hasEntities = $derived(entityTypes.length > 0);
   const hasAutomation = $derived(item.content_summary.automations > 0);
+  const scriptCount = $derived(item.content_summary.scripts ?? 0);
+  const hasScripts = $derived(scriptCount > 0);
 </script>
 
 <div class="card">
@@ -79,6 +82,12 @@
       <div class="summary-section">
         <span class="summary-label">{$t('gallery.automations')}:</span>
         <span class="badge automation">{item.content_summary.automations}</span>
+      </div>
+    {/if}
+    {#if hasScripts}
+      <div class="summary-section">
+        <span class="summary-label">{$t('gallery.scripts')}:</span>
+        <span class="badge script">{scriptCount}</span>
       </div>
     {/if}
   </div>
@@ -209,6 +218,12 @@
     background: rgba(168, 85, 247, 0.15);
     color: #c084fc;
     border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+
+  .badge.script {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
   }
 
   .tags {

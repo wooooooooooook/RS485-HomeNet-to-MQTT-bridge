@@ -11,6 +11,7 @@
   interface ContentSummary {
     entities: Record<string, number>;
     automations: number;
+    scripts?: number;
   }
 
   interface GalleryItem {
@@ -59,7 +60,7 @@
 
   let searchQuery = $state('');
   let selectedVendor = $state<string | null>(null);
-  let filterType = $state<'all' | 'entities' | 'automation'>('all');
+  let filterType = $state<'all' | 'entities' | 'automation' | 'scripts'>('all');
 
   let selectedItem = $state<
     (GalleryItem & { vendorId: string; vendorRequirements?: Vendor['requirements'] }) | null
@@ -109,6 +110,8 @@
       items = items.filter((item) => Object.keys(item.content_summary.entities).length > 0);
     } else if (filterType === 'automation') {
       items = items.filter((item) => item.content_summary.automations > 0);
+    } else if (filterType === 'scripts') {
+      items = items.filter((item) => (item.content_summary.scripts ?? 0) > 0);
     }
 
     // Filter by search query
@@ -195,6 +198,9 @@
             onclick={() => (filterType = 'automation')}
           >
             {$t('gallery.filter_automation')}
+          </button>
+          <button class:active={filterType === 'scripts'} onclick={() => (filterType = 'scripts')}>
+            {$t('gallery.filter_scripts')}
           </button>
         </div>
       </div>

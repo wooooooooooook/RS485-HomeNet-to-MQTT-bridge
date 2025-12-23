@@ -42,12 +42,12 @@ jobs:
 
           // Vendor display names
           const vendorNames = {
-            kocom: '코콤 (Kocom)',
+            kocom: '코콤',
             kocom_theart: '코콤 Theart',
             kocom_thinks: '코콤 Thinks',
-            commax: '코맥스 (Commax)',
-            hyundai: '현대 (Hyundai)',
-            ezville: '이지빌 (Ezville)',
+            commax: '코맥스',
+            hyundai_imazu: '현대 imazu',
+            ezville: '이지빌',
             samsung_sds: '삼성 SDS',
             cvnet: 'CVNet',
           };

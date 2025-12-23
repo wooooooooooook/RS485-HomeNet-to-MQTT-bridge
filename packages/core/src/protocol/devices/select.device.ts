@@ -59,7 +59,7 @@ export class SelectDevice extends GenericDevice {
     return null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(commandName: string, value?: any): number[] | { type: "script"; id: string } | null {
     const entityConfig = this.config as SelectEntity;
 
     // Handle select command with option value

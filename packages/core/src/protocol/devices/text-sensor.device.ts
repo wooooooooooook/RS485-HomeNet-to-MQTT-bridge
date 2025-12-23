@@ -52,7 +52,7 @@ export class TextSensorDevice extends GenericDevice {
     return text.length > 0 ? text : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(commandName: string, value?: any): number[] | { type: "script"; id: string } | null {
     // Text sensor is read-only, no commands
     return super.constructCommand(commandName, value);
   }

@@ -7,12 +7,14 @@ import { PacketProcessor } from '../../protocol/packet-processor.js';
 import { eventBus } from '../../service/event-bus.js';
 import { CommandManager } from '../../service/command.manager.js';
 import { ENTITY_TYPE_KEYS, findEntityById } from '../../utils/entities.js';
+import { AutomationManager } from '../../automation/automation-manager.js';
 
 export class MqttSubscriber {
   private mqttClient: MqttClient;
   private config: HomenetBridgeConfig;
   private packetProcessor: PacketProcessor;
   private commandManager: CommandManager;
+  private automationManager: AutomationManager;
   private externalHandlers: Map<string, (message: Buffer) => void> = new Map();
   private portId: string;
   private topicPrefix: string;
@@ -24,6 +26,7 @@ export class MqttSubscriber {
     packetProcessor: PacketProcessor,
     commandManager: CommandManager,
     topicPrefix: string,
+    automationManager: AutomationManager,
   ) {
     this.mqttClient = mqttClient;
     this.portId = portId;
@@ -31,6 +34,7 @@ export class MqttSubscriber {
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
     this.topicPrefix = topicPrefix;
+    this.automationManager = automationManager;
 
     this.mqttClient.client.on('message', (topic, message) =>
       this.handleMqttMessage(topic, message),
@@ -174,13 +178,23 @@ export class MqttSubscriber {
         }
       }
 
-      const commandPacket = this.packetProcessor.constructCommandPacket(
+      const packetOrScript = this.packetProcessor.constructCommandPacket(
         targetEntity,
         commandName,
         commandValue,
       );
 
-      if (commandPacket) {
+      if (packetOrScript) {
+        if (!Array.isArray(packetOrScript) && 'type' in packetOrScript && packetOrScript.type === 'script') {
+           logger.info({ entityId, scriptId: packetOrScript.id }, '[mqtt-subscriber] Triggering script from MQTT command');
+           this.automationManager.runScript(packetOrScript.id).catch((err) => {
+             logger.error({ err, scriptId: packetOrScript.id }, '[mqtt-subscriber] Failed to run script');
+           });
+           return;
+        }
+
+        const commandPacket = packetOrScript as number[];
+
         // If empty packet (virtual switch/optimistic only), we skip sending but consider it success
         if (commandPacket.length === 0) {
           logger.debug(

@@ -67,6 +67,7 @@ export class AutomationManager {
     handler: (...args: any[]) => void;
   }[] = [];
   private readonly states = new Map<string, Record<string, any>>();
+  private readonly scripts = new Map<string, AutomationAction[]>();
   private isStarted = false;
 
   constructor(
@@ -80,6 +81,11 @@ export class AutomationManager {
     this.automationList = (config.automation || []).filter(
       (automation) => automation.enabled !== false,
     );
+    if (config.script) {
+      for (const script of config.script) {
+        this.scripts.set(script.id, script.then);
+      }
+    }
     this.packetProcessor = packetProcessor;
     this.commandManager = commandManager;
     this.mqttPublisher = mqttPublisher;
@@ -115,12 +121,18 @@ export class AutomationManager {
     // Handle BigInt from CEL
     const safeValue = typeof value === 'bigint' ? Number(value) : value;
 
-    const packet = this.packetProcessor.constructCommandPacket(entity, command, safeValue);
-    if (!packet) {
+    const packetOrScript = this.packetProcessor.constructCommandPacket(entity, command, safeValue);
+    if (!packetOrScript) {
       logger.warn({ entityId, command }, '[automation] CEL command: Failed to construct packet');
       return;
     }
-    await this.commandManager.send(entity, packet);
+
+    if (!Array.isArray(packetOrScript) && 'type' in packetOrScript && packetOrScript.type === 'script') {
+       await this.runScript(packetOrScript.id);
+       return;
+    }
+
+    await this.commandManager.send(entity, packetOrScript as number[]);
   }
 
   public addAutomation(config: AutomationConfig) {
@@ -131,6 +143,29 @@ export class AutomationManager {
     const index = this.automationList.findIndex((a) => a.id === id);
     if (index !== -1) {
       this.automationList.splice(index, 1);
+    }
+  }
+
+  public async runScript(id: string, data?: any) {
+    const actions = this.scripts.get(id);
+    if (!actions) {
+      logger.warn({ scriptId: id }, '[automation] Script not found');
+      return;
+    }
+
+    const context: TriggerContext = {
+      type: 'script' as any, // Virtual trigger type
+      timestamp: Date.now(),
+      state: data || {},
+    };
+
+    logger.info({ scriptId: id }, '[automation] Running script');
+    for (const action of actions) {
+      try {
+        await this.executeAction(action, context, this.contextPortId);
+      } catch (error) {
+        logger.error({ error, scriptId: id, action: action.action }, '[automation] Script action failed');
+      }
     }
   }
 
@@ -329,6 +364,8 @@ export class AutomationManager {
       return this.executeLogAction(action as AutomationActionLog, context);
     if (action.action === 'delay') return this.executeDelayAction(action as AutomationActionDelay);
     if (action.action === 'script') return this.executeScriptAction(action, context);
+    if (action.action === 'run_script')
+      return this.executeRunScriptAction(action as any, context, automationPortId);
     if (action.action === 'send_packet')
       return this.executeSendPacketAction(
         action as AutomationActionSendPacket,
@@ -416,15 +453,22 @@ export class AutomationManager {
       return;
     }
 
-    const packet = this.packetProcessor.constructCommandPacket(
+    const packetOrScript = this.packetProcessor.constructCommandPacket(
       entity,
       parsed.command,
       parsed.value,
     );
-    if (!packet) {
+    if (!packetOrScript) {
       logger.warn({ target: action.target }, '[automation] Failed to construct command packet');
       return;
     }
+
+    if (!Array.isArray(packetOrScript) && 'type' in packetOrScript && packetOrScript.type === 'script') {
+      await this.runScript(packetOrScript.id);
+      return;
+    }
+
+    const packet = packetOrScript as number[];
 
     let isLowPriority = action.low_priority;
     if (isLowPriority === undefined) {
@@ -438,6 +482,14 @@ export class AutomationManager {
     await this.commandManager.send(entity, packet, {
       priority: isLowPriority ? 'low' : 'normal',
     });
+  }
+
+  private async executeRunScriptAction(
+    action: { action: 'run_script'; id: string; data?: any },
+    context: TriggerContext,
+    automationPortId?: string,
+  ) {
+    await this.runScript(action.id, action.data);
   }
 
   private async executePublishAction(action: AutomationActionPublish, context: TriggerContext) {

@@ -25,7 +25,7 @@ export class SensorDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(commandName: string, value?: any): number[] | { type: "script"; id: string } | null {
     return super.constructCommand(commandName, value);
   }
 }

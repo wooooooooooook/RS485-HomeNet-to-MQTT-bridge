@@ -50,7 +50,7 @@ export class ValveDevice extends GenericDevice {
     commandName: string,
     value?: any,
     states?: Map<string, Record<string, any>>,
-  ): number[] | null {
+  ): number[] | { type: "script"; id: string } | null {
     const entityConfig = this.config as ValveEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 

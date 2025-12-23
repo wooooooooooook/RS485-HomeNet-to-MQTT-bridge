@@ -95,13 +95,20 @@ export interface AutomationActionSendPacket {
   ack?: number[] | string;
 }
 
+export interface AutomationActionRunScript {
+  action: 'run_script';
+  id: string;
+  data?: any;
+}
+
 export type AutomationAction =
   | AutomationActionCommand
   | AutomationActionPublish
   | AutomationActionLog
   | AutomationActionDelay
   | AutomationActionScript
-  | AutomationActionSendPacket;
+  | AutomationActionSendPacket
+  | AutomationActionRunScript;
 
 export interface AutomationConfig {
   id: string;
@@ -113,6 +120,12 @@ export interface AutomationConfig {
   then: AutomationAction[];
   else?: AutomationAction[];
   enabled?: boolean;
+}
+
+export interface ScriptConfig {
+  id: string;
+  description?: string;
+  then: AutomationAction[];
 }
 
 export interface SerialConfig {
@@ -148,4 +161,5 @@ export interface HomenetBridgeConfig {
   text?: TextEntity[];
   binary_sensor?: BinarySensorEntity[];
   automation?: AutomationConfig[];
+  script?: ScriptConfig[];
 }

@@ -115,7 +115,7 @@ export class PacketProcessor extends EventEmitter {
     entity: EntityConfig,
     commandName: string,
     value?: number | string,
-  ): number[] | null {
+  ): number[] | { type: 'script'; id: string } | null {
     // Try to find the registered device
     let device = this.protocolManager.getDevice(entity.id);
 

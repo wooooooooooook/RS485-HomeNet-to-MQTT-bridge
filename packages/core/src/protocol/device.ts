@@ -16,7 +16,7 @@ export abstract class Device {
     commandName: string,
     value?: any,
     states?: Map<string, Record<string, any>>,
-  ): number[] | null;
+  ): number[] | { type: 'script'; id: string } | null;
 
   public getOptimisticState(commandName: string, value?: any): Record<string, any> | null {
     return null;

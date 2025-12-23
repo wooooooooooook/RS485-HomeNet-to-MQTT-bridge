@@ -26,7 +26,7 @@ export class SwitchDevice extends GenericDevice {
     return Object.keys(updates).length > 0 ? updates : null;
   }
 
-  public constructCommand(commandName: string, value?: any): number[] | null {
+  public constructCommand(commandName: string, value?: any): number[] | { type: "script"; id: string } | null {
     const cmd = super.constructCommand(commandName, value);
     if (cmd) return cmd;
 

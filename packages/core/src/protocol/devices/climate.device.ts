@@ -62,7 +62,7 @@ export class ClimateDevice extends GenericDevice {
     commandName: string,
     value?: any,
     states?: Map<string, Record<string, any>>,
-  ): number[] | null {
+  ): number[] | { type: "script"; id: string } | null {
     const cmd = super.constructCommand(commandName, value, states);
     if (cmd) return cmd;
 

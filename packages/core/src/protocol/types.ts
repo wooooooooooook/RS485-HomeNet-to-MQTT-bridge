@@ -86,3 +86,7 @@ export interface DeviceConfig {
   state?: StateSchema;
   optimistic?: boolean;
 }
+
+export interface CommandScript {
+  script: string;
+}

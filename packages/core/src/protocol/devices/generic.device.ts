@@ -115,12 +115,12 @@ export class GenericDevice extends Device {
     commandName: string,
     value?: any,
     states?: Map<string, Record<string, any>>,
-  ): number[] | null {
+  ): number[] | { type: 'script'; id: string } | null {
     const entityConfig = this.config as any;
     const commandKey = `command_${commandName}`;
     const commandConfig = entityConfig[commandKey];
 
-    let commandData: number[] | null = null;
+    let commandData: number[] | { type: "script"; id: string } | null = null;
 
     if (commandConfig) {
       if (typeof commandConfig === 'string') {
@@ -139,8 +139,13 @@ export class GenericDevice extends Device {
             commandData = result;
           }
         }
-      } else if (commandConfig.data) {
-        commandData = [...commandConfig.data];
+      } else if (typeof commandConfig === 'object') {
+        if (commandConfig.script) {
+          return { type: 'script', id: commandConfig.script };
+        }
+        if (commandConfig.data) {
+          commandData = [...commandConfig.data];
+        }
       }
     }
 

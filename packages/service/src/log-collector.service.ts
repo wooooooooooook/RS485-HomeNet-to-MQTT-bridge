@@ -42,7 +42,7 @@ export class LogCollectorService {
   private packetCount = 0;
   private config: LogConfig = { consent: null, uid: null };
 
-  constructor() { }
+  constructor() {}
 
   async init(bridges: HomeNetBridge[], configFiles: ConfigFileContent[] = []) {
     this.bridges = bridges;
@@ -86,7 +86,7 @@ export class LogCollectorService {
       await this.saveConfig();
 
       // Remove legacy file after successful migration
-      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => { });
+      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => {});
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
         logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');

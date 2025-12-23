@@ -237,8 +237,14 @@ export function validateConfig(
           errors.push(`scripts[${index}]에는 최소 1개의 action이 필요합니다.`);
         } else {
           script.actions.forEach((action, actionIndex) => {
-            if (!action || typeof action !== 'object' || typeof (action as any).action !== 'string') {
-              errors.push(`scripts[${index}].actions[${actionIndex}]에 유효한 action 필드가 필요합니다.`);
+            if (
+              !action ||
+              typeof action !== 'object' ||
+              typeof (action as any).action !== 'string'
+            ) {
+              errors.push(
+                `scripts[${index}].actions[${actionIndex}]에 유효한 action 필드가 필요합니다.`,
+              );
             }
           });
         }

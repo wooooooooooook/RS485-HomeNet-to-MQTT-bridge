@@ -1,6 +1,5 @@
 import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 

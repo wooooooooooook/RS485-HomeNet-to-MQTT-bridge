@@ -225,7 +225,8 @@
       "title": "Current Status",
       "no_data": "No status information.",
       "command_title": "Send Command",
-      "send": "Send"
+      "send": "Send",
+      "send_aria": "Send {command}"
     },
     "config": {
       "loading": "Loading config...",

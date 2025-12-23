@@ -225,7 +225,8 @@
       "title": "현재 상태",
       "no_data": "상태 정보가 없습니다.",
       "command_title": "명령 보내기",
-      "send": "전송"
+      "send": "전송",
+      "send_aria": "{command} 전송"
     },
     "config": {
       "loading": "설정 불러오는 중...",

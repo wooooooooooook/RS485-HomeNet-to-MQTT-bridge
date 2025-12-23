@@ -399,6 +399,9 @@
                           <button
                             onclick={() =>
                               onExecute?.(cmd, commandInputs[`${cmd.entityId}_${cmd.commandName}`])}
+                            aria-label={$t('entity_detail.status.send_aria', {
+                              values: { command: cmd.displayName },
+                            })}
                           >
                             {$t('entity_detail.status.send')}
                           </button>

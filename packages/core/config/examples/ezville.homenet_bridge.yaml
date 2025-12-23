@@ -7,7 +7,7 @@ homenet_bridge:
     parity: NONE
     stop_bits: 1
 
-  packet_defaults: # New section for global packet defaults
+  packet_defaults:
     rx_timeout: 10ms
     tx_delay: 50ms
     tx_timeout: 500ms

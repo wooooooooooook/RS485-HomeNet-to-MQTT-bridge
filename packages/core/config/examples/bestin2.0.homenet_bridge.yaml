@@ -1,0 +1,20 @@
+homenet_bridge:
+  serial:  
+    baud_rate: 9600  
+    data_bits: 8  
+    parity: NONE  
+    stop_bits: 1  
+    
+  packet_defaults:  
+    rx_timeout: 10ms  
+    tx_delay: 220ms  # Gen2 게이트웨이는 0.22초 간격 사용  
+    tx_timeout: 500ms  
+    tx_retry_cnt: 3  
+    
+    rx_header: [0x02]  # 모든 패킷은 0x02로 시작  
+    tx_header: [0x02]  
+    rx_checksum: xor_increment  # XOR + 1 알고리즘  checksum = 3  
+# for byte in packet[:-1]:  
+#     checksum ^= byte  
+#     checksum = (checksum + 1) & 0xFF
+    tx_checksum: xor_increment

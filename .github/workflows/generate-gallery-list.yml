@@ -30,6 +30,7 @@ jobs:
 
       - name: Generate list.json
         run: |
+          export NODE_PATH=$(npm root -g)
           node << 'EOF'
           const fs = require('fs');
           const path = require('path');

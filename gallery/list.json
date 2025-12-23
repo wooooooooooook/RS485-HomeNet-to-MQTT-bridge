@@ -1,22 +1,599 @@
 {
-  "generated_at": "2025-12-23T03:32:45.203Z",
+  "generated_at": "2025-12-23T05:50:15.776Z",
   "vendors": [
     {
-      "id": "kocom",
-      "name": "코콤 (Kocom)",
+      "id": "commax",
+      "name": "코맥스 (Commax)",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_length": 8,
+          "rx_checksum": "add",
+          "tx_checksum": "add",
+          "rx_header": [],
+          "tx_header": [],
+          "rx_footer": [],
+          "tx_footer": []
+        }
+      },
       "items": [
         {
-          "file": "kocom/elevator_sensors.yaml",
-          "name": "엘리베이터 센서 세트",
-          "name_en": "Elevator Sensor Set",
-          "description": "코콤 월패드용 엘리베이터 센서와 호출 버튼 설정입니다.",
-          "description_en": "Elevator sensors and call button for Kocom wallpad.",
+          "file": "commax/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "코맥스 엘리베이터 호출 버튼과 현재 층수 센서 설정입니다.",
+          "description_en": "Commax elevator call button and current floor sensor.",
           "version": "1.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
+            "button",
             "sensor",
-            "button"
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 1,
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "commax/fan.yaml",
+          "name": "환기팬 설정",
+          "name_en": "Ventilation Fan",
+          "description": "코맥스 환기팬 설정입니다. 3단 속도와 Auto/Night 모드를 지원합니다.",
+          "description_en": "Commax ventilation fan with 3-speed control and Auto/Night preset modes.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "fan",
+            "ventilation",
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "commax/gas_valve.yaml",
+          "name": "가스밸브 설정",
+          "name_en": "Gas Valve",
+          "description": "코맥스 가스밸브 설정입니다. 닫기 전용 밸브입니다.",
+          "description_en": "Commax gas valve configuration. Close-only valve.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "valve",
+            "gas",
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "valve": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "commax/heaters.yaml",
+          "name": "난방 설정 (4개)",
+          "name_en": "Heaters (4 Thermostats)",
+          "description": "코맥스 난방 온도조절기 4개 설정입니다.",
+          "description_en": "Commax 4 heating thermostats with temperature control.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 4
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "commax/lights.yaml",
+          "name": "조명 설정 (4개)",
+          "name_en": "Lights (4 Lights)",
+          "description": "코맥스 조명 4개 + 일괄소등 스위치 설정입니다.",
+          "description_en": "Commax 4 lights with master light breaker switch.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 5
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "commax/smart_plugs.yaml",
+          "name": "스마트 콘센트 설정 (4개)",
+          "name_en": "Smart Plugs (4 Outlets)",
+          "description": "코맥스 스마트 콘센트 4개 설정입니다. 전력 사용량 센서도 포함되어 있습니다.",
+          "description_en": "Commax 4 smart plugs with power consumption sensors.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "plug",
+            "outlet",
+            "power",
+            "sensor",
+            "commax"
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 4,
+              "sensor": 4
+            },
+            "automations": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "cvnet",
+      "name": "CVNet",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "add_no_header",
+          "tx_checksum": "add_no_header",
+          "rx_header": [
+            247
+          ],
+          "tx_header": [
+            247
+          ],
+          "rx_footer": [
+            170
+          ],
+          "tx_footer": [
+            170
+          ]
+        }
+      },
+      "items": [
+        {
+          "file": "cvnet/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "CVNet 엘리베이터 호출 버튼과 층수 센서 설정입니다.",
+          "description_en": "CVNet elevator call button and floor sensor.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "button",
+            "sensor",
+            "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 1,
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "cvnet/fan.yaml",
+          "name": "환기팬 설정",
+          "name_en": "Fan",
+          "description": "CVNet 환기팬 설정입니다. 속도 조절을 지원합니다.",
+          "description_en": "CVNet fan with speed control.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "fan",
+            "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "cvnet/gas_valve.yaml",
+          "name": "가스밸브 설정",
+          "name_en": "Gas Valve",
+          "description": "CVNet 가스밸브 설정입니다.",
+          "description_en": "CVNet gas valve configuration.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "valve",
+            "gas",
+            "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "valve": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "cvnet/heaters.yaml",
+          "name": "난방 설정 (4개)",
+          "name_en": "Heaters (4 Thermostats)",
+          "description": "CVNet 난방 온도조절기 4개 설정입니다.",
+          "description_en": "CVNet 4 heating thermostats.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 4
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "cvnet/lights.yaml",
+          "name": "조명 설정 (Room 0-1, 4개)",
+          "name_en": "Lights (Room 0-1, 4 Lights)",
+          "description": "CVNet 조명 4개 설정입니다. (Room 0: 3개, Room 1: 1개)",
+          "description_en": "CVNet 4 lights configuration (Room 0: 3, Room 1: 1).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "cvnet"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 4
+            },
+            "automations": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "ezville",
+      "name": "이지빌 (Ezville)",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum2": "xor_add",
+          "tx_checksum2": "xor_add",
+          "rx_header": [
+            247
+          ],
+          "tx_header": [
+            247
+          ],
+          "rx_footer": [],
+          "tx_footer": []
+        }
+      },
+      "items": [
+        {
+          "file": "ezville/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "Ezville 엘리베이터 호출 버튼 설정입니다. 항상 활성화 옵션이 적용되어있습니다.",
+          "description_en": "Ezville elevator call button. Always enabled option is applied.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "button",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "ezville/energy_sensors.yaml",
+          "name": "에너지 센서 설정",
+          "name_en": "Energy Sensors",
+          "description": "Ezville 에너지 사용량 센서 (전력, 수도, 가스) 설정입니다.",
+          "description_en": "Ezville energy consumption sensors for power, water, and gas.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "energy",
+            "power",
+            "water",
+            "gas",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 4
+            },
+            "automations": 1
+          }
+        },
+        {
+          "file": "ezville/gas_valve.yaml",
+          "name": "가스밸브 설정",
+          "name_en": "Gas Valve",
+          "description": "Ezville 가스밸브 설정입니다.",
+          "description_en": "Ezville gas valve configuration.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "valve",
+            "gas",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "valve": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "ezville/heaters.yaml",
+          "name": "난방 설정 (4개)",
+          "name_en": "Heaters (4 Thermostats)",
+          "description": "Ezville 난방 온도조절기 4개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원.",
+          "description_en": "Ezville 4 heating thermostats with 0.5°C step and away preset mode.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 4
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "ezville/lights.yaml",
+          "name": "조명 설정 (Room 1-4, 9개)",
+          "name_en": "Lights (Room 1-4, 9 Lights)",
+          "description": "Ezville 조명 9개 설정입니다. 방별 일괄제어 및 개별조명 포함.",
+          "description_en": "Ezville 9 lights configuration with master and individual light controls.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 9
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "ezville/outlets.yaml",
+          "name": "스마트 콘센트 설정 (10개)",
+          "name_en": "Smart Outlets (10 Outlets)",
+          "description": "Ezville 스마트 콘센트 10개 설정입니다. 전력 측정 센서 포함.",
+          "description_en": "Ezville 10 smart outlets with power consumption sensors.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "outlet",
+            "power",
+            "ezville"
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 10,
+              "sensor": 10
+            },
+            "automations": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "hyundai",
+      "name": "현대 (Hyundai)",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "xor",
+          "tx_checksum": "xor",
+          "rx_header": [
+            247
+          ],
+          "tx_header": [
+            247
+          ],
+          "rx_footer": [
+            238
+          ],
+          "tx_footer": [
+            238
+          ]
+        }
+      },
+      "items": [
+        {
+          "file": "hyundai/fan.yaml",
+          "name": "환기시스템 설정",
+          "name_en": "Ventilation System",
+          "description": "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다.",
+          "description_en": "Hyundai Imazu ventilation system with 3-speed control.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "fan",
+            "ventilation",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "hyundai/heaters.yaml",
+          "name": "난방 설정 (5개)",
+          "name_en": "Heaters (5 Thermostats)",
+          "description": "현대 이마주 난방 온도조절기 5개 설정입니다. 외출 모드를 지원합니다.",
+          "description_en": "Hyundai Imazu 5 heating thermostats with away mode support.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 5
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "hyundai/lights.yaml",
+          "name": "조명 설정 (7개)",
+          "name_en": "Lights (7 Lights)",
+          "description": "현대 이마주 조명 7개 설정입니다. (Room 1: 4개, Room 2: 3개)",
+          "description_en": "Hyundai Imazu 7 lights configuration (Room 1: 4, Room 2: 3).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 7
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "hyundai/plugs.yaml",
+          "name": "스마트 콘센트 설정 (4개)",
+          "name_en": "Smart Plugs (4 Plugs)",
+          "description": "현대 이마주 스마트 콘센트 4개 설정입니다. 전력 사용량 센서가 포함되어 있습니다. (Room 1: 2개, Room 2: 2개)",
+          "description_en": "Hyundai Imazu 4 smart plugs with power consumption sensors (Room 1: 2, Room 2: 2).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "plug",
+            "sensor",
+            "power",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 4,
+              "sensor": 4
+            },
+            "automations": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "kocom",
+      "name": "코콤 (Kocom)",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "add_no_header",
+          "tx_checksum": "add_no_header",
+          "rx_header": [
+            170,
+            85
+          ],
+          "tx_header": [
+            170,
+            85
+          ],
+          "rx_footer": [
+            13,
+            13
+          ],
+          "tx_footer": [
+            13,
+            13
+          ]
+        }
+      },
+      "items": [
+        {
+          "file": "kocom/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "코콤 엘리베이터 호출 버튼과 층수/방향 센서 설정입니다.",
+          "description_en": "Kocom elevator call button with floor and direction sensors.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "button",
+            "sensor",
+            "kocom"
           ],
           "content_summary": {
             "entities": {
@@ -27,23 +604,437 @@
           }
         },
         {
-          "file": "kocom/gas_valve_with_polling.yaml",
-          "name": "가스밸브 설정 (자동 갱신 포함)",
-          "name_en": "Gas Valve with Auto Polling",
-          "description": "가스밸브 엔티티와 상태 갱신 자동화가 포함된 설정입니다.",
-          "description_en": "Gas valve entity with automatic status polling.",
+          "file": "kocom/gas_valve.yaml",
+          "name": "가스밸브 설정",
+          "name_en": "Gas Valve",
+          "description": "코콤 가스밸브 설정입니다.",
+          "description_en": "Kocom gas valve configuration.",
           "version": "1.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
             "gas",
-            "automation"
+            "kocom"
+          ],
+          "content_summary": {
+            "entities": {
+              "valve": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "kocom/heaters.yaml",
+          "name": "난방 설정 (4개)",
+          "name_en": "Heaters (4 Thermostats)",
+          "description": "코콤 난방 온도조절기 4개 설정입니다. (Room 0-3)",
+          "description_en": "Kocom 4 heating thermostats (Room 0-3).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 4
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "kocom/lights.yaml",
+          "name": "조명 설정 (Room 0-3, 8개)",
+          "name_en": "Lights (Room 0-3, 8 Lights)",
+          "description": "코콤 조명 8개 설정입니다. (각 방 2개씩)",
+          "description_en": "Kocom 8 lights configuration (2 per room).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "kocom"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 8
+            },
+            "automations": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "kocom_theart",
+      "name": "코콤 Theart",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_length": 21,
+          "rx_checksum": "add_no_header",
+          "tx_checksum": "add_no_header",
+          "rx_header": [
+            170,
+            85
+          ],
+          "tx_header": [
+            170,
+            85
+          ],
+          "rx_footer": [
+            13,
+            13
+          ],
+          "tx_footer": [
+            13,
+            13
+          ]
+        }
+      },
+      "items": [
+        {
+          "file": "kocom_theart/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "코콤 Theart 엘리베이터 호출 스위치 설정입니다.",
+          "description_en": "Kocom Theart elevator call switch.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "switch",
+            "kocom",
+            "theart"
+          ],
+          "content_summary": {
+            "entities": {
+              "text_sensor": 1,
+              "switch": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "kocom_theart/gas_burner_lock.yaml",
+          "name": "가스버너 잠금 설정",
+          "name_en": "Gas Burner Lock",
+          "description": "코콤 Theart 가스버너 잠금 설정입니다.",
+          "description_en": "Kocom Theart gas burner lock configuration.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "lock",
+            "gas",
+            "kocom",
+            "theart"
+          ],
+          "content_summary": {
+            "entities": {
+              "lock": 1
+            },
+            "automations": 1
+          }
+        },
+        {
+          "file": "kocom_theart/heaters.yaml",
+          "name": "난방 설정 (5개)",
+          "name_en": "Heaters (5 Thermostats)",
+          "description": "코콤 Theart 난방 온도조절기 5개 설정입니다. (거실, 침실, Room 1-2, 거실2)",
+          "description_en": "Kocom Theart 5 heating thermostats with away preset mode.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom",
+            "theart"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 5
+            },
+            "automations": 1
+          }
+        },
+        {
+          "file": "kocom_theart/lights_livingroom.yaml",
+          "name": "거실 조명 설정 (3개)",
+          "name_en": "Living Room Lights (3 Lights)",
+          "description": "코콤 Theart 거실 조명 3개 설정입니다.",
+          "description_en": "Kocom Theart living room with 3 lights.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "kocom",
+            "theart",
+            "livingroom"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 3
+            },
+            "automations": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "kocom_thinks",
+      "name": "코콤 Thinks",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_length": 21,
+          "rx_checksum": "add_no_header",
+          "tx_checksum": "add_no_header",
+          "rx_header": [
+            170,
+            85
+          ],
+          "tx_header": [
+            170,
+            85
+          ],
+          "rx_footer": [
+            13,
+            13
+          ],
+          "tx_footer": [
+            13,
+            13
+          ]
+        }
+      },
+      "items": [
+        {
+          "file": "kocom_thinks/elevator.yaml",
+          "name": "엘리베이터 호출 설정",
+          "name_en": "Elevator Call",
+          "description": "코콤 Thinks 엘리베이터 호출 설정입니다. 층수 및 방향 센서 포함.",
+          "description_en": "Kocom Thinks elevator with floor number and direction sensors.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "sensor",
+            "switch",
+            "kocom",
+            "thinks"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 1,
+              "text_sensor": 1,
+              "switch": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "kocom_thinks/gas_valve.yaml",
+          "name": "가스밸브 설정",
+          "name_en": "Gas Valve",
+          "description": "코콤 Thinks 가스밸브 설정입니다.",
+          "description_en": "Kocom Thinks gas valve configuration.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "valve",
+            "gas",
+            "kocom",
+            "thinks"
           ],
           "content_summary": {
             "entities": {
               "valve": 1
             },
             "automations": 1
+          }
+        },
+        {
+          "file": "kocom_thinks/heaters.yaml",
+          "name": "난방 설정 (6개)",
+          "name_en": "Heaters (6 Thermostats)",
+          "description": "코콤 Thinks 난방 온도조절기 6개 설정입니다. (거실, Room 1-5)",
+          "description_en": "Kocom Thinks 6 heating thermostats with away preset mode.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom",
+            "thinks"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 6
+            },
+            "automations": 1
+          }
+        },
+        {
+          "file": "kocom_thinks/lights_livingroom.yaml",
+          "name": "거실 조명 설정 (3개)",
+          "name_en": "Living Room Lights (3 Lights)",
+          "description": "코콤 Thinks 거실 조명 3개 설정입니다.",
+          "description_en": "Kocom Thinks living room with 3 lights.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "kocom",
+            "thinks",
+            "livingroom"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 3
+            },
+            "automations": 1
+          }
+        },
+        {
+          "file": "kocom_thinks/navien_ventilator.yaml",
+          "name": "나비엔 환기팬 설정",
+          "name_en": "Navien Ventilator",
+          "description": "코콤 Thinks 나비엔 환기팬 설정입니다. 3단 속도를 지원합니다.",
+          "description_en": "Kocom Thinks Navien ventilator with 3-speed control.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "fan",
+            "ventilation",
+            "navien",
+            "kocom",
+            "thinks"
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "samsung_sds",
+      "name": "삼성 SDS",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "even",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "samsung_rx",
+          "tx_checksum": "samsung_tx",
+          "rx_header": [
+            176
+          ],
+          "tx_header": [],
+          "rx_footer": [],
+          "tx_footer": []
+        }
+      },
+      "items": [
+        {
+          "file": "samsung_sds/fan.yaml",
+          "name": "환기팬 설정",
+          "name_en": "Ventilator",
+          "description": "삼성 SDS 환기팬 설정입니다. 3단 속도를 지원합니다.",
+          "description_en": "Samsung SDS ventilator with 3-speed control.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "fan",
+            "ventilation",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "samsung_sds/gas_valve_close.yaml",
+          "name": "가스밸브 잠금 버튼",
+          "name_en": "Gas Valve Close Button",
+          "description": "삼성 SDS 가스밸브 잠금 버튼입니다.",
+          "description_en": "Samsung SDS gas valve close button.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "button",
+            "gas",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "samsung_sds/heaters.yaml",
+          "name": "난방 설정 (4개)",
+          "name_en": "Heaters (4 Thermostats)",
+          "description": "삼성 SDS 난방 온도조절기 4개 설정입니다. heating/idle 액션 상태 표시 지원.",
+          "description_en": "Samsung SDS 4 heating thermostats with heating/idle action status.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 4
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "samsung_sds/lights.yaml",
+          "name": "조명 설정 (4개)",
+          "name_en": "Lights (4 Lights)",
+          "description": "삼성 SDS 조명 4개 설정입니다.",
+          "description_en": "Samsung SDS 4 lights configuration.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 4
+            },
+            "automations": 0
           }
         }
       ]

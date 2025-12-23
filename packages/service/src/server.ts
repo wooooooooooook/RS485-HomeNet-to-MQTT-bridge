@@ -92,7 +92,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-      ' 사용을 권장합니다.',
+        ' 사용을 권장합니다.',
     );
   }
 
@@ -254,7 +254,7 @@ let packetIdCounter = 0;
 
 // 압축된 로그 구조 (payload 대신 packetId 참조)
 type CompactCommandPacket = {
-  packetId: string;   // 사전 참조
+  packetId: string; // 사전 참조
   entity: string;
   entityId: string;
   command: string;
@@ -264,7 +264,7 @@ type CompactCommandPacket = {
 };
 
 type CompactParsedPacket = {
-  packetId: string;   // 사전 참조
+  packetId: string; // 사전 참조
   entityId: string;
   state: unknown;
   timestamp: string;
@@ -379,7 +379,8 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           ? value.logRetention.autoSaveEnabled
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
-        typeof value?.logRetention?.retentionCount === 'number' && value.logRetention.retentionCount > 0
+        typeof value?.logRetention?.retentionCount === 'number' &&
+        value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
     },
@@ -647,8 +648,7 @@ app.post('/api/logs/packet/start', (req, res) => {
     } else {
       // Fallback to server-side stats (may be empty if listener wasn't active)
       bridges.forEach((b) => {
-        const bridgeStats =
-          (b.bridge as any).getPacketIntervalStats?.() || {};
+        const bridgeStats = (b.bridge as any).getPacketIntervalStats?.() || {};
         Object.assign(stats, bridgeStats);
       });
     }
@@ -672,7 +672,7 @@ app.post('/api/logs/packet/stop', (_req, res) => {
   try {
     const result = rawPacketLogger.stop();
     // note: we do NOT stop raw listeners here as UI might be streaming
-    // stopAllRawPacketListeners(); 
+    // stopAllRawPacketListeners();
     if (result) {
       res.json({ success: true, result });
     } else {
@@ -759,7 +759,6 @@ app.put('/api/logs/cache/settings', async (req, res) => {
     await saveFrontendSettings(frontendSettings);
 
     res.json({ settings: updated });
-
   } catch (error) {
     logger.error({ err: error }, '[service] Failed to update cache settings');
     res.status(500).json({ error: 'Failed to update cache settings' });
@@ -859,7 +858,6 @@ type StreamEvent =
   | 'state-change'
   | 'activity-log-added';
 
-
 type StreamMessage<T = unknown> = {
   event: StreamEvent;
   data: T;
@@ -940,7 +938,9 @@ const isStateTopic = (topic: string) => {
   return parts.length >= 3 && parts[parts.length - 1] === 'state';
 };
 
-const normalizeRawPacket = (data: RawPacketPayload & { direction?: 'RX' | 'TX' }): RawPacketEvent => {
+const normalizeRawPacket = (
+  data: RawPacketPayload & { direction?: 'RX' | 'TX' },
+): RawPacketEvent => {
   const portId = data.portId ?? 'raw';
   const topic = data.topic ?? `${BASE_MQTT_PREFIX}/${portId}/raw`;
 
@@ -1030,16 +1030,22 @@ const registerGlobalEventHandlers = () => {
     broadcastStreamEvent('parsed-packet', data);
   });
   eventBus.on('raw-data-with-interval', (data: RawPacketPayload) => {
-    sendToRawSubscribers('raw-data-with-interval', normalizeRawPacket({ ...data, direction: 'RX' }));
+    sendToRawSubscribers(
+      'raw-data-with-interval',
+      normalizeRawPacket({ ...data, direction: 'RX' }),
+    );
   });
   eventBus.on('raw-tx-packet', (data: { portId: string; payload: string; timestamp: string }) => {
-    sendToRawSubscribers('raw-data-with-interval', normalizeRawPacket({
-      portId: data.portId,
-      payload: data.payload,
-      receivedAt: data.timestamp,
-      interval: null, // TX 패킷은 interval 계산하지 않음
-      direction: 'TX',
-    }));
+    sendToRawSubscribers(
+      'raw-data-with-interval',
+      normalizeRawPacket({
+        portId: data.portId,
+        payload: data.payload,
+        receivedAt: data.timestamp,
+        interval: null, // TX 패킷은 interval 계산하지 않음
+        direction: 'TX',
+      }),
+    );
   });
   eventBus.on('packet-interval-stats', (data: unknown) => {
     sendToRawSubscribers('packet-interval-stats', data);
@@ -1051,8 +1057,11 @@ const registerGlobalEventHandlers = () => {
 
 activityLogService.addLog('log.service_started');
 const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
-const logRetentionService = new LogRetentionService(CONFIG_DIR, packetDictionary, packetDictionaryReverse);
-
+const logRetentionService = new LogRetentionService(
+  CONFIG_DIR,
+  packetDictionary,
+  packetDictionaryReverse,
+);
 
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
@@ -1938,7 +1947,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -2111,10 +2120,8 @@ server.listen(port, async () => {
       activityLogService.clearLogs();
     }
 
-
     logger.info('[service] Initializing bridge on startup...');
     const initState = await getInitializationState();
-
 
     if (initState.requiresInitialization) {
       bridgeStatus = 'error';
@@ -2166,7 +2173,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
       logger.info('[service] Cleared .restart-required flag');
     }
 

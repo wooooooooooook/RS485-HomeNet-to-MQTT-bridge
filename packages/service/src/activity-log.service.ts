@@ -119,7 +119,6 @@ export class ActivityLogService {
     this.logs = [];
   }
 
-
   private cleanupOldLogs(): void {
     const now = Date.now();
     const cutoff = now - LOG_TTL;

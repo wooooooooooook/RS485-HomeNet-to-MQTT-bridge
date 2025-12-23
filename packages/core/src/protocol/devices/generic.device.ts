@@ -11,6 +11,21 @@ import {
 import { logger } from '../../utils/logger.js';
 import { Buffer } from 'buffer';
 
+/**
+ * A versatile device implementation that supports dynamic parsing and command generation
+ * using schema-based configurations and CEL (Common Expression Language) expressions.
+ *
+ * This class is the backbone of the "Generic" device type, allowing users to define
+ * custom protocols purely through YAML configuration without writing TypeScript code.
+ *
+ * Key features:
+ * - **Packet Parsing**: Extracts state values using binary schemas (mask, offset) or CEL expressions.
+ * - **Command Construction**: Generates command packets using static data or CEL scripts.
+ * - **Checksums**: Supports standard algorithms (XOR, ADD, CRC) and custom CEL-based checksums.
+ * - **State Management**: Integrates with the global state store for cross-entity logic.
+ *
+ * @see {@link ../../../docs/CEL_GUIDE.md} for details on writing CEL expressions.
+ */
 export class GenericDevice extends Device {
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     super(config, protocolConfig);
@@ -20,6 +35,18 @@ export class GenericDevice extends Device {
     return CelExecutor.shared();
   }
 
+  /**
+   * Parses an incoming packet to extract entity state updates.
+   *
+   * The parsing logic prioritizes methods in the following order:
+   * 1. **CEL Expressions (`state_*`)**: Explicit CEL scripts defined in the config (e.g., `state_power: "data[3] == 0x01"`).
+   *    - Context: `data` (packet bytes), `states` (global state map).
+   * 2. **Schema Extraction**: (Currently limited implementation in this base class) Fallback to `state` schema.
+   *
+   * @param packet - The received packet as an array of bytes.
+   * @param states - Optional map of all global entity states, injected into the CEL context.
+   * @returns A dictionary of state updates (e.g., `{ power: 'on', temperature: 24 }`) or `null` if no match/updates.
+   */
   public parseData(
     packet: number[],
     states?: Map<string, Record<string, any>>,
@@ -71,6 +98,19 @@ export class GenericDevice extends Device {
     return hasUpdates ? updates : null;
   }
 
+  /**
+   * Constructs a raw command packet for a specific action.
+   *
+   * Uses the `command_<name>` configuration which can be:
+   * - A **CEL String**: Evaluated to produce a byte array or single number.
+   *   - Context: `x` (command value), `state` (current device state), `states` (global state map).
+   * - A **Static Object**: `{ data: [...] }` containing fixed bytes.
+   *
+   * @param commandName - The name of the command to execute (e.g., 'power', 'temp').
+   * @param value - The value associated with the command (e.g., 'on', 24).
+   * @param states - Optional map of all global entity states.
+   * @returns The raw packet bytes (including header/footer/checksum) or `null` if construction failed.
+   */
   public constructCommand(
     commandName: string,
     value?: any,
@@ -111,6 +151,19 @@ export class GenericDevice extends Device {
     return null;
   }
 
+  /**
+   * Frames the command data with the configured header, footer, and checksums.
+   *
+   * Steps:
+   * 1. Prepends `tx_header`.
+   * 2. Appends `commandData`.
+   * 3. Calculates and appends `tx_checksum` (1-byte) OR `tx_checksum2` (2-byte) if configured.
+   *    - Supports standard algorithms (e.g., 'xor', 'add', 'crc') and CEL expressions.
+   * 4. Appends `tx_footer`.
+   *
+   * @param commandData - The payload bytes of the command.
+   * @returns The fully framed packet ready for transmission.
+   */
   protected framePacket(commandData: number[]): number[] {
     const packetDefaults = this.protocolConfig.packet_defaults || {};
     const txHeader = packetDefaults.tx_header || [];
@@ -161,11 +214,7 @@ export class GenericDevice extends Device {
 
       if (typeof checksumType === 'string') {
         if (standardChecksums2.has(checksumType)) {
-          const checksum = calculateChecksum2(
-            headerPart,
-            dataPart,
-            checksumType as Checksum2Type,
-          );
+          const checksum = calculateChecksum2(headerPart, dataPart, checksumType as Checksum2Type);
           checksumPart.push(...checksum);
         } else {
           // CEL Expression for 2-byte checksum
@@ -190,7 +239,11 @@ export class GenericDevice extends Device {
   // --- Helper methods for parsing (moved from PacketParser) ---
 
   /**
-   * Check if packet data matches a state schema pattern
+   * Checks if a packet segment matches a defined binary pattern.
+   *
+   * @param packetData - The full packet buffer.
+   * @param stateSchema - The schema defining the expected data, mask, and offset.
+   * @returns `true` if the packet matches the schema's pattern.
    */
   protected matchState(packetData: number[], stateSchema: StateSchema | undefined): boolean {
     if (!stateSchema) return false;
@@ -230,7 +283,17 @@ export class GenericDevice extends Device {
   }
 
   /**
-   * Extract a numeric or string value from packet bytes using a schema
+   * Extracts and decodes a value from the packet based on a numeric schema.
+   *
+   * Supports various decoding strategies:
+   * - **BCD**: Binary Coded Decimal.
+   * - **ASCII**: Text strings.
+   * - **Signed/Unsigned**: Integers with endianness control.
+   * - **Precision**: Floating point scaling.
+   *
+   * @param bytes - The packet buffer.
+   * @param schema - The schema defining offset, length, type, and decoding rules.
+   * @returns The extracted number or string, or `null` if extraction fails (e.g. out of bounds).
    */
   protected extractValue(bytes: number[], schema: StateNumSchema): number | string | null {
     const {

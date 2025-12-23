@@ -1,18 +1,7 @@
 {
-    "localesPath": "src/lib/i18n/locales",
-    "srcPath": "src",
-    "srcExtensions": [
-        "svelte",
-        "ts",
-        "js"
-    ],
-    "translationKeyMatcher": "/(?:\\$t|t\\))\\(['\"]([^'\"]+)['\"]/g",
-    "excludeKey": [
-        "errors.",
-        "logs.",
-        "mqtt.",
-        "analysis.",
-        "common.",
-        "setup_wizard."
-    ]
+  "localesPath": "src/lib/i18n/locales",
+  "srcPath": "src",
+  "srcExtensions": ["svelte", "ts", "js"],
+  "translationKeyMatcher": "/(?:\\$t|t\\))\\(['\"]([^'\"]+)['\"]/g",
+  "excludeKey": ["errors.", "logs.", "mqtt.", "analysis.", "common.", "setup_wizard."]
 }

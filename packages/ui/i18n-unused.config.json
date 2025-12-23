@@ -1,0 +1,10 @@
+{
+    "localesPath": "src/lib/i18n/locales",
+    "srcPath": "src",
+    "srcExtensions": [
+        "svelte",
+        "ts",
+        "js"
+    ],
+    "translationKeyMatcher": "/(?:\\$t|t\\))\\(['\"]([^'\"]+)['\"]/g"
+}

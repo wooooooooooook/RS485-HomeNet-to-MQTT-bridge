@@ -165,17 +165,20 @@
     <!-- Port-specific Details Section -->
     <div class="port-details-container">
       {#if activePortId}
-        <!-- Port Error Message -->
-        {#if getPortStatus(activePortId) === 'error' && getPortErrorMessage(activePortId)}
+        <!-- Port or Bridge Error Message -->
+        {@const activePortMetadata = portMetadata.find((p) => p.portId === activePortId)}
+        {#if getPortStatus(activePortId) === 'error' && (getPortErrorMessage(activePortId) || activePortMetadata?.error)}
           <div class="port-error">
             <p class="error subtle">
-              {$t('dashboard.port_error', { values: { error: getPortErrorMessage(activePortId) } })}
+              {$t('dashboard.port_error', {
+                values: { error: getPortErrorMessage(activePortId) || activePortMetadata?.error },
+              })}
             </p>
           </div>
         {/if}
 
-        <!-- Minimized Port Metadata -->
-        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string; error?: string }) => p.portId === activePortId) as port (port.portId)}
+        <!-- Minimized Port Metadata (Only show if path/baud exists) -->
+        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string; error?: string }) => p.portId === activePortId && (p.path || p.baudRate)) as port (port.portId)}
           <div class="port-meta-mini">
             <div class="meta-item">
               <strong>{$t('dashboard.port_meta.path')}</strong> <span>{port.path || 'N/A'}</span>

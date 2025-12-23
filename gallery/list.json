@@ -1,0 +1,52 @@
+{
+  "generated_at": "2025-12-23T03:32:45.203Z",
+  "vendors": [
+    {
+      "id": "kocom",
+      "name": "코콤 (Kocom)",
+      "items": [
+        {
+          "file": "kocom/elevator_sensors.yaml",
+          "name": "엘리베이터 센서 세트",
+          "name_en": "Elevator Sensor Set",
+          "description": "코콤 월패드용 엘리베이터 센서와 호출 버튼 설정입니다.",
+          "description_en": "Elevator sensors and call button for Kocom wallpad.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "sensor",
+            "button"
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 2,
+              "button": 1
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "kocom/gas_valve_with_polling.yaml",
+          "name": "가스밸브 설정 (자동 갱신 포함)",
+          "name_en": "Gas Valve with Auto Polling",
+          "description": "가스밸브 엔티티와 상태 갱신 자동화가 포함된 설정입니다.",
+          "description_en": "Gas valve entity with automatic status polling.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "valve",
+            "gas",
+            "automation"
+          ],
+          "content_summary": {
+            "entities": {
+              "valve": 1
+            },
+            "automations": 1
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ on:
     paths:
       - 'gallery/**/*.yaml'
       - 'gallery/**/*.yml'
+      - 'gallery/**/requirements.json'
   workflow_dispatch:
 
 jobs:
@@ -42,10 +43,12 @@ jobs:
           // Vendor display names
           const vendorNames = {
             kocom: '코콤 (Kocom)',
+            kocom_theart: '코콤 Theart',
+            kocom_thinks: '코콤 Thinks',
             commax: '코맥스 (Commax)',
             hyundai: '현대 (Hyundai)',
             ezville: '이지빌 (Ezville)',
-            samsung: '삼성 (Samsung)',
+            samsung_sds: '삼성 SDS',
             cvnet: 'CVNet',
           };
 
@@ -56,6 +59,18 @@ jobs:
 
           for (const vendorId of vendorDirs) {
             const vendorPath = path.join(galleryDir, vendorId);
+            
+            // Load vendor-level requirements.json if exists
+            let vendorRequirements = null;
+            const requirementsPath = path.join(vendorPath, 'requirements.json');
+            if (fs.existsSync(requirementsPath)) {
+              try {
+                vendorRequirements = JSON.parse(fs.readFileSync(requirementsPath, 'utf8'));
+              } catch (err) {
+                console.error(`Error parsing ${requirementsPath}:`, err.message);
+              }
+            }
+            
             const files = fs.readdirSync(vendorPath)
               .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
 
@@ -64,6 +79,7 @@ jobs:
             vendors[vendorId] = {
               id: vendorId,
               name: vendorNames[vendorId] || vendorId,
+              requirements: vendorRequirements,
               items: []
             };
 

@@ -1,0 +1,17 @@
+meta:
+  name: "가스밸브 잠금 버튼"
+  name_en: "Gas Valve Close Button"
+  description: "삼성 SDS 가스밸브 잠금 버튼입니다."
+  description_en: "Samsung SDS gas valve close button."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["button", "gas", "samsung", "sds"]
+
+entities:
+  button:
+    - id: 'gas_valve_close'
+      name: 'Gas Valve Close'
+      icon: 'mdi:gas-burner'
+      command_press:
+        data: [0xAB, 0x78, 0x00]
+        ack: [0x78]

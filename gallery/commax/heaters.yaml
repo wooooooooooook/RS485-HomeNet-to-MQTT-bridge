@@ -1,0 +1,194 @@
+meta:
+  name: "난방 설정 (4개)"
+  name_en: "Heaters (4 Thermostats)"
+  description: "코맥스 난방 온도조절기 4개 설정입니다."
+  description_en: "Commax 4 heating thermostats with temperature control."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "commax"]
+
+entities:
+  #상태      Head,   ON,   ID,  Cur,  Tar, 0x00, 0x00, add checksum
+  #상태 ON   0x82, 0x81, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+  #상태 OFF  0x82, 0x80, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+  #상태 HEAT 0x82, 0x83, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+  #응답 ON   0x84, 0x81, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+  #응답 OFF  0x84, 0x80, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+  #응답 HEAT 0x84, 0x83, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum
+
+  #명령        Head,   ID,  CMD,   ON, 0x00, 0x00, 0x00, add checksum
+  #명령 ON     0x04, 0x01, 0x04, 0x81, 0x00, 0x00, 0x00, add checksum
+  #명령 OFF    0x04, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, add checksum
+  #명령 CHANGE 0x04, 0x01, 0x03, 0xXX, 0x00, 0x00, 0x00, add checksum
+  climate:
+    - id: 'heater_1'
+      name: 'Heater 1'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x80, 0x00, 0x01]
+        mask: [0xF9, 0x00, 0xFF]
+      state_temperature_current:
+        offset: 3
+        signed: False
+        decode: bcd
+      state_temperature_target:
+        offset: 4
+        signed: False
+        decode: bcd
+      state_off:
+        offset: 1
+        data: [0x80]
+      state_heat:
+        offset: 1
+        data: [0x00]
+        mask: [0x0F]
+        inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
+      state_action_idle:
+        offset: 1
+        data: [0x81]
+      state_action_heating:
+        offset: 1
+        data: [0x83]
+      command_off:
+        data: [0x04, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x80, 0x01]
+      command_heat:
+        data: [0x04, 0x01, 0x04, 0x81, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x81, 0x01]
+      command_temperature: >-
+        [[0x04, 0x01, 0x03, int_to_bcd(x), 0x00, 0x00, 0x00], [0x84, 0x00, 0x01]]
+
+    - id: 'heater_2'
+      name: 'Heater 2'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x80, 0x00, 0x02]
+        mask: [0xF9, 0x00, 0xFF]
+      state_temperature_current:
+        offset: 3
+        signed: False
+        decode: bcd
+      state_temperature_target:
+        offset: 4
+        signed: False
+        decode: bcd
+      state_off:
+        offset: 1
+        data: [0x80]
+      state_heat:
+        offset: 1
+        data: [0x00]
+        mask: [0x0F]
+        inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
+      state_action_idle:
+        offset: 1
+        data: [0x81]
+      state_action_heating:
+        offset: 1
+        data: [0x83]
+      command_off:
+        data: [0x04, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x80, 0x02]
+      command_heat:
+        data: [0x04, 0x02, 0x04, 0x81, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x81, 0x02]
+      command_temperature: >-
+        [[0x04, 0x02, 0x03, int_to_bcd(x), 0x00, 0x00, 0x00], [0x84, 0x00, 0x02]]
+
+    - id: 'heater_3'
+      name: 'Heater 3'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x80, 0x00, 0x03]
+        mask: [0xF9, 0x00, 0xFF]
+      state_temperature_current:
+        offset: 3
+        signed: False
+        decode: bcd
+      state_temperature_target:
+        offset: 4
+        signed: False
+        decode: bcd
+      state_off:
+        offset: 1
+        data: [0x80]
+      state_heat:
+        offset: 1
+        data: [0x00]
+        mask: [0x0F]
+        inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
+      state_action_idle:
+        offset: 1
+        data: [0x81]
+      state_action_heating:
+        offset: 1
+        data: [0x83]
+      command_off:
+        data: [0x04, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x80, 0x03]
+      command_heat:
+        data: [0x04, 0x03, 0x04, 0x81, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x81, 0x03]
+      command_temperature: >-
+        [[0x04, 0x03, 0x03, int_to_bcd(x), 0x00, 0x00, 0x00], [0x84, 0x00, 0x03]]
+
+    - id: 'heater_4'
+      name: 'Heater 4'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x80, 0x00, 0x04]
+        mask: [0xF9, 0x00, 0xFF]
+      state_temperature_current:
+        offset: 3
+        signed: False
+        decode: bcd
+      state_temperature_target:
+        offset: 4
+        signed: False
+        decode: bcd
+      state_off:
+        offset: 1
+        data: [0x80]
+      state_heat:
+        offset: 1
+        data: [0x00]
+        mask: [0x0F]
+        inverted: True
+      state_action_off:
+        offset: 1
+        data: [0x80]
+      state_action_idle:
+        offset: 1
+        data: [0x81]
+      state_action_heating:
+        offset: 1
+        data: [0x83]
+      command_off:
+        data: [0x04, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x80, 0x04]
+      command_heat:
+        data: [0x04, 0x04, 0x04, 0x81, 0x00, 0x00, 0x00]
+        ack: [0x84, 0x81, 0x04]
+      command_temperature: >-
+        [[0x04, 0x04, 0x03, int_to_bcd(x), 0x00, 0x00, 0x00], [0x84, 0x00, 0x04]]

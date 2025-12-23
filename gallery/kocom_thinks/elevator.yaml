@@ -1,0 +1,46 @@
+meta:
+  name: "엘리베이터 호출 설정"
+  name_en: "Elevator Call"
+  description: "코콤 Thinks 엘리베이터 호출 설정입니다. 층수 및 방향 센서 포함."
+  description_en: "Kocom Thinks elevator with floor number and direction sensors."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "sensor", "switch", "kocom", "thinks"]
+
+entities:
+  sensor:
+    - id: 'elevator_floors'
+      name: 'Elevator Floors'
+      icon: 'mdi:elevator'
+      unit_of_measurement: '층'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 9
+
+  text_sensor:
+    - id: 'elevator_direction'
+      name: 'Elevator Direction'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      lambda: >-
+        if (data[8] === 0x00) "정지"
+        if (data[8] === 0x01) "하강"
+        if (data[8] === 0x02) "상승"
+        if (data[8] === 0x03) "도착"
+        "Unknown"
+
+  switch:
+    - id: 'elevator_call'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      optimistic: true
+      state_off:
+        data: [0x30, 0x00, 0x00, 0x44]
+        mask: [0xff, 0x00, 0xff, 0xff]
+      command_on:
+        data: [0x30, 0xbc, 0x00, 0x01, 0x00, 0x44, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]

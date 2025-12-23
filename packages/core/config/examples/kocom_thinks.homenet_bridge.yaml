@@ -753,13 +753,20 @@ homenet_bridge:
       icon: 'mdi:refresh-circle'
 
 automation:
-  - trigger:
+  - id: 'lights_refresh'
+    trigger:
       - type: schedule
         every: 2h
     action:
       - type: command
         id: livingroom_light_1
         command: command_update
+
+  - id: 'heaters_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
       - type: command
         id: livingroom_heater
         command: command_update
@@ -778,9 +785,21 @@ automation:
       - type: command
         id: room_5_heater
         command: command_update
+
+  - id: 'gas_valve_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
       - type: command
         id: gas_valve
         command: command_update
+
+  - id: 'ventilator_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
       - type: command
         id: navien_ventilator
         command: command_update

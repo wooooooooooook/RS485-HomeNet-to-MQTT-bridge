@@ -1,0 +1,86 @@
+meta:
+  name: "조명 설정 (4개)"
+  name_en: "Lights (4 Lights)"
+  description: "삼성 SDS 조명 4개 설정입니다."
+  description_en: "Samsung SDS 4 lights configuration."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "samsung", "sds"]
+
+entities:
+  light:
+    - id: 'light_1'
+      name: 'Light 1'
+      state:
+        data: [0x79, 0x21]
+      state_on:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      command_on:
+        data: [0xAC, 0x7A, 0x01, 0x01]
+        ack: [0x79, 0x01, 0x01]
+      command_off:
+        data: [0xAC, 0x7A, 0x01, 0x00]
+        ack: [0x79, 0x01, 0x00]
+
+    - id: 'light_2'
+      name: 'Light 2'
+      state:
+        data: [0x79, 0x13]
+      state_on:
+        offset: 2
+        data: [0x02]
+        mask: [0x02]
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x02]
+      command_on:
+        data: [0xAC, 0x7A, 0x03, 0x01]
+        ack: [0x79, 0x03, 0x01]
+      command_off:
+        data: [0xAC, 0x7A, 0x03, 0x00]
+        ack: [0x79, 0x03, 0x00]
+
+    - id: 'light_3'
+      name: 'Light 3'
+      state:
+        data: [0x79, 0x14]
+      state_on:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      command_on:
+        data: [0xAC, 0x7A, 0x04, 0x01]
+        ack: [0x79, 0x04, 0x01]
+      command_off:
+        data: [0xAC, 0x7A, 0x04, 0x00]
+        ack: [0x79, 0x04, 0x00]
+
+    - id: 'light_4'
+      name: 'Light 4'
+      state:
+        data: [0x79, 0x15]
+      state_on:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      command_on:
+        data: [0xAC, 0x7A, 0x05, 0x01]
+        ack: [0x79, 0x05, 0x01]
+      command_off:
+        data: [0xAC, 0x7A, 0x05, 0x00]
+        ack: [0x79, 0x05, 0x00]

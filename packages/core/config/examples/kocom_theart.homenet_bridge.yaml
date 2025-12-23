@@ -23,7 +23,8 @@ homenet_bridge:
     tx_checksum: add_no_header
 
   light:
-    - name: 'Livingroom Light 1'
+    - id: 'livingroom_light_1'
+      name: 'Livingroom Light 1'
       state:
         data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -59,7 +60,8 @@ homenet_bridge:
           ]
         ack: [0x30, 0xdc, 0x00, 0x0e, 0x00]
 
-    - name: 'Livingroom Light 2'
+    - id: 'livingroom_light_2'
+      name: 'Livingroom Light 2'
       state:
         data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -74,7 +76,8 @@ homenet_bridge:
       command_off: >-
         [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, light1, light2, light3, 0x00, 0x00, 0x00, 0x00, 0x00}, {0x30, 0xdc, 0x00, 0x0e, 0x00]]
 
-    - name: 'Livingroom Light 3'
+    - id: 'livingroom_light_3'
+      name: 'Livingroom Light 3'
       state:
         data: [0x30, 0xd0, 0x00, 0x0e, 0x00]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -90,7 +93,8 @@ homenet_bridge:
         [[0x30, 0xbc, 0x00, 0x0e, 0x00, 0x01, 0x00, 0x00, light1, light2, light3, 0x00, 0x00, 0x00, 0x00, 0x00}, {0x30, 0xdc, 0x00, 0x0e, 0x00]]
 
   climate:
-    - name: 'Livingroom Heater'
+    - id: 'livingroom_heater'
+      name: 'Livingroom Heater'
       visual:
         min_temperature: 5 °C
         max_temperature: 30 °C
@@ -151,7 +155,8 @@ homenet_bridge:
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x00]
 
-    - name: 'Bedroom Heater'
+    - id: 'bedroom_heater'
+      name: 'Bedroom Heater'
       visual:
         min_temperature: 5 °C
         max_temperature: 30 °C
@@ -216,7 +221,8 @@ homenet_bridge:
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x01]
 
-    - name: 'Room 1 Heater'
+    - id: 'room_1_heater'
+      name: 'Room 1 Heater'
       visual:
         min_temperature: 5 °C
         max_temperature: 30 °C
@@ -277,7 +283,8 @@ homenet_bridge:
           ]
         ack: [0x30, 0xdc, 0x00, 0x36, 0x02]
 
-    - name: 'Room 2 Heater'
+    - id: 'room_2_heater'
+      name: 'Room 2 Heater'
       visual:
         min_temperature: 5 °C
         max_temperature: 30 °C
@@ -400,7 +407,8 @@ homenet_bridge:
         ack: [0x30, 0xdc, 0x00, 0x36, 0x04]
 
   sensor:
-    - name: 'Livingroom Temperature'
+    - id: 'livingroom_temperature'
+      name: 'Livingroom Temperature'
       state:
         data: [0x30, 0xd0, 0x00, 0x36, 0x00]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -410,7 +418,8 @@ homenet_bridge:
       state_class: 'measurement'
       state_number:
         offset: 12
-    - name: 'Bedroom Temperature'
+    - id: 'bedroom_temperature'
+      name: 'Bedroom Temperature'
       state:
         data: [0x30, 0xd0, 0x00, 0x36, 0x01]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -420,7 +429,8 @@ homenet_bridge:
       state_class: 'measurement'
       state_number:
         offset: 12
-    - name: 'Room 1 Temperature'
+    - id: 'room_1_temperature'
+      name: 'Room 1 Temperature'
       state:
         data: [0x30, 0xd0, 0x00, 0x36, 0x02]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -430,7 +440,8 @@ homenet_bridge:
       state_class: 'measurement'
       state_number:
         offset: 12
-    - name: 'Room 2 Temperature'
+    - id: 'room_2_temperature'
+      name: 'Room 2 Temperature'
       state:
         data: [0x30, 0xd0, 0x00, 0x36, 0x03]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -440,7 +451,8 @@ homenet_bridge:
       state_class: 'measurement'
       state_number:
         offset: 12
-    - name: 'Livingroom 2 Temperature'
+    - id: 'livingroom_2_temperature'
+      name: 'Livingroom 2 Temperature'
       state:
         data: [0x30, 0xd0, 0x00, 0x36, 0x04]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
@@ -452,7 +464,8 @@ homenet_bridge:
         offset: 12
 
   lock:
-    - name: 'Gas Buner Lock'
+    - id: 'gas_buner_lock'
+      name: 'Gas Buner Lock'
       icon: mdi:gas-burner
       state:
         data: [0x30, 0xd0, 0x00, 0x2c, 0x00]
@@ -507,7 +520,8 @@ homenet_bridge:
         ack: [0x30, 0xdc, 0x00, 0x2c, 0x00]
 
   text_sensor:
-    - name: 'Elevator'
+    - id: 'elevator'
+      name: 'Elevator'
       icon: 'mdi:elevator'
       state:
         data: [0x30, 0x00, 0x00, 0x01, 0x00, 0x44, 0x00]
@@ -518,7 +532,8 @@ homenet_bridge:
         "Unknown"
 
   switch:
-    - name: 'Elevator Call'
+    - id: 'elevator_call'
+      name: 'Elevator Call'
       icon: 'mdi:elevator'
       optimistic: true
       state_off:
@@ -550,13 +565,20 @@ homenet_bridge:
             id(id_elevator_state).publish_state("호출")
 
 automation:
-  - trigger:
+  - id: 'lights_refresh'
+    trigger:
       - type: schedule
         every: 2h
     action:
       - type: command
         id: livingroom_light_1
         command: command_update
+
+  - id: 'heaters_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
       - type: command
         id: livingroom_heater
         command: command_update
@@ -572,6 +594,12 @@ automation:
       - type: command
         id: livingroom_2_heater
         command: command_update
+
+  - id: 'gas_lock_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
       - type: command
-        id: gas_buner_lock
+        id: gas_burner_lock
         command: command_update

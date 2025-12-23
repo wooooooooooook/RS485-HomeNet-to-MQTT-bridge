@@ -19,7 +19,8 @@ homenet_bridge:
     tx_checksum2: xor_add
 
   light:
-    - name: 'light_1_0'
+    - id: 'light_1_0'
+      name: 'light_1_0'
       state:
         data: [0x0e, 0x11, 0x81]
       state_off:
@@ -36,7 +37,8 @@ homenet_bridge:
         data: [0x0e, 0x11, 0x41, 0x03, 0x0f, 0x00, 0x00]
         ack: [0x0e, 0x11, 0xC1]
 
-    - name: 'light_1_1'
+    - id: 'light_1_1'
+      name: 'light_1_1'
       state:
         data: [0x0e, 0x11, 0x81]
       state_on:
@@ -52,7 +54,8 @@ homenet_bridge:
         data: [0x0e, 0x11, 0x41, 0x03, 0x01, 0x00, 0x00]
         ack: [0x0e, 0x11, 0xC1]
 
-    - name: 'light_1_2'
+    - id: 'light_1_2'
+      name: 'light_1_2'
       state:
         data: [0x0e, 0x11, 0x81]
       state_on:
@@ -68,7 +71,8 @@ homenet_bridge:
         data: [0x0e, 0x11, 0x41, 0x03, 0x02, 0x00, 0x00]
         ack: [0x0e, 0x11, 0xC1]
 
-    - name: 'light_1_3'
+    - id: 'light_1_3'
+      name: 'light_1_3'
       state:
         data: [0x0e, 0x11, 0x81]
       state_on:
@@ -84,7 +88,8 @@ homenet_bridge:
         data: [0x0e, 0x11, 0x41, 0x03, 0x03, 0x00, 0x00]
         ack: [0x0e, 0x11, 0xC1]
 
-    - name: 'light_2_0'
+    - id: 'light_2_0'
+      name: 'light_2_0'
       state:
         data: [0x0e, 0x12, 0x81]
       state_off:
@@ -101,7 +106,8 @@ homenet_bridge:
         data: [0x0e, 0x12, 0x41, 0x03, 0x0f, 0x00, 0x00]
         ack: [0x0e, 0x12, 0xC1]
 
-    - name: 'light_2_1'
+    - id: 'light_2_1'
+      name: 'light_2_1'
       state:
         data: [0x0e, 0x12, 0x81]
       state_on:
@@ -117,7 +123,8 @@ homenet_bridge:
         data: [0x0e, 0x12, 0x41, 0x03, 0x01, 0x00, 0x00]
         ack: [0x0e, 0x12, 0xC1]
 
-    - name: 'light_2_2'
+    - id: 'light_2_2'
+      name: 'light_2_2'
       state:
         data: [0x0e, 0x12, 0x81]
       state_on:
@@ -133,7 +140,8 @@ homenet_bridge:
         data: [0x0e, 0x12, 0x41, 0x03, 0x02, 0x00, 0x00]
         ack: [0x0e, 0x12, 0xC1]
 
-    - name: 'light_3_1'
+    - id: 'light_3_1'
+      name: 'light_3_1'
       state:
         data: [0x0e, 0x13, 0x81]
       state_on:
@@ -149,7 +157,8 @@ homenet_bridge:
         data: [0x0e, 0x13, 0x41, 0x03, 0x01, 0x00, 0x00]
         ack: [0x0e, 0x13, 0xC1]
 
-    - name: 'light_4_1'
+    - id: 'light_4_1'
+      name: 'light_4_1'
       state:
         data: [0x0e, 0x14, 0x81]
       state_on:
@@ -166,7 +175,8 @@ homenet_bridge:
         ack: [0x0e, 0x14, 0xC1]
 
   sensor:
-    - name: 'Current Power Usage'
+    - id: 'current_power_usage'
+      name: 'Current Power Usage'
       state:
         data: [0x30, 0x03, 0x81]
       accuracy_decimals: 2
@@ -178,7 +188,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'Total Power Usage'
+    - id: 'total_power_usage'
+      name: 'Total Power Usage'
       state:
         data: [0x30, 0x03, 0x81]
       accuracy_decimals: 1
@@ -190,7 +201,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'Total Water Usage'
+    - id: 'total_water_usage'
+      name: 'Total Water Usage'
       state:
         data: [0x30, 0x01, 0x81]
       accuracy_decimals: 2
@@ -204,7 +216,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'Total Gas Usage'
+    - id: 'total_gas_usage'
+      name: 'Total Gas Usage'
       state:
         data: [0x30, 0x02, 0x81]
       accuracy_decimals: 2
@@ -218,7 +231,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_1_1'
+    - id: 'power_1_1'
+      name: 'power_1_1'
       state:
         data: [0x39, 0x1f, 0x81]
       accuracy_decimals: 1
@@ -230,7 +244,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_1_2'
+    - id: 'power_1_2'
+      name: 'power_1_2'
       state:
         data: [0x39, 0x1f, 0x81]
       accuracy_decimals: 1
@@ -242,7 +257,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_2_1'
+    - id: 'power_2_1'
+      name: 'power_2_1'
       state:
         data: [0x39, 0x2f, 0x81]
       accuracy_decimals: 1
@@ -254,7 +270,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_2_2'
+    - id: 'power_2_2'
+      name: 'power_2_2'
       state:
         data: [0x39, 0x2f, 0x81]
       accuracy_decimals: 1
@@ -266,7 +283,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_3_1'
+    - id: 'power_3_1'
+      name: 'power_3_1'
       state:
         data: [0x39, 0x3f, 0x81]
       accuracy_decimals: 1
@@ -278,7 +296,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_3_2'
+    - id: 'power_3_2'
+      name: 'power_3_2'
       state:
         data: [0x39, 0x3f, 0x81]
       accuracy_decimals: 1
@@ -290,7 +309,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_4_1'
+    - id: 'power_4_1'
+      name: 'power_4_1'
       state:
         data: [0x39, 0x4f, 0x81]
       accuracy_decimals: 1
@@ -302,7 +322,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_4_2'
+    - id: 'power_4_2'
+      name: 'power_4_2'
       state:
         data: [0x39, 0x4f, 0x81]
       accuracy_decimals: 1
@@ -314,7 +335,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_8_1'
+    - id: 'power_8_1'
+      name: 'power_8_1'
       state:
         data: [0x39, 0x8f, 0x81]
       accuracy_decimals: 1
@@ -326,7 +348,8 @@ homenet_bridge:
         signed: False
         decode: bcd
 
-    - name: 'power_8_2'
+    - id: 'power_8_2'
+      name: 'power_8_2'
       state:
         data: [0x39, 0x8f, 0x81]
       accuracy_decimals: 1
@@ -339,7 +362,8 @@ homenet_bridge:
         decode: bcd
 
   switch:
-    - name: 'outlet_1_1'
+    - id: 'outlet_1_1'
+      name: 'outlet_1_1'
       state:
         data: [0x39, 0x1f, 0x81]
       state_on:
@@ -357,7 +381,8 @@ homenet_bridge:
         data: [0x39, 0x11, 0x41, 0x01, 0x10]
         ack: [0x39, 0x11, 0xC1]
 
-    - name: 'outlet_1_2'
+    - id: 'outlet_1_2'
+      name: 'outlet_1_2'
       state:
         data: [0x39, 0x1f, 0x81]
       state_on:
@@ -375,7 +400,8 @@ homenet_bridge:
         data: [0x39, 0x12, 0x41, 0x01, 0x10]
         ack: [0x39, 0x12, 0xC1]
 
-    - name: 'outlet_2_1'
+    - id: 'outlet_2_1'
+      name: 'outlet_2_1'
       state:
         data: [0x39, 0x2f, 0x81]
       state_on:
@@ -393,7 +419,8 @@ homenet_bridge:
         data: [0x39, 0x21, 0x41, 0x01, 0x10]
         ack: [0x39, 0x21, 0xC1]
 
-    - name: 'outlet_2_2'
+    - id: 'outlet_2_2'
+      name: 'outlet_2_2'
       state:
         data: [0x39, 0x2f, 0x81]
       state_on:
@@ -411,7 +438,8 @@ homenet_bridge:
         data: [0x39, 0x22, 0x41, 0x01, 0x10]
         ack: [0x39, 0x22, 0xC1]
 
-    - name: 'outlet_3_1'
+    - id: 'outlet_3_1'
+      name: 'outlet_3_1'
       state:
         data: [0x39, 0x3f, 0x81]
       state_on:
@@ -429,7 +457,8 @@ homenet_bridge:
         data: [0x39, 0x31, 0x41, 0x01, 0x10]
         ack: [0x39, 0x31, 0xC1]
 
-    - name: 'outlet_3_2'
+    - id: 'outlet_3_2'
+      name: 'outlet_3_2'
       state:
         data: [0x39, 0x3f, 0x81]
       state_on:
@@ -447,7 +476,8 @@ homenet_bridge:
         data: [0x39, 0x32, 0x41, 0x01, 0x10]
         ack: [0x39, 0x32, 0xC1]
 
-    - name: 'outlet_4_1'
+    - id: 'outlet_4_1'
+      name: 'outlet_4_1'
       state:
         data: [0x39, 0x4f, 0x81]
       state_on:
@@ -465,7 +495,8 @@ homenet_bridge:
         data: [0x39, 0x41, 0x41, 0x01, 0x10]
         ack: [0x39, 0x41, 0xC1]
 
-    - name: 'outlet_4_2'
+    - id: 'outlet_4_2'
+      name: 'outlet_4_2'
       state:
         data: [0x39, 0x4f, 0x81]
       state_on:
@@ -483,7 +514,8 @@ homenet_bridge:
         data: [0x39, 0x42, 0x41, 0x01, 0x10]
         ack: [0x39, 0x42, 0xC1]
 
-    - name: 'outlet_8_1'
+    - id: 'outlet_8_1'
+      name: 'outlet_8_1'
       state:
         data: [0x39, 0x8f, 0x81]
       state_on:
@@ -501,7 +533,8 @@ homenet_bridge:
         data: [0x39, 0x81, 0x41, 0x01, 0x10]
         ack: [0x39, 0x81, 0xC1]
 
-    - name: 'outlet_8_2'
+    - id: 'outlet_8_2'
+      name: 'outlet_8_2'
       state:
         data: [0x39, 0x8f, 0x81]
       state_on:
@@ -520,7 +553,8 @@ homenet_bridge:
         ack: [0x39, 0x82, 0xC1]
 
   climate:
-    - name: 'thermostat 1'
+    - id: 'thermostat_1'
+      name: 'thermostat 1'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -554,7 +588,6 @@ homenet_bridge:
         data: [0x36, 0x11, 0x43, 0x01, 0x01]
         ack: [0x36, 0x11, 0xc3]
       command_temperature: >-
-
         [[0x36, 0x11, 0x44, 0x01, x], [0x36, 0x11, 0xc4]]
       command_preset_away:
         data: [0x36, 0x11, 0x45, 0x01, 0x01]
@@ -563,7 +596,8 @@ homenet_bridge:
         data: [0x36, 0x11, 0x45, 0x01, 0x00]
         ack: [0x36, 0x11, 0xc5]
 
-    - name: 'thermostat 2'
+    - id: 'thermostat_2'
+      name: 'thermostat 2'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -597,7 +631,6 @@ homenet_bridge:
         data: [0x36, 0x12, 0x43, 0x01, 0x01]
         ack: [0x36, 0x12, 0xc3]
       command_temperature: >-
-
         [[0x36, 0x12, 0x44, 0x01, x], [0x36, 0x12, 0xc4]]
       command_preset_away:
         data: [0x36, 0x12, 0x45, 0x01, 0x01]
@@ -606,7 +639,8 @@ homenet_bridge:
         data: [0x36, 0x12, 0x45, 0x01, 0x00]
         ack: [0x36, 0x12, 0xc5]
 
-    - name: 'thermostat 3'
+    - id: 'thermostat_3'
+      name: 'thermostat 3'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -640,7 +674,6 @@ homenet_bridge:
         data: [0x36, 0x13, 0x43, 0x01, 0x01]
         ack: [0x36, 0x13, 0xc3]
       command_temperature: >-
-
         [[0x36, 0x13, 0x44, 0x01, x], [0x36, 0x13, 0xc4]]
       command_preset_away:
         data: [0x36, 0x13, 0x45, 0x01, 0x01]
@@ -649,7 +682,8 @@ homenet_bridge:
         data: [0x36, 0x13, 0x45, 0x01, 0x00]
         ack: [0x36, 0x13, 0xc5]
 
-    - name: 'thermostat 4'
+    - id: 'thermostat_4'
+      name: 'thermostat 4'
       visual:
         min_temperature: 5 °C
         max_temperature: 40 °C
@@ -683,7 +717,6 @@ homenet_bridge:
         data: [0x36, 0x14, 0x43, 0x01, 0x01]
         ack: [0x36, 0x14, 0xc3]
       command_temperature: >-
-
         [[0x36, 0x14, 0x44, 0x01, x], [0x36, 0x14, 0xc4]]
       command_preset_away:
         data: [0x36, 0x14, 0x45, 0x01, 0x01]
@@ -693,7 +726,8 @@ homenet_bridge:
         ack: [0x36, 0x14, 0xc5]
 
   valve:
-    - name: 'Gas Valve'
+    - id: 'gas_valve'
+      name: 'Gas Valve'
       device_class: gas
       state:
         data: [0x12, 0x01, 0x81]
@@ -707,13 +741,15 @@ homenet_bridge:
         data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x05, 0x00]
 
   button:
-    - name: 'Elevator Call'
+    - id: 'elevator_call'
+      name: 'Elevator Call'
       icon: 'mdi:elevator'
       command_press:
         data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x24, 0x00]
 
 automation:
-  - trigger:
+  - id: 'update_energy_sensors'
+    trigger:
       - type: schedule
         every: 1m
     action:

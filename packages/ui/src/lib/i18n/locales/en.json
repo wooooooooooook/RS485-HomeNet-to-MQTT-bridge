@@ -161,9 +161,30 @@
       "select_port": "Select target port",
       "apply": "Apply",
       "applying": "Applying...",
+      "checking": "Checking conflicts...",
       "success": "Snippet applied successfully.",
+      "success_with_backup": "Snippet applied successfully. Backup file has been created.",
       "error": "Failed to apply snippet.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "confirm_title": "Confirm Apply",
+      "confirm_warning": "This snippet may not work if the protocol (vendor) does not match your current settings.",
+      "confirm_proceed": "Do you want to proceed?",
+      "confirm_apply": "Apply",
+      "confirm_cancel": "Cancel",
+      "conflicts_found": "{count} conflict(s) found. Choose how to handle each item.",
+      "existing": "Existing",
+      "new": "New",
+      "new_items": "{count} new item(s) will be added",
+      "compatibility": {
+        "title": "Compatibility Check",
+        "compatible": "Compatible with current settings",
+        "incompatible": "Does not match current settings",
+        "mismatch_label": "Mismatched fields",
+        "expected": "Required",
+        "actual": "Current",
+        "force_apply": "Apply even if settings don't match",
+        "force_apply_warning": "Applying with incompatible settings may cause the snippet to not work properly."
+      }
     }
   },
   "dashboard": {

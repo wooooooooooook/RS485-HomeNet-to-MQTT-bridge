@@ -161,9 +161,30 @@
       "select_port": "적용할 포트 선택",
       "apply": "적용",
       "applying": "적용 중...",
+      "checking": "충돌 확인 중...",
       "success": "스니펫이 적용되었습니다.",
+      "success_with_backup": "스니펫이 적용되었습니다. 백업 파일이 생성되었습니다.",
       "error": "적용에 실패했습니다.",
-      "cancel": "취소"
+      "cancel": "취소",
+      "confirm_title": "스니펫 적용 확인",
+      "confirm_warning": "현재 설정의 프로토콜(제조사)과 일치하지 않는 경우 작동하지 않습니다.",
+      "confirm_proceed": "계속 진행하시겠습니까?",
+      "confirm_apply": "적용",
+      "confirm_cancel": "취소",
+      "conflicts_found": "{count}개의 충돌이 발견되었습니다. 각 항목에 대해 어떻게 처리할지 선택해주세요.",
+      "existing": "기존",
+      "new": "새 항목",
+      "new_items": "{count}개의 새 항목이 추가됩니다",
+      "compatibility": {
+        "title": "호환성 검사",
+        "compatible": "현재 설정과 호환됩니다",
+        "incompatible": "현재 설정과 일치하지 않습니다",
+        "mismatch_label": "불일치 항목",
+        "expected": "필요",
+        "actual": "현재",
+        "force_apply": "설정이 일치하지 않아도 적용",
+        "force_apply_warning": "호환되지 않는 설정으로 적용하면 제대로 작동하지 않을 수 있습니다."
+      }
     }
   },
   "dashboard": {

@@ -1,0 +1,331 @@
+meta:
+  name: "스마트 콘센트 설정 (10개)"
+  name_en: "Smart Outlets (10 Outlets)"
+  description: "Ezville 스마트 콘센트 10개 설정입니다. 전력 측정 센서 포함."
+  description_en: "Ezville 10 smart outlets with power consumption sensors."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["switch", "outlet", "power", "ezville"]
+
+entities:
+  switch:
+    - id: 'outlet_1_1'
+      name: 'Outlet 1-1'
+      state:
+        data: [0x39, 0x1f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x11, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x11, 0xC1]
+      command_off:
+        data: [0x39, 0x11, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x11, 0xC1]
+
+    - id: 'outlet_1_2'
+      name: 'Outlet 1-2'
+      state:
+        data: [0x39, 0x1f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x12, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x12, 0xC1]
+      command_off:
+        data: [0x39, 0x12, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x12, 0xC1]
+
+    - id: 'outlet_2_1'
+      name: 'Outlet 2-1'
+      state:
+        data: [0x39, 0x2f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x21, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x21, 0xC1]
+      command_off:
+        data: [0x39, 0x21, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x21, 0xC1]
+
+    - id: 'outlet_2_2'
+      name: 'Outlet 2-2'
+      state:
+        data: [0x39, 0x2f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x22, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x22, 0xC1]
+      command_off:
+        data: [0x39, 0x22, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x22, 0xC1]
+
+    - id: 'outlet_3_1'
+      name: 'Outlet 3-1'
+      state:
+        data: [0x39, 0x3f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x31, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x31, 0xC1]
+      command_off:
+        data: [0x39, 0x31, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x31, 0xC1]
+
+    - id: 'outlet_3_2'
+      name: 'Outlet 3-2'
+      state:
+        data: [0x39, 0x3f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x32, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x32, 0xC1]
+      command_off:
+        data: [0x39, 0x32, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x32, 0xC1]
+
+    - id: 'outlet_4_1'
+      name: 'Outlet 4-1'
+      state:
+        data: [0x39, 0x4f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x41, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x41, 0xC1]
+      command_off:
+        data: [0x39, 0x41, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x41, 0xC1]
+
+    - id: 'outlet_4_2'
+      name: 'Outlet 4-2'
+      state:
+        data: [0x39, 0x4f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x42, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x42, 0xC1]
+      command_off:
+        data: [0x39, 0x42, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x42, 0xC1]
+
+    - id: 'outlet_8_1'
+      name: 'Outlet 8-1'
+      state:
+        data: [0x39, 0x8f, 0x81]
+      state_on:
+        offset: 5
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 5
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x81, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x81, 0xC1]
+      command_off:
+        data: [0x39, 0x81, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x81, 0xC1]
+
+    - id: 'outlet_8_2'
+      name: 'Outlet 8-2'
+      state:
+        data: [0x39, 0x8f, 0x81]
+      state_on:
+        offset: 8
+        mask: [0x10]
+        data: [0x10]
+      state_off:
+        offset: 8
+        mask: [0x10]
+        data: [0x00]
+      command_on:
+        data: [0x39, 0x82, 0x41, 0x01, 0x11]
+        ack: [0x39, 0x82, 0xC1]
+      command_off:
+        data: [0x39, 0x82, 0x41, 0x01, 0x10]
+        ack: [0x39, 0x82, 0xC1]
+
+  sensor:
+    - id: 'power_1_1'
+      name: 'Power Outlet 1-1'
+      state:
+        data: [0x39, 0x1f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_1_2'
+      name: 'Power Outlet 1-2'
+      state:
+        data: [0x39, 0x1f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_2_1'
+      name: 'Power Outlet 2-1'
+      state:
+        data: [0x39, 0x2f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_2_2'
+      name: 'Power Outlet 2-2'
+      state:
+        data: [0x39, 0x2f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_3_1'
+      name: 'Power Outlet 3-1'
+      state:
+        data: [0x39, 0x3f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_3_2'
+      name: 'Power Outlet 3-2'
+      state:
+        data: [0x39, 0x3f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_4_1'
+      name: 'Power Outlet 4-1'
+      state:
+        data: [0x39, 0x4f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_4_2'
+      name: 'Power Outlet 4-2'
+      state:
+        data: [0x39, 0x4f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_8_1'
+      name: 'Power Outlet 8-1'
+      state:
+        data: [0x39, 0x8f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 5
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'power_8_2'
+      name: 'Power Outlet 8-2'
+      state:
+        data: [0x39, 0x8f, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd

@@ -1,0 +1,29 @@
+{
+    "serial": {
+        "baud_rate": 9600,
+        "data_bits": 8,
+        "parity": "none",
+        "stop_bits": 1
+    },
+    "packet_defaults": {
+        "rx_length": 21,
+        "rx_checksum": "add_no_header",
+        "tx_checksum": "add_no_header",
+        "rx_header": [
+            170,
+            85
+        ],
+        "tx_header": [
+            170,
+            85
+        ],
+        "rx_footer": [
+            13,
+            13
+        ],
+        "tx_footer": [
+            13,
+            13
+        ]
+    }
+}

@@ -1,0 +1,17 @@
+meta:
+  name: "엘리베이터 호출 설정"
+  name_en: "Elevator Call"
+  description: "Ezville 엘리베이터 호출 버튼 설정입니다. 항상 활성화 옵션이 적용되어있습니다."
+  description_en: "Ezville elevator call button. Always enabled option is applied."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "button", "ezville"]
+
+entities:
+  button:
+    - id: 'elevator_call'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      command_press:
+        data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x24, 0x00]
+      discovery_always: true

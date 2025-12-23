@@ -18,6 +18,10 @@
     content_summary: ContentSummary;
     vendorId: string;
     vendorName: string;
+    requirements?: {
+      serial?: Record<string, unknown>;
+      packet_defaults?: Record<string, unknown>;
+    };
   }
 
   let {

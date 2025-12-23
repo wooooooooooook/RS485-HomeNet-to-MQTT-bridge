@@ -28,6 +28,10 @@
   interface Vendor {
     id: string;
     name: string;
+    requirements?: {
+      serial?: Record<string, unknown>;
+      packet_defaults?: Record<string, unknown>;
+    };
     items: GalleryItem[];
   }
 
@@ -57,7 +61,9 @@
   let selectedVendor = $state<string | null>(null);
   let filterType = $state<'all' | 'entities' | 'automation'>('all');
 
-  let selectedItem = $state<(GalleryItem & { vendorId: string }) | null>(null);
+  let selectedItem = $state<
+    (GalleryItem & { vendorId: string; vendorRequirements?: Vendor['requirements'] }) | null
+  >(null);
   let showPreviewModal = $state(false);
 
   async function loadGallery() {
@@ -81,11 +87,20 @@
   const filteredItems = $derived(() => {
     if (!galleryData) return [];
 
-    let items: (GalleryItem & { vendorId: string; vendorName: string })[] = [];
+    let items: (GalleryItem & {
+      vendorId: string;
+      vendorName: string;
+      vendorRequirements?: Vendor['requirements'];
+    })[] = [];
     for (const vendor of galleryData.vendors) {
       if (selectedVendor && vendor.id !== selectedVendor) continue;
       for (const item of vendor.items) {
-        items.push({ ...item, vendorId: vendor.id, vendorName: vendor.name });
+        items.push({
+          ...item,
+          vendorId: vendor.id,
+          vendorName: vendor.name,
+          vendorRequirements: vendor.requirements,
+        });
       }
     }
 
@@ -112,7 +127,9 @@
     return items;
   });
 
-  function openPreview(item: GalleryItem & { vendorId: string }) {
+  function openPreview(
+    item: GalleryItem & { vendorId: string; vendorRequirements?: Vendor['requirements'] },
+  ) {
     selectedItem = item;
     showPreviewModal = true;
   }
@@ -196,7 +213,12 @@
 </div>
 
 {#if showPreviewModal && selectedItem}
-  <GalleryPreviewModal item={selectedItem} {ports} onClose={closePreview} />
+  <GalleryPreviewModal
+    item={selectedItem}
+    {ports}
+    vendorRequirements={selectedItem.vendorRequirements}
+    onClose={closePreview}
+  />
 {/if}
 
 <style>
@@ -280,7 +302,8 @@
   }
 
   .search-box input {
-    width: 100%;
+    width: calc(100% - 2rem);
+    margin-top: 1.3rem;
     padding: 0.6rem 1rem;
     background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(148, 163, 184, 0.2);

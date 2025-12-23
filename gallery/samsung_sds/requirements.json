@@ -1,0 +1,18 @@
+{
+    "serial": {
+        "baud_rate": 9600,
+        "data_bits": 8,
+        "parity": "even",
+        "stop_bits": 1
+    },
+    "packet_defaults": {
+        "rx_checksum": "samsung_rx",
+        "tx_checksum": "samsung_tx",
+        "rx_header": [
+            176
+        ],
+        "tx_header": [],
+        "rx_footer": [],
+        "tx_footer": []
+    }
+}

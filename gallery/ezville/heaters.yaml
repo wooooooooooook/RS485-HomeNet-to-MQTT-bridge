@@ -1,0 +1,182 @@
+meta:
+  name: "난방 설정 (4개)"
+  name_en: "Heaters (4 Thermostats)"
+  description: "Ezville 난방 온도조절기 4개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원."
+  description_en: "Ezville 4 heating thermostats with 0.5°C step and away preset mode."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "ezville"]
+
+entities:
+  climate:
+    - id: 'thermostat_1'
+      name: 'Thermostat 1'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state:
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target: >-
+        double(bitAnd(data[9], 0x7F)) + (bitAnd(data[9], 0x80) != 0 ? 0.5 : 0.0)
+      state_temperature_current: >-
+        double(bitAnd(data[10], 0x7F)) + (bitAnd(data[10], 0x80) != 0 ? 0.5 : 0.0)
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 5
+        data: [0x01]
+        mask: [0x01]
+      state_preset_away:
+        offset: 6
+        mask: [0x01]
+        data: [0x04]
+      state_preset_none:
+        offset: 6
+        mask: [0x01]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x11, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x11, 0xc3]
+      command_heat:
+        data: [0x36, 0x11, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x11, 0xc3]
+      command_temperature: >-
+        [[0x36, 0x11, 0x44, 0x01, x], [0x36, 0x11, 0xc4]]
+      command_preset_away:
+        data: [0x36, 0x11, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x11, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x11, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x11, 0xc5]
+
+    - id: 'thermostat_2'
+      name: 'Thermostat 2'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state:
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target: >-
+        double(bitAnd(data[11], 0x7F)) + (bitAnd(data[11], 0x80) != 0 ? 0.5 : 0.0)
+      state_temperature_current: >-
+        double(bitAnd(data[12], 0x7F)) + (bitAnd(data[12], 0x80) != 0 ? 0.5 : 0.0)
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x02]
+      state_heat:
+        offset: 5
+        data: [0x02]
+        mask: [0x02]
+      state_preset_away:
+        offset: 6
+        mask: [0x02]
+        data: [0x02]
+      state_preset_none:
+        offset: 6
+        mask: [0x02]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x12, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x12, 0xc3]
+      command_heat:
+        data: [0x36, 0x12, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x12, 0xc3]
+      command_temperature: >-
+        [[0x36, 0x12, 0x44, 0x01, x], [0x36, 0x12, 0xc4]]
+      command_preset_away:
+        data: [0x36, 0x12, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x12, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x12, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x12, 0xc5]
+
+    - id: 'thermostat_3'
+      name: 'Thermostat 3'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state:
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target: >-
+        double(bitAnd(data[13], 0x7F)) + (bitAnd(data[13], 0x80) != 0 ? 0.5 : 0.0)
+      state_temperature_current: >-
+        double(bitAnd(data[14], 0x7F)) + (bitAnd(data[14], 0x80) != 0 ? 0.5 : 0.0)
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x04]
+      state_heat:
+        offset: 5
+        data: [0x04]
+        mask: [0x04]
+      state_preset_away:
+        offset: 6
+        mask: [0x04]
+        data: [0x04]
+      state_preset_none:
+        offset: 6
+        mask: [0x04]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x13, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x13, 0xc3]
+      command_heat:
+        data: [0x36, 0x13, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x13, 0xc3]
+      command_temperature: >-
+        [[0x36, 0x13, 0x44, 0x01, x], [0x36, 0x13, 0xc4]]
+      command_preset_away:
+        data: [0x36, 0x13, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x13, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x13, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x13, 0xc5]
+
+    - id: 'thermostat_4'
+      name: 'Thermostat 4'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state:
+        data: [0x36, 0x1f, 0x81]
+      state_temperature_target: >-
+        double(bitAnd(data[15], 0x7F)) + (bitAnd(data[15], 0x80) != 0 ? 0.5 : 0.0)
+      state_temperature_current: >-
+        double(bitAnd(data[16], 0x7F)) + (bitAnd(data[16], 0x80) != 0 ? 0.5 : 0.0)
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x08]
+      state_heat:
+        offset: 5
+        data: [0x08]
+        mask: [0x08]
+      state_preset_away:
+        offset: 6
+        mask: [0x08]
+        data: [0x08]
+      state_preset_none:
+        offset: 6
+        mask: [0x08]
+        data: [0x00]
+      command_off:
+        data: [0x36, 0x14, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x14, 0xc3]
+      command_heat:
+        data: [0x36, 0x14, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x14, 0xc3]
+      command_temperature: >-
+        [[0x36, 0x14, 0x44, 0x01, x], [0x36, 0x14, 0xc4]]
+      command_preset_away:
+        data: [0x36, 0x14, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x14, 0xc5]
+      command_preset_none:
+        data: [0x36, 0x14, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x14, 0xc5]

@@ -1,0 +1,79 @@
+meta:
+  name: "에너지 센서 설정"
+  name_en: "Energy Sensors"
+  description: "Ezville 에너지 사용량 센서 (전력, 수도, 가스) 설정입니다."
+  description_en: "Ezville energy consumption sensors for power, water, and gas."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["sensor", "energy", "power", "water", "gas", "ezville"]
+
+entities:
+  sensor:
+    - id: 'current_power_usage'
+      name: 'Current Power Usage'
+      state:
+        data: [0x30, 0x03, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 6
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+    - id: 'total_power_usage'
+      name: 'Total Power Usage'
+      state:
+        data: [0x30, 0x03, 0x81]
+      accuracy_decimals: 1
+      unit_of_measurement: 'kWh'
+      state_number:
+        offset: 9
+        length: 3
+        precision: 1
+        signed: False
+        decode: bcd
+
+    - id: 'total_water_usage'
+      name: 'Total Water Usage'
+      state:
+        data: [0x30, 0x01, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: 'm³'
+      command_update:
+        data: [0x30, 0x01, 0x01, 0x00]
+      state_number:
+        offset: 9
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+    - id: 'total_gas_usage'
+      name: 'Total Gas Usage'
+      state:
+        data: [0x30, 0x02, 0x81]
+      accuracy_decimals: 2
+      unit_of_measurement: 'm³'
+      command_update:
+        data: [0x30, 0x02, 0x01, 0x00]
+      state_number:
+        offset: 9
+        length: 3
+        precision: 2
+        signed: False
+        decode: bcd
+
+automation:
+  - id: 'update_energy_sensors'
+    trigger:
+      - type: schedule
+        every: 1m
+    action:
+      - type: command
+        id: total_water_usage
+        command: command_update
+      - type: command
+        id: total_gas_usage
+        command: command_update

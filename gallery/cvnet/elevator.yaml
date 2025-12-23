@@ -1,0 +1,26 @@
+meta:
+  name: "엘리베이터 호출 설정"
+  name_en: "Elevator Call"
+  description: "CVNet 엘리베이터 호출 버튼과 층수 센서 설정입니다."
+  description_en: "CVNet elevator call button and floor sensor."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "button", "sensor", "cvnet"]
+
+entities:
+  sensor:
+    - id: 'elevator_floors'
+      name: 'Elevator Floors'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x20, 0x01, 0x22, 0x81]
+      state_number:
+        offset: 4
+
+  button:
+    - id: 'elevator_call'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      command_press:
+        data: [0x20, 0x01, 0x81, 0x81, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+      discovery_linked_id: 'elevator_floors'

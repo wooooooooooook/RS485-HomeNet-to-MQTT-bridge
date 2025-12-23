@@ -1,0 +1,39 @@
+meta:
+  name: "가스버너 잠금 설정"
+  name_en: "Gas Burner Lock"
+  description: "코콤 Theart 가스버너 잠금 설정입니다."
+  description_en: "Kocom Theart gas burner lock configuration."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["lock", "gas", "kocom", "theart"]
+
+entities:
+  lock:
+    - id: 'gas_burner_lock'
+      name: 'Gas Burner Lock'
+      icon: mdi:gas-burner
+      state:
+        data: [0x30, 0xd0, 0x00, 0x2c, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_unlocked:
+        offset: 7
+        data: [0x01]
+      state_locked:
+        offset: 7
+        data: [0x02]
+      command_lock:
+        data: [0x30, 0xbc, 0x00, 0x2c, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc, 0x00, 0x2c, 0x00]
+      command_update:
+        data: [0x30, 0xbc, 0x00, 0x2c, 0x00, 0x01, 0x00, 0x3a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc, 0x00, 0x2c, 0x00]
+
+automation:
+  - id: 'gas_lock_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    action:
+      - type: command
+        id: gas_burner_lock
+        command: command_update

@@ -1,0 +1,24 @@
+meta:
+  name: "가스밸브 설정"
+  name_en: "Gas Valve"
+  description: "Ezville 가스밸브 설정입니다."
+  description_en: "Ezville gas valve configuration."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["valve", "gas", "ezville"]
+
+entities:
+  valve:
+    - id: 'gas_valve'
+      name: 'Gas Valve'
+      device_class: gas
+      state:
+        data: [0x12, 0x01, 0x81]
+      state_closed:
+        offset: 5
+        data: [0x02]
+      state_open:
+        offset: 5
+        data: [0x01]
+      command_close:
+        data: [0x33, 0x01, 0x81, 0x03, 0x00, 0x05, 0x00]

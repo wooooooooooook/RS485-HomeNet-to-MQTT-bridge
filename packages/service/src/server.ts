@@ -1815,13 +1815,234 @@ app.patch('/api/entities/:entityId/discovery-always', async (req, res) => {
 });
 
 // --- Gallery API ---
+
+// Check for conflicts before applying gallery snippet
+app.post('/api/gallery/check-conflicts', async (req, res) => {
+  try {
+    const { portId, yamlContent } = req.body;
+
+    if (!portId || !yamlContent) {
+      return res.status(400).json({ error: 'portId and yamlContent are required' });
+    }
+
+    // Find the config for this portId
+    let configIndex = -1;
+    for (let i = 0; i < currentConfigs.length; i++) {
+      const config = currentConfigs[i];
+      if (!config?.serials) continue;
+
+      for (let j = 0; j < config.serials.length; j++) {
+        const pId = normalizePortId(config.serials[j].portId, j);
+        if (pId === portId) {
+          configIndex = i;
+          break;
+        }
+      }
+      if (configIndex !== -1) break;
+    }
+
+    if (configIndex === -1) {
+      return res.status(404).json({ error: 'Port not found', portId });
+    }
+
+    // Parse the gallery YAML content
+    const galleryYaml = yaml.load(yamlContent) as {
+      meta?: Record<string, unknown>;
+      entities?: Record<string, unknown[]>;
+      automation?: unknown[];
+    };
+
+    if (!galleryYaml) {
+      return res.status(400).json({ error: 'Invalid YAML content' });
+    }
+
+    const currentConfig = currentConfigs[configIndex];
+    const conflicts: Array<{
+      type: 'entity' | 'automation';
+      entityType?: string;
+      id: string;
+      existingYaml: string;
+      newYaml: string;
+    }> = [];
+    const newItems: Array<{
+      type: 'entity' | 'automation';
+      entityType?: string;
+      id: string;
+    }> = [];
+
+    // Check entities for conflicts
+    if (galleryYaml.entities) {
+      for (const [entityType, entities] of Object.entries(galleryYaml.entities)) {
+        if (!Array.isArray(entities)) continue;
+
+        const typeKey = entityType as keyof HomenetBridgeConfig;
+        if (!ENTITY_TYPE_KEYS.includes(typeKey)) continue;
+
+        const existingList = (currentConfig[typeKey] as unknown[]) || [];
+
+        for (const entity of entities) {
+          if (!entity || typeof entity !== 'object') continue;
+
+          const entityObj = entity as Record<string, unknown>;
+          const entityId = entityObj.id as string | undefined;
+
+          if (!entityId) continue;
+
+          const existingEntity = existingList.find((e: any) => e.id === entityId);
+
+          if (existingEntity) {
+            conflicts.push({
+              type: 'entity',
+              entityType,
+              id: entityId,
+              existingYaml: dumpConfigToYaml(existingEntity),
+              newYaml: dumpConfigToYaml(entityObj),
+            });
+          } else {
+            newItems.push({
+              type: 'entity',
+              entityType,
+              id: entityId,
+            });
+          }
+        }
+      }
+    }
+
+    // Check automations for conflicts
+    if (galleryYaml.automation && Array.isArray(galleryYaml.automation)) {
+      const existingAutomations = ((currentConfig as any).automation as unknown[]) || [];
+
+      for (const automation of galleryYaml.automation) {
+        if (!automation || typeof automation !== 'object') continue;
+
+        const automationObj = automation as Record<string, unknown>;
+        const automationId = automationObj.id as string | undefined;
+
+        if (!automationId) {
+          newItems.push({
+            type: 'automation',
+            id: 'unnamed',
+          });
+          continue;
+        }
+
+        const existingAutomation = existingAutomations.find((a: any) => a.id === automationId);
+
+        if (existingAutomation) {
+          conflicts.push({
+            type: 'automation',
+            id: automationId,
+            existingYaml: dumpConfigToYaml(existingAutomation),
+            newYaml: dumpConfigToYaml(automationObj),
+          });
+        } else {
+          newItems.push({
+            type: 'automation',
+            id: automationId,
+          });
+        }
+      }
+    }
+
+    // Compatibility check: compare vendor requirements with current config
+    const compatibility: {
+      compatible: boolean;
+      mismatches: { field: string; expected: unknown; actual: unknown }[];
+    } = {
+      compatible: true,
+      mismatches: [],
+    };
+
+    // Use vendorRequirements from request body (from requirements.json)
+    const { vendorRequirements } = req.body as {
+      vendorRequirements?: {
+        serial?: Record<string, unknown>;
+        packet_defaults?: Record<string, unknown>;
+      }
+    };
+
+    if (vendorRequirements) {
+      // Find the serial config for the selected port
+      let serialConfig: Record<string, unknown> | null = null;
+      for (const serial of currentConfig.serials || []) {
+        const pId = normalizePortId(serial.portId, 0);
+        if (pId === portId) {
+          serialConfig = serial as unknown as Record<string, unknown>;
+          break;
+        }
+      }
+
+      // Check serial settings
+      if (vendorRequirements.serial && serialConfig) {
+        const serialFields = ['baud_rate', 'data_bits', 'parity', 'stop_bits'];
+        for (const field of serialFields) {
+          const expected = vendorRequirements.serial[field];
+          const actual = serialConfig[field];
+          if (expected !== undefined && actual !== undefined && expected !== actual) {
+            compatibility.compatible = false;
+            compatibility.mismatches.push({
+              field: `serial.${field}`,
+              expected,
+              actual,
+            });
+          }
+        }
+      }
+
+      // Check packet_defaults
+      if (vendorRequirements.packet_defaults) {
+        const packetDefaults = (currentConfig as any).packet_defaults || {};
+        const packetFields = [
+          'rx_length',
+          'rx_checksum',
+          'tx_checksum',
+          'rx_header',
+          'tx_header',
+          'rx_footer',
+          'tx_footer',
+        ];
+
+        for (const field of packetFields) {
+          const expected = vendorRequirements.packet_defaults[field];
+          const actual = packetDefaults[field];
+
+          if (expected !== undefined) {
+            // For arrays, compare stringified versions
+            const normalizeValue = (v: unknown) =>
+              Array.isArray(v) ? JSON.stringify(v) : v;
+            if (normalizeValue(expected) !== normalizeValue(actual)) {
+              compatibility.compatible = false;
+              compatibility.mismatches.push({
+                field: `packet_defaults.${field}`,
+                expected,
+                actual: actual ?? null,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    res.json({ conflicts, newItems, compatibility });
+  } catch (error) {
+    logger.error({ err: error }, '[gallery] Failed to check conflicts');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Check failed' });
+  }
+});
 app.post('/api/gallery/apply', async (req, res) => {
   if (!configRateLimiter.check(req.ip || 'unknown')) {
     return res.status(429).json({ error: 'Too many requests' });
   }
 
   try {
-    const { portId, yamlContent, fileName } = req.body;
+    const { portId, yamlContent, fileName, resolutions, renames } = req.body as {
+      portId: string;
+      yamlContent: string;
+      fileName?: string;
+      resolutions?: Record<string, 'overwrite' | 'skip' | 'rename'>;
+      renames?: Record<string, string>;
+    };
 
     if (!portId || !yamlContent) {
       return res.status(400).json({ error: 'portId and yamlContent are required' });
@@ -1877,7 +2098,11 @@ app.post('/api/gallery/apply', async (req, res) => {
     );
 
     let addedEntities = 0;
+    let updatedEntities = 0;
+    let skippedEntities = 0;
     let addedAutomations = 0;
+    let updatedAutomations = 0;
+    let skippedAutomations = 0;
 
     // Add entities from gallery snippet
     if (galleryYaml.entities) {
@@ -1900,8 +2125,10 @@ app.post('/api/gallery/apply', async (req, res) => {
         for (const entity of entities) {
           if (!entity || typeof entity !== 'object') continue;
 
-          const entityObj = entity as Record<string, unknown>;
+          const entityObj = { ...(entity as Record<string, unknown>) };
           const entityId = entityObj.id as string | undefined;
+
+          if (!entityId) continue;
 
           // Check for existing entity with same ID
           const existingIndex = targetList.findIndex(
@@ -1909,14 +2136,41 @@ app.post('/api/gallery/apply', async (req, res) => {
           );
 
           if (existingIndex !== -1) {
-            // For now, we'll overwrite. Future: handle conflict resolution from UI
-            targetList[existingIndex] = entityObj;
-            logger.info(`[gallery] Updated existing entity: ${entityId}`);
+            // Conflict exists - check resolution
+            const resolution = resolutions?.[entityId] || 'overwrite';
+
+            if (resolution === 'skip') {
+              skippedEntities++;
+              logger.info(`[gallery] Skipped entity: ${entityId}`);
+              continue;
+            } else if (resolution === 'rename') {
+              const newId = renames?.[entityId];
+              if (!newId) {
+                logger.warn(`[gallery] Rename requested but no new ID provided for ${entityId}`);
+                continue;
+              }
+              // Check if new ID already exists
+              const newIdExists = targetList.some((e: any) => e.id === newId);
+              if (newIdExists) {
+                logger.warn(`[gallery] New ID ${newId} already exists, skipping`);
+                skippedEntities++;
+                continue;
+              }
+              entityObj.id = newId;
+              targetList.push(entityObj);
+              addedEntities++;
+              logger.info(`[gallery] Added entity with new ID: ${newId} (was ${entityId})`);
+            } else {
+              // overwrite
+              targetList[existingIndex] = entityObj;
+              updatedEntities++;
+              logger.info(`[gallery] Updated existing entity: ${entityId}`);
+            }
           } else {
             targetList.push(entityObj);
+            addedEntities++;
             logger.info(`[gallery] Added new entity: ${entityId}`);
           }
-          addedEntities++;
         }
       }
     }
@@ -1932,7 +2186,7 @@ app.post('/api/gallery/apply', async (req, res) => {
       for (const automation of galleryYaml.automation) {
         if (!automation || typeof automation !== 'object') continue;
 
-        const automationObj = automation as Record<string, unknown>;
+        const automationObj = { ...(automation as Record<string, unknown>) };
         const automationId = automationObj.id as string | undefined;
 
         if (automationId) {
@@ -1942,17 +2196,45 @@ app.post('/api/gallery/apply', async (req, res) => {
           );
 
           if (existingIndex !== -1) {
-            automationList[existingIndex] = automationObj;
-            logger.info(`[gallery] Updated existing automation: ${automationId}`);
+            // Conflict exists - check resolution
+            const resolution = resolutions?.[automationId] || 'overwrite';
+
+            if (resolution === 'skip') {
+              skippedAutomations++;
+              logger.info(`[gallery] Skipped automation: ${automationId}`);
+              continue;
+            } else if (resolution === 'rename') {
+              const newId = renames?.[automationId];
+              if (!newId) {
+                logger.warn(`[gallery] Rename requested but no new ID provided for ${automationId}`);
+                continue;
+              }
+              const newIdExists = automationList.some((a: any) => a.id === newId);
+              if (newIdExists) {
+                logger.warn(`[gallery] New ID ${newId} already exists, skipping`);
+                skippedAutomations++;
+                continue;
+              }
+              automationObj.id = newId;
+              automationList.push(automationObj);
+              addedAutomations++;
+              logger.info(`[gallery] Added automation with new ID: ${newId} (was ${automationId})`);
+            } else {
+              // overwrite
+              automationList[existingIndex] = automationObj;
+              updatedAutomations++;
+              logger.info(`[gallery] Updated existing automation: ${automationId}`);
+            }
           } else {
             automationList.push(automationObj);
+            addedAutomations++;
             logger.info(`[gallery] Added new automation: ${automationId}`);
           }
         } else {
           automationList.push(automationObj);
+          addedAutomations++;
           logger.info('[gallery] Added automation without ID');
         }
-        addedAutomations++;
       }
     }
 
@@ -1972,13 +2254,17 @@ app.post('/api/gallery/apply', async (req, res) => {
     rebuildPortMappings();
 
     logger.info(
-      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added ${addedEntities} entities, ${addedAutomations} automations. Backup: ${path.basename(backupPath)}`
+      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations. Updated: ${updatedEntities} entities, ${updatedAutomations} automations. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations. Backup: ${path.basename(backupPath)}`
     );
 
     res.json({
       success: true,
       addedEntities,
+      updatedEntities,
+      skippedEntities,
       addedAutomations,
+      updatedAutomations,
+      skippedAutomations,
       backup: path.basename(backupPath),
     });
   } catch (error) {

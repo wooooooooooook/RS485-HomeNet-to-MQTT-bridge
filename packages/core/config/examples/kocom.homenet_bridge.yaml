@@ -371,3 +371,4 @@ homenet_bridge:
             0x00,
           ]
         ack: [0x30, 0xdc]
+      discovery_linked_id: 'elevator_floors'

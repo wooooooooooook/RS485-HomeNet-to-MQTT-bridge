@@ -1,0 +1,142 @@
+meta:
+  name: "난방 설정 (4개)"
+  name_en: "Heaters (4 Thermostats)"
+  description: "삼성 SDS 난방 온도조절기 4개 설정입니다. heating/idle 액션 상태 표시 지원."
+  description_en: "Samsung SDS 4 heating thermostats with heating/idle action status."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "samsung", "sds"]
+
+entities:
+  climate:
+    - id: 'room_0_heater'
+      name: 'Room 0 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x7C, 0x01]
+      state_temperature_current:
+        offset: 4
+        length: 1
+      state_temperature_target:
+        offset: 3
+        length: 1
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      command_off:
+        data: [0xAE, 0x7D, 0x01, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x01, 0x00]
+      command_heat:
+        data: [0xAE, 0x7D, 0x01, 0x01, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x01, 0x01]
+      command_temperature: >-
+        [[0xAE, 0x7F, 0x01, x, 0x00, 0x00, 0x00],[0x7F, 0x01, x]]
+      state_action: >-
+        data[3] == 0x00 ? 'off' : (data[4] > data[5] ? 'heating' : 'idle')
+
+    - id: 'room_1_heater'
+      name: 'Room 1 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x7C, 0x02]
+      state_temperature_current:
+        offset: 4
+        length: 1
+      state_temperature_target:
+        offset: 3
+        length: 1
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      command_off:
+        data: [0xAE, 0x7D, 0x02, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x02, 0x00]
+      command_heat:
+        data: [0xAE, 0x7D, 0x02, 0x01, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x02, 0x01]
+      command_temperature: >-
+        [[0xAE, 0x7F, 0x02, x, 0x00, 0x00, 0x00],[0x7F, 0x02, x]]
+      state_action: >-
+        data[3] == 0x00 ? 'off' : (data[4] > data[5] ? 'heating' : 'idle')
+
+    - id: 'room_2_heater'
+      name: 'Room 2 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x7C, 0x03]
+      state_temperature_current:
+        offset: 4
+        length: 1
+      state_temperature_target:
+        offset: 3
+        length: 1
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      command_off:
+        data: [0xAE, 0x7D, 0x03, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x03, 0x00]
+      command_heat:
+        data: [0xAE, 0x7D, 0x03, 0x01, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x03, 0x01]
+      command_temperature: >-
+        [[0xAE, 0x7F, 0x03, x, 0x00, 0x00, 0x00],[0x7F, 0x03, x]]
+      state_action: >-
+        data[3] == 0x00 ? 'off' : (data[4] > data[5] ? 'heating' : 'idle')
+
+    - id: 'room_3_heater'
+      name: 'Room 3 Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x7C, 0x04]
+      state_temperature_current:
+        offset: 4
+        length: 1
+      state_temperature_target:
+        offset: 3
+        length: 1
+      state_off:
+        offset: 2
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        offset: 2
+        data: [0x01]
+        mask: [0x01]
+      command_off:
+        data: [0xAE, 0x7D, 0x04, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x04, 0x00]
+      command_heat:
+        data: [0xAE, 0x7D, 0x04, 0x01, 0x00, 0x00, 0x00]
+        ack: [0x7D, 0x04, 0x01]
+      command_temperature: >-
+        [[0xAE, 0x7F, 0x04, x, 0x00, 0x00, 0x00],[0x7F, 0x04, x]]
+      state_action: >-
+        data[3] == 0x00 ? 'off' : (data[4] > data[5] ? 'heating' : 'idle')

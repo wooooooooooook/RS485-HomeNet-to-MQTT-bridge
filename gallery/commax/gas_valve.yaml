@@ -1,0 +1,31 @@
+meta:
+  name: "가스밸브 설정"
+  name_en: "Gas Valve"
+  description: "코맥스 가스밸브 설정입니다. 닫기 전용 밸브입니다."
+  description_en: "Commax gas valve configuration. Close-only valve."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["valve", "gas", "commax"]
+
+entities:
+  #상태      Head,   ON,   ID, 0x00, 0x00, 0x00, 0x00, add checksum
+  #상태 ON   0x90, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, add checksum
+  #상태 OFF  0x90, 0x40, 0x40, 0x00, 0x00, 0x00, 0x00, add checksum
+  #응답 OFF  0x91, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, add checksum
+
+  #명령      Head,   ID,   On, 0x00, 0x00, 0x00, 0x00, add checksum
+  #명령 OFF  0x11, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, add checksum
+  valve:
+    - id: 'gas_valve'
+      name: 'Gas Valve'
+      state:
+        data: [0x90]
+      state_open:
+        offset: 1
+        data: [0x80, 0x80]
+      state_closed:
+        offset: 1
+        data: [0x40, 0x40]
+      command_close:
+        data: [0x11, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x91, 0x88, 0x88]

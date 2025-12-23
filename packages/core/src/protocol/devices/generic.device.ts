@@ -161,11 +161,7 @@ export class GenericDevice extends Device {
 
       if (typeof checksumType === 'string') {
         if (standardChecksums2.has(checksumType)) {
-          const checksum = calculateChecksum2(
-            headerPart,
-            dataPart,
-            checksumType as Checksum2Type,
-          );
+          const checksum = calculateChecksum2(headerPart, dataPart, checksumType as Checksum2Type);
           checksumPart.push(...checksum);
         } else {
           // CEL Expression for 2-byte checksum

@@ -93,7 +93,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => { });
+      await this.startPromise.catch(() => {});
     }
 
     for (const context of this.portContexts.values()) {
@@ -744,7 +744,10 @@ export class HomeNetBridge {
   public getPacketIntervalStats(): Record<string, any> {
     const stats: Record<string, any> = {};
     for (const context of this.portContexts.values()) {
-      logger.info({ portId: context.portId, intervalCount: context.packetIntervals.length }, '[core] getPacketIntervalStats called');
+      logger.info(
+        { portId: context.portId, intervalCount: context.packetIntervals.length },
+        '[core] getPacketIntervalStats called',
+      );
       stats[context.portId] = this.calculateStatsForContext(context);
     }
     return stats;

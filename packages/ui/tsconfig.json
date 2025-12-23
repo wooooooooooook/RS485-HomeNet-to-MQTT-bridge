@@ -3,21 +3,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "$lib/*": [
-        "src/lib/*"
-      ]
+      "$lib/*": ["src/lib/*"]
     },
-    "types": [
-      "vite/client"
-    ]
+    "types": ["vite/client"]
   },
-  "include": [
-    "src/**/*",
-    "svelte.config.js",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "svelte.config.js", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

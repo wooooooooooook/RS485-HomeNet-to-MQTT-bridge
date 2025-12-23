@@ -4,11 +4,10 @@ import fs from 'node:fs/promises';
 import dotenv from 'dotenv';
 import { createServer, type IncomingMessage } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import yaml, { Type } from 'js-yaml';
+import yaml from 'js-yaml';
 import { WebSocket, WebSocketServer } from 'ws';
 import { dumpConfigToYaml } from './utils/yaml-dumper.js';
 import {
-  createBridge,
   HomeNetBridge,
   HomenetBridgeConfig,
   logger,
@@ -109,7 +108,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-      ' 사용을 권장합니다.',
+        ' 사용을 권장합니다.',
     );
   }
 
@@ -397,7 +396,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
         typeof value?.logRetention?.retentionCount === 'number' &&
-          value.logRetention.retentionCount > 0
+        value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
     },
@@ -1997,7 +1996,7 @@ app.post('/api/gallery/check-conflicts', async (req, res) => {
       vendorRequirements?: {
         serial?: Record<string, unknown>;
         packet_defaults?: Record<string, unknown>;
-      }
+      };
     };
 
     if (vendorRequirements) {
@@ -2047,8 +2046,7 @@ app.post('/api/gallery/check-conflicts', async (req, res) => {
 
           if (expected !== undefined) {
             // For arrays, compare stringified versions
-            const normalizeValue = (v: unknown) =>
-              Array.isArray(v) ? JSON.stringify(v) : v;
+            const normalizeValue = (v: unknown) => (Array.isArray(v) ? JSON.stringify(v) : v);
             if (normalizeValue(expected) !== normalizeValue(actual)) {
               compatibility.compatible = false;
               compatibility.mismatches.push({
@@ -2172,9 +2170,7 @@ app.post('/api/gallery/apply', async (req, res) => {
           if (!entityId) continue;
 
           // Check for existing entity with same ID
-          const existingIndex = targetList.findIndex(
-            (e: any) => e.id === entityId
-          );
+          const existingIndex = targetList.findIndex((e: any) => e.id === entityId);
 
           if (existingIndex !== -1) {
             // Conflict exists - check resolution
@@ -2232,9 +2228,7 @@ app.post('/api/gallery/apply', async (req, res) => {
 
         if (automationId) {
           // Check for existing automation with same ID
-          const existingIndex = automationList.findIndex(
-            (a: any) => a.id === automationId
-          );
+          const existingIndex = automationList.findIndex((a: any) => a.id === automationId);
 
           if (existingIndex !== -1) {
             // Conflict exists - check resolution
@@ -2247,7 +2241,9 @@ app.post('/api/gallery/apply', async (req, res) => {
             } else if (resolution === 'rename') {
               const newId = renames?.[automationId];
               if (!newId) {
-                logger.warn(`[gallery] Rename requested but no new ID provided for ${automationId}`);
+                logger.warn(
+                  `[gallery] Rename requested but no new ID provided for ${automationId}`,
+                );
                 continue;
               }
               const newIdExists = automationList.some((a: any) => a.id === newId);
@@ -2279,7 +2275,6 @@ app.post('/api/gallery/apply', async (req, res) => {
       }
     }
 
-
     // Write updated config
     loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
     const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
@@ -2291,7 +2286,7 @@ app.post('/api/gallery/apply', async (req, res) => {
     rebuildPortMappings();
 
     logger.info(
-      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations. Updated: ${updatedEntities} entities, ${updatedAutomations} automations. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations. Backup: ${path.basename(backupPath)}`
+      `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations. Updated: ${updatedEntities} entities, ${updatedAutomations} automations. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations. Backup: ${path.basename(backupPath)}`,
     );
 
     res.json({
@@ -2520,7 +2515,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -2749,7 +2744,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
       logger.info('[service] Cleared .restart-required flag');
     }
 

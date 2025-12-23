@@ -490,7 +490,8 @@ export class AutomationManager {
 
     let isLowPriority = action.low_priority;
     if (isLowPriority === undefined) {
-      const schemaLowPriority = schema && typeof schema === 'object' ? (schema as any).low_priority : undefined;
+      const schemaLowPriority =
+        schema && typeof schema === 'object' ? (schema as any).low_priority : undefined;
       if (schemaLowPriority) isLowPriority = true;
     }
 
@@ -526,9 +527,7 @@ export class AutomationManager {
     }
 
     if (action.code) {
-      logger.warn(
-        '[automation] Script code 실행은 지원되지 않습니다. script ID를 사용하세요.',
-      );
+      logger.warn('[automation] Script code 실행은 지원되지 않습니다. script ID를 사용하세요.');
       return;
     }
 

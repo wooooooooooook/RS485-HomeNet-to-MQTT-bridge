@@ -91,7 +91,10 @@
       "deleted": "Log deleted",
       "ha_app_download_warning": "Downloads may not work in the Home Assistant Companion App. Please try a web browser.",
       "desc": "List of raw packets received from RS485 devices with intervals.",
-      "empty": "Start logging to view real-time raw packets."
+      "empty": "Start logging to view real-time raw packets.",
+      "collected_packets": "Collected Packets: {count}",
+      "recording_duration": "Recording Duration: {duration}",
+      "auto_stopped_limit": "Recording automatically stopped because it reached the limit (20 minutes or 10,000 packets)."
     },
     "stats": {
       "title": "Packet Interval Analysis",
@@ -106,7 +109,8 @@
     "language": "Language",
     "english": "English",
     "korean": "Korean",
-    "close": "Close"
+    "close": "Close",
+    "copied": "Copied!"
   },
   "header": {
     "toggle_menu": "Open navigation menu",
@@ -145,6 +149,8 @@
   },
   "entity_detail": {
     "close_aria": "Close Modal",
+    "copy_id": "Copy ID",
+    "copy_id_aria": "Copy ID {id}",
     "tabs": {
       "status": "Status & Commands",
       "config": "Config (YAML)",

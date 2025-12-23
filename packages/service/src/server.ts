@@ -627,6 +627,10 @@ app.post('/api/log-sharing/consent', async (req, res) => {
 });
 
 // --- Raw Packet Text Logging API ---
+app.get('/api/logs/packet/status', (_req, res) => {
+  res.json(rawPacketLogger.getStatus());
+});
+
 app.post('/api/logs/packet/start', (req, res) => {
   try {
     // Gather Metadata

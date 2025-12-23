@@ -20,6 +20,11 @@
     portMetadata,
     selectedPortId,
     onPortChange,
+    onStart,
+    onStop,
+    isRecording = $bindable(),
+    recordingStartTime = $bindable(),
+    recordedFile = $bindable(),
   }: {
     stats: PacketStatsType | null;
     commandPackets: CommandPacket[];
@@ -29,6 +34,11 @@
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
     selectedPortId: string | null;
     onPortChange?: (portId: string) => void;
+    onStart?: () => void;
+    onStop?: () => void;
+    isRecording: boolean;
+    recordingStartTime: number | null;
+    recordedFile: { filename: string; path: string } | null;
   } = $props();
 
   const portIds = $derived.by<string[]>(() =>
@@ -57,7 +67,16 @@
   </div>
 
   <PacketLog {commandPackets} {parsedPackets} />
-  <RawPacketLog {rawPackets} {isStreaming} {stats} />
+  <RawPacketLog
+    {rawPackets}
+    {isStreaming}
+    {stats}
+    {onStart}
+    {onStop}
+    bind:isRecording
+    bind:recordingStartTime
+    bind:recordedFile
+  />
 
   {#if activePortId}
     <LatencyTest portId={activePortId} />

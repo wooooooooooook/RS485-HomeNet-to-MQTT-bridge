@@ -12,6 +12,8 @@ export class RawPacketLoggerService {
     private currentLogFile: string | null = null;
     private writeStream: fs.WriteStream | null = null;
     private configDir: string;
+    private packetCount = 0;
+    private startTime: number | null = null;
 
     constructor(configDir: string) {
         this.configDir = configDir;
@@ -52,7 +54,7 @@ export class RawPacketLoggerService {
                     'Packet Stats:',
                     ...(meta.stats
                         ? Object.entries(meta.stats).map(([portId, s]: [string, any]) =>
-                            ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), Samples=${s.sampleSize}`)
+                            ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), IdleOccur(Avg=${s.idleOccurrenceAvg}ms, Std=${s.idleOccurrenceStdDev}ms), Samples=${s.sampleSize}`)
                         : [' - Stats not available']),
                     '==================================================',
                     '', // Empty line
@@ -61,6 +63,8 @@ export class RawPacketLoggerService {
             }
 
             this.isLogging = true;
+            this.packetCount = 0;
+            this.startTime = Date.now();
             logger.info(`[RawPacketLogger] Started logging to ${filename}`);
 
             this.setupListeners();
@@ -75,12 +79,31 @@ export class RawPacketLoggerService {
         if (!this.isLogging || !this.currentLogFile) return null;
 
         if (this.writeStream) {
+            // Write Summary at the end
+            const endTime = Date.now();
+            const durationMs = this.startTime ? endTime - this.startTime : 0;
+            const durationSec = Math.floor(durationMs / 1000);
+            const minutes = Math.floor(durationSec / 60);
+            const seconds = durationSec % 60;
+
+            const summary = [
+                '', // Empty line
+                '==================================================',
+                '[RECORDING SUMMARY]',
+                `Log Ended: ${new Date().toISOString()}`,
+                `Total Duration: ${minutes}m ${seconds}s`,
+                `Total Packets Collected: ${this.packetCount}`,
+                '==================================================',
+            ].join('\n');
+
+            this.writeStream.write(summary);
             this.writeStream.end();
             this.writeStream = null;
         }
 
         this.removeListeners();
         this.isLogging = false;
+        this.startTime = null;
 
         const result = {
             filename: path.basename(this.currentLogFile),
@@ -90,6 +113,15 @@ export class RawPacketLoggerService {
 
         logger.info(`[RawPacketLogger] Stopped logging.`);
         return result;
+    }
+
+    public getStatus() {
+        return {
+            isLogging: this.isLogging,
+            startTime: this.startTime,
+            packetCount: this.packetCount,
+            filename: this.currentLogFile ? path.basename(this.currentLogFile) : null,
+        };
     }
 
     public getFilePath(filename: string): string {
@@ -108,6 +140,7 @@ export class RawPacketLoggerService {
 
     private handleRxPacket = (data: any) => {
         if (!this.writeStream) return;
+        this.packetCount++;
         const { portId, payload, receivedAt } = data;
         const logLine = `[${receivedAt}] [${portId}] [RX] ${payload}\n`;
         this.writeStream.write(logLine);
@@ -115,6 +148,7 @@ export class RawPacketLoggerService {
 
     private handleTxPacket = (data: any) => {
         if (!this.writeStream) return;
+        this.packetCount++;
         const { portId, payload, timestamp } = data;
         const logLine = `[${timestamp}] [${portId}] [TX] ${payload}\n`;
         this.writeStream.write(logLine);

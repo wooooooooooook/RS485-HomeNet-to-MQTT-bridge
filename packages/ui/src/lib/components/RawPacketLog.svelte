@@ -12,23 +12,78 @@
     stats = null,
     onStart,
     onStop,
+    isRecording = $bindable(false),
+    recordingStartTime = $bindable(null),
+    recordedFile = $bindable(null),
   }: {
     rawPackets?: RawPacketWithInterval[];
     isStreaming: boolean;
     stats?: PacketStatsType | null;
     onStart?: () => void;
     onStop?: () => void;
+    isRecording: boolean;
+    recordingStartTime: number | null;
+    recordedFile: { filename: string; path: string } | null;
   } = $props();
 
-  let isRecording = $state(false);
-  let recordedFile = $state<{ filename: string; path: string } | null>(null);
   let showSaveDialog = $state(false);
   let downloadError = $state<string | null>(null);
+
+  // Status tracking
+  let recordingDuration = $state(0);
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let autoStopped = $state(false);
+
+  // Limits
+  const MAX_DURATION_MS = 20 * 60 * 1000;
+  const MAX_PACKETS_LIMIT = 10000;
 
   // 가상 스크롤용 역순 패킷 목록 (최신 패킷이 위에 표시)
   const reversedPackets = $derived([...rawPackets].reverse());
 
-  const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
+  function formatDuration(ms: number) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Monitor limits
+  $effect(() => {
+    if (isRecording) {
+      if (rawPackets.length >= MAX_PACKETS_LIMIT || recordingDuration >= MAX_DURATION_MS) {
+        autoStopped = true;
+        toggleRecording();
+      }
+    }
+  });
+
+  // Manage timer
+  $effect(() => {
+    if (isRecording && recordingStartTime) {
+      if (!timer) {
+        // Initial sync
+        recordingDuration = Date.now() - recordingStartTime;
+        timer = setInterval(() => {
+          if (recordingStartTime) {
+            recordingDuration = Date.now() - recordingStartTime;
+          }
+        }, 1000);
+      }
+    } else {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      recordingDuration = 0;
+    }
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+  });
 
   async function toggleRecording() {
     if (isRecording) {
@@ -46,13 +101,18 @@
         console.error('API Error:', e);
       } finally {
         isRecording = false;
+        recordingStartTime = null;
         // Stop UI streaming as well
         if (isStreaming) {
           onStop?.();
         }
+        if (autoStopped) {
+          alert($t('analysis.raw_log.auto_stopped_limit'));
+        }
       }
     } else {
       // Start recording
+      autoStopped = false;
       try {
         // Send UI stats to server so log metadata reflects what user has seen
         const statsPayload = stats
@@ -77,6 +137,7 @@
           recordedFile = null;
           showSaveDialog = false;
           downloadError = null;
+          recordingStartTime = Date.now();
           // Always call onStart to ensure stats and packets are reset for the new recording session
           onStart?.();
         } else {
@@ -151,6 +212,8 @@
     showSaveDialog = false;
     downloadError = null;
   }
+
+  const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 </script>
 
 {#snippet renderPacketItem(packet: RawPacketWithInterval, _index: number)}
@@ -170,7 +233,20 @@
 
 <div class="log-section">
   <div class="log-header">
-    <h2>{$t('analysis.raw_log.title')}</h2>
+    <div class="header-left">
+      <h2>{$t('analysis.raw_log.title')}</h2>
+      {#if isRecording}
+        <div class="recording-status" transition:fade>
+          <span class="dot"></span>
+          <span class="status-text">
+            {$t('analysis.raw_log.collected_packets', { values: { count: rawPackets.length } })} |
+            {$t('analysis.raw_log.recording_duration', {
+              values: { duration: formatDuration(recordingDuration) },
+            })}
+          </span>
+        </div>
+      {/if}
+    </div>
     <Button variant="secondary" class={isRecording ? 'recording' : ''} onclick={toggleRecording}>
       {isRecording
         ? `⏹ ${$t('analysis.raw_log.stop_rec')}`
@@ -249,6 +325,51 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    gap: 1rem;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .recording-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .status-text {
+    font-size: 0.85rem;
+    color: #fca5a5;
+    font-weight: 500;
+    white-space: nowrap;
   }
 
   h2 {

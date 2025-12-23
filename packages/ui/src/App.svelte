@@ -97,6 +97,10 @@
   let activityLoading = $state(true);
   let activityError = $state('');
 
+  let isRecording = $state(false);
+  let recordingStartTime = $state<number | null>(null);
+  let recordedFile = $state<{ filename: string; path: string } | null>(null);
+
   type StreamEvent =
     | 'status'
     | 'mqtt-message'
@@ -249,22 +253,43 @@
     loadBridgeInfo(true);
     loadFrontendSettings();
     loadActivityLogs();
+    checkRecordingStatus();
   });
+
+  async function checkRecordingStatus() {
+    try {
+      const data = await apiRequest<{
+        isLogging: boolean;
+        startTime: number | null;
+        packetCount: number;
+        filename: string | null;
+      }>('./api/logs/packet/status');
+      isRecording = data.isLogging;
+      recordingStartTime = data.startTime;
+      // Note: We don't necessarily need to sync packetCount if we are streaming everything
+    } catch (e) {
+      console.error('Failed to check recording status:', e);
+    }
+  }
 
   // Analysis 페이지 진입/이탈 시 자동으로 스트리밍 시작/중지
   $effect(() => {
     // connectionStatus와 activeView를 의존성으로 사용하여 reactive하게 동작
     if (connectionStatus !== 'connected') return;
 
-    if (activeView === 'analysis') {
-      // 스트리밍 시작 & 데이터 초기화
-      sendStreamCommand('start');
-      isStreaming = true;
-      rawPackets = [];
-      packetStatsByPort = new Map();
+    if (activeView === 'analysis' || isRecording) {
+      // 스트리밍 시작 & 데이터 초기화 (처음 들어올 때만)
+      if (!isStreaming) {
+        sendStreamCommand('start');
+        isStreaming = true;
+      }
+      if (activeView === 'analysis' && rawPackets.length === 0 && !isRecording) {
+        // Analysis에 처음 들어왔고 녹화중이 아닐 때만 초기화
+        packetStatsByPort = new Map();
+      }
     } else {
-      // Analysis가 아닌 다른 뷰로 이동 시 스트리밍 중지
-      if (isStreaming) {
+      // Analysis가 아니고 녹화중도 아닐 때 스트리밍 중지
+      if (isStreaming && !isRecording) {
         sendStreamCommand('stop');
         isStreaming = false;
       }
@@ -302,6 +327,11 @@
     }
 
     return await response.json();
+  }
+
+  function handleRawRecordingStart() {
+    rawPackets = [];
+    packetStatsByPort = new Map();
   }
 
   async function loadBridgeInfo(force = false) {
@@ -1080,6 +1110,10 @@
             {portMetadata}
             selectedPortId={activePortId}
             onPortChange={(portId) => (selectedPortId = portId)}
+            onStart={handleRawRecordingStart}
+            bind:isRecording
+            bind:recordingStartTime
+            bind:recordedFile
           />
         {:else if activeView === 'settings'}
           <SettingsView

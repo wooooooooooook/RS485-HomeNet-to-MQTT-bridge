@@ -44,7 +44,9 @@ describe('Real World Packet Clumping', () => {
       for (const byte of sequence) {
         const packet = parser.parse(byte);
         if (packet) {
-          console.log(`  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`);
+          console.log(
+            `  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
+          );
           parsedPackets.push([...packet]);
           totalPackets++;
         }
@@ -78,7 +80,9 @@ describe('Real World Packet Clumping', () => {
     for (const byte of missingPacket) {
       const packet = parser.parse(byte);
       if (packet) {
-        console.log(`  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`);
+        console.log(
+          `  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
+        );
         parsed = true;
         expect(packet).toEqual(Buffer.from(missingPacket));
       }

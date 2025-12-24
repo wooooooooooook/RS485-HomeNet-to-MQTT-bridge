@@ -5,7 +5,7 @@
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
 
-  const GALLERY_LIST_URL = '/api/gallery/list';
+  const GALLERY_LIST_URL = './api/gallery/list';
 
   interface ContentSummary {
     entities: Record<string, number>;

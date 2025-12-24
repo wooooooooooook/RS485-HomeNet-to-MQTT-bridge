@@ -27,9 +27,13 @@ entities:
       name: 'Elevator Floor'
       icon: 'mdi:elevator'
       state:
-        data: [0x20, 0x01, 0xE1, 0x81]
+        # ex) f7 20 01 e1 81 02 00 01 00 00 08 30 39 f7 aa
+        # HEADER(F7) 20 01 E1 81 02 00 01 호출여부? 00 방향? data[10] data[11] CHECKSUM FOOTER(AA)
+        # data 10-11을 ascii로 변환
+        data: [0x20, 0x01, 0xE1, 0x81, 0x02, 0x00, 0x01, 0x01, 0x00, 0x00, 0x08]
+        mask: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]
       state_number:
-        offset: 11
+        offset: 10
         length: 2
         decode: ascii
 

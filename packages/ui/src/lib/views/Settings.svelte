@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
+  import Button from '../components/Button.svelte';
   import type { FrontendSettings, LogRetentionStats, SavedLogFile } from '../types';
 
   type ToastSettingKey = 'stateChange' | 'command';
@@ -170,6 +171,30 @@
       }
     } catch (err) {
       console.error('Failed to update cache settings', err);
+    } finally {
+      isCacheSaving = false;
+    }
+  };
+
+  const handleManualSave = async () => {
+    isCacheSaving = true;
+    try {
+      const res = await fetch('./api/logs/cache/save', {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.result?.filename) {
+          // Trigger download
+          downloadCacheFile(data.result.filename);
+          // Refresh file list
+          await fetchCacheFiles();
+        }
+      } else {
+        console.error('Failed to save logs');
+      }
+    } catch (err) {
+      console.error('Error saving logs', err);
     } finally {
       isCacheSaving = false;
     }
@@ -378,6 +403,16 @@
               </span>
             </div>
           </div>
+        </div>
+
+        <div class="setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.manual_save')}</div>
+            <div class="setting-desc">{$t('settings.log_retention.manual_save_desc')}</div>
+          </div>
+          <Button onclick={handleManualSave} isLoading={isCacheSaving} disabled={isCacheSaving}>
+            {$t('settings.log_retention.save_now')}
+          </Button>
         </div>
 
         <div class="setting">

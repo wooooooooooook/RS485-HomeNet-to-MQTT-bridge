@@ -67,8 +67,7 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
           typeof uniqueIdValue === 'string' ? uniqueIdValue.trim() : undefined;
         const legacyDefault =
           typeof idValue === 'string' && idValue.trim().length > 0 ? `homenet_${idValue}` : '';
-        const needsUniqueId =
-          typeof trimmedUniqueId !== 'string' || trimmedUniqueId.length === 0;
+        const needsUniqueId = typeof trimmedUniqueId !== 'string' || trimmedUniqueId.length === 0;
 
         if (needsUniqueId && typeof idValue === 'string' && idValue.trim()) {
           (entity as any).unique_id = `homenet_${portId}_${idValue}`;

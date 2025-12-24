@@ -355,13 +355,19 @@ export class AutomationManager {
     // Handle mode-specific behavior
     if (mode === 'single') {
       if (this.runningAutomations.has(automationId)) {
-        logger.debug({ automation: automationId }, '[automation] Skipped (single mode, already running)');
+        logger.debug(
+          { automation: automationId },
+          '[automation] Skipped (single mode, already running)',
+        );
         return;
       }
     } else if (mode === 'restart') {
       const existing = this.runningAutomations.get(automationId);
       if (existing) {
-        logger.debug({ automation: automationId }, '[automation] Aborting previous run (restart mode)');
+        logger.debug(
+          { automation: automationId },
+          '[automation] Aborting previous run (restart mode)',
+        );
         existing.abort();
       }
     } else if (mode === 'queued') {
@@ -370,7 +376,10 @@ export class AutomationManager {
         const queue = this.automationQueues.get(automationId) || [];
         queue.push(() => this.executeAutomation(automation, trigger, context));
         this.automationQueues.set(automationId, queue);
-        logger.debug({ automation: automationId, queueLength: queue.length }, '[automation] Queued');
+        logger.debug(
+          { automation: automationId, queueLength: queue.length },
+          '[automation] Queued',
+        );
         return;
       }
     }
@@ -399,7 +408,10 @@ export class AutomationManager {
       const actions = guardResult ? automation.then : automation.else;
       if (!actions || actions.length === 0) return;
 
-      logger.info({ automation: automationId, trigger: trigger.type, mode }, '[automation] Executing');
+      logger.info(
+        { automation: automationId, trigger: trigger.type, mode },
+        '[automation] Executing',
+      );
       for (const action of actions) {
         // Check if aborted
         if (abortController.signal.aborted) {
@@ -459,7 +471,8 @@ export class AutomationManager {
     if (action.action === 'publish') return this.executePublishAction(action, context);
     if (action.action === 'log')
       return this.executeLogAction(action as AutomationActionLog, context);
-    if (action.action === 'delay') return this.executeDelayAction(action as AutomationActionDelay, signal);
+    if (action.action === 'delay')
+      return this.executeDelayAction(action as AutomationActionDelay, signal);
     if (action.action === 'script') return this.executeScriptAction(action, context, scriptStack);
     if (action.action === 'send_packet')
       return this.executeSendPacketAction(
@@ -600,12 +613,16 @@ export class AutomationManager {
           reject(error);
           return;
         }
-        signal.addEventListener('abort', () => {
-          clearTimeout(timeoutId);
-          const error = new Error('Aborted');
-          error.name = 'AbortError';
-          reject(error);
-        }, { once: true });
+        signal.addEventListener(
+          'abort',
+          () => {
+            clearTimeout(timeoutId);
+            const error = new Error('Aborted');
+            error.name = 'AbortError';
+            reject(error);
+          },
+          { once: true },
+        );
       }
     });
   }

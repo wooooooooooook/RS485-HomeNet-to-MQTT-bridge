@@ -16,6 +16,19 @@ import { calculateChecksum, calculateChecksum2 } from '../utils/checksum.js';
 import { CelExecutor } from '../cel-executor.js';
 import { Buffer } from 'buffer';
 
+/**
+ * Responsible for generating raw byte packets for device commands.
+ *
+ * This class translates high-level commands (e.g., "turn on", "set temperature 24")
+ * into the specific byte sequences required by the hardware protocol, based on
+ * the provided Entity Configuration and Command Schemas.
+ *
+ * Key responsibilities:
+ * - Looking up the correct command schema for a given entity and command name.
+ * - Encoding values (numbers/strings) into byte arrays (handling BCD, endianness, etc.).
+ * - Assembling the full packet with Header, Data, and Footer.
+ * - Calculating Checksums (1-byte, 2-byte, or CEL-based).
+ */
 export class CommandGenerator {
   private config: HomenetBridgeConfig;
   private stateProvider: EntityStateProvider;
@@ -32,6 +45,10 @@ export class CommandGenerator {
 
   private readonly checksum2Types = new Set(['xor_add']);
 
+  /**
+   * @param config - Global bridge configuration (contains default packet settings like retries, timeouts).
+   * @param stateProvider - Interface to access current entity states (needed for CEL checksum calculations).
+   */
   constructor(config: HomenetBridgeConfig, stateProvider: EntityStateProvider) {
     this.config = config;
     this.stateProvider = stateProvider;
@@ -39,6 +56,14 @@ export class CommandGenerator {
   }
 
   // --- Value Encoding/Decoding Logic ---
+
+  /**
+   * Decodes a byte sequence into a value based on a schema.
+   *
+   * @internal
+   * @deprecated This method is currently unused in the command generation flow
+   *             but is preserved for potential future symmetric use.
+   */
   private decodeValue(bytes: number[], schema: StateNumSchema): number | string | null {
     const {
       offset,
@@ -97,6 +122,19 @@ export class CommandGenerator {
     return precision > 0 ? parseFloat(value.toFixed(precision)) : value;
   }
 
+  /**
+   * Encodes a high-level value into a byte array according to the command schema.
+   *
+   * Handles various encoding strategies:
+   * - `bcd`: Binary Coded Decimal (e.g., 24 -> 0x24)
+   * - `ascii`: String to ASCII bytes
+   * - `signed_byte_half_degree`: Special encoding for thermostats (half-degree precision + sign bit)
+   * - `add_0x80` / `multiply`: Simple arithmetic transformations
+   *
+   * @param value - The value to encode (number or string).
+   * @param schema - The schema defining how to encode the value.
+   * @returns The encoded byte array.
+   */
   private encodeValue(value: number | string, schema: CommandSchema): number[] {
     const {
       value_encode = 'none',
@@ -163,6 +201,21 @@ export class CommandGenerator {
     return encodedBytes;
   }
 
+  /**
+   * Constructs a complete command packet for a specific entity.
+   *
+   * This is the main entry point for generating commands. It:
+   * 1. Merges global packet defaults with entity-specific `packet_parameters`.
+   * 2. Locates the specific `CommandSchema` for the requested `commandName` (e.g., `command_on`).
+   * 3. Encodes the optional `value` into the command data.
+   * 4. Appends the Header and Footer.
+   * 5. Calculates and appends the Checksum (supporting standard 1-byte, 2-byte, and CEL scripts).
+   *
+   * @param entity - The configuration of the target entity.
+   * @param commandName - The specific command to execute (e.g., 'command_on', 'command_temperature').
+   * @param value - (Optional) The value to send with the command (e.g., target temperature).
+   * @returns The constructed packet as an array of numbers, or `null` if the schema is missing/invalid.
+   */
   public constructCommandPacket(
     entity: EntityConfig,
     commandName: string,

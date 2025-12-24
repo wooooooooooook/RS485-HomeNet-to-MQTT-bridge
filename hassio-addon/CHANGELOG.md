@@ -1,3 +1,14 @@
+v1.2.0
+- feat: 설정 갤러리 기능 추가.
+  - 설정 스니펫을 다운받아 적용할 수 있는 기능을 추가하였습니다. 현재는 기본파일내용 그대로이므로 업데이트할 것은 없습니다.
+  - 기본 설정파일에 없던 기능을 추가하거나 아파트별로 다른 환경에 맞춰 업데이트하는데 사용할 수 있습니다. (엘리베이터 기능 추가, 단지별 설정 업데이트 등)
+  - 기본 설정파일이 망가진 경우에 업데이트하여 되돌리는데 사용할 수도 있습니다.
+  - 설정 스니펫은 github PR을 통해 제공해주실 수 있습니다.
+- feat: 스크립트 추가. HA의 automation, script의 관계와 유사합니다. [스크립트 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/SCRIPTS.md)
+- feat: automation에 mode를 추가하였습니다. ha의 것과 유사합니다. [자동화 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#)
+- fix: CEL을 사용하는 명령을 가진 엔티티를 HA에서 제어할때 정상적으로 패킷이 생성되지 않는 문제를 수정하였습니다. 
+- etc: 성능개선
+  
 v1.1.0
 - feat: 엔티티 강제 활성화기능 추가
   - 비활성화된 엔티티 상세보기 - 관리탭에서 강제 활성화 버튼을 통해 강제 활성화할 수 있습니다. (discovery_always: true 옵션을 추가해주는 기능입니다.)

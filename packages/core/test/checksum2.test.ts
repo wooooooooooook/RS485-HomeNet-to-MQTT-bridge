@@ -69,7 +69,7 @@ describe('2-Byte Checksum', () => {
           }
         }
 
-        expect(result).toEqual(bytes);
+        expect(result).toEqual(Buffer.from(bytes));
       } finally {
         nowSpy.mockRestore();
       }
@@ -80,6 +80,7 @@ describe('2-Byte Checksum', () => {
 
       const serial = {
         portId: 'main',
+        path: '/dev/ttyUSB0',
         baud_rate: 9600,
         data_bits: 8 as const,
         parity: 'none' as const,

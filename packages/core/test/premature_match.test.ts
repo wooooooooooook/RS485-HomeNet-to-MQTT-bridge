@@ -61,6 +61,6 @@ describe('PacketParser Premature Matching', () => {
     expect(parser.parse(0x00)).toBeNull();
     const packet = parser.parse(0x71);
 
-    expect(packet).toEqual([0xb0, 0x41, 0x00, 0x71]);
+    expect(packet).toEqual(Buffer.from([0xb0, 0x41, 0x00, 0x71]));
   });
 });

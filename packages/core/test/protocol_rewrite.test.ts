@@ -15,7 +15,7 @@ describe('PacketParser', () => {
     expect(parser.parse(0x02)).toBeNull();
     expect(parser.parse(0x01)).toBeNull();
     const packet = parser.parse(0x03);
-    expect(packet).toEqual([0x02, 0x01, 0x03]);
+    expect(packet).toEqual(Buffer.from([0x02, 0x01, 0x03]));
   });
 
   it('should handle checksum (add)', () => {
@@ -30,7 +30,7 @@ describe('PacketParser', () => {
     expect(parser.parse(0xaa)).toBeNull();
     expect(parser.parse(0x01)).toBeNull();
     const packet = parser.parse(0xab);
-    expect(packet).toEqual([0xaa, 0x01, 0xab]);
+    expect(packet).toEqual(Buffer.from([0xaa, 0x01, 0xab]));
   });
 });
 

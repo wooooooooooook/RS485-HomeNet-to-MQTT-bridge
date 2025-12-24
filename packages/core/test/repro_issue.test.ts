@@ -29,8 +29,8 @@ describe('PacketParser Reproduction', () => {
     for (const byte of clumped) {
       const packet = parser.parse(byte);
       if (packet) {
-        console.log('Parsed packet:', packet.map((b) => b.toString(16)).join(' '));
-        packets.push(packet);
+        console.log('Parsed packet:', [...packet].map((b) => b.toString(16)).join(' '));
+        packets.push([...packet]);
         packetCount++;
       }
     }

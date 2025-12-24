@@ -1,6 +1,6 @@
 meta:
-  name: "대림 엘리베이터 호출 설정"
-  name_en: "Daerim Elevator Call"
+  name: "대림 엘리베이터 호출 설정 테스트"
+  name_en: "Daerim Elevator Call Test"
   description: "CVNet 대림 엘리베이터 호출 버튼과 층수 센서 설정입니다."
   description_en: "CVNet Daerim elevator call button and floor sensor."
   version: "1.0.0"
@@ -30,7 +30,7 @@ entities:
         data: [0x20, 0x01, 0xE1, 0x81]
       state_number:
         offset: 11
-        length: 1
+        length: 2
         decode: ascii
 
   button:

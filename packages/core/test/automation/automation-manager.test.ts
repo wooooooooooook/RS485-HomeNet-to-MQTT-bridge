@@ -522,4 +522,204 @@ describe('AutomationManager', () => {
       }),
     );
   });
+
+  describe('Automation Mode', () => {
+    it('parallel 모드(기본)에서는 여러 실행이 병렬로 진행되어야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'parallel_test',
+            // mode는 기본값 (parallel)
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              { action: 'publish', topic: 'start', payload: 'begin' },
+              { action: 'delay', milliseconds: 100 },
+              { action: 'publish', topic: 'end', payload: 'done' },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 첫 번째 트리거
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('start', 'begin', undefined);
+
+      // 두 번째 트리거 (첫 번째가 딜레이 중일 때)
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      // 두 번 'start'가 호출되어야 함 (병렬)
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(2);
+
+      // 딜레이 완료
+      await vi.advanceTimersByTimeAsync(100);
+      // 두 번 'end'가 호출되어야 함
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('end', 'done', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(4);
+    });
+
+    it('single 모드에서는 이미 실행 중이면 새 트리거가 무시되어야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'single_test',
+            mode: 'single',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              { action: 'publish', topic: 'start', payload: 'begin' },
+              { action: 'delay', milliseconds: 100 },
+              { action: 'publish', topic: 'end', payload: 'done' },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 첫 번째 트리거
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('start', 'begin', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
+
+      // 두 번째 트리거 (첫 번째가 딜레이 중일 때) -> 무시되어야 함
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      // 여전히 1번만 호출되어야 함 (single 모드)
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
+
+      // 딜레이 완료
+      await vi.advanceTimersByTimeAsync(100);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('end', 'done', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(2);
+    });
+
+    it('restart 모드에서는 이전 실행이 취소되고 새로 시작되어야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'restart_test',
+            mode: 'restart',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              { action: 'publish', topic: 'start', payload: 'begin' },
+              { action: 'delay', milliseconds: 100 },
+              { action: 'publish', topic: 'end', payload: 'done' },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 첫 번째 트리거
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('start', 'begin', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
+
+      // 50ms 후 두 번째 트리거 (첫 번째 취소, 새로 시작)
+      await vi.advanceTimersByTimeAsync(40);
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(10);
+      // 두 번째 'start' 호출
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(2);
+
+      // 100ms 더 기다림 (두 번째 딜레이 완료)
+      await vi.advanceTimersByTimeAsync(100);
+      // 첫 번째는 취소되어 'end'가 한 번만 호출되어야 함
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('end', 'done', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(3);
+    });
+
+    it('queued 모드에서는 자동화가 순차적으로 실행되어야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'queued_test',
+            mode: 'queued',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              { action: 'publish', topic: 'run', payload: 'start' },
+              { action: 'delay', milliseconds: 50 },
+              { action: 'publish', topic: 'run', payload: 'end' },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 첫 번째 트리거
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('run', 'start', undefined);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
+
+      // 두 번째 트리거 (큐에 추가됨)
+      packetProcessor.emit('packet', [0xaa]);
+      await vi.advanceTimersByTimeAsync(1);
+      // 아직 첫 번째 실행 중이므로 'start' 한 번만 호출
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(1);
+
+      // 첫 번째 딜레이 완료 (50ms) - 두 번째도 바로 시작됨
+      await vi.advanceTimersByTimeAsync(60);
+      // 첫 번째 'end' + 두 번째 'start' = 3회
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(3);
+
+      // 두 번째 딜레이 완료
+      await vi.advanceTimersByTimeAsync(60);
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(4); // 두 번째 'end'
+    });
+  });
 });

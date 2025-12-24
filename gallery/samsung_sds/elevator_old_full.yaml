@@ -1,0 +1,58 @@
+meta:
+  name: "엘레베이터 - 구형현관스위치 full 모드"
+  name_en: "Elevator - Old Style full mode"
+  description: "현관스위치 헤더가 AD인 구형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하고 사용해야합니다."
+  description_en: "Samsung SDS elevator. Use with old-style doorbell with header AD. Remove doorbell and use."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "switch", "samsung", "sds"]
+
+entities:
+  switch:
+    - id: 'elevator_call'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      optimistic: true
+
+automation:
+  # AD 5A 00 77 수신 시 B0 5A 00 6A 응답 (장치스캔 응답)
+  - id: 'status_response_comm'
+    trigger:
+      - type: packet
+        match:
+          data: [0xAD, 0x5A, 0x00, 0x77]
+    then:
+      - action: send_packet
+        data: [0xB0, 0x5A, 0x00, 0x6A]
+        checksum: false
+
+  # AD 41 00 6C 수신 시 응답 통합 (엘리베이터 상태)
+  # 평소에는 B0 41 00 71 (엘베 대기) 응답
+  # 엘리베이터 호출 중이면 B0 2F 01 1E (엘베 호출됨) 응답
+  - id: 'status_response_elevator'
+    mode: restart
+    trigger:
+      - type: packet
+        match:
+          data: [0xAD, 0x41, 0x00, 0x6C]
+    then:
+      - action: send_packet
+        data: "states['elevator_call']['state'] == 'on' ? [0xB0, 0x2F, 0x01, 0x1E] : [0xB0, 0x41, 0x00, 0x71]"
+        checksum: false
+      - action: delay
+        milliseconds: 20s
+      - action: command
+        target: id(elevator_call).command_off()
+
+  # AD 2F 00 02 수신 시 B0 41 00 71 응답 및 스위치 끄기 (엘리베이터 완료)
+  - id: 'elevator_call_ack'
+    trigger:
+      - type: packet
+        match:
+          data: [0xAD, 0x2F, 0x00, 0x02]
+    then:
+      - action: send_packet
+        data: [0xB0, 0x41, 0x00, 0x71]
+        checksum: false
+      - action: command
+        target: id(elevator_call).command_off()

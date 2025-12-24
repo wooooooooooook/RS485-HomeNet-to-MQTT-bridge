@@ -1,0 +1,48 @@
+meta:
+  name: "엘레베이터 - 구형현관스위치 minimal 모드"
+  name_en: "Elevator - Old Style minimal mode"
+  description: "현관스위치 헤더가 AD인 구형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하지 않은 상태에서 사용합니다. 성공률이 낮습니다."
+  description_en: "Samsung SDS elevator. Use with old-style doorbell with header AD. Success rate is low."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "switch", "samsung", "sds"]
+
+entities:
+  switch:
+    - id: 'elevator_call'
+      name: 'Elevator Call'
+      icon: 'mdi:elevator'
+      optimistic: true
+
+automation:
+  # AD 41 00 6C 수신 시, 스위치가 켜져있으면 B0 2F 01 1E 응답
+  - id: 'elevator_call_response_1'
+    mode: restart
+    trigger:
+      - type: packet
+        match:
+          data: [0xAD, 0x41, 0x00, 0x6C]
+          offset: 0
+    guard: "states['elevator_call']['state'] == 'on'"
+    then:
+      - action: send_packet
+        data: [0xB0, 0x2F, 0x01, 0x1E]
+        checksum: false
+      - action: delay
+        milliseconds: 20s
+      - action: command
+        target: id(elevator_call).command_off()
+
+  # AD 2F 00 02 수신 시 B0 41 00 71 응답
+  - id: 'elevator_call_response_2'
+    trigger:
+      - type: packet
+        match:
+          data: [0xAD, 0x2F, 0x00, 0x02]
+          offset: 0
+    then:
+      - action: send_packet
+        data: [0xB0, 0x41, 0x00, 0x71]
+        checksum: false
+      - action: command
+        target: id(elevator_call).command_off()

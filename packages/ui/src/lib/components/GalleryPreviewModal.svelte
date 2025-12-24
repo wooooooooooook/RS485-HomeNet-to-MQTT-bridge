@@ -45,8 +45,7 @@
     id: string;
   }
 
-  const GITHUB_RAW_BASE =
-    'https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery';
+  const GALLERY_FILE_API = './api/gallery/file';
 
   let {
     item,
@@ -107,7 +106,7 @@
     loadingYaml = true;
     yamlError = null;
     try {
-      const url = `${GITHUB_RAW_BASE}/${item.file}`;
+      const url = `${GALLERY_FILE_API}?path=${encodeURIComponent(item.file)}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch YAML');
       yamlContent = await response.text();

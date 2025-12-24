@@ -49,6 +49,8 @@ const LEGACY_DEFAULT_CONFIG_FILENAME = 'default.yaml';
 const CONFIG_INIT_MARKER = path.join(CONFIG_DIR, '.initialized');
 const CONFIG_RESTART_FLAG = path.join(CONFIG_DIR, '.restart-required');
 const EXAMPLES_DIR = path.resolve(__dirname, '../../core/config/examples');
+const GALLERY_DIR = path.resolve(process.cwd(), 'gallery');
+const GALLERY_LIST_FILE = path.join(GALLERY_DIR, 'list.json');
 
 let BACKUP_DIR = path.join(CONFIG_DIR, 'backups'); // Default fallback
 
@@ -434,7 +436,7 @@ app.use((_req, res, next) => {
   // CSP: 스크립트 및 스타일 인라인 허용 (Svelte 호환), WebSocket 허용
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:;",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: https://raw.githubusercontent.com;",
   );
   // 민감한 브라우저 기능 비활성화
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
@@ -1852,6 +1854,50 @@ app.patch('/api/entities/:entityId/discovery-always', async (req, res) => {
 });
 
 // --- Gallery API ---
+
+app.get('/api/gallery/list', async (_req, res) => {
+  try {
+    const listExists = await fileExists(GALLERY_LIST_FILE);
+    if (!listExists) {
+      return res.status(404).json({ error: 'Gallery list not found' });
+    }
+
+    const listContent = await fs.readFile(GALLERY_LIST_FILE, 'utf8');
+    res.type('application/json').send(listContent);
+  } catch (error) {
+    logger.error({ err: error }, '[gallery] Failed to load gallery list');
+    res
+      .status(500)
+      .json({ error: error instanceof Error ? error.message : 'Failed to load gallery list' });
+  }
+});
+
+app.get('/api/gallery/file', async (req, res) => {
+  try {
+    const filePath = req.query.path;
+    if (typeof filePath !== 'string' || filePath.length === 0) {
+      return res.status(400).json({ error: 'path query parameter is required' });
+    }
+
+    const resolvedPath = path.resolve(GALLERY_DIR, filePath);
+    if (!resolvedPath.startsWith(`${GALLERY_DIR}${path.sep}`)) {
+      return res.status(400).json({ error: 'Invalid gallery path' });
+    }
+
+    const isYaml = resolvedPath.endsWith('.yaml') || resolvedPath.endsWith('.yml');
+    if (!isYaml) {
+      return res.status(400).json({ error: 'Only YAML gallery files are supported' });
+    }
+
+    const fileContent = await fs.readFile(resolvedPath, 'utf8');
+    res.type('text/yaml').send(fileContent);
+  } catch (error) {
+    logger.error({ err: error }, '[gallery] Failed to load gallery file');
+    res
+      .status(500)
+      .json({ error: error instanceof Error ? error.message : 'Failed to load gallery file' });
+  }
+});
 
 // Check for conflicts before applying gallery snippet
 app.post('/api/gallery/check-conflicts', async (req, res) => {

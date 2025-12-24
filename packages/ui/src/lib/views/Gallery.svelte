@@ -5,8 +5,7 @@
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
 
-  const GALLERY_LIST_URL =
-    'https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery/list.json';
+  const GALLERY_LIST_URL = './api/gallery/list';
 
   interface ContentSummary {
     entities: Record<string, number>;

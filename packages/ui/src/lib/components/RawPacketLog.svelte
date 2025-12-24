@@ -33,13 +33,31 @@
   let recordingDuration = $state(0);
   let timer: ReturnType<typeof setInterval> | null = null;
   let autoStopped = $state(false);
+  let filterText = $state('');
 
   // Limits
   const MAX_DURATION_MS = 20 * 60 * 1000;
   const MAX_PACKETS_LIMIT = 10000;
 
+  const normalizedFilter = $derived.by(() => filterText.trim().toLowerCase());
+  const isFiltering = $derived.by(() => normalizedFilter.length > 0);
+
   // 가상 스크롤용 역순 패킷 목록 (최신 패킷이 위에 표시)
-  const reversedPackets = $derived([...rawPackets].reverse());
+  const filteredPackets = $derived.by(() => {
+    const reversedPackets = [...rawPackets].reverse();
+    if (!normalizedFilter) return reversedPackets;
+    return reversedPackets.filter((packet) => {
+      const haystack = [
+        packet.payload,
+        packet.topic,
+        packet.portId ?? '',
+        packet.direction ?? 'RX',
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalizedFilter);
+    });
+  });
 
   function formatDuration(ms: number) {
     const totalSeconds = Math.floor(ms / 1000);
@@ -220,11 +238,13 @@
   <div class="log-item" class:tx-packet={packet.direction === 'TX'}>
     <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
     <span class="direction" class:tx={packet.direction === 'TX'}>{packet.direction ?? 'RX'}</span>
-    <span class="interval"
-      >{packet.interval !== null
-        ? `${packet.interval >= 0 ? '+' : ''}${packet.interval}ms`
-        : ''}</span
-    >
+    {#if !isFiltering}
+      <span class="interval"
+        >{packet.interval !== null
+          ? `${packet.interval >= 0 ? '+' : ''}${packet.interval}ms`
+          : ''}</span
+      >
+    {/if}
     <code class="payload" class:tx-payload={packet.direction === 'TX'}
       >{toHexPairs(packet.payload).join(' ')}</code
     >
@@ -254,6 +274,24 @@
     </Button>
   </div>
   <p class="description">{$t('analysis.raw_log.desc')}</p>
+  <div class="filter-row">
+    <label class="filter-label">
+      <span>{$t('analysis.raw_log.filter_label')}</span>
+      <input
+        type="text"
+        placeholder={$t('analysis.raw_log.filter_placeholder')}
+        bind:value={filterText}
+      />
+    </label>
+    {#if isFiltering}
+      <Button variant="secondary" onclick={() => (filterText = '')}>
+        {$t('analysis.raw_log.clear_filter')}
+      </Button>
+    {/if}
+  </div>
+  {#if isFiltering}
+    <p class="filter-hint">{$t('analysis.raw_log.filter_hint')}</p>
+  {/if}
 
   {#if showSaveDialog && recordedFile}
     <div class="save-dialog" transition:fade>
@@ -296,7 +334,7 @@
       <p class="empty">{$t('analysis.raw_log.empty')}</p>
     {:else}
       <VirtualList
-        items={reversedPackets}
+        items={filteredPackets}
         renderItem={renderPacketItem}
         defaultEstimatedItemHeight={32}
       />
@@ -381,6 +419,44 @@
   .description {
     color: #94a3b8;
     font-size: 0.9rem;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin: 0.75rem 0 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+
+  .filter-label input {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 0.45rem 0.6rem;
+    min-width: 240px;
+    font-size: 0.85rem;
+  }
+
+  .filter-label input:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+  }
+
+  .filter-hint {
+    color: #fbbf24;
+    font-size: 0.8rem;
+    margin: 0 0 0.75rem;
   }
 
   .log-list {

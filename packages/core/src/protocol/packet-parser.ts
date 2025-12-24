@@ -196,7 +196,14 @@ export class PacketParser {
           const checksumType = this.defaults.rx_checksum;
           const isStandard1Byte =
             typeof checksumType === 'string' &&
-            ['add', 'xor', 'add_no_header', 'xor_no_header'].includes(checksumType);
+            [
+              'add',
+              'xor',
+              'add_no_header',
+              'xor_no_header',
+              'samsung_rx',
+              'samsung_tx',
+            ].includes(checksumType);
 
           const startLen = Math.max(minLen, this.lastScannedLength + 1);
 
@@ -205,7 +212,17 @@ export class PacketParser {
             // Instead of re-calculating the full checksum for every candidate length,
             // we update the checksum incrementally as we advance the length.
             let runningChecksum = 0;
-            const startIdx = (checksumType as string).includes('no_header') ? headerLen : 0;
+
+            // Samsung RX starts with 0xB0, others 0
+            if (checksumType === 'samsung_rx') {
+              runningChecksum = 0xb0;
+            }
+
+            // Samsung types also skip header (like _no_header types)
+            const isNoHeader =
+              (checksumType as string).includes('no_header') ||
+              (checksumType as string).startsWith('samsung');
+            const startIdx = isNoHeader ? headerLen : 0;
             const initialDataEnd = startLen - checksumLen;
 
             // Calculate initial checksum for the starting packet length
@@ -234,8 +251,21 @@ export class PacketParser {
                 }
               }
 
+              // Apply final modifiers for Samsung types
+              let finalChecksum = runningChecksum;
+              if (checksumType === 'samsung_tx') {
+                finalChecksum ^= 0x80;
+              } else if (checksumType === 'samsung_rx') {
+                // Check first byte of data (if it exists)
+                // Data region is [startIdx, len - checksumLen)
+                const currentDataEnd = len - checksumLen;
+                if (currentDataEnd > startIdx && this.buffer[startIdx] < 0x7c) {
+                  finalChecksum ^= 0x80;
+                }
+              }
+
               const expected = this.buffer[len - 1];
-              if ((runningChecksum & 0xff) === expected) {
+              if ((finalChecksum & 0xff) === expected) {
                 const packet = this.buffer.subarray(0, len);
                 packets.push(packet); // Push Buffer directly
                 this.buffer = this.buffer.subarray(len);

@@ -60,7 +60,7 @@ export class PacketParser {
    * @param byte - The single byte to append
    * @returns The first parsed packet, or null if no packet is complete yet
    */
-  public parse(byte: number): number[] | null {
+  public parse(byte: number): Buffer | null {
     const packets = this.parseChunk(Buffer.from([byte]));
     return packets.length > 0 ? packets[0] : null;
   }
@@ -78,9 +78,9 @@ export class PacketParser {
    * 4. **Checksum Sweep**: (Fallback) Try every possible length and check if the checksum matches.
    *
    * @param chunk - The new data received from the interface
-   * @returns An array of parsed packets (as number arrays)
+   * @returns An array of parsed packets (as Buffers)
    */
-  public parseChunk(chunk: Buffer): number[][] {
+  public parseChunk(chunk: Buffer): Buffer[] {
     const now = Date.now();
     // Reset buffer on timeout to avoid stale partial packets corrupting new data
     if (this.defaults.rx_timeout && now - this.lastRxTime > this.defaults.rx_timeout) {
@@ -99,7 +99,7 @@ export class PacketParser {
       this.lastScannedLength = 0;
     }
 
-    const packets: number[][] = [];
+    const packets: Buffer[] = [];
     const header = this.defaults.rx_header || [];
     const headerLen = header.length;
 
@@ -149,7 +149,7 @@ export class PacketParser {
           // Check Checksum
           if (this.verifyChecksum(this.buffer, this.defaults.rx_length)) {
             const packet = this.buffer.subarray(0, this.defaults.rx_length);
-            packets.push([...packet]);
+            packets.push(packet); // Push Buffer directly
             this.buffer = this.buffer.subarray(this.defaults.rx_length);
             matchFound = true;
           } else {
@@ -176,7 +176,7 @@ export class PacketParser {
             const len = foundIdx + footerLen;
             if (this.verifyChecksum(this.buffer, len)) {
               const packet = this.buffer.subarray(0, len);
-              packets.push([...packet]);
+              packets.push(packet); // Push Buffer directly
               this.buffer = this.buffer.subarray(len);
               matchFound = true;
               break;
@@ -237,7 +237,7 @@ export class PacketParser {
               const expected = this.buffer[len - 1];
               if ((runningChecksum & 0xff) === expected) {
                 const packet = this.buffer.subarray(0, len);
-                packets.push([...packet]);
+                packets.push(packet); // Push Buffer directly
                 this.buffer = this.buffer.subarray(len);
                 this.lastScannedLength = 0;
                 matchFound = true;
@@ -249,7 +249,7 @@ export class PacketParser {
             for (let len = startLen; len <= this.buffer.length; len++) {
               if (this.verifyChecksum(this.buffer, len)) {
                 const packet = this.buffer.subarray(0, len);
-                packets.push([...packet]);
+                packets.push(packet); // Push Buffer directly
                 this.buffer = this.buffer.subarray(len);
                 this.lastScannedLength = 0;
                 matchFound = true;

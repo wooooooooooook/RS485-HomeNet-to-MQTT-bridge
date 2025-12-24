@@ -3,6 +3,7 @@ import { ProtocolConfig, PacketDefaults } from './types.js';
 import { PacketParser } from './packet-parser.js';
 import { Device } from './device.js';
 import { logger } from '../utils/logger.js';
+import { Buffer } from 'buffer';
 
 export class ProtocolManager extends EventEmitter {
   private parser: PacketParser;
@@ -76,14 +77,22 @@ export class ProtocolManager extends EventEmitter {
     return null;
   }
 
-  private processPacket(packet: number[]) {
-    const packetHex = packet.map((b) => '0x' + b.toString(16).padStart(2, '0')).join(' ');
+  private processPacket(packet: Buffer) {
+    // Optimization: Efficient hex logging without intermediate string array allocation
+    const packetHex = packet.toString('hex').replace(/../g, '0x$& ').trim();
+
+    // Compatibility: Convert Buffer to number[] for downstream devices expecting it.
+    // This maintains backward compatibility with the Device.parseData(number[]) signature
+    // while allowing efficient processing up to this point.
+    // NOTE: This is the only allocation point now (reduced from 2+ allocations).
+    const packetArray = [...packet];
+
+    this.emit('packet', packetArray);
+
     let matchedAny = false;
 
-    this.emit('packet', packet);
-
     for (const device of this.devices) {
-      const stateUpdates = device.parseData(packet);
+      const stateUpdates = device.parseData(packetArray);
       if (stateUpdates) {
         matchedAny = true;
         const stateStr = JSON.stringify(stateUpdates).replace(/["{}]/g, '').replace(/,/g, ', ');
@@ -91,7 +100,7 @@ export class ProtocolManager extends EventEmitter {
           `[ProtocolManager] ${device.getId()} (${device.getName()}): ${packetHex} → {${stateStr}}`,
         );
         this.emit('state', { deviceId: device.getId(), state: stateUpdates });
-        this.emit('parsed-packet', { deviceId: device.getId(), packet, state: stateUpdates });
+        this.emit('parsed-packet', { deviceId: device.getId(), packet: packetArray, state: stateUpdates });
       }
     }
 

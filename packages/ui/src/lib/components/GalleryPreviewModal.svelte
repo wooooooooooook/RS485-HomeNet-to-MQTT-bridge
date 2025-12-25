@@ -259,111 +259,121 @@
       <button class="close-btn" onclick={onClose} aria-label={$t('common.close')}> × </button>
     </header>
 
-    <div class="modal-body">
-      <div class="info-section">
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">{$t('gallery.vendor')}</span>
-            <span class="info-value">{item.vendorId}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">{$t('gallery.version')}</span>
-            <span class="info-value">v{item.version}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">{$t('gallery.author')}</span>
-            <span class="info-value">{item.author}</span>
-          </div>
-        </div>
-
-        <div class="contents-summary">
-          <h4>{$t('gallery.preview.contents')}</h4>
-          <div class="summary-badges">
-            {#each Object.entries(item.content_summary.entities) as [type, count]}
-              <span class="badge entity"
-                >{$t('gallery.preview.entity_count', {
-                  values: { type, count },
-                })}</span
-              >
-            {/each}
-            {#if item.content_summary.automations > 0}
-              <span class="badge automation"
-                >{$t('gallery.preview.automation_count', {
-                  values: { count: item.content_summary.automations },
-                })}</span
-              >
-            {/if}
-            {#if scriptCount > 0}
-              <span class="badge script"
-                >{$t('gallery.preview.script_count', { values: { count: scriptCount } })}</span
-              >
-            {/if}
-          </div>
-        </div>
-
-        {#if item.tags.length > 0}
-          <div class="tags-section">
-            <span class="info-label">{$t('gallery.tags')}</span>
-            <div class="tags">
-              {#each item.tags as tag}
-                <span class="tag">{tag}</span>
-              {/each}
+    {#if applySuccess}
+      <div class="modal-body success-view">
+        <div class="success-icon">✓</div>
+        <p class="success-message">{$t('gallery.preview.success_with_backup')}</p>
+      </div>
+      <footer class="modal-footer success-footer">
+        <button class="apply-btn full-width" onclick={onClose}>
+          {$t('common.close')}
+        </button>
+      </footer>
+    {:else}
+      <div class="modal-body">
+        <div class="info-section">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">{$t('gallery.vendor')}</span>
+              <span class="info-value">{item.vendorId}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">{$t('gallery.version')}</span>
+              <span class="info-value">v{item.version}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">{$t('gallery.author')}</span>
+              <span class="info-value">{item.author}</span>
             </div>
           </div>
-        {/if}
-      </div>
 
-      <div class="yaml-section">
-        <h4>{$t('gallery.preview.yaml_content')}</h4>
-        {#if loadingYaml}
-          <div class="yaml-loading">
-            <div class="spinner"></div>
+          <div class="contents-summary">
+            <h4>{$t('gallery.preview.contents')}</h4>
+            <div class="summary-badges">
+              {#each Object.entries(item.content_summary.entities) as [type, count]}
+                <span class="badge entity"
+                  >{$t('gallery.preview.entity_count', {
+                    values: { type, count },
+                  })}</span
+                >
+              {/each}
+              {#if item.content_summary.automations > 0}
+                <span class="badge automation"
+                  >{$t('gallery.preview.automation_count', {
+                    values: { count: item.content_summary.automations },
+                  })}</span
+                >
+              {/if}
+              {#if scriptCount > 0}
+                <span class="badge script"
+                  >{$t('gallery.preview.script_count', { values: { count: scriptCount } })}</span
+                >
+              {/if}
+            </div>
           </div>
-        {:else if yamlError}
-          <div class="yaml-error">⚠️ {yamlError}</div>
-        {:else}
-          <pre class="yaml-content"><code>{yamlContent}</code></pre>
+
+          {#if item.tags.length > 0}
+            <div class="tags-section">
+              <span class="info-label">{$t('gallery.tags')}</span>
+              <div class="tags">
+                {#each item.tags as tag}
+                  <span class="tag">{tag}</span>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <div class="yaml-section">
+          <h4>{$t('gallery.preview.yaml_content')}</h4>
+          {#if loadingYaml}
+            <div class="yaml-loading">
+              <div class="spinner"></div>
+            </div>
+          {:else if yamlError}
+            <div class="yaml-error">⚠️ {yamlError}</div>
+          {:else}
+            <pre class="yaml-content"><code>{yamlContent}</code></pre>
+          {/if}
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        {#if applyError}
+          <div class="error-message">⚠️ {applyError}</div>
         {/if}
-      </div>
-    </div>
 
-    <footer class="modal-footer">
-      {#if applySuccess}
-        <div class="success-message">✓ {$t('gallery.preview.success_with_backup')}</div>
-      {:else if applyError}
-        <div class="error-message">⚠️ {applyError}</div>
-      {/if}
+        <div class="footer-controls">
+          <div class="port-select">
+            <label for="port-select">{$t('gallery.preview.select_port')}</label>
+            <select id="port-select" bind:value={selectedPortId}>
+              {#each ports as port}
+                <option value={port.portId}>{port.portId} ({port.path})</option>
+              {/each}
+            </select>
+          </div>
 
-      <div class="footer-controls">
-        <div class="port-select">
-          <label for="port-select">{$t('gallery.preview.select_port')}</label>
-          <select id="port-select" bind:value={selectedPortId}>
-            {#each ports as port}
-              <option value={port.portId}>{port.portId} ({port.path})</option>
-            {/each}
-          </select>
+          <div class="action-buttons">
+            <button class="cancel-btn" onclick={onClose}>
+              {$t('gallery.preview.cancel')}
+            </button>
+            <button
+              class="apply-btn"
+              onclick={handleApplyClick}
+              disabled={applying || checkingConflicts || !selectedPortId || loadingYaml}
+            >
+              {#if applying}
+                {$t('gallery.preview.applying')}
+              {:else if checkingConflicts}
+                {$t('gallery.preview.checking')}
+              {:else}
+                {$t('gallery.preview.apply')}
+              {/if}
+            </button>
+          </div>
         </div>
-
-        <div class="action-buttons">
-          <button class="cancel-btn" onclick={onClose}>
-            {$t('gallery.preview.cancel')}
-          </button>
-          <button
-            class="apply-btn"
-            onclick={handleApplyClick}
-            disabled={applying || checkingConflicts || !selectedPortId || loadingYaml}
-          >
-            {#if applying}
-              {$t('gallery.preview.applying')}
-            {:else if checkingConflicts}
-              {$t('gallery.preview.checking')}
-            {:else}
-              {$t('gallery.preview.apply')}
-            {/if}
-          </button>
-        </div>
-      </div>
-    </footer>
+      </footer>
+    {/if}
   </div>
 </div>
 
@@ -1201,5 +1211,32 @@
     margin-bottom: 1rem;
     font-size: 0.9rem;
     color: #4ade80;
+  }
+
+  /* Success View Styles */
+  .success-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    flex: 1;
+  }
+
+  .success-icon {
+    font-size: 4rem;
+    color: #4ade80;
+    margin-bottom: 1.5rem;
+    line-height: 1;
+  }
+
+  .success-footer {
+    justify-content: center;
+  }
+
+  .full-width {
+    width: 100%;
+    justify-content: center;
   }
 </style>

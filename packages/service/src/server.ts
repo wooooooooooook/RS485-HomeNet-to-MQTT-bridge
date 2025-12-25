@@ -1806,6 +1806,7 @@ app.patch('/api/entities/:entityId/discovery-always', async (req, res) => {
 // --- Gallery API ---
 
 app.get('/api/gallery/list', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
     const listExists = await fileExists(GALLERY_LIST_FILE);
     if (!listExists) {

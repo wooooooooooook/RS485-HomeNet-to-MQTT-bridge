@@ -1,4 +1,4 @@
-v1.3.1
+v1.4.0
 - feat: automation의 action - send_packet에 header와 footer 옵션을 추가하였습니다. (기본값 false)
 
 v1.3.0

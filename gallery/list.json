@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-24T06:29:35.533Z",
+  "generated_at": "2025-12-24T23:31:15.880Z",
   "vendors": [
     {
       "id": "commax",
@@ -542,6 +542,26 @@
           "content_summary": {
             "entities": {
               "light": 7
+            },
+            "automations": 0
+          }
+        },
+        {
+          "file": "hyundai_imazu/lights_hallway.yaml",
+          "name": "Room 1, 5번등 (복도등)",
+          "name_en": "Room 1, 5 Light (Hallway Light)",
+          "description": "현대 이마주 Room1에 5번등(복도등)이 있는경우 추가하세요",
+          "description_en": "Hyundai Imazu Room1, 5 Light (Hallway Light)",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 1
             },
             "automations": 0
           }

@@ -21,15 +21,12 @@ describe('PacketParser Reproduction', () => {
 
     const clumped = [...packetA, ...packetB];
 
-    console.log('Feeding clumped bytes:', clumped.map((b) => b.toString(16)).join(' '));
-
     let packetCount = 0;
     const packets: number[][] = [];
 
     for (const byte of clumped) {
       const packet = parser.parse(byte);
       if (packet) {
-        console.log('Parsed packet:', [...packet].map((b) => b.toString(16)).join(' '));
         packets.push([...packet]);
         packetCount++;
       }

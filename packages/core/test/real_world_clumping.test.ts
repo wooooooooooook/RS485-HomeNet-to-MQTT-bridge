@@ -38,22 +38,14 @@ describe('Real World Packet Clumping', () => {
     const parsedPackets: number[][] = [];
 
     for (const sequence of sequences) {
-      console.log(
-        `\nProcessing sequence: ${sequence.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
-      );
       for (const byte of sequence) {
         const packet = parser.parse(byte);
         if (packet) {
-          console.log(
-            `  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
-          );
           parsedPackets.push([...packet]);
           totalPackets++;
         }
       }
     }
-
-    console.log(`\nTotal packets parsed: ${totalPackets}`);
 
     // 예상: 3개 시퀀스에서 각각 2개씩 + 마지막 1개 = 7개 -> 실제로는 첫번째 시퀀스가 3개여서 총 8개임
     expect(totalPackets).toBe(8);
@@ -72,17 +64,10 @@ describe('Real World Packet Clumping', () => {
     // 사용자가 언급한 "해석했어야 하는데 안하고 지나간" 패킷
     const missingPacket = [0x82, 0x80, 0x04, 0x22, 0x15, 0x00, 0x00, 0x3d];
 
-    console.log(
-      `\nTesting missing packet: ${missingPacket.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
-    );
-
     let parsed = false;
     for (const byte of missingPacket) {
       const packet = parser.parse(byte);
       if (packet) {
-        console.log(
-          `  Parsed: ${[...packet].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`,
-        );
         parsed = true;
         expect(packet).toEqual(Buffer.from(missingPacket));
       }

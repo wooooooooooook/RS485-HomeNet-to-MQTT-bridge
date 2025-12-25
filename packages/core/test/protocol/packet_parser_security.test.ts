@@ -29,7 +29,6 @@ describe('PacketParser Security & Performance', () => {
     }
 
     const duration = Date.now() - start;
-    console.log(`Processed ${totalSize} bytes in ${duration}ms`);
 
     const bufferSize = (parser as any).buffer.length;
     // Should be capped at 16384

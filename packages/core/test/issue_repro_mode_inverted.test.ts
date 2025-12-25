@@ -64,7 +64,6 @@ describe('Issue Repro: Mode Inverted', () => {
     // state_heat: data 0x00, mask 0x0F. 0x81 & 0x0F = 0x01. 0x01 != 0x00. Match FAIL.
     // Inverted: True. So it SHOULD be considered a match -> mode: heat.
 
-    console.log('Parsed result:', result);
     expect(result).not.toBeNull();
     if (result) {
       expect(result.mode).toBe('heat');

@@ -11,9 +11,6 @@ packet_defaults:
 `;
 
     const parsed = yaml.load(yamlContent) as any;
-    console.log('Parsed:', JSON.stringify(parsed, null, 2));
-    console.log('rx_timeout type:', typeof parsed.packet_defaults.rx_timeout);
-    console.log('rx_timeout value:', parsed.packet_defaults.rx_timeout);
 
     // js-yaml will parse "10ms" as a string, not a number
     expect(typeof parsed.packet_defaults.rx_timeout).toBe('string');

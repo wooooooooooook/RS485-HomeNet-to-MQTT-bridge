@@ -27,9 +27,6 @@ describe('Checksum Verification', () => {
         sum = (sum + packet[i]) & 0xff;
       }
       const expectedChecksum = packet[7];
-      console.log(
-        `Packet: ${packet.map((b) => b.toString(16).padStart(2, '0')).join(' ')} - Calculated: 0x${sum.toString(16).padStart(2, '0')}, Expected: 0x${expectedChecksum.toString(16).padStart(2, '0')}, Valid: ${sum === expectedChecksum}`,
-      );
       expect(sum).toBe(expectedChecksum);
     }
   });

@@ -4,6 +4,9 @@ import { PacketParser } from './packet-parser.js';
 import { Device } from './device.js';
 import { logger } from '../utils/logger.js';
 import { Buffer } from 'buffer';
+import { Worker } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 export class ProtocolManager extends EventEmitter {
   private parser: PacketParser;
@@ -12,11 +15,70 @@ export class ProtocolManager extends EventEmitter {
   private txQueue: number[][] = [];
   private txQueueLowPriority: number[][] = [];
   private lastTxTime: number = 0;
+  private worker: Worker | null = null;
+  private workerReady: boolean = false;
 
   constructor(config: ProtocolConfig) {
     super();
     this.config = config;
     this.parser = new PacketParser(config.packet_defaults || {});
+
+    this.initWorker();
+  }
+
+  private initWorker() {
+    try {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      // The worker file is expected to be in the same directory as the compiled output of this file
+      const workerPath = path.join(__dirname, 'protocol-worker.js');
+
+      this.worker = new Worker(workerPath);
+
+      this.worker.on('message', (msg: { type: string; payload: any }) => {
+        if (msg.type === 'packets') {
+          const packets = msg.payload as Buffer[];
+          for (const pkt of packets) {
+            // Buffer received from worker needs to be wrapped properly
+            this.processPacket(Buffer.from(pkt));
+          }
+        }
+      });
+
+      this.worker.on('error', (err) => {
+        logger.error({ err }, '[ProtocolManager] Worker error, falling back to main thread');
+        this.terminateWorker();
+      });
+
+      this.worker.on('exit', (code) => {
+        if (code !== 0) {
+          logger.warn({ code }, '[ProtocolManager] Worker stopped with exit code');
+        }
+        this.worker = null;
+        this.workerReady = false;
+      });
+
+      // Initialize worker configuration
+      this.worker.postMessage({
+        type: 'init',
+        payload: this.config.packet_defaults
+      });
+      this.workerReady = true;
+      logger.info('[ProtocolManager] Packet parsing worker initialized');
+
+    } catch (err) {
+      logger.warn({ err }, '[ProtocolManager] Failed to start worker, using main thread');
+      this.worker = null;
+      this.workerReady = false;
+    }
+  }
+
+  private terminateWorker() {
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+      this.workerReady = false;
+    }
   }
 
   public registerDevice(device: Device) {
@@ -32,16 +94,19 @@ export class ProtocolManager extends EventEmitter {
   }
 
   public handleIncomingByte(byte: number): void {
-    const packet = this.parser.parse(byte);
-    if (packet) {
-      this.processPacket(packet);
-    }
+    // For single byte, just use buffer method
+    this.handleIncomingChunk(Buffer.from([byte]));
   }
 
   public handleIncomingChunk(chunk: Buffer): void {
-    const packets = this.parser.parseChunk(chunk);
-    for (const packet of packets) {
-      this.processPacket(packet);
+    if (this.worker && this.workerReady) {
+      this.worker.postMessage({ type: 'chunk', payload: chunk });
+    } else {
+      // Fallback to main thread parsing
+      const packets = this.parser.parseChunk(chunk);
+      for (const packet of packets) {
+        this.processPacket(packet);
+      }
     }
   }
 

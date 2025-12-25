@@ -91,10 +91,11 @@ jobs:
                 const doc = yaml.load(content);
                 if (!doc.meta) continue;
 
-                // Count entities and automations
+                // Count entities, automations, and scripts
                 const contentSummary = {
                   entities: {},
-                  automations: 0
+                  automations: 0,
+                  scripts: 0
                 };
 
                 if (doc.entities) {
@@ -107,6 +108,10 @@ jobs:
 
                 if (doc.automation && Array.isArray(doc.automation)) {
                   contentSummary.automations = doc.automation.length;
+                }
+
+                if (doc.scripts && Array.isArray(doc.scripts)) {
+                  contentSummary.scripts = doc.scripts.length;
                 }
 
                 vendors[vendorId].items.push({

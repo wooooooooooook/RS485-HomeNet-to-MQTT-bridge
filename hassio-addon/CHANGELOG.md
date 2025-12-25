@@ -1,3 +1,6 @@
+v1.3.1
+- feat: automation의 action - send_packet에 header와 footer 옵션을 추가하였습니다. (기본값 false)
+
 v1.3.0
 - feat: automation action에 choose, wait_until, repeat 등 더 많은 로직을 구현할수 있게되었습니다.
   - [자동화 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#)

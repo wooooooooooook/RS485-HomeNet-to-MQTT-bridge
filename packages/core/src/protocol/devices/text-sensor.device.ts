@@ -16,7 +16,7 @@ export class TextSensorDevice extends GenericDevice {
     const entityConfig = this.config as TextSensorEntity;
 
     // Parse text value from state_text schema
-    // This would ideally execute a lambda to extract text
+    // This would ideally execute a CEL to extract text
     // For now, we'll try to extract ASCII text from the packet
     if (!updates.text && entityConfig.state_text) {
       const text = this.extractText(packet, entityConfig.state_text);

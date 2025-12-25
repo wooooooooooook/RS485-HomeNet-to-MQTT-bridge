@@ -15,7 +15,7 @@ export class SelectDevice extends GenericDevice {
     const updates = super.parseData(packet) || {};
     const entityConfig = this.config as SelectEntity;
 
-    // If GenericDevice parsed state_select (as lambda), it puts it in updates.select.
+    // If GenericDevice parsed state_select (as CEL), it puts it in updates.select.
     // We map it to updates.option which is what the Select entity expects.
     if (updates.select && !updates.option) {
       updates.option = updates.select;
@@ -63,11 +63,10 @@ export class SelectDevice extends GenericDevice {
     const entityConfig = this.config as SelectEntity;
 
     // Handle select command with option value
-    // Check if it's NOT a lambda (GenericDevice handles lambdas)
+    // Check if it's NOT a CEL (GenericDevice handles CELs)
     if (
       commandName === 'select' &&
       (entityConfig.command_select as any)?.data &&
-      (entityConfig.command_select as any).type !== 'lambda' &&
       value !== undefined
     ) {
       const command = [...(entityConfig.command_select as any).data];

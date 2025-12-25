@@ -15,7 +15,7 @@ export class ClimateDevice extends GenericDevice {
 
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Handle temperature extraction if not handled by lambda
+    // Handle temperature extraction if not handled by CEL
     if (!updates.current_temperature && entityConfig.state_temperature_current) {
       const val = this.extractValue(payload, entityConfig.state_temperature_current);
       if (val !== null) updates.current_temperature = val;
@@ -63,19 +63,38 @@ export class ClimateDevice extends GenericDevice {
     value?: any,
     states?: Map<string, Record<string, any>>,
   ): number[] | null {
-    const cmd = super.constructCommand(commandName, value, states);
-    if (cmd) return cmd;
-
     const entityConfig = this.config as any;
-    if (commandName === 'off' && entityConfig.command_off?.data) {
-      return this.framePacket([...entityConfig.command_off.data]);
-    }
-    if (commandName === 'heat' && entityConfig.command_heat?.data) {
-      return this.framePacket([...entityConfig.command_heat.data]);
+    const normalizedCommandName = commandName.startsWith('command_')
+      ? commandName
+      : `command_${commandName}`;
+    const commandConfig = entityConfig[normalizedCommandName];
+
+    // 1. If it's a script (string), let GenericDevice (super) handle it.
+    if (typeof commandConfig === 'string') {
+      return super.constructCommand(commandName, value, states);
     }
 
-    // command_temperature is usually a lambda, handled by super
+    // 2. Handle specific value injection for temperature/humidity (overrides static data)
+    if (value !== undefined) {
+      if (
+        commandName === 'temperature' &&
+        commandConfig?.value_offset !== undefined &&
+        commandConfig?.data
+      ) {
+        const data = this.insertValueIntoCommand(commandConfig, value);
+        return data ? this.framePacket(data) : null;
+      }
+      if (
+        commandName === 'humidity' &&
+        commandConfig?.value_offset !== undefined &&
+        commandConfig?.data
+      ) {
+        const data = this.insertValueIntoCommand(commandConfig, value);
+        return data ? this.framePacket(data) : null;
+      }
+    }
 
-    return null;
+    // 3. Fallback to GenericDevice for everything else (static data, simple scripts if any)
+    return super.constructCommand(commandName, value, states);
   }
 }

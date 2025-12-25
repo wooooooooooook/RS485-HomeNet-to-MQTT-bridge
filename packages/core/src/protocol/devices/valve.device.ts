@@ -54,8 +54,8 @@ export class ValveDevice extends GenericDevice {
     const entityConfig = this.config as ValveEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda or CEL string, let GenericDevice handle it
-    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+    // If CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string') {
       return super.constructCommand(commandName, value, states);
     }
 

@@ -98,10 +98,7 @@ describe('Climate Command Packet Generation', () => {
             data: [0xae, 0x7d, 0x01, 0x01, 0x00, 0x00, 0x00],
             ack: [0x7d, 0x01, 0x01],
           },
-          command_temperature: {
-            type: 'lambda',
-            code: 'uint8_t target = x;\nreturn {{0xAE, 0x7F, 0x01, target, 0x00, 0x00, 0x00},{0x7F, 0x01, target}};',
-          },
+          command_temperature: '[[0xAE, 0x7F, 0x01, x, 0x00, 0x00, 0x00], [0x7F, 0x01, x]]',
         },
       ],
     } as any;
@@ -119,7 +116,6 @@ describe('Climate Command Packet Generation', () => {
             return [...entity.command_heat.data, 0x00];
           }
           if (commandName === 'temperature' && value !== undefined) {
-            // Simulate lambda execution for temperature
             return [0xae, 0x7f, 0x01, value, 0x00, 0x00, 0x00, 0x00];
           }
         }

@@ -11,13 +11,13 @@ export class LightDevice extends GenericDevice {
     if (!this.matchesPacket(packet)) {
       return null;
     }
-    // First try lambda parsing from GenericDevice
+    // First try CEL parsing from GenericDevice
     const updates = super.parseData(packet) || {};
     const entityConfig = this.config as LightEntity;
 
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Handle state_on / state_off schemas if defined and not lambdas
+    // Handle state_on / state_off schemas if defined and not CELs
     if (!updates.state) {
       if (entityConfig.state_on && this.matchState(payload, entityConfig.state_on)) {
         updates.state = 'ON';
@@ -75,8 +75,8 @@ export class LightDevice extends GenericDevice {
     const entityConfig = this.config as LightEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda or CEL string, let GenericDevice handle it
-    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+    // If CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string') {
       return super.constructCommand(commandName, value, states);
     }
 

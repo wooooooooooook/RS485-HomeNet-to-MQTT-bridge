@@ -448,13 +448,15 @@ export class DiscoveryManager {
           payload.speed_range_max = 100;
         }
 
-        // Preset modes support
+        // Preset modes support (schema-based or CEL)
         if (entity.preset_modes && entity.preset_modes.length > 0) {
           payload.preset_modes = entity.preset_modes;
-          payload.preset_mode_command_topic = `${this.mqttTopicPrefix}/${id}/preset/set`;
+          payload.preset_mode_command_topic = `${this.mqttTopicPrefix}/${id}/preset_mode/set`;
           payload.preset_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
           payload.preset_mode_value_template = '{{ value_json.preset_mode }}';
         }
+
+
 
         // Oscillation support
         if (entity.state_oscillating || entity.command_oscillating) {
@@ -570,6 +572,22 @@ export class DiscoveryManager {
           availableModes.push('auto');
         }
         payload.modes = availableModes;
+
+        // Fan modes support (custom_fan_mode)
+        if (entity.custom_fan_mode && Array.isArray(entity.custom_fan_mode) && entity.custom_fan_mode.length > 0) {
+          payload.fan_modes = entity.custom_fan_mode;
+          payload.fan_mode_command_topic = `${this.mqttTopicPrefix}/${id}/fan_mode/set`;
+          payload.fan_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
+          payload.fan_mode_state_template = '{{ value_json.custom_fan }}';
+        }
+
+        // Preset modes support (custom_preset)
+        if (entity.custom_preset && Array.isArray(entity.custom_preset) && entity.custom_preset.length > 0) {
+          payload.preset_modes = entity.custom_preset;
+          payload.preset_mode_command_topic = `${this.mqttTopicPrefix}/${id}/preset_mode/set`;
+          payload.preset_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
+          payload.preset_mode_state_template = '{{ value_json.custom_preset }}';
+        }
 
         payload.temperature_unit = 'C';
         payload.min_temp = 15;

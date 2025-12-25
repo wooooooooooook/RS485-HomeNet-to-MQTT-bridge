@@ -70,29 +70,12 @@ describe('Climate Entity', () => {
 
   it('should construct temperature command', () => {
     const device = new ClimateDevice(climateConfig, protocolConfig);
-    // Note: ClimateDevice.ts comment said "command_temperature is usually a lambda, handled by super"
-    // But GenericDevice handles standard data commands too.
-    // However, for temperature, we often need to encode the value.
-    // GenericDevice doesn't seem to have built-in logic for 'command_temperature' value encoding
-    // UNLESS it's a lambda OR we add specific logic for it.
-    // Wait, GenericDevice.constructCommand checks `command_${commandName}`.
-    // If it's NOT a lambda, it returns `commandConfig.data`.
-    // It DOES NOT seem to handle value injection for generic commands in GenericDevice.ts
-    // EXCEPT for specific ones in LightDevice (brightness, color, etc).
-    // So for Climate, if we want to set temp, we probably need a lambda or update ClimateDevice.
 
-    // Let's check if I should update ClimateDevice or just test what's supported.
-    // For now, I'll assume the config uses a lambda for temperature in real scenarios,
-    // but here I'll test if I can at least get the base command if I don't provide a value (which might be wrong usage)
-    // OR if I provide a value, does it get ignored by default GenericDevice logic?
-
-    // Actually, let's look at `GenericDevice.constructCommand`.
-    // It only handles `lambda` or static `data`.
-    // So `command_temperature` with a value needs to be a lambda currently.
-    // UNLESS I update ClimateDevice to handle it like LightDevice handles brightness.
-
-    // I will skip testing value injection for temperature here unless I use a lambda mock,
-    // or I can add a test for a lambda-based command.
+    // Verify that constructCommand correctly handles value injection using value_offset
+    // Config: command_temperature: { data: [0x80, 0x03, 0x00], value_offset: 2, length: 1 }
+    // Value: 25 (0x19)
+    // Expected: [0x80, 0x03, 0x19]
+    expect(device.constructCommand('temperature', 25)).toEqual([0x80, 0x03, 0x19]);
   });
 
   it('should handle heater_4 specific logic (integration test migration)', () => {

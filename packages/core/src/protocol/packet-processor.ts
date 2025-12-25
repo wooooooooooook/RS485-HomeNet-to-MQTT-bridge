@@ -16,6 +16,7 @@ import { NumberDevice } from './devices/number.device.js';
 import { SelectDevice } from './devices/select.device.js';
 import { TextSensorDevice } from './devices/text-sensor.device.js';
 import { TextDevice } from './devices/text.device.js';
+import { BinarySensorDevice } from './devices/binary-sensor.device.js';
 import { ProtocolConfig } from './types.js';
 import { slugify } from '../utils/common.js';
 
@@ -57,7 +58,7 @@ export class PacketProcessor extends EventEmitter {
       select: SelectDevice,
       text_sensor: TextSensorDevice,
       text: TextDevice,
-      binary_sensor: SensorDevice, // Use SensorDevice for binary_sensor for now
+      binary_sensor: BinarySensorDevice,
     };
 
     const entityTypes: (keyof HomenetBridgeConfig)[] = [

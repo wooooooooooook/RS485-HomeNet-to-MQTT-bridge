@@ -10,6 +10,6 @@ export interface SelectEntity extends EntityConfig {
   initial_option?: string;
   restore_value?: boolean;
   command_select?: CommandSchema | string;
-  state_select?: CommandSchema | string; // lambda for parsing state to option string
+  state_select?: CommandSchema | string; // CEL for parsing state to option string
   command_update?: CommandSchema;
 }

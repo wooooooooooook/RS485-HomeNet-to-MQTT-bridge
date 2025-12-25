@@ -8,7 +8,7 @@ import path from 'node:path';
 describe('DSL Integration', () => {
   const tempConfigPath = path.join(__dirname, 'temp_dsl_config.yaml');
 
-  it('should load YAML with !lambda and execute logic in GenericDevice', async () => {
+  it('should load YAML and execute logic in GenericDevice', async () => {
     const yamlContent = `
 homenet_bridge:
   serial:

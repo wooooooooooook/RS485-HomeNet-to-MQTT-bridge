@@ -16,7 +16,7 @@ export class FanDevice extends GenericDevice {
 
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Handle on/off if not lambda
+    // Handle on/off if not CEL
     if (!updates.state) {
       if (entityConfig.state_on && this.matchState(payload, entityConfig.state_on)) {
         updates.state = 'ON';
@@ -70,8 +70,8 @@ export class FanDevice extends GenericDevice {
     const entityConfig = this.config as FanEntity;
     const commandConfig = (entityConfig as any)[`command_${commandName}`];
 
-    // If lambda or CEL string, let GenericDevice handle it
-    if (typeof commandConfig === 'string' || (commandConfig && commandConfig.type === 'lambda')) {
+    // If CEL string, let GenericDevice handle it
+    if (typeof commandConfig === 'string') {
       return super.constructCommand(commandName, value, states);
     }
 

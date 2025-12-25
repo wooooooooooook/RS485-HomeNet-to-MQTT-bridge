@@ -58,9 +58,9 @@ export interface ClimateEntity extends EntityConfig {
   state_preset_sleep?: StateSchema;
   state_preset_activity?: StateSchema;
 
-  // Custom modes (lambda)
-  state_custom_fan?: CommandSchema; // lambda returning string
-  state_custom_preset?: CommandSchema; // lambda returning string
+  // Custom modes (CEL)
+  state_custom_fan?: CommandSchema; // CEL returning string
+  state_custom_preset?: CommandSchema; // CEL returning string
 
   // Commands - Temperature modes
   command_off?: CommandSchema;
@@ -102,9 +102,9 @@ export interface ClimateEntity extends EntityConfig {
   command_preset_sleep?: CommandSchema;
   command_preset_activity?: CommandSchema;
 
-  // Commands - Custom modes (lambda)
-  command_custom_fan?: CommandSchema; // lambda taking string
-  command_custom_preset?: CommandSchema; // lambda taking string
+  // Commands - Custom modes (CEL)
+  command_custom_fan?: CommandSchema; // CEL taking string
+  command_custom_preset?: CommandSchema; // CEL taking string
 
   // Update command
   command_update?: CommandSchema;

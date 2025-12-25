@@ -722,4 +722,287 @@ describe('AutomationManager', () => {
       expect(mqttPublisher.publish).toHaveBeenCalledTimes(4); // 두 번째 'end'
     });
   });
+
+  describe('If Action', () => {
+    it('조건이 참이면 then 블록을 실행해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        sensor: [{ id: 'sensor_temp', name: 'Temp', type: 'sensor' }],
+        automation: [
+          {
+            id: 'if_then_test',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              {
+                action: 'if',
+                condition: "states['sensor_temp']['value'] > 20",
+                then: [{ action: 'publish', topic: 'if', payload: 'then' }],
+                else: [{ action: 'publish', topic: 'if', payload: 'else' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 상태 설정 후 패킷 트리거
+      eventBus.emit('state:changed', { entityId: 'sensor_temp', state: { value: 25 } });
+      packetProcessor.emit('packet', [0xaa]);
+
+      await vi.runAllTimersAsync();
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('if', 'then', undefined);
+    });
+
+    it('조건이 거짓이면 else 블록을 실행해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        sensor: [{ id: 'sensor_temp', name: 'Temp', type: 'sensor' }],
+        automation: [
+          {
+            id: 'if_else_test',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              {
+                action: 'if',
+                condition: "states['sensor_temp']['value'] > 20",
+                then: [{ action: 'publish', topic: 'if', payload: 'then' }],
+                else: [{ action: 'publish', topic: 'if', payload: 'else' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 상태 설정 (조건 false) 후 패킷 트리거
+      eventBus.emit('state:changed', { entityId: 'sensor_temp', state: { value: 15 } });
+      packetProcessor.emit('packet', [0xaa]);
+
+      await vi.runAllTimersAsync();
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('if', 'else', undefined);
+    });
+
+    it('else 블록이 없고 조건이 거짓이면 아무것도 실행하지 않아야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        sensor: [{ id: 'sensor_temp', name: 'Temp', type: 'sensor' }],
+        automation: [
+          {
+            id: 'if_no_else_test',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              {
+                action: 'if',
+                condition: "states['sensor_temp']['value'] > 20",
+                then: [{ action: 'publish', topic: 'if', payload: 'then' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      eventBus.emit('state:changed', { entityId: 'sensor_temp', state: { value: 15 } });
+      packetProcessor.emit('packet', [0xaa]);
+
+      await vi.runAllTimersAsync();
+      expect(mqttPublisher.publish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Repeat Action', () => {
+    it('count 횟수만큼 반복 실행해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'repeat_count_test',
+            trigger: [{ type: 'startup' }],
+            then: [
+              {
+                action: 'repeat',
+                count: 3,
+                actions: [{ action: 'publish', topic: 'repeat', payload: 'tick' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      await vi.runAllTimersAsync();
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(3);
+    });
+
+    it('while 조건이 거짓이 되면 반복을 중단해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        sensor: [{ id: 'counter', name: 'Counter', type: 'sensor' }],
+        automation: [
+          {
+            id: 'repeat_while_test',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              {
+                action: 'repeat',
+                while: "states['counter']['value'] < 3",
+                max: 10,
+                actions: [{ action: 'publish', topic: 'repeat', payload: 'tick' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      // 초기 카운터 설정
+      eventBus.emit('state:changed', { entityId: 'counter', state: { value: 0 } });
+
+      // 카운터 증가 시뮬레이션
+      let counter = 0;
+      mqttPublisher.publish.mockImplementation(() => {
+        counter++;
+        eventBus.emit('state:changed', { entityId: 'counter', state: { value: counter } });
+      });
+
+      packetProcessor.emit('packet', [0xaa]);
+
+      await vi.runAllTimersAsync();
+      // 0, 1, 2 세 번 실행 후 condition이 false가 되어 중단
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(3);
+    });
+
+    it('max 제한에 도달하면 반복을 중단해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        automation: [
+          {
+            id: 'repeat_max_test',
+            trigger: [{ type: 'startup' }],
+            then: [
+              {
+                action: 'repeat',
+                while: 'true', // 항상 참
+                max: 5,
+                actions: [{ action: 'publish', topic: 'repeat', payload: 'tick' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      await vi.runAllTimersAsync();
+      // max 5로 제한됨
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(5);
+    });
+
+    it('중첩된 if와 repeat 액션이 올바르게 동작해야 한다', async () => {
+      const config: HomenetBridgeConfig = {
+        ...baseConfig,
+        sensor: [{ id: 'switch_1', name: 'Switch', type: 'sensor' }],
+        automation: [
+          {
+            id: 'nested_test',
+            trigger: [
+              {
+                type: 'packet',
+                match: { data: [0xaa], offset: 0 },
+              },
+            ],
+            then: [
+              {
+                action: 'if',
+                condition: "states['switch_1']['power'] == 'on'",
+                then: [
+                  {
+                    action: 'repeat',
+                    count: 2,
+                    actions: [{ action: 'publish', topic: 'nested', payload: 'ok' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      automationManager = new AutomationManager(
+        config,
+        packetProcessor as any,
+        commandManager as any,
+        mqttPublisher as any,
+      );
+      automationManager.start();
+
+      eventBus.emit('state:changed', { entityId: 'switch_1', state: { power: 'on' } });
+      packetProcessor.emit('packet', [0xaa]);
+
+      await vi.runAllTimersAsync();
+      expect(mqttPublisher.publish).toHaveBeenCalledTimes(2);
+      expect(mqttPublisher.publish).toHaveBeenCalledWith('nested', 'ok', undefined);
+    });
+  });
 });

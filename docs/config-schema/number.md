@@ -11,8 +11,14 @@
 - 현재 값: `state_number` — [`StateNumSchema`](./schemas.md#statenumschema)로 실제 수치를 읽음.
 
 ## 옵션 필드 (명령)
-- 값 설정: `command_number` — 입력값을 패킷에 삽입하거나 람다로 조합.
-- 상태 요청: `command_update` — 장치에 현재 값을 다시 보내달라고 요청.
+- 값 설정: `command_number` — 입력값을 패킷에 삽입하거나 CEL 표현식으로 조합.
+  - `data`: 기본 명령 패킷 바이트 배열
+  - `value_offset`: 값을 삽입할 바이트 위치 (0부터 시작)
+  - `length`: 값이 차지하는 바이트 수 (기본값: 1)
+  - `precision`: 소수점 자릿수 (예: 1이면 값에 10을 곱함, 기본값: 0)
+  - `endian`: 바이트 순서 (`big` 또는 `little`, 기본값: `big`)
+  - `multiply_factor`: 값에 곱할 배수 (기본값: 1)
+  - `value_encode`: 인코딩 방식 (`none`, `bcd`, `ascii`, `signed_byte_half_degree`, 기본값: `none`)
 
 ## 예제: 난방 설정값 슬라이더 (예시)
 ```yaml

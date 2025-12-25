@@ -96,13 +96,30 @@ export interface AutomationActionSendPacket {
   ack?: number[] | string;
 }
 
+export interface AutomationActionIf {
+  action: 'if';
+  condition: string; // CEL expression
+  then: AutomationAction[];
+  else?: AutomationAction[];
+}
+
+export interface AutomationActionRepeat {
+  action: 'repeat';
+  count?: number; // Fixed count
+  while?: string; // CEL condition (repeat while true)
+  max?: number; // Safety limit for while loops (required when using while)
+  actions: AutomationAction[];
+}
+
 export type AutomationAction =
   | AutomationActionCommand
   | AutomationActionPublish
   | AutomationActionLog
   | AutomationActionDelay
   | AutomationActionScript
-  | AutomationActionSendPacket;
+  | AutomationActionSendPacket
+  | AutomationActionIf
+  | AutomationActionRepeat;
 
 export type AutomationMode = 'parallel' | 'single' | 'restart' | 'queued';
 

@@ -15,10 +15,9 @@ entities:
       state:
         data: [0x30, 0x00, 0x00, 0x01, 0x00, 0x44, 0x00]
         mask: [0xff, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
-      lambda: >-
-        if (check_value(8, 0x00, data, len)) "호출"
-        if (check_value(8, 0x03, data, len)) "도착"
-        "Unknown"
+      state_text: >-
+        data[8] == 0x00 ? "호출" :
+        data[8] == 0x03 ? "도착" : "Unknown"
 
   switch:
     - id: 'elevator_call'

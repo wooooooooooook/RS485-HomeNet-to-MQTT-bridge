@@ -26,12 +26,11 @@ entities:
       state:
         data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
         mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
-      lambda: >-
-        if (data[8] === 0x00) "정지"
-        if (data[8] === 0x01) "하강"
-        if (data[8] === 0x02) "상승"
-        if (data[8] === 0x03) "도착"
-        "Unknown"
+      state_text: >-
+        data[8] == 0x00 ? "정지" :
+        data[8] == 0x01 ? "하강" :
+        data[8] == 0x02 ? "상승" :
+        data[8] == 0x03 ? "도착" : "Unknown"
 
   switch:
     - id: 'elevator_call'

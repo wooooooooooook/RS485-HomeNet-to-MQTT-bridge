@@ -58,7 +58,7 @@ export class GenericDevice extends Device {
     const updates: Record<string, any> = {};
     let hasUpdates = false;
 
-    // Key mapping for lambda results to match HA discovery expectations
+    // Key mapping for CEL results to match HA discovery expectations
     const keyMapping: Record<string, string> = {
       temperature_target: 'target_temperature',
       temperature_current: 'current_temperature',
@@ -66,7 +66,7 @@ export class GenericDevice extends Device {
       humidity_current: 'current_humidity',
     };
 
-    // Check for state expressions (formerly lambdas)
+    // Check for state expressions (formerly CEL)
     for (const key in entityConfig) {
       if (key.startsWith('state_') && typeof entityConfig[key] === 'string') {
         const script = entityConfig[key] as string;
@@ -88,12 +88,7 @@ export class GenericDevice extends Device {
       }
     }
 
-    // Fallback to schema-based extraction if no lambda matched or as addition
-    if (entityConfig.state && entityConfig.state.data) {
-      // Check if packet contains the data pattern
-      // This is a simplification. Uartex has complex matching logic.
-      // For this refactor, we might need to implement a robust matcher.
-    }
+
 
     return hasUpdates ? updates : null;
   }
@@ -359,5 +354,141 @@ export class GenericDevice extends Device {
     }
 
     return value;
+  }
+
+  /**
+   * Constructs a command packet by inserting a numeric value at the specified offset.
+   *
+   * This is a shared helper for entities that use CommandSchema with value_offset,
+   * such as `number.command_number`, `climate.command_temperature`, etc.
+   *
+   * Supported options in commandSchema:
+   * - `data`: Base command packet byte array
+   * - `value_offset`: Byte position to insert the value (0-indexed)
+   * - `length`: Number of bytes for the value (default: 1)
+   * - `precision`: Decimal places to scale (e.g., 1 means multiply by 10, default: 0)
+   * - `endian`: Byte order ('big' or 'little', default: 'big')
+   * - `multiply_factor`: Multiplier for the value (default: 1)
+   * - `value_encode`: Encoding type ('none', 'bcd', 'ascii', 'signed_byte_half_degree', default: 'none')
+   *
+   * @param commandSchema - The command configuration object containing data and value options.
+   * @param value - The numeric value to insert into the command.
+   * @returns The fully framed command packet, or null if data is missing.
+   */
+  protected insertValueIntoCommand(commandSchema: any, value: number): number[] | null {
+    if (!commandSchema?.data) {
+      return null;
+    }
+
+    const command = [...commandSchema.data];
+    const valueOffset = commandSchema.value_offset;
+
+    if (valueOffset !== undefined) {
+      const length = commandSchema.length || 1;
+      const precision = commandSchema.precision || 0;
+      const endian = commandSchema.endian || 'big';
+      const multiplyFactor = commandSchema.multiply_factor || 1;
+      const valueEncode = commandSchema.value_encode || 'none';
+
+      // Apply multiply_factor and precision
+      let scaledValue = value * multiplyFactor * Math.pow(10, precision);
+
+      // Encode the value based on value_encode type
+      let encodedBytes: number[];
+      switch (valueEncode) {
+        case 'bcd':
+          // BCD encoding: each byte stores two decimal digits
+          encodedBytes = this.encodeBcd(Math.round(scaledValue), length);
+          break;
+
+        case 'ascii':
+          // ASCII encoding: convert number to string, then to ASCII bytes
+          encodedBytes = this.encodeAscii(scaledValue, length);
+          break;
+
+        case 'signed_byte_half_degree':
+          // Special encoding: bit 7 = 0.5, bits 0-6 = integer part
+          encodedBytes = this.encodeSignedByteHalfDegree(scaledValue);
+          break;
+
+        case 'none':
+        default:
+          // Standard binary encoding
+          encodedBytes = this.encodeInteger(Math.round(scaledValue), length, endian);
+          break;
+      }
+
+      // Extend command array if needed to fit the encoded bytes
+      const requiredLength = valueOffset + encodedBytes.length;
+      while (command.length < requiredLength) {
+        command.push(0);
+      }
+
+      // Insert encoded bytes into command
+      for (let i = 0; i < encodedBytes.length; i++) {
+        command[valueOffset + i] = encodedBytes[i];
+      }
+    }
+
+    return command;
+  }
+
+  /**
+   * Encodes a number as BCD (Binary Coded Decimal).
+   * Each byte contains two decimal digits (high nibble and low nibble).
+   */
+  private encodeBcd(value: number, length: number): number[] {
+    const result: number[] = new Array(length).fill(0);
+    let remaining = Math.abs(value);
+
+    for (let i = length - 1; i >= 0 && remaining > 0; i--) {
+      const lowDigit = remaining % 10;
+      remaining = Math.floor(remaining / 10);
+      const highDigit = remaining % 10;
+      remaining = Math.floor(remaining / 10);
+      result[i] = (highDigit << 4) | lowDigit;
+    }
+
+    return result;
+  }
+
+  /**
+   * Encodes a number as ASCII string bytes.
+   */
+  private encodeAscii(value: number, length: number): number[] {
+    const str = String(value).padStart(length, '0').slice(-length);
+    return str.split('').map((c) => c.charCodeAt(0));
+  }
+
+  /**
+   * Encodes a temperature value using signed byte with half-degree flag.
+   * Bit 7: 0.5 degree flag, Bits 0-6: integer part.
+   */
+  private encodeSignedByteHalfDegree(value: number): number[] {
+    const intPart = Math.floor(Math.abs(value)) & 0x7f;
+    const hasHalf = (Math.abs(value) % 1) >= 0.25; // 0.5 threshold
+    let byte = intPart;
+    if (hasHalf) {
+      byte |= 0x80; // Set bit 7 for 0.5
+    }
+    return [byte];
+  }
+
+  /**
+   * Encodes an integer into bytes with specified length and endianness.
+   */
+  private encodeInteger(value: number, length: number, endian: string): number[] {
+    const result: number[] = new Array(length).fill(0);
+
+    if (length === 1) {
+      result[0] = value & 0xff;
+    } else {
+      for (let i = 0; i < length; i++) {
+        const shift = endian === 'little' ? i * 8 : (length - 1 - i) * 8;
+        result[i] = (value >> shift) & 0xff;
+      }
+    }
+
+    return result;
   }
 }

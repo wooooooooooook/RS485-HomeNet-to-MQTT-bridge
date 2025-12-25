@@ -43,6 +43,7 @@ export class CelExecutor {
 
     // Register Types
     this.env.registerVariable('x', 'int');
+    this.env.registerVariable('xstr', 'string'); // String input for custom modes
     this.env.registerVariable('data', 'list'); // list(int)
     this.env.registerVariable('state', 'map');
     this.env.registerVariable('states', 'map');
@@ -108,11 +109,19 @@ export class CelExecutor {
       const safeContext: Record<string, any> = {};
 
       if (contextData.x !== undefined && contextData.x !== null) {
-        // Ensure integer, handle NaN case (e.g., when x is a string like 'heat')
-        const numValue = Number(contextData.x);
-        safeContext.x = Number.isNaN(numValue) ? 0n : BigInt(Math.floor(numValue));
+        // If x is a string (e.g., custom mode name), set both x=0 and xstr=value
+        // If x is a number, convert to BigInt for CEL and set xstr=''
+        if (typeof contextData.x === 'string') {
+          safeContext.x = 0n; // CEL needs x to be int
+          safeContext.xstr = contextData.x; // String value accessible via xstr
+        } else {
+          const numValue = Number(contextData.x);
+          safeContext.x = Number.isNaN(numValue) ? 0n : BigInt(Math.floor(numValue));
+          safeContext.xstr = '';
+        }
       } else {
         safeContext.x = 0n; // Default for when x is not provided (e.g. state parsing)
+        safeContext.xstr = '';
       }
 
       if (Array.isArray(contextData.data)) {

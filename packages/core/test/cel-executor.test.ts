@@ -70,4 +70,16 @@ describe('CelExecutor', () => {
     const result = executor.execute('x', {});
     expect(result).toBe(0);
   });
+
+  it('should handle string x value for custom mode comparison', () => {
+    const script = 'xstr == "Turbo" ? [0x20, 0x11, 0x03] : [0x00]';
+    const result = executor.execute(script, { x: 'Turbo' });
+    expect(result).toEqual([0x20, 0x11, 0x03]);
+  });
+
+  it('should return alternative array when string x does not match', () => {
+    const script = 'xstr == "Turbo" ? [0x20, 0x11, 0x03] : [0x20, 0x11, 0x01]';
+    const result = executor.execute(script, { x: 'Sleep' });
+    expect(result).toEqual([0x20, 0x11, 0x01]);
+  });
 });

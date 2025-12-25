@@ -5,8 +5,10 @@ import type {
   AutomationAction,
   AutomationActionCommand,
   AutomationActionDelay,
+  AutomationActionIf,
   AutomationActionLog,
   AutomationActionPublish,
+  AutomationActionRepeat,
   AutomationActionScript,
   AutomationActionSendPacket,
   AutomationConfig,
@@ -91,27 +93,6 @@ export class AutomationManager {
     this.commandManager = commandManager;
     this.mqttPublisher = mqttPublisher;
     (config.scripts || []).forEach((script) => this.scripts.set(script.id, script));
-
-    // Register CEL functions (exceptions to "pure function" rule)
-    // IMPORTANT: When testing with vitest mocks, logger might be a spy object.
-    // We bind directly to the logger instance to allow mocking in tests.
-    this.celExecutor.registerFunction('log(string): bool', (message: string) => {
-      logger.info({ context: 'CEL' }, `[automation] ${message}`);
-      return true;
-    });
-
-    this.celExecutor.registerFunction(
-      'command(string, string, dyn): bool',
-      (entityId: string, command: string, value: any) => {
-        // Run command execution in background
-        // Use setImmediate or nextTick logic if strictly needed, but here we just fire and forget.
-        // We catch the promise to avoid unhandled rejections.
-        this.runCommandFromCel(entityId, command, value).catch((err) => {
-          logger.error({ error: err }, '[automation] CEL command failed');
-        });
-        return true;
-      },
-    );
   }
 
   private normalizeCommandName(commandName: string) {
@@ -148,35 +129,6 @@ export class AutomationManager {
     for (const action of script.actions) {
       await this.executeAction(action, scriptContext, this.contextPortId, nextStack);
     }
-  }
-
-  private async runCommandFromCel(entityId: string, command: string, value: any) {
-    const entity = findEntityById(this.config, entityId);
-    if (!entity) {
-      logger.warn({ entityId }, '[automation] CEL command: Entity not found');
-      return;
-    }
-    // Handle BigInt from CEL
-    const safeValue = typeof value === 'bigint' ? Number(value) : value;
-
-    const normalizedCommand = this.normalizeCommandName(command);
-    const { schema } = this.getCommandSchema(entity, normalizedCommand);
-
-    if (schema && typeof schema === 'object' && (schema as any).script) {
-      await this.runScript((schema as any).script, { type: 'command', timestamp: Date.now() });
-      return;
-    }
-
-    const packet = this.packetProcessor.constructCommandPacket(
-      entity,
-      normalizedCommand,
-      safeValue,
-    );
-    if (!packet) {
-      logger.warn({ entityId, command }, '[automation] CEL command: Failed to construct packet');
-      return;
-    }
-    await this.commandManager.send(entity, packet);
   }
 
   public addAutomation(config: AutomationConfig) {
@@ -480,6 +432,22 @@ export class AutomationManager {
         context,
         automationPortId,
       );
+    if (action.action === 'if')
+      return this.executeIfAction(
+        action as AutomationActionIf,
+        context,
+        automationPortId,
+        scriptStack,
+        signal,
+      );
+    if (action.action === 'repeat')
+      return this.executeRepeatAction(
+        action as AutomationActionRepeat,
+        context,
+        automationPortId,
+        scriptStack,
+        signal,
+      );
   }
 
   private async executeSendPacketAction(
@@ -672,6 +640,80 @@ export class AutomationManager {
     } catch {
       return raw;
     }
+  }
+
+  private async executeIfAction(
+    action: AutomationActionIf,
+    context: TriggerContext,
+    automationPortId?: string,
+    scriptStack: string[] = [],
+    signal?: AbortSignal,
+  ) {
+    const conditionResult = this.celExecutor.execute(action.condition, this.buildContext(context));
+    const actions = Boolean(conditionResult) ? action.then : action.else;
+
+    if (!actions || actions.length === 0) return;
+
+    for (const subAction of actions) {
+      if (signal?.aborted) return;
+      await this.executeAction(subAction, context, automationPortId, scriptStack, signal);
+    }
+  }
+
+  private async executeRepeatAction(
+    action: AutomationActionRepeat,
+    context: TriggerContext,
+    automationPortId?: string,
+    scriptStack: string[] = [],
+    signal?: AbortSignal,
+  ) {
+    const DEFAULT_MAX_ITERATIONS = 100;
+
+    // Fixed count loop
+    if (action.count !== undefined) {
+      const count = Math.max(0, Math.min(action.count, DEFAULT_MAX_ITERATIONS));
+      for (let i = 0; i < count; i++) {
+        if (signal?.aborted) return;
+        for (const subAction of action.actions) {
+          if (signal?.aborted) return;
+          await this.executeAction(subAction, context, automationPortId, scriptStack, signal);
+        }
+      }
+      return;
+    }
+
+    // While loop (condition-based)
+    if (action.while) {
+      const maxIterations = action.max ?? DEFAULT_MAX_ITERATIONS;
+      if (maxIterations <= 0) {
+        logger.warn('[automation] repeat while loop requires max > 0');
+        return;
+      }
+
+      let iterations = 0;
+      while (iterations < maxIterations) {
+        if (signal?.aborted) return;
+
+        const conditionResult = this.celExecutor.execute(action.while, this.buildContext(context));
+        if (!Boolean(conditionResult)) break;
+
+        for (const subAction of action.actions) {
+          if (signal?.aborted) return;
+          await this.executeAction(subAction, context, automationPortId, scriptStack, signal);
+        }
+        iterations++;
+      }
+
+      if (iterations >= maxIterations) {
+        logger.warn(
+          { iterations, max: maxIterations },
+          '[automation] repeat while loop reached max iterations',
+        );
+      }
+      return;
+    }
+
+    logger.warn('[automation] repeat action requires either count or while');
   }
 
   private buildContext(context: TriggerContext) {

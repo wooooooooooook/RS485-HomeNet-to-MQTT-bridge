@@ -164,10 +164,27 @@ export class MqttSubscriber {
         commandName = String(commandValue).toLowerCase();
       }
 
+      // Climate Fan Mode: fan_mode -> custom_fan (with string value)
+      if (targetEntity.type === 'climate' && commandName === 'fan_mode') {
+        commandName = 'custom_fan';
+        // commandValue is already the mode string (e.g., "Turbo")
+      }
+
+      // Climate Preset Mode: preset_mode -> custom_preset (with string value)
+      if (targetEntity.type === 'climate' && commandName === 'preset_mode') {
+        commandName = 'custom_preset';
+        // commandValue is already the preset string (e.g., "Eco")
+      }
+
       // Fan Percentage -> speed
       if (targetEntity.type === 'fan' && commandName === 'percentage') {
         commandName = 'speed';
       }
+
+      // Fan Preset Mode: keep as preset_mode (unified with CEL support)
+      // The command value (xstr) is passed as-is to command_preset_mode CEL expression
+
+
 
       // If commandName is still empty (generic set with value), deduce from entity type
       if (!commandName) {

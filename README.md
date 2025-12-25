@@ -87,7 +87,6 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 - [Home Assistant Discovery 상세 가이드](docs/HOMEASSISTANT_DISCOVERY.md)
 - [기기별 설정 예시](docs/ENTITY_EXAMPLES.md)
 - [CEL (Common Expression Language) 가이드](docs/CEL_GUIDE.md)
-- [지원 기기 및 프로토콜 목록](docs/DEVICE_SETTINGS.md)
 
 ## ⚖️ 라이선스
 이 프로젝트는 MIT License를 따릅니다.

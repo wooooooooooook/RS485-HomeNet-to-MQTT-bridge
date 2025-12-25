@@ -13,10 +13,10 @@ export interface FanEntity extends EntityConfig {
   state_speed?: StateNumSchema;
   command_speed?: CommandSchema;
 
-  // Preset modes
+  // Preset modes (supports both schema-based and CEL expressions)
   preset_modes?: string[];
-  state_preset_mode?: StateSchema;
-  command_preset_mode?: CommandSchema;
+  state_preset_mode?: StateSchema | CommandSchema; // StateSchema or CEL string returning preset name
+  command_preset_mode?: CommandSchema; // CommandSchema or CEL string (uses xstr for preset name)
 
   // Oscillation
   state_oscillating?: StateSchema;
@@ -34,3 +34,5 @@ export interface FanEntity extends EntityConfig {
   command_off?: CommandSchema;
   command_update?: CommandSchema;
 }
+
+

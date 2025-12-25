@@ -68,13 +68,21 @@ export class ClimateDevice extends GenericDevice {
 
     const entityConfig = this.config as any;
     if (commandName === 'off' && entityConfig.command_off?.data) {
-      return this.framePacket([...entityConfig.command_off.data]);
+      return [...entityConfig.command_off.data];
     }
     if (commandName === 'heat' && entityConfig.command_heat?.data) {
-      return this.framePacket([...entityConfig.command_heat.data]);
+      return [...entityConfig.command_heat.data];
     }
 
-    // command_temperature is usually a lambda, handled by super
+    // Handle temperature command with value_offset schema (uses shared insertValueIntoCommand)
+    if (commandName === 'temperature' && entityConfig.command_temperature?.data && value !== undefined) {
+      return this.insertValueIntoCommand(entityConfig.command_temperature, value);
+    }
+
+    // Handle humidity command with value_offset schema
+    if (commandName === 'humidity' && entityConfig.command_humidity?.data && value !== undefined) {
+      return this.insertValueIntoCommand(entityConfig.command_humidity, value);
+    }
 
     return null;
   }

@@ -4,10 +4,10 @@ On/Off 토글 장치는 `switch` 엔티티를 사용합니다. `type`은 `switch
 
 ## 필수 필드
 - `state`: 이 스위치가 포함된 패킷을 구분하는 서명.
+- 전원 상태 판단용 `state_on`, `state_off` 중 하나 이상 — [`StateSchema`](./schemas.md#stateschema) 또는 CEL 표현식.
+- 전원 제어용 `command_on`, `command_off` 중 하나 이상.
 
 ## 옵션 필드
-- 전원 상태: `state_on`, `state_off` — [`StateSchema`](./schemas.md#stateschema) 또는 CEL 표현식.
-- 명령: `command_on`, `command_off`(필요 시 `value_offset` 또는 CEL 표현식 사용), `command_update`(상태 재요청).
 - 동작 모드: `optimistic` (true 설정 시 즉시 상태 반영 및 가상 스위치 지원)
 
 ## 예제: 도어 호출 스위치
@@ -35,4 +35,4 @@ switch:
 ## 작성 체크리스트
 1. 상태 패킷과 명령 패킷의 헤더/체크섬 규칙이 다르면 엔티티별 `packet_parameters`를 사용해 상위 기본값을 덮어씁니다.
 2. 전원 비트 외에 추가 상태가 있을 경우 `state`에 `mask`를 걸어 노이즈를 제거합니다.
-3. 토글 시 다른 엔티티 상태를 함께 맞춰야 한다면 `command_on/off`를 람다로 작성해 여러 패킷을 동시에 반환합니다.
+3. 토글 시 다른 엔티티 상태를 함께 맞춰야 한다면 `command_on/off`를 CEL 표현식으로 작성해 여러 패킷을 동시에 반환합니다.

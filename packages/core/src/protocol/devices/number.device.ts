@@ -48,32 +48,9 @@ export class NumberDevice extends GenericDevice {
 
     const entityConfig = this.config as NumberEntity;
 
-    // Handle number command with value
+    // Handle number command with value (uses shared insertValueIntoCommand)
     if (commandName === 'set' && entityConfig.command_number?.data && value !== undefined) {
-      const command = [...entityConfig.command_number.data];
-
-      // If there's a value offset, insert the value
-      const valueOffset = (entityConfig.command_number as any).value_offset;
-      if (valueOffset !== undefined) {
-        const length = (entityConfig.command_number as any).length || 1;
-        const precision = (entityConfig.command_number as any).precision || 0;
-        const endian = (entityConfig.command_number as any).endian || 'big';
-
-        // Apply precision
-        let intValue = Math.round(value * Math.pow(10, precision));
-
-        // Insert value into command
-        if (length === 1) {
-          command[valueOffset] = intValue & 0xff;
-        } else {
-          for (let i = 0; i < length; i++) {
-            const shift = endian === 'little' ? i * 8 : (length - 1 - i) * 8;
-            command[valueOffset + i] = (intValue >> shift) & 0xff;
-          }
-        }
-      }
-
-      return command;
+      return this.insertValueIntoCommand(entityConfig.command_number, value);
     }
 
     return null;

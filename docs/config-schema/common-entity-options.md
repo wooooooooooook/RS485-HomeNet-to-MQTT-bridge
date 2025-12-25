@@ -19,6 +19,7 @@
 | `device_class` | string | Home Assistant [Device Class](https://www.home-assistant.io/integrations/binary_sensor/#device-class)를 지정합니다. 아이콘과 상태 표현 방식이 결정됩니다. | `temperature`, `door`, `window` |
 | `icon` | string | Home Assistant에서 표시할 아이콘(MDI)입니다. | `mdi:lightbulb`, `mdi:fan` |
 | `area` | string | 엔티티가 위치한 구역(Area)을 제안합니다. | `거실`, `안방` |
+| `device` | string | 미리 정의된 `devices` 블록의 ID를 참조하여 장치 정보를 설정합니다. | `living_room_wallpad` |
 | `unit_of_measurement` | string | 센서 값의 단위를 지정합니다. (`sensor` 타입 전용) | `°C`, `%`, `W` |
 | `state_class` | string | 통계 처리를 위한 상태 클래스입니다. (`sensor` 타입 전용) | `measurement`, `total_increasing` |
 
@@ -87,3 +88,42 @@ switch:
     id: "away_mode_flag"
     optimistic: true  # 가상 스위치로 동작 (패킷 전송 없음)
 ```
+
+## 디바이스 정의 및 영역 매핑
+
+엔티티별로 다른 디바이스 메타데이터를 사용하거나 영역을 미리 지정하려면 최상위 `devices` 블록과 엔티티의 `device`, `area` 필드를 함께 사용합니다.
+
+```yaml
+devices:
+  - id: subpanel
+    name: "현관 서브패널"
+    manufacturer: "Homenet"
+    model: "Subpanel V2"
+    sw_version: "1.0.3"
+    area: "Entrance"
+
+switch:
+  - id: entrance_light
+    name: "현관 조명"
+    type: switch
+    device: subpanel
+    area: "Hallway"
+```
+
+- **디바이스 참조**: 엔티티에 `device: subpanel`을 지정하면 해당 엔티티의 Discovery 정보에 장치 제조사, 모델명 등이 포함됩니다.
+- **영역 매핑**: `area`를 지정하면 Home Assistant의 `suggested_area`로 전달됩니다. 엔티티에 직접 `area`를 지정하면 디바이스에 정의된 `area`보다 우선순위를 가집니다.
+
+## Discovery 토픽 및 문제 해결
+
+브리지는 Home Assistant의 MQTT Discovery 프로토콜을 따르며, 기본적으로 다음 토픽 패턴을 사용합니다:
+
+`homeassistant/<entity_type>/homenet_<entity_id>/config`
+
+### 문제 해결 체크리스트
+
+장치가 Home Assistant에 자동으로 나타나지 않는 경우 다음을 확인하세요:
+
+1. **상태 패킷 수신 대기**: 기본적으로 브리지는 해당 엔티티의 **최초 상태 패킷**을 수신한 후에 Discovery를 발행합니다. 즉시 노출하려면 `discovery_always: true`를 설정하세요.
+2. **MQTT 설정**: 브리지가 MQTT 브로커에 정상적으로 연결되었는지, `homeassistant` 토픽으로 메시지를 발행할 권한이 있는지 확인하세요.
+3. **토픽 확인**: MQTT Explorer 등의 도구로 `homeassistant/#` 토픽에 설정(config) 메시지가 들어오는지 확인하세요.
+4. **ID 충돌**: `unique_id`가 중복되지 않는지 확인하세요. (로그에서 확인 가능)

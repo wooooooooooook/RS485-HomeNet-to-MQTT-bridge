@@ -28,4 +28,3 @@ button:
 ## 작성 체크리스트
 1. 버튼은 상태를 가지지 않으므로 `state` 블록을 넣지 않습니다.
 2. 장비가 응답 패킷을 요구한다면 `packet_defaults.tx_checksum`과 헤더/푸터를 상위에서 맞춰준 뒤, `command_press`에 필요한 바이트만 넣습니다.
-3. 누름 시간에 따라 다른 명령이 필요하면 `command_press: !lambda` 안에서 `x` 값을 확인해 분기합니다.

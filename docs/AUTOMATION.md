@@ -38,7 +38,7 @@ trigger:
 ```
 
 ### 시작 트리거 (Startup Trigger)
-애플리케이션이 시작될 때(부팅 시) 실행됩니다. `delay` 옵션은 제거되었으므로, 지연 실행이 필요한 경우 `action` 단계에서 `delay`를 사용해야 합니다.
+애플리케이션이 시작될 때(부팅 시) 실행됩니다. 지연 실행이 필요한 경우 `action` 단계에서 `delay`를 사용해야 합니다.
 ```yaml
 trigger:
   - type: startup

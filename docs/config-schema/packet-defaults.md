@@ -6,7 +6,7 @@
 - `rx_header` / `tx_header`: 수신·송신 패킷 앞부분 식별 바이트 배열.
 - `rx_footer` / `tx_footer`: 패킷 종료 시그널.
 - `rx_checksum` / `tx_checksum`: 기본 체크섬 계산기. `add`, `xor`, `add_no_header`, `samsung_rx` 등 문자열 또는 CEL 표현식.
-- `rx_checksum2` / `tx_checksum2`: 이중 체크섬(`xor_add` 혹은 `!lambda`).
+- `rx_checksum2` / `tx_checksum2`: 이중 체크섬(`xor_add` 혹은 CEL 표현식).
 - `rx_length`: 고정 길이 패킷일 때 전체 길이를 명시.
 - `tx_delay`: 연속 송신 시 두 패킷 사이의 지연.
 - `tx_retry_cnt`: 재전송 횟수.

@@ -81,6 +81,16 @@ describe('DiscoveryManager', () => {
           state_heat: 'heat',
           state_cool: 'cool',
         },
+        {
+          id: 'climate_custom',
+          name: 'Custom Climate',
+          type: 'climate',
+          state: {},
+          state_off: 'off',
+          state_heat: 'heat',
+          custom_fan_mode: ['Turbo', 'Nature', 'Sleep'],
+          custom_preset: ['Eco', 'Comfort', 'Boost'],
+        },
       ],
       light: [
         {
@@ -215,5 +225,26 @@ describe('DiscoveryManager', () => {
     expect(payload.default_entity_id).toBe('switch.renamed_switch');
 
     vi.useRealTimers();
+  });
+
+  it('custom_fan_mode와 custom_preset이 Discovery 페이로드에 포함된다', () => {
+    discoveryManager.discover();
+
+    const climateTopic = 'homeassistant/climate/homenet_main_climate_custom/config';
+    eventBus.emit('state:changed', { entityId: 'climate_custom', state: {}, portId: 'main' });
+
+    const call = mockPublisher.publish.mock.calls.find((args: any[]) => args[0] === climateTopic);
+    expect(call).toBeDefined();
+
+    const payload = JSON.parse(call[1]);
+    expect(payload.unique_id).toBe('homenet_main_climate_custom');
+    expect(payload.fan_modes).toEqual(['Turbo', 'Nature', 'Sleep']);
+    expect(payload.fan_mode_command_topic).toBe('homenet2mqtt/homedevice1/climate_custom/fan_mode/set');
+    expect(payload.fan_mode_state_topic).toBe('homenet2mqtt/homedevice1/climate_custom/state');
+    expect(payload.fan_mode_state_template).toBe('{{ value_json.custom_fan }}');
+    expect(payload.preset_modes).toEqual(['Eco', 'Comfort', 'Boost']);
+    expect(payload.preset_mode_command_topic).toBe('homenet2mqtt/homedevice1/climate_custom/preset_mode/set');
+    expect(payload.preset_mode_state_topic).toBe('homenet2mqtt/homedevice1/climate_custom/state');
+    expect(payload.preset_mode_state_template).toBe('{{ value_json.custom_preset }}');
   });
 });

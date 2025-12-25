@@ -5,10 +5,14 @@
 ## 필수 필드
 - `state`: 수신 패킷 패턴(`data`, `mask`, `offset`, `inverted`)을 지정해 어떤 패킷이 이 센서의 업데이트인지 식별합니다.
 
-## 옵션 필드
-- `state_on`: 켜짐 상태를 나타내는 서명. `offset`과 `data`로 특정 비트를 비교합니다.
-- `state_off`: 꺼짐 상태 서명.
-- `state_*`는 모두 [`StateSchema`](./schemas.md#stateschema) 또는 CEL 표현식로 작성할 수 있습니다.
+### 상태 판별 필드 (최소 하나 필수)
+센서의 실제 상태(`ON`/`OFF`)를 결정하기 위해 다음 두 방식 중 **하나를 반드시 작성**해야 합니다.
+
+1.  **스키마 방식**: `state_on`과 `state_off`를 모두 정의합니다.
+    - `state_on`: 켜짐 상태 서명. `offset`과 `data`로 특정 비트를 비교합니다.
+    - `state_off`: 꺼짐 상태 서명.
+2.  **CEL 방식**: `state_state` 필드를 사용합니다.
+    - `state_state`: 패킷 데이터를 분석해 `'ON'` 또는 `'OFF'` 문자열을 반환하는 CEL 표현식입니다.
 
 ## 예제: 도어벨 패킷 매칭
 `hyundai_door.homenet_bridge.yaml`에서는 헤더·푸터를 전역으로 설정하고, 오프셋 0 바이트를 확인해 벨 상태를 판별합니다.【F:packages/core/config/hyundai_door.homenet_bridge.yaml†L17-L38】
@@ -27,6 +31,20 @@ binary_sensor:
     state_off:
       offset: 0
       data: [0xB6]
+```
+
+## 예제: CEL 표현식 사용
+패킷의 특정 바이트 값에 따라 복잡한 조건이 필요하거나 간단히 한 줄로 표현하고 싶을 때 사용합니다.
+
+```yaml
+binary_sensor:
+  - id: door_bell_cel
+    name: "Door Bell CEL"
+    state:
+      data: [0xB4]
+      offset: 0
+    # data[1]이 0xB5면 ON, 아니면 OFF 반환
+    state_state: "data[1] == 0xB5 ? 'ON' : 'OFF'"
 ```
 
 ## 작성 체크리스트

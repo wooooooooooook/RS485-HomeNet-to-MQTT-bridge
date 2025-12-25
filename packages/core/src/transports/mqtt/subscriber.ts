@@ -184,8 +184,6 @@ export class MqttSubscriber {
       // Fan Preset Mode: keep as preset_mode (unified with CEL support)
       // The command value (xstr) is passed as-is to command_preset_mode CEL expression
 
-
-
       // If commandName is still empty (generic set with value), deduce from entity type
       if (!commandName) {
         if (targetEntity.type === 'number') commandName = 'number';

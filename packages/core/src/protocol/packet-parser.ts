@@ -196,14 +196,9 @@ export class PacketParser {
           const checksumType = this.defaults.rx_checksum;
           const isStandard1Byte =
             typeof checksumType === 'string' &&
-            [
-              'add',
-              'xor',
-              'add_no_header',
-              'xor_no_header',
-              'samsung_rx',
-              'samsung_tx',
-            ].includes(checksumType);
+            ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
+              checksumType,
+            );
 
           const startLen = Math.max(minLen, this.lastScannedLength + 1);
 

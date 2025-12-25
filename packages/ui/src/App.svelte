@@ -915,9 +915,7 @@
 
   const hasInactiveEntities = $derived.by<boolean>(() => {
     if (!activePortId) return false;
-    return allUnifiedEntities.some(
-      (e) => (!e.portId || e.portId === activePortId) && !e.isActive,
-    );
+    return allUnifiedEntities.some((e) => (!e.portId || e.portId === activePortId) && !e.isActive);
   });
 
   const entitiesByPort = $derived.by<Record<string, UnifiedEntity[]>>(() => {

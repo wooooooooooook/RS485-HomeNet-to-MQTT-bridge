@@ -468,8 +468,7 @@ export class AutomationManager {
         scriptStack,
         signal,
       );
-    if (action.action === 'stop')
-      return this.executeStopAction(action as AutomationActionStop);
+    if (action.action === 'stop') return this.executeStopAction(action as AutomationActionStop);
   }
 
   private async executeSendPacketAction(
@@ -765,7 +764,10 @@ export class AutomationManager {
       }
 
       // Check condition
-      const conditionResult = this.celExecutor.execute(action.condition, this.buildContext(context));
+      const conditionResult = this.celExecutor.execute(
+        action.condition,
+        this.buildContext(context),
+      );
       if (Boolean(conditionResult)) {
         logger.debug('[automation] wait_until condition met');
         return;
@@ -773,10 +775,7 @@ export class AutomationManager {
 
       // Check timeout
       if (Date.now() - startTime >= timeout) {
-        logger.warn(
-          { condition: action.condition, timeout },
-          '[automation] wait_until timed out',
-        );
+        logger.warn({ condition: action.condition, timeout }, '[automation] wait_until timed out');
         return;
       }
 
@@ -817,7 +816,10 @@ export class AutomationManager {
     for (const choice of action.choices) {
       if (signal?.aborted) return;
 
-      const conditionResult = this.celExecutor.execute(choice.condition, this.buildContext(context));
+      const conditionResult = this.celExecutor.execute(
+        choice.condition,
+        this.buildContext(context),
+      );
       if (Boolean(conditionResult)) {
         logger.debug({ condition: choice.condition }, '[automation] choose: condition matched');
         for (const subAction of choice.then) {

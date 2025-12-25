@@ -88,8 +88,6 @@ export class GenericDevice extends Device {
       }
     }
 
-
-
     return hasUpdates ? updates : null;
   }
 
@@ -466,7 +464,7 @@ export class GenericDevice extends Device {
    */
   private encodeSignedByteHalfDegree(value: number): number[] {
     const intPart = Math.floor(Math.abs(value)) & 0x7f;
-    const hasHalf = (Math.abs(value) % 1) >= 0.25; // 0.5 threshold
+    const hasHalf = Math.abs(value) % 1 >= 0.25; // 0.5 threshold
     let byte = intPart;
     if (hasHalf) {
       byte |= 0x80; // Set bit 7 for 0.5

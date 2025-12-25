@@ -239,11 +239,15 @@ describe('DiscoveryManager', () => {
     const payload = JSON.parse(call[1]);
     expect(payload.unique_id).toBe('homenet_main_climate_custom');
     expect(payload.fan_modes).toEqual(['Turbo', 'Nature', 'Sleep']);
-    expect(payload.fan_mode_command_topic).toBe('homenet2mqtt/homedevice1/climate_custom/fan_mode/set');
+    expect(payload.fan_mode_command_topic).toBe(
+      'homenet2mqtt/homedevice1/climate_custom/fan_mode/set',
+    );
     expect(payload.fan_mode_state_topic).toBe('homenet2mqtt/homedevice1/climate_custom/state');
     expect(payload.fan_mode_state_template).toBe('{{ value_json.custom_fan }}');
     expect(payload.preset_modes).toEqual(['Eco', 'Comfort', 'Boost']);
-    expect(payload.preset_mode_command_topic).toBe('homenet2mqtt/homedevice1/climate_custom/preset_mode/set');
+    expect(payload.preset_mode_command_topic).toBe(
+      'homenet2mqtt/homedevice1/climate_custom/preset_mode/set',
+    );
     expect(payload.preset_mode_state_topic).toBe('homenet2mqtt/homedevice1/climate_custom/state');
     expect(payload.preset_mode_state_template).toBe('{{ value_json.custom_preset }}');
   });

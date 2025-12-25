@@ -420,9 +420,7 @@
                                 cmd,
                                 commandInputs[`${cmd.entityId}_${cmd.commandName}`],
                               )}
-                            isLoading={executingCommands.has(
-                              `${cmd.entityId}-${cmd.commandName}`,
-                            )}
+                            isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
                             ariaLabel={$t('entity_detail.status.send_aria', {
                               values: { command: cmd.displayName },
                             })}
@@ -436,9 +434,7 @@
                           fullWidth
                           class="cmd-btn"
                           onclick={() => handleExecute(cmd)}
-                          isLoading={executingCommands.has(
-                            `${cmd.entityId}-${cmd.commandName}`,
-                          )}
+                          isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
                         >
                           {cmd.displayName}
                         </Button>
@@ -874,7 +870,7 @@
   }
 
   :global(.cmd-btn) {
-     height: 60px; /* Ensure full height for grid items */
+    height: 60px; /* Ensure full height for grid items */
   }
 
   .config-editor-container {

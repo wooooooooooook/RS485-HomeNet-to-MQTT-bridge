@@ -34,5 +34,3 @@ export interface FanEntity extends EntityConfig {
   command_off?: CommandSchema;
   command_update?: CommandSchema;
 }
-
-

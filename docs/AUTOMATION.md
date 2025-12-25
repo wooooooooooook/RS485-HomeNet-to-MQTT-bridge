@@ -120,6 +120,49 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
       target: id(heater_1).command_off()
 ```
 
+### 다중 조건 분기 (Choose)
+여러 조건을 순차적으로 평가하여 첫 번째로 일치하는 조건의 액션을 실행합니다. 중첩된 `if-else`보다 가독성이 좋습니다.
+
+```yaml
+- action: choose
+  choices:
+    - condition: "states['door_state']['state'] == 'D_IDLE'"
+      then:
+        - action: send_packet
+          data: [0xB0, 0x41, 0x00]
+    - condition: "states['door_state']['state'] == 'D_CALL'"
+      then:
+        - action: send_packet
+          data: [0xB0, 0x36, 0x01]
+    - condition: "states['door_state']['state'] == 'D_OPEN'"
+      then:
+        - action: send_packet
+          data: [0xB0, 0x3B, 0x00]
+  default:  # 선택사항 - 일치하는 조건이 없을 때 실행
+    - action: send_packet
+      data: [0xB0, 0x42, 0x00]
+```
+
+> **참고**: `choose`는 첫 번째로 일치하는 조건만 실행하고 종료합니다. 여러 조건이 동시에 참일 수 있더라도 첫 번째 것만 실행됩니다.
+
+### 자동화 중지 (Stop)
+현재 자동화의 실행을 즉시 중지합니다. 이후 액션은 실행되지 않습니다.
+
+```yaml
+- action: if
+  condition: "states['safety_mode']['state'] == 'on'"
+  then:
+    - action: stop
+      reason: "안전 모드에서는 실행하지 않음"  # 선택사항 - 로그에 기록됨
+- action: command
+  target: id(door).command_open()  # 위에서 stop이 실행되면 이 액션은 건너뜀
+```
+
+**사용 사례:**
+- 특정 조건에서 자동화를 조기 종료
+- 안전 가드 구현
+- 에러 상황에서 실행 중단
+
 ### 반복문 (Repeat)
 액션을 여러 번 반복 실행합니다.
 
@@ -147,6 +190,29 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 ```
 
 > **주의**: `while`을 사용할 때는 반드시 `max`를 지정하거나 루프 내에서 조건이 변경되도록 해야 합니다. 무한 루프를 방지하기 위해 최대 반복 횟수가 제한됩니다.
+
+### 조건 대기 (Wait Until)
+특정 조건이 충족될 때까지 대기합니다. 타임아웃을 설정할 수 있으며, 조건은 CEL 표현식으로 평가됩니다.
+
+```yaml
+- action: wait_until
+  condition: "states['binary_sensor_1']['state'] == 'off'"
+  timeout: 5s          # 선택사항. 기본값: 30s
+  check_interval: 200  # 선택사항. 폴링 간격(ms). 기본값: 100ms
+```
+
+**사용 예시 - 현관문 벨 자동 열기:**
+```yaml
+- action: wait_until
+  condition: "states['doorbell']['state'] == 'off'"
+  timeout: 10s
+- action: delay
+  milliseconds: 1000
+- action: command
+  target: id(door_open).command_press()
+```
+
+> **팁**: `wait_until`은 조건이 충족되거나 타임아웃이 발생하면 즉시 다음 액션으로 진행합니다. 타임아웃 발생 시 경고 로그가 기록되지만 자동화는 계속 진행됩니다.
 
 ## 가드 (Guards - 조건)
 

@@ -1,0 +1,170 @@
+meta:
+  name: "현관문세트"
+  name_en: "Doorbell Set"
+  description: "현대 이마주 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다."
+  description_en: "Hyundai Imazu doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["doorbell", "hyundai", "switch", "button"]
+
+# 패킷 프로토콜 설명:
+# (W: Wallpad, S: Sub 주방폰)
+#
+# 7F B4 00 00 EE // W <- S 문열림 (통화중에만 가능)
+#
+# 7F B5 00 00 EE // W -> S 현관 문 호출
+# 7F B6 00 00 EE // W -> S 현관 문 호출 끝
+#
+# 7F B9 00 00 EE // W <- S 통화 열기 (주방폰 발신)
+# 7F BA 00 00 EE // W <- S 통화 열기 끝 (주방폰 발신)
+#
+# 7F BB 00 00 EE // W -> S 다른 통화가 있음
+#
+# 7F B7 00 00 EE // W <- S 통화 수신
+# 7F B8 00 00 EE // W <- S 통화 종료
+#
+# 7F 5A 00 00 EE // W -> S 공동현관문 호출
+# 7F 5C 00 00 EE // W -> S 공동현관문 호출 끝
+#
+# 7F 5F 00 00 EE // W <- S 공동현관문 호출 수신
+#
+# 7F 61 00 00 EE // W <- S 공동현관문 열기 (통화중에만 가능)
+# 7F 60 00 00 EE // W <- S 통화 종료
+#
+# 호출이 온 경우 문을 열려면:
+# 7F B7 00 00 EE // W <- S 통화 수신
+# 7F B4 00 00 EE // W <- S 문열림
+# 7F B8 00 00 EE // W <- S 통화 종료
+#
+# 통화 없이 문을 열려면:
+# 7F B9 00 00 EE // W <- S 통화 열기 (주방폰 발신)
+# 7F B4 00 00 EE // W <- S 문열림
+# 7F BA 00 00 EE // W <- S 통화 열기 끝 (주방폰 발신)
+#
+# 공동현관문은 통화 없이는 문을 열 수 없기에 외부에서 호출이 와야만 열 수 있습니다.
+# 7F 5F 00 00 EE // W <- S 공동현관문 호출 수신
+# 7F 61 00 00 EE // W <- S 공동현관문 열기 (통화중에만 가능)
+# 7F 60 00 00 EE // W <- S 통화 종료
+
+entities:
+  # 벨 울림 감지 (개인현관)
+  binary_sensor:
+    - id: 'doorbell_private'
+      name: '현관벨'
+      icon: 'mdi:bell-ring'
+      state:
+        data: [0xB4, 0x00, 0x00]
+        mask: [0xB4, 0xFF, 0xFF]
+      state_on:
+        offset: 0
+        data: [0xB5]
+      state_off:
+        offset: 0
+        data: [0xB6]
+
+    # 벨 울림 감지 (공동현관)
+    - id: 'doorbell_common'
+      name: '공동현관벨'
+      icon: 'mdi:bell-ring'
+      state:
+        data: [0x58, 0x00, 0x00]
+        mask: [0x58, 0xFF, 0xFF]
+      state_on:
+        offset: 0
+        data: [0x5A]
+      state_off:
+        offset: 0
+        data: [0x5C]
+
+  # 문열기 버튼
+  button:
+    - id: 'doorbell_open_common'
+      name: '공동현관 열기'
+      icon: 'mdi:door-sliding-open'
+      command_press:
+        data: [0x61, 0x00, 0x00]
+
+    - id: 'doorbell_open_private'
+      name: '현관 열기'
+      icon: 'mdi:door-sliding-open'
+      command_press:
+        data: [0xB4, 0x00, 0x00]
+
+  # 통화 스위치 및 자동열기 스위치
+  switch:
+    - id: 'doorbell_call_common'
+      name: '공동현관 통화'
+      icon: 'mdi:phone'
+      command_on:
+        data: [0x5F, 0x00, 0x00]
+      command_off:
+        data: [0x60, 0x00, 0x00]
+
+    - id: 'doorbell_auto_open_common'
+      name: '공동현관 자동열기'
+      icon: 'mdi:door-open'
+      optimistic: true
+
+    - id: 'doorbell_call_private'
+      name: '현관 통화'
+      icon: 'mdi:phone'
+      command_on:
+        data: [0xB7, 0x00, 0x00]
+      command_off:
+        data: [0xBB, 0x00, 0x00]
+
+    - id: 'doorbell_auto_open_private'
+      name: '현관 자동열기'
+      icon: 'mdi:door-open'
+      optimistic: true
+
+automation:
+  # ===== 자동 문열기 시퀀스 =====
+  # 공동현관벨 울림 시 자동열기 시퀀스
+  # 공동현관문은 통화 없이는 문을 열 수 없으므로 반드시 통화 수신 후 열기 가능
+  - id: 'auto_open_common_door'
+    mode: restart
+    trigger:
+      - type: state
+        entity: doorbell_common
+        to: 'on'
+    then:
+      - action: if
+        condition: "states['doorbell_auto_open_common']['state'] == 'on'"
+        then:
+          - action: delay
+            milliseconds: 5000
+          - action: command
+            target: id(doorbell_call_common).command_on()
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_open_common).command_press()
+          - action: delay
+            milliseconds: 3000
+          - action: command
+            target: id(doorbell_call_common).command_off()
+
+  # 개인현관벨 울림 시 자동열기 시퀀스
+  - id: 'auto_open_private_door'
+    mode: restart
+    trigger:
+      - type: state
+        entity: doorbell_private
+        to: 'on'
+    then:
+      - action: if
+        condition: "states['doorbell_auto_open_private']['state'] == 'on'"
+        then:
+          - action: delay
+            milliseconds: 5000
+          - action: command
+            target: id(doorbell_call_private).command_on()
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_open_private).command_press()
+          - action: delay
+            milliseconds: 3000
+          - action: command
+            target: id(doorbell_call_private).command_off()

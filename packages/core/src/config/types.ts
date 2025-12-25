@@ -111,6 +111,29 @@ export interface AutomationActionRepeat {
   actions: AutomationAction[];
 }
 
+export interface AutomationActionWaitUntil {
+  action: 'wait_until';
+  condition: string; // CEL expression
+  timeout?: number | string; // Timeout duration (ms or duration string). Default: 30s
+  check_interval?: number | string; // Polling interval (ms or duration string). Default: 100ms
+}
+
+export interface AutomationActionChooseChoice {
+  condition: string; // CEL expression
+  then: AutomationAction[];
+}
+
+export interface AutomationActionChoose {
+  action: 'choose';
+  choices: AutomationActionChooseChoice[];
+  default?: AutomationAction[]; // Actions to execute if no choice matches
+}
+
+export interface AutomationActionStop {
+  action: 'stop';
+  reason?: string; // Optional reason for stopping (logged)
+}
+
 export type AutomationAction =
   | AutomationActionCommand
   | AutomationActionPublish
@@ -119,7 +142,10 @@ export type AutomationAction =
   | AutomationActionScript
   | AutomationActionSendPacket
   | AutomationActionIf
-  | AutomationActionRepeat;
+  | AutomationActionRepeat
+  | AutomationActionWaitUntil
+  | AutomationActionChoose
+  | AutomationActionStop;
 
 export type AutomationMode = 'parallel' | 'single' | 'restart' | 'queued';
 

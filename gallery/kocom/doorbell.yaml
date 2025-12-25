@@ -1,0 +1,140 @@
+meta:
+  name: "현관문세트"
+  name_en: "Doorbell Set"
+  description: "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다."
+  description_en: "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["doorbell", "kocom", "switch", "button"]
+
+entities:
+  # 벨 울림 감지 (개인현관)
+  # 패킷 예시:
+  # ON:  0xAA 0x55 0x7A 0x9E 0x02 0x02 0x00 0xFF 0xFF 0xFF 0xFF 0x31 0xFF 0xFF 0xFF 0x01 0x01 0x29 0xF6 0x0D 0x0D
+  # OFF: 0xAA 0x55 0x7A 0x9E 0x02 0x02 0x00 0xFF 0xFF 0xFF 0xFF 0x31 0xFF 0xFF 0xFF 0x02 0x00 0x6C 0x84 0x0D 0x0D
+  binary_sensor:
+    - id: 'doorbell_private'
+      name: '현관벨'
+      icon: 'mdi:bell-ring'
+      state:
+        data: [0xAA, 0x55, 0x70, 0x90, 0x02, 0x02]
+        mask: [0xFF, 0xFF, 0xF0, 0xF0, 0xFF, 0xFF]
+      state_on:
+        offset: 15
+        data: [0x01]
+      state_off:
+        offset: 15
+        data: [0x02]
+
+    # 벨 울림 감지 (공동현관)
+    # 패킷 예시:
+    # ON:  0xAA 0x55 0x7A 0x9E 0x02 0x08 0x00 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0x01 0x01 0x0A 0x27 0x0D 0x0D
+    # OFF: 0xAA 0x55 0x7A 0x9E 0x02 0x08 0x00 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0x02 0x00 0x4F 0x55 0x0D 0x0D
+    - id: 'doorbell_common'
+      name: '공동현관벨'
+      icon: 'mdi:bell-ring'
+      state:
+        data: [0xAA, 0x55, 0x70, 0x90, 0x02, 0x08]
+        mask: [0xFF, 0xFF, 0xF0, 0xF0, 0xFF, 0xFF]
+      state_on:
+        offset: 15
+        data: [0x01]
+      state_off:
+        offset: 15
+        data: [0x02]
+
+  # 문열기 버튼
+  button:
+    - id: 'doorbell_call_common'
+      name: '공동현관 통화'
+      icon: 'mdi:phone'
+      command_press:
+        data: [0xAA, 0x55, 0x79, 0xBC, 0x08, 0x02, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x03, 0x00, 0x26, 0x95]
+        ack:
+          data: [0x0F, 0x03]
+
+    - id: 'doorbell_open_common'
+      name: '공동현관 열기'
+      icon: 'mdi:door-sliding-open'
+      command_press:
+        data: [0xAA, 0x55, 0x79, 0xBC, 0x08, 0x02, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x24, 0x00, 0xB9, 0xE4]
+        ack:
+          data: [0x0F, 0x24]
+
+    - id: 'doorbell_call_private'
+      name: '현관 통화'
+      icon: 'mdi:phone'
+      command_press:
+        data: [0xAA, 0x55, 0x79, 0xBC, 0x02, 0x02, 0x00, 0x31, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x03, 0x00, 0x08, 0xD3]
+        ack:
+          data: [0x0F, 0x03]
+
+    - id: 'doorbell_open_private'
+      name: '현관 열기'
+      icon: 'mdi:door-sliding-open'
+      command_press:
+        data: [0xAA, 0x55, 0x79, 0xBC, 0x02, 0x02, 0x00, 0x31, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x24, 0x00, 0x97, 0xA2]
+        ack:
+          data: [0x0F, 0x24]
+
+  # 자동문열기 스위치
+  switch:
+    - id: 'doorbell_auto_open_common'
+      name: '공동현관 자동열기'
+      icon: 'mdi:door-open'
+      optimistic: true
+
+    - id: 'doorbell_auto_open_private'
+      name: '현관 자동열기'
+      icon: 'mdi:door-open'
+      optimistic: true
+
+automation:
+  # ===== 자동 문열기 시퀀스 =====
+  # 공동현관벨 울림 시 자동열기 시퀀스
+  - id: 'auto_open_common_door'
+    mode: restart
+    trigger:
+      - type: state
+        entity: doorbell_common
+        to: 'on'
+    then:
+      - action: if
+        condition: "states['doorbell_auto_open_common']['state'] == 'on'"
+        then:
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_call_common).command_press()
+          # 벨이 꺼질 때까지 대기 (최대 5초)
+          - action: wait_until
+            condition: "states['doorbell_common']['state'] == 'off'"
+            timeout: 5s
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_open_common).command_press()
+
+  # 개인현관벨 울림 시 자동열기 시퀀스
+  - id: 'auto_open_private_door'
+    mode: restart
+    trigger:
+      - type: state
+        entity: doorbell_private
+        to: 'on'
+    then:
+      - action: if
+        condition: "states['doorbell_auto_open_private']['state'] == 'on'"
+        then:
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_call_private).command_press()
+          # 벨이 꺼질 때까지 대기 (최대 5초)
+          - action: wait_until
+            condition: "states['doorbell_private']['state'] == 'off'"
+            timeout: 5s
+          - action: delay
+            milliseconds: 1000
+          - action: command
+            target: id(doorbell_open_private).command_press()

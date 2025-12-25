@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 
 import type {
   AutomationAction,
+  AutomationActionChoose,
   AutomationActionCommand,
   AutomationActionDelay,
   AutomationActionIf,
@@ -11,6 +12,8 @@ import type {
   AutomationActionRepeat,
   AutomationActionScript,
   AutomationActionSendPacket,
+  AutomationActionStop,
+  AutomationActionWaitUntil,
   AutomationConfig,
   AutomationGuard,
   AutomationTrigger,
@@ -378,6 +381,13 @@ export class AutomationManager {
             logger.debug({ automation: automationId }, '[automation] Aborted during action');
             return;
           }
+          if ((error as Error).name === 'StopActionError') {
+            logger.debug(
+              { automation: automationId, reason: (error as Error).message },
+              '[automation] Stopped by stop action',
+            );
+            return;
+          }
           logger.error(
             { error, automation: automationId, action: action.action },
             '[automation] Action failed',
@@ -448,6 +458,18 @@ export class AutomationManager {
         scriptStack,
         signal,
       );
+    if (action.action === 'wait_until')
+      return this.executeWaitUntilAction(action as AutomationActionWaitUntil, context, signal);
+    if (action.action === 'choose')
+      return this.executeChooseAction(
+        action as AutomationActionChoose,
+        context,
+        automationPortId,
+        scriptStack,
+        signal,
+      );
+    if (action.action === 'stop')
+      return this.executeStopAction(action as AutomationActionStop);
   }
 
   private async executeSendPacketAction(
@@ -714,6 +736,116 @@ export class AutomationManager {
     }
 
     logger.warn('[automation] repeat action requires either count or while');
+  }
+
+  private async executeWaitUntilAction(
+    action: AutomationActionWaitUntil,
+    context: TriggerContext,
+    signal?: AbortSignal,
+  ) {
+    const DEFAULT_TIMEOUT = 30000; // 30 seconds
+    const DEFAULT_CHECK_INTERVAL = 100; // 100ms
+
+    const timeout = parseDuration(action.timeout as any) ?? DEFAULT_TIMEOUT;
+    const checkInterval = parseDuration(action.check_interval as any) ?? DEFAULT_CHECK_INTERVAL;
+    const startTime = Date.now();
+
+    logger.debug(
+      { condition: action.condition, timeout, checkInterval },
+      '[automation] wait_until started',
+    );
+
+    while (true) {
+      // Check abort signal
+      if (signal?.aborted) {
+        logger.debug('[automation] wait_until aborted');
+        const error = new Error('Aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+
+      // Check condition
+      const conditionResult = this.celExecutor.execute(action.condition, this.buildContext(context));
+      if (Boolean(conditionResult)) {
+        logger.debug('[automation] wait_until condition met');
+        return;
+      }
+
+      // Check timeout
+      if (Date.now() - startTime >= timeout) {
+        logger.warn(
+          { condition: action.condition, timeout },
+          '[automation] wait_until timed out',
+        );
+        return;
+      }
+
+      // Wait for check interval
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(resolve, checkInterval);
+        if (signal) {
+          if (signal.aborted) {
+            clearTimeout(timeoutId);
+            const error = new Error('Aborted');
+            error.name = 'AbortError';
+            reject(error);
+            return;
+          }
+          signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(timeoutId);
+              const error = new Error('Aborted');
+              error.name = 'AbortError';
+              reject(error);
+            },
+            { once: true },
+          );
+        }
+      });
+    }
+  }
+
+  private async executeChooseAction(
+    action: AutomationActionChoose,
+    context: TriggerContext,
+    automationPortId?: string,
+    scriptStack: string[] = [],
+    signal?: AbortSignal,
+  ) {
+    // Find the first choice whose condition evaluates to true
+    for (const choice of action.choices) {
+      if (signal?.aborted) return;
+
+      const conditionResult = this.celExecutor.execute(choice.condition, this.buildContext(context));
+      if (Boolean(conditionResult)) {
+        logger.debug({ condition: choice.condition }, '[automation] choose: condition matched');
+        for (const subAction of choice.then) {
+          if (signal?.aborted) return;
+          await this.executeAction(subAction, context, automationPortId, scriptStack, signal);
+        }
+        return; // Stop after first matching choice
+      }
+    }
+
+    // No choice matched, execute default if provided
+    if (action.default && action.default.length > 0) {
+      logger.debug('[automation] choose: no condition matched, executing default');
+      for (const subAction of action.default) {
+        if (signal?.aborted) return;
+        await this.executeAction(subAction, context, automationPortId, scriptStack, signal);
+      }
+    }
+  }
+
+  private async executeStopAction(action: AutomationActionStop): Promise<never> {
+    const reason = action.reason || 'stop action executed';
+    logger.debug({ reason }, '[automation] Stopping automation');
+
+    // Throw a special error to stop the automation
+    const error = new Error(reason);
+    error.name = 'StopActionError';
+    throw error;
   }
 
   private buildContext(context: TriggerContext) {

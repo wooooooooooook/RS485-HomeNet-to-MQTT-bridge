@@ -74,53 +74,46 @@ automation:
           data: [0xA4, 0x41]
           mask: [0xFF, 0xFF]
     then:
-      - action: if
-        condition: "states['door_state']['state'] == 'D_IDLE'"
-        then:
-          - action: send_packet
-            data: [0xB0, 0x41, 0x00]
-            checksum: true
-        else:
-          - action: if
-            condition: "states['door_state']['state'] == 'D_CALL'"
+      - action: choose
+        choices:
+          - condition: "states['door_state']['state'] == 'D_IDLE'"
+            then:
+              - action: send_packet
+                data: [0xB0, 0x41, 0x00]
+                checksum: true
+          - condition: "states['door_state']['state'] == 'D_CALL'"
             then:
               - action: send_packet
                 data: [0xB0, 0x36, 0x01]  # 개인현관 통화
                 checksum: true
               - action: command
                 target: id(door_state).command_set('D_CALLED')
-            else:
-              - action: if
-                condition: "states['door_state']['state'] == 'D_CALL_P'"
-                then:
-                  - action: send_packet
-                    data: [0xB0, 0x36, 0x02]  # 공용현관 통화
-                    checksum: true
-                  - action: command
-                    target: id(door_state).command_set('D_CALLED')
-                else:
-                  - action: if
-                    condition: "states['door_state']['state'] == 'D_OPEN'"
-                    then:
-                      - action: send_packet
-                        data: [0xB0, 0x3B, 0x00]  # 개인현관 문열기
-                        checksum: true
-                      - action: command
-                        target: id(door_state).command_set('D_OPENED')
-                    else:
-                      - action: if
-                        condition: "states['door_state']['state'] == 'D_OPEN_P'"
-                        then:
-                          - action: send_packet
-                            data: [0xB0, 0x3B, 0x06]  # 공용현관 문열기
-                            checksum: true
-                          - action: command
-                            target: id(door_state).command_set('D_OPENED')
-                        else:
-                          # D_BELL, D_CALLED, D_OPENED 상태일 때
-                          - action: send_packet
-                            data: [0xB0, 0x42, 0x00]
-                            checksum: true
+          - condition: "states['door_state']['state'] == 'D_CALL_P'"
+            then:
+              - action: send_packet
+                data: [0xB0, 0x36, 0x02]  # 공용현관 통화
+                checksum: true
+              - action: command
+                target: id(door_state).command_set('D_CALLED')
+          - condition: "states['door_state']['state'] == 'D_OPEN'"
+            then:
+              - action: send_packet
+                data: [0xB0, 0x3B, 0x00]  # 개인현관 문열기
+                checksum: true
+              - action: command
+                target: id(door_state).command_set('D_OPENED')
+          - condition: "states['door_state']['state'] == 'D_OPEN_P'"
+            then:
+              - action: send_packet
+                data: [0xB0, 0x3B, 0x06]  # 공용현관 문열기
+                checksum: true
+              - action: command
+                target: id(door_state).command_set('D_OPENED')
+        default:
+          # D_BELL, D_CALLED, D_OPENED 상태일 때
+          - action: send_packet
+            data: [0xB0, 0x42, 0x00]
+            checksum: true
 
   # 0x42 수신 시 응답
   - id: 'response_block'

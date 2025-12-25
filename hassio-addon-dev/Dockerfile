@@ -18,20 +18,28 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/core/package.json packages/core/
 COPY packages/service/package.json packages/service/
 COPY packages/ui/package.json packages/ui/
-COPY packages/simulator/package.json packages/simulator/
+
 
 # Install dependencies
 # We use network-concurrency 1 just in case, though slim is more stable than alpine
-RUN pnpm install --frozen-lockfile --network-concurrency 1 --filter "!@rs485-homenet/simulator"
+RUN pnpm install --frozen-lockfile --network-concurrency 1
 
 # Copy source code
 COPY . .
 
 # Build packages (core, ui, service)
-RUN pnpm --filter "!@rs485-homenet/simulator" build
+RUN pnpm build
 
-# Remove simulator source code to prevent it from ending up in the final image
-RUN rm -rf packages/simulator
+
+
+# Clean up source code and build artifacts not needed for runtime
+# 1. packages/ui: Already built and copied to service/static
+# 2. */src, */test, */tsconfig*.json: Code is compiled to dist
+RUN rm -rf packages/ui \
+  packages/*/src \
+  packages/*/test \
+  packages/*/tsconfig*.json \
+  packages/*/*.md
 
 # Remove development dependencies to reduce size of node_modules
 # We use 'install --prod' instead of 'prune --prod' because the latter can incorrectly remove workspace dependencies
@@ -61,7 +69,7 @@ ARG LOG_COLLECTOR_API_KEY
 ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
 
 # Setup run script
-COPY hassio-addon-dev/run.sh /run.sh
+COPY hassio-addon/run.sh /run.sh
 RUN chmod +x /run.sh
 
 CMD [ "/run.sh" ]

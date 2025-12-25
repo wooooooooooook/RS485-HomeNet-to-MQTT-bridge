@@ -208,25 +208,28 @@ export class PacketParser {
           const startLen = Math.max(minLen, this.lastScannedLength + 1);
 
           if (isStandard1Byte) {
+            const typeStr = checksumType as string;
+            const isSamsungRx = typeStr === 'samsung_rx';
+            const isSamsungTx = typeStr === 'samsung_tx';
+            const isAdd = typeStr.startsWith('add');
+            // Samsung types also skip header (like _no_header types)
+            const isNoHeader = typeStr.includes('no_header') || isSamsungRx || isSamsungTx;
+
             // Optimization: Incremental checksum calculation
             // Instead of re-calculating the full checksum for every candidate length,
             // we update the checksum incrementally as we advance the length.
             let runningChecksum = 0;
 
             // Samsung RX starts with 0xB0, others 0
-            if (checksumType === 'samsung_rx') {
+            if (isSamsungRx) {
               runningChecksum = 0xb0;
             }
 
-            // Samsung types also skip header (like _no_header types)
-            const isNoHeader =
-              (checksumType as string).includes('no_header') ||
-              (checksumType as string).startsWith('samsung');
             const startIdx = isNoHeader ? headerLen : 0;
             const initialDataEnd = startLen - checksumLen;
 
             // Calculate initial checksum for the starting packet length
-            if ((checksumType as string).startsWith('add')) {
+            if (isAdd) {
               for (let i = startIdx; i < initialDataEnd; i++) {
                 runningChecksum += this.buffer[i];
               }
@@ -244,7 +247,7 @@ export class PacketParser {
                 // Packet length increased by 1, so data section extended by 1.
                 // The new data byte is at `len - 1 - checksumLen`.
                 const newByte = this.buffer[len - 1 - checksumLen];
-                if ((checksumType as string).startsWith('add')) {
+                if (isAdd) {
                   runningChecksum += newByte;
                 } else {
                   runningChecksum ^= newByte;
@@ -253,9 +256,9 @@ export class PacketParser {
 
               // Apply final modifiers for Samsung types
               let finalChecksum = runningChecksum;
-              if (checksumType === 'samsung_tx') {
+              if (isSamsungTx) {
                 finalChecksum ^= 0x80;
-              } else if (checksumType === 'samsung_rx') {
+              } else if (isSamsungRx) {
                 // Check first byte of data (if it exists)
                 // Data region is [startIdx, len - checksumLen)
                 const currentDataEnd = len - checksumLen;

@@ -108,7 +108,6 @@ export type CommandInfo = {
 };
 
 export type RawPacketWithInterval = {
-  topic: string;
   payload: string;
   receivedAt: string;
   interval: number | null;

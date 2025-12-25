@@ -424,7 +424,12 @@
             <div class="setting-title">{$t('settings.log_retention.manual_save')}</div>
             <div class="setting-desc">{$t('settings.log_retention.manual_save_desc')}</div>
           </div>
-          <Button onclick={handleManualSave} isLoading={isCacheSaving} disabled={isCacheSaving}>
+          <Button
+            onclick={handleManualSave}
+            isLoading={isCacheSaving}
+            disabled={isCacheSaving}
+            variant="secondary"
+          >
             {$t('settings.log_retention.save_now')}
           </Button>
         </div>

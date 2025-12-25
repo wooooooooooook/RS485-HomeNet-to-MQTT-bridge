@@ -179,11 +179,10 @@
   const normalizeRawPacket = (
     data: Partial<RawPacketWithInterval> & { payload?: string },
   ): RawPacketWithInterval => ({
-    topic: data.topic ?? 'homenet2mqtt/raw',
     payload: data.payload ?? '',
     receivedAt: data.receivedAt ?? new Date().toISOString(),
     interval: typeof data.interval === 'number' ? data.interval : null,
-    portId: getExplicitPortId(data.portId, data.topic),
+    portId: getExplicitPortId(data.portId),
   });
 
   const appendRawPacket = (packet: RawPacketWithInterval) => {
@@ -533,7 +532,7 @@
       hasIntervalPackets = true;
       const packet = normalizeRawPacket({
         ...data,
-        portId: getExplicitPortId(data.portId, data.topic),
+        portId: getExplicitPortId(data.portId),
       });
       lastRawPacketTimestamp = Date.parse(packet.receivedAt);
       appendRawPacket(packet);
@@ -548,7 +547,7 @@
         normalizeRawPacket({
           ...data,
           interval,
-          portId: getExplicitPortId(undefined, data.topic),
+          portId: getExplicitPortId(undefined),
         }),
       );
     };

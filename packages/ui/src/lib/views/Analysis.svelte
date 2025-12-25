@@ -40,7 +40,6 @@
     recordingStartTime: number | null;
     recordedFile: { filename: string; path: string } | null;
   } = $props();
-
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
   );

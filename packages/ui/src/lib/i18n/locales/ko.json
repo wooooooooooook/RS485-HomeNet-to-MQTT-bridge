@@ -95,10 +95,10 @@
       "ha_app_download_warning": "Home Assistant 앱에서는 다운로드가 지원되지 않을 수 있습니다. 웹 브라우저를 이용해주세요.",
       "desc": "RS485 장치에서 수신된 raw 패킷 목록을 interval과 함께 표시합니다.",
       "filter_label": "필터",
-      "filter_placeholder": "payload, topic, portId, 방향(RX/TX) 검색",
+      "filter_placeholder": "payload, 방향(RX/TX) 검색",
       "clear_filter": "필터 해제",
-      "filter_hint": "필터링 중에는 패킷 간격이 표시되지 않습니다.",
-      "empty": "실시간 Raw 패킷 로그를 확인하려면 로깅을 시작해주세요.",
+      "filter_hint": "와일드카드(*, ?) 사용 가능. 최근 1000개 패킷만 검색됩니다. 필터링 중 간격은 숨겨집니다.",
+      "empty": "표시할 패킷이 없습니다.",
       "collected_packets": "수집된 패킷: {count}",
       "recording_duration": "녹화 시간: {duration}",
       "auto_stopped_limit": "녹화 제한(20분 또는 10,000개 패킷)에 도달하여 녹화가 자동 중단되었습니다."

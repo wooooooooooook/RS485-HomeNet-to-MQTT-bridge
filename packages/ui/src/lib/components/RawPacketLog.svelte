@@ -34,29 +34,116 @@
   let timer: ReturnType<typeof setInterval> | null = null;
   let autoStopped = $state(false);
   let filterText = $state('');
+  let debouncedFilterText = $state('');
+  let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Limits
   const MAX_DURATION_MS = 20 * 60 * 1000;
   const MAX_PACKETS_LIMIT = 10000;
+  const FILTER_SEARCH_LIMIT = 1000; // 필터링 시 최근 N개 패킷만 검색
 
-  const normalizedFilter = $derived.by(() => filterText.trim().toLowerCase());
+  // Debounce filter input (300ms)
+  $effect(() => {
+    const text = filterText;
+    if (filterDebounceTimer) {
+      clearTimeout(filterDebounceTimer);
+    }
+    filterDebounceTimer = setTimeout(() => {
+      debouncedFilterText = text;
+    }, 300);
+    return () => {
+      if (filterDebounceTimer) {
+        clearTimeout(filterDebounceTimer);
+      }
+    };
+  });
+
+  const normalizedFilter = $derived.by(() => debouncedFilterText.trim().toLowerCase());
   const isFiltering = $derived.by(() => normalizedFilter.length > 0);
 
+  function getSearchPattern(filter: string) {
+    if (!filter) return null;
+
+    // Split by '*' wildcards, but keep them as parts
+    const parts = filter.split(/(\*+)/);
+
+    const patternParts = parts.reduce((acc, part) => {
+      if (!part) return acc;
+
+      if (part.startsWith('*')) {
+        // Wildcard: treat as zero or more characters (non-greedy)
+        acc.push('.*?');
+      } else {
+        // Normal text or '?' wildcard
+        const searchChars = part.split('').filter((char) => char.trim().length > 0);
+        const mappedChars = searchChars.map((char) => {
+          if (char === '?') return '.';
+          return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        });
+
+        if (mappedChars.length > 0) {
+          acc.push(mappedChars.join('\\s*'));
+        }
+      }
+      return acc;
+    }, [] as string[]);
+
+    if (patternParts.length === 0) return null;
+
+    return `(${patternParts.join('')})`;
+  }
+
+  // 정규식 캐싱 - normalizedFilter가 변경될 때만 재생성
+  const cachedRegex = $derived.by(() => {
+    if (!normalizedFilter) return null;
+    const pattern = getSearchPattern(normalizedFilter);
+    if (!pattern) return null;
+    try {
+      return new RegExp(pattern, 'i');
+    } catch {
+      return null;
+    }
+  });
+
   // 가상 스크롤용 역순 패킷 목록 (최신 패킷이 위에 표시)
+  // 필터링 시 최근 FILTER_SEARCH_LIMIT개 패킷만 검색하여 성능 개선
   const filteredPackets = $derived.by(() => {
-    const reversedPackets = [...rawPackets].reverse();
-    if (!normalizedFilter) return reversedPackets;
-    return reversedPackets.filter((packet) => {
-      const haystack = [
-        packet.payload,
-        packet.topic,
-        packet.portId ?? '',
-        packet.direction ?? 'RX',
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(normalizedFilter);
-    });
+    // 필터가 없으면 전체 역순 반환
+    if (!normalizedFilter || !cachedRegex) {
+      // 역순 정렬 - slice로 복사 후 reverse
+      const len = rawPackets.length;
+      const result = new Array(len);
+      for (let i = 0; i < len; i++) {
+        result[i] = rawPackets[len - 1 - i];
+      }
+      return result;
+    }
+
+    // 필터링 시 최근 N개만 검색
+    const searchLimit = Math.min(rawPackets.length, FILTER_SEARCH_LIMIT);
+    const startIndex = rawPackets.length - searchLimit;
+    const regex = cachedRegex;
+    const result: RawPacketWithInterval[] = [];
+
+    // 역순으로 순회하며 필터링 (최신 패킷부터)
+    for (let i = rawPackets.length - 1; i >= startIndex; i--) {
+      const packet = rawPackets[i];
+      // 문자열 생성 최소화
+      const payload = packet.payload;
+      const direction = packet.direction ?? 'RX';
+      // 먼저 원본 payload로 테스트
+      if (regex.test(payload) || regex.test(direction)) {
+        result.push(packet);
+        continue;
+      }
+      // 공백 포함 형식으로 재테스트
+      const formattedPayload = toHexPairs(payload).join(' ');
+      if (regex.test(formattedPayload)) {
+        result.push(packet);
+      }
+    }
+
+    return result;
   });
 
   function formatDuration(ms: number) {
@@ -232,12 +319,51 @@
   }
 
   const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
+
+  function getHighlightedParts(text: string, filter: string) {
+    if (!filter) return [{ text, highlight: false }];
+
+    const pattern = getSearchPattern(filter);
+    if (!pattern) return [{ text, highlight: false }];
+
+    const regex = new RegExp(pattern, 'gi');
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ text: text.slice(lastIndex, match.index), highlight: false });
+      }
+      parts.push({ text: match[0], highlight: true });
+      lastIndex = regex.lastIndex;
+
+      // Handle zero-length matches to avoid infinite loops
+      if (match.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+    }
+
+    if (lastIndex < text.length) {
+      parts.push({ text: text.slice(lastIndex), highlight: false });
+    }
+
+    return parts;
+  }
 </script>
 
 {#snippet renderPacketItem(packet: RawPacketWithInterval, _index: number)}
   <div class="log-item" class:tx-packet={packet.direction === 'TX'}>
     <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
-    <span class="direction" class:tx={packet.direction === 'TX'}>{packet.direction ?? 'RX'}</span>
+    <span class="direction" class:tx={packet.direction === 'TX'}>
+      {#each getHighlightedParts(packet.direction ?? 'RX', normalizedFilter) as part}
+        {#if part.highlight}
+          <mark>{part.text}</mark>
+        {:else}
+          {part.text}
+        {/if}
+      {/each}
+    </span>
     {#if !isFiltering}
       <span class="interval"
         >{packet.interval !== null
@@ -245,9 +371,15 @@
           : ''}</span
       >
     {/if}
-    <code class="payload" class:tx-payload={packet.direction === 'TX'}
-      >{toHexPairs(packet.payload).join(' ')}</code
-    >
+    <code class="payload" class:tx-payload={packet.direction === 'TX'}>
+      {#each getHighlightedParts(toHexPairs(packet.payload).join(' '), normalizedFilter) as part}
+        {#if part.highlight}
+          <mark>{part.text}</mark>
+        {:else}
+          {part.text}
+        {/if}
+      {/each}
+    </code>
   </div>
 {/snippet}
 
@@ -325,10 +457,6 @@
     </div>
   {/if}
 
-  {#if stats || isStreaming}
-    <PacketStats {stats} />
-  {/if}
-
   <div class="log-list raw-list">
     {#if rawPackets.length === 0}
       <p class="empty">{$t('analysis.raw_log.empty')}</p>
@@ -340,6 +468,9 @@
       />
     {/if}
   </div>
+  {#if stats || isStreaming}
+    <PacketStats {stats} />
+  {/if}
 </div>
 
 <style>
@@ -460,6 +591,7 @@
   }
 
   .log-list {
+    margin: 0.75rem 0;
     background: rgba(15, 23, 42, 0.5);
     border-radius: 8px;
     border: 1px solid rgba(148, 163, 184, 0.1);
@@ -533,6 +665,13 @@
 
   .tx-packet {
     background: rgba(59, 130, 246, 0.05);
+  }
+
+  mark {
+    background: rgba(250, 204, 21, 0.8);
+    color: #131c2e;
+    border-radius: 2px;
+    padding: 0 1px;
   }
 
   .empty {

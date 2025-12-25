@@ -39,7 +39,8 @@ RUN rm -rf packages/ui \
   packages/*/src \
   packages/*/test \
   packages/*/tsconfig*.json \
-  packages/*/*.md
+  packages/*/*.md \
+  scripts
 
 # Remove development dependencies to reduce size of node_modules
 # We use 'install --prod' instead of 'prune --prod' because the latter can incorrectly remove workspace dependencies

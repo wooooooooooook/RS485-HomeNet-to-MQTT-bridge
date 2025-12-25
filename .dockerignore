@@ -31,7 +31,6 @@ GEMINI.md
 
 # Deployment & Dev Scripts
 deploy
-scripts
 hassio-addon-dev
 
 # Unused packages in production

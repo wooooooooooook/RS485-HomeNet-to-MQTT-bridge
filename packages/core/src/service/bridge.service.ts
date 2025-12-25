@@ -662,7 +662,7 @@ export class HomeNetBridge {
           encoding = undefined;
         }
 
-        if (Buffer.isBuffer(chunk)) {
+        if (Buffer.isBuffer(chunk) && eventBus.listenerCount('raw-tx-packet') > 0) {
           const hexData = chunk.toString('hex');
           eventBus.emit('raw-tx-packet', {
             portId: normalizedPortId,

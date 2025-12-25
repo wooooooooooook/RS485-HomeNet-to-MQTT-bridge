@@ -3,7 +3,7 @@ meta:
   name_en: "Heaters (5 Thermostats)"
   description: "현대 이마주 난방 온도조절기 5개 설정입니다. 외출 모드를 지원합니다."
   description_en: "Hyundai Imazu 5 heating thermostats with away mode support."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["climate", "heater", "thermostat", "hyundai", "imazu"]
 
@@ -16,7 +16,7 @@ entities:
         temperature_step: 1 °C
       state:
         data: [0x00, 0x01, 0x18, 0x04, 0x45, 0x11]
-        mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
       state_temperature_current:
         offset: 8
         length: 1
@@ -60,7 +60,7 @@ entities:
         temperature_step: 1 °C
       state:
         data: [0x00, 0x01, 0x18, 0x04, 0x45, 0x12]
-        mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
       state_temperature_current:
         offset: 8
         length: 1
@@ -104,7 +104,7 @@ entities:
         temperature_step: 1 °C
       state:
         data: [0x00, 0x01, 0x18, 0x04, 0x45, 0x13]
-        mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
       state_temperature_current:
         offset: 8
         length: 1
@@ -148,7 +148,7 @@ entities:
         temperature_step: 1 °C
       state:
         data: [0x00, 0x01, 0x18, 0x04, 0x45, 0x14]
-        mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
       state_temperature_current:
         offset: 8
         length: 1
@@ -192,7 +192,7 @@ entities:
         temperature_step: 1 °C
       state:
         data: [0x00, 0x01, 0x18, 0x04, 0x45, 0x15]
-        mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
       state_temperature_current:
         offset: 8
         length: 1

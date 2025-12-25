@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-25T06:32:24.419Z",
+  "generated_at": "2025-12-25T07:29:51.912Z",
   "vendors": [
     {
       "id": "commax",
@@ -996,6 +996,29 @@
         }
       },
       "items": [
+        {
+          "file": "samsung_sds/doorbell.yaml",
+          "name": "현관문세트",
+          "name_en": "Doorbell Set",
+          "description": "현관문세트를 사용하는 삼성 SDS 엘레베이터 설정입니다.",
+          "description_en": "Samsung SDS doorbell set.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "doorbell",
+            "switch",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "binary_sensor": 2,
+              "switch": 2,
+              "text": 1
+            },
+            "automations": 15
+          }
+        },
         {
           "file": "samsung_sds/elevator_new.yaml",
           "name": "엘레베이터 - 신형현관스위치 모드",

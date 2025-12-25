@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-25T07:29:51.912Z",
+  "generated_at": "2025-12-25T09:23:13.884Z",
   "vendors": [
     {
       "id": "commax",
@@ -41,7 +41,8 @@
               "sensor": 1,
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -61,7 +62,8 @@
             "entities": {
               "fan": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -81,7 +83,8 @@
             "entities": {
               "valve": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -102,7 +105,8 @@
             "entities": {
               "climate": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -121,7 +125,8 @@
             "entities": {
               "light": 5
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -145,7 +150,8 @@
               "switch": 4,
               "sensor": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]
@@ -197,7 +203,8 @@
               "sensor": 1,
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -220,7 +227,8 @@
               "sensor": 1,
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 1
           }
         },
         {
@@ -239,7 +247,8 @@
             "entities": {
               "fan": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -259,7 +268,8 @@
             "entities": {
               "valve": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -280,7 +290,8 @@
             "entities": {
               "climate": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -299,7 +310,8 @@
             "entities": {
               "light": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]
@@ -345,7 +357,8 @@
             "entities": {
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -368,7 +381,8 @@
             "entities": {
               "sensor": 4
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -388,7 +402,8 @@
             "entities": {
               "valve": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -409,7 +424,8 @@
             "entities": {
               "climate": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -428,7 +444,8 @@
             "entities": {
               "light": 9
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -450,7 +467,8 @@
               "switch": 10,
               "sensor": 10
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]
@@ -484,6 +502,30 @@
       },
       "items": [
         {
+          "file": "hyundai_imazu/doorbell.yaml",
+          "name": "현관문세트",
+          "name_en": "Doorbell Set",
+          "description": "현대 이마주 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
+          "description_en": "Hyundai Imazu doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "doorbell",
+            "hyundai",
+            "switch",
+            "button"
+          ],
+          "content_summary": {
+            "entities": {
+              "binary_sensor": 2,
+              "button": 2,
+              "switch": 4
+            },
+            "automations": 2,
+            "scripts": 0
+          }
+        },
+        {
           "file": "hyundai_imazu/fan.yaml",
           "name": "환기시스템 설정",
           "name_en": "Ventilation System",
@@ -501,7 +543,8 @@
             "entities": {
               "fan": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -523,7 +566,8 @@
             "entities": {
               "climate": 5
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -543,7 +587,8 @@
             "entities": {
               "light": 7
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -563,7 +608,8 @@
             "entities": {
               "light": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -587,30 +633,8 @@
               "switch": 4,
               "sensor": 4
             },
-            "automations": 0
-          }
-        },
-        {
-          "file": "hyundai_imazu/doorbell.yaml",
-          "name": "현관문세트",
-          "name_en": "Doorbell Set",
-          "description": "현대 이마주 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
-          "description_en": "Hyundai Imazu doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
-          "version": "1.0.0",
-          "author": "wooooooooooook",
-          "tags": [
-            "doorbell",
-            "hyundai",
-            "switch",
-            "button"
-          ],
-          "content_summary": {
-            "entities": {
-              "binary_sensor": 2,
-              "button": 2,
-              "switch": 4
-            },
-            "automations": 2
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]
@@ -648,6 +672,30 @@
       },
       "items": [
         {
+          "file": "kocom/doorbell.yaml",
+          "name": "현관문세트",
+          "name_en": "Doorbell Set",
+          "description": "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
+          "description_en": "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "doorbell",
+            "kocom",
+            "switch",
+            "button"
+          ],
+          "content_summary": {
+            "entities": {
+              "binary_sensor": 2,
+              "button": 4,
+              "switch": 2
+            },
+            "automations": 2,
+            "scripts": 0
+          }
+        },
+        {
           "file": "kocom/elevator.yaml",
           "name": "엘리베이터 호출 설정",
           "name_en": "Elevator Call",
@@ -666,7 +714,8 @@
               "sensor": 2,
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -686,7 +735,8 @@
             "entities": {
               "valve": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -707,7 +757,8 @@
             "entities": {
               "climate": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -726,30 +777,8 @@
             "entities": {
               "light": 8
             },
-            "automations": 0
-          }
-        },
-        {
-          "file": "kocom/doorbell.yaml",
-          "name": "현관문세트",
-          "name_en": "Doorbell Set",
-          "description": "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
-          "description_en": "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
-          "version": "1.0.0",
-          "author": "wooooooooooook",
-          "tags": [
-            "doorbell",
-            "kocom",
-            "switch",
-            "button"
-          ],
-          "content_summary": {
-            "entities": {
-              "binary_sensor": 2,
-              "button": 4,
-              "switch": 2
-            },
-            "automations": 2
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]
@@ -806,7 +835,8 @@
               "text_sensor": 1,
               "switch": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -827,7 +857,8 @@
             "entities": {
               "lock": 1
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -849,7 +880,8 @@
             "entities": {
               "climate": 5
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -870,7 +902,8 @@
             "entities": {
               "light": 3
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         }
       ]
@@ -929,7 +962,8 @@
               "text_sensor": 1,
               "switch": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -950,7 +984,8 @@
             "entities": {
               "valve": 1
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -972,7 +1007,8 @@
             "entities": {
               "climate": 6
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -993,7 +1029,8 @@
             "entities": {
               "light": 3
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         },
         {
@@ -1015,7 +1052,8 @@
             "entities": {
               "fan": 1
             },
-            "automations": 1
+            "automations": 1,
+            "scripts": 0
           }
         }
       ]
@@ -1062,7 +1100,8 @@
               "switch": 2,
               "text": 1
             },
-            "automations": 15
+            "automations": 15,
+            "scripts": 0
           }
         },
         {
@@ -1083,7 +1122,8 @@
             "entities": {
               "switch": 1
             },
-            "automations": 3
+            "automations": 3,
+            "scripts": 0
           }
         },
         {
@@ -1104,7 +1144,8 @@
             "entities": {
               "switch": 1
             },
-            "automations": 3
+            "automations": 3,
+            "scripts": 0
           }
         },
         {
@@ -1125,7 +1166,8 @@
             "entities": {
               "switch": 1
             },
-            "automations": 2
+            "automations": 2,
+            "scripts": 0
           }
         },
         {
@@ -1146,7 +1188,8 @@
             "entities": {
               "fan": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -1167,7 +1210,8 @@
             "entities": {
               "button": 1
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -1189,7 +1233,8 @@
             "entities": {
               "climate": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         },
         {
@@ -1209,7 +1254,8 @@
             "entities": {
               "light": 4
             },
-            "automations": 0
+            "automations": 0,
+            "scripts": 0
           }
         }
       ]

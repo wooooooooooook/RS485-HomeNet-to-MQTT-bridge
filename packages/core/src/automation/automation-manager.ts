@@ -479,7 +479,7 @@ export class AutomationManager {
     let packetData: number[] = [];
 
     if (Array.isArray(action.data)) {
-      packetData = action.data;
+      packetData = [...action.data];
     } else if (typeof action.data === 'string') {
       // Evaluate CEL
       const result = this.celExecutor.execute(action.data, this.buildContext(context));
@@ -497,12 +497,33 @@ export class AutomationManager {
       return;
     }
 
-    // Append Checksum if requested (default true)
+    const defaults = this.config.packet_defaults || {};
+
+    // 1. Prepare Header
+    let header: number[] = [];
+    if (Array.isArray(action.header)) {
+      header = action.header;
+    } else if (action.header === true) {
+      header = defaults.tx_header || [];
+    }
+
+    // 2. Prepare Footer
+    let footer: number[] = [];
+    if (Array.isArray(action.footer)) {
+      footer = action.footer;
+    } else if (action.footer === true) {
+      footer = defaults.tx_footer || [];
+    }
+
+    // 3. Assemble Body (Header + Data)
+    // Checksum usually covers header + data.
+    const packetWithHeader = [...header, ...packetData];
+
+    // 4. Append Checksum if requested (default true)
     if (action.checksum !== false) {
-      const defaults = this.config.packet_defaults || {};
       const checksumType = defaults.tx_checksum;
       const checksum2Type = defaults.tx_checksum2;
-      const buffer = Buffer.from(packetData);
+      const buffer = Buffer.from(packetWithHeader);
 
       if (checksumType && checksumType !== 'none') {
         if (typeof checksumType === 'string') {
@@ -510,9 +531,9 @@ export class AutomationManager {
             buffer,
             checksumType as ChecksumType,
             0,
-            packetData.length,
+            packetWithHeader.length,
           );
-          packetData.push(cs);
+          packetWithHeader.push(cs);
         }
       } else if (checksum2Type) {
         if (typeof checksum2Type === 'string') {
@@ -520,17 +541,20 @@ export class AutomationManager {
             buffer,
             checksum2Type as Checksum2Type,
             0,
-            packetData.length,
+            packetWithHeader.length,
           );
-          packetData.push(cs[0], cs[1]);
+          packetWithHeader.push(cs[0], cs[1]);
         }
       }
     }
 
+    // 5. Append Footer
+    const finalPacket = [...packetWithHeader, ...footer];
+
     const targetPortId = action.portId || automationPortId || this.contextPortId;
 
     if (this.commandSender) {
-      await this.commandSender(targetPortId, packetData, {
+      await this.commandSender(targetPortId, finalPacket, {
         ackMatch: action.ack,
       });
     } else {

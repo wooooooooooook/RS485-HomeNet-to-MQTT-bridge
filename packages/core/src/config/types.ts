@@ -92,6 +92,8 @@ export interface AutomationActionSendPacket {
   action: 'send_packet';
   data: number[] | string;
   checksum?: boolean;
+  header?: boolean | number[];
+  footer?: boolean | number[];
   portId?: string;
   ack?: number[] | string;
 }

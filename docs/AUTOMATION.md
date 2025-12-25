@@ -75,6 +75,8 @@ action: send_packet
 data: [0x02, 0x01, 0xFF]
 # 또는 CEL 사용
 data: "[0x02, x, 0xFF]" # x 변수 사용 가능 (문맥에 따라)
+header: true # 선택사항. true: config의 tx_header 사용, [0xAA]: 직접 지정, false(기본값): 사용 안 함
+footer: true # 선택사항. true: config의 tx_footer 사용, [0xEE]: 직접 지정, false(기본값): 사용 안 함
 checksum: false # 선택사항. 기본값: true (설정된 체크섬 알고리즘 자동 적용)
 
 # 응답 대기 (ACK) 설정

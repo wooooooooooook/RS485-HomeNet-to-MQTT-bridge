@@ -303,12 +303,19 @@
     {:else}
       <div class="setting">
         <div>
-          <div class="setting-title">{$t('settings.toast.state_change.title')}</div>
-          <div class="setting-desc">{$t('settings.toast.state_change.desc')}</div>
+          <div class="setting-title" id="toast-state-title">
+            {$t('settings.toast.state_change.title')}
+          </div>
+          <div class="setting-desc" id="toast-state-desc">
+            {$t('settings.toast.state_change.desc')}
+          </div>
         </div>
         <label class="switch">
           <input
             type="checkbox"
+            role="switch"
+            aria-labelledby="toast-state-title"
+            aria-describedby="toast-state-desc"
             checked={getToastValue('stateChange')}
             onchange={(event) => handleToggle('stateChange', event)}
             disabled={isSaving || isLoading}
@@ -319,12 +326,19 @@
 
       <div class="setting">
         <div>
-          <div class="setting-title">{$t('settings.toast.command.title')}</div>
-          <div class="setting-desc">{$t('settings.toast.command.desc')}</div>
+          <div class="setting-title" id="toast-command-title">
+            {$t('settings.toast.command.title')}
+          </div>
+          <div class="setting-desc" id="toast-command-desc">
+            {$t('settings.toast.command.desc')}
+          </div>
         </div>
         <label class="switch">
           <input
             type="checkbox"
+            role="switch"
+            aria-labelledby="toast-command-title"
+            aria-describedby="toast-command-desc"
             checked={getToastValue('command')}
             onchange={(event) => handleToggle('command', event)}
             disabled={isSaving || isLoading}
@@ -348,11 +362,15 @@
     {:else}
       <div class="setting">
         <div>
-          <div class="setting-title">{$t('settings.log_sharing.enable')}</div>
+          <div class="setting-title" id="log-sharing-title">
+            {$t('settings.log_sharing.enable')}
+          </div>
         </div>
         <label class="switch">
           <input
             type="checkbox"
+            role="switch"
+            aria-labelledby="log-sharing-title"
             checked={logSharingStatus.consented}
             onchange={handleLogSharingToggle}
           />
@@ -390,12 +408,19 @@
     {:else}
       <div class="setting">
         <div>
-          <div class="setting-title">{$t('settings.log_retention.enable')}</div>
-          <div class="setting-desc">{$t('settings.log_retention.enable_desc')}</div>
+          <div class="setting-title" id="log-retention-title">
+            {$t('settings.log_retention.enable')}
+          </div>
+          <div class="setting-desc" id="log-retention-desc">
+            {$t('settings.log_retention.enable_desc')}
+          </div>
         </div>
         <label class="switch">
           <input
             type="checkbox"
+            role="switch"
+            aria-labelledby="log-retention-title"
+            aria-describedby="log-retention-desc"
             checked={cacheSettings.enabled}
             onchange={handleCacheToggle}
             disabled={isCacheSaving}
@@ -436,12 +461,19 @@
 
         <div class="setting">
           <div>
-            <div class="setting-title">{$t('settings.log_retention.auto_save')}</div>
-            <div class="setting-desc">{$t('settings.log_retention.auto_save_desc')}</div>
+            <div class="setting-title" id="auto-save-title">
+              {$t('settings.log_retention.auto_save')}
+            </div>
+            <div class="setting-desc" id="auto-save-desc">
+              {$t('settings.log_retention.auto_save_desc')}
+            </div>
           </div>
           <label class="switch">
             <input
               type="checkbox"
+              role="switch"
+              aria-labelledby="auto-save-title"
+              aria-describedby="auto-save-desc"
               checked={cacheSettings.autoSaveEnabled}
               onchange={handleAutoSaveToggle}
               disabled={isCacheSaving}

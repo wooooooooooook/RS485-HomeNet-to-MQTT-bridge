@@ -9,6 +9,8 @@
 | `data` | `number[]` | 패킷이 이 배열과 일치할 때만 상태를 인정합니다. |
 | `mask` | `number` \| `number[]` | 비교·추출 시 `(value & mask)`를 적용합니다. 단일 값 또는 위치별 배열을 사용할 수 있습니다. |
 | `inverted` | `boolean` | `true`면 매칭/추출 전에 비트를 반전(`~value`)합니다. |
+| `guard` | `string` | 패킷이 `data`로 매칭된 뒤 추가로 평가하는 CEL 표현식입니다. `data` 배열을 사용할 수 있습니다. |
+| `except` | `StateSchema[]` | 하위 예외 패턴. 하나라도 매칭되면 현재 매칭을 무효화합니다. |
 
 ### 활용 예시
 
@@ -26,6 +28,18 @@ state_on:
 state:
   data: [0x31, 0x0F]
   mask: [0xFF, 0x0F]
+```
+
+**3. guard + except로 예외 제외**
+`data` 매칭 후 guard를 통과해야 하며, except 패턴이 맞으면 제외됩니다.
+```yaml
+state_on:
+  offset: 0
+  data: [0x31, 0x01]
+  guard: "data[4] != 0x10"
+  except:
+    - offset: 2
+      data: [0xff]
 ```
 
 ## StateNumSchema

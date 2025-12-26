@@ -38,6 +38,8 @@ export interface StateSchema {
   mask?: number | number[];
   offset?: number;
   inverted?: boolean;
+  guard?: string;
+  except?: StateSchema[];
 }
 
 export interface StateNumSchema extends StateSchema {

@@ -1,6 +1,7 @@
 import { Device } from '../device.js';
 import { DeviceConfig, ProtocolConfig } from '../types.js';
 import { StateSchema, StateNumSchema } from '../types.js';
+import { matchesPacket } from '../../utils/packet-matching.js';
 import { CelExecutor } from '../cel-executor.js';
 import {
   calculateChecksum,
@@ -249,39 +250,10 @@ export class GenericDevice extends Device {
    */
   protected matchState(packetData: number[], stateSchema: StateSchema | undefined): boolean {
     if (!stateSchema) return false;
-
-    const { data, mask, offset = 0, inverted = false } = stateSchema;
-
-    if (!data || data.length === 0) {
-      return true;
-    }
-
-    if (offset + data.length > packetData.length) {
-      return false;
-    }
-
-    let isMatch = true;
-    for (let i = 0; i < data.length; i++) {
-      const packetByte = packetData[offset + i];
-      const patternByte = data[i];
-      let effectivePacketByte = packetByte;
-      let effectivePatternByte = patternByte;
-
-      if (mask) {
-        const currentMask = Array.isArray(mask) ? mask[i] : mask;
-        if (currentMask !== undefined) {
-          effectivePacketByte = packetByte & currentMask;
-          effectivePatternByte = patternByte & currentMask;
-        }
-      }
-
-      if (effectivePacketByte !== effectivePatternByte) {
-        isMatch = false;
-        break;
-      }
-    }
-
-    return inverted ? !isMatch : isMatch;
+    return matchesPacket(stateSchema, packetData, {
+      allowEmptyData: true,
+      context: { state: this.getState() },
+    });
   }
 
   /**

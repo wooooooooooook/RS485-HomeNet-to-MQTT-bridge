@@ -1,3 +1,4 @@
+import { matchesPacket } from '../utils/packet-matching.js';
 import { DeviceConfig, StateSchema, StateNumSchema, ProtocolConfig } from './types.js';
 
 export abstract class Device {
@@ -183,30 +184,10 @@ export abstract class Device {
 
     // Adjust offset by header length if present
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
-    const offset = (stateConfig.offset || 0) + headerLength;
 
-    if (packet.length < offset + stateConfig.data.length) {
-      return false;
-    }
-
-    for (let i = 0; i < stateConfig.data.length; i++) {
-      let mask = 0xff;
-      if (stateConfig.mask) {
-        if (Array.isArray(stateConfig.mask)) {
-          mask = stateConfig.mask[i];
-        } else {
-          mask = stateConfig.mask;
-        }
-      }
-
-      const packetByte = packet[offset + i];
-      const stateByte = stateConfig.data[i];
-
-      if ((packetByte & mask) !== (stateByte & mask)) {
-        return false;
-      }
-    }
-
-    return true;
+    return matchesPacket(stateConfig, packet, {
+      baseOffset: headerLength,
+      context: { state: this.getState() },
+    });
   }
 }

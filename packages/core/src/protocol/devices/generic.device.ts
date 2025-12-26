@@ -70,7 +70,7 @@ export class GenericDevice extends Device {
     for (const key in entityConfig) {
       if (key.startsWith('state_') && typeof entityConfig[key] === 'string') {
         const script = entityConfig[key] as string;
-        const entityState = { value: null, ...(this.getState() || {}) };
+        const entityState = this.getState() || {};
         const result = this.getExecutor().execute(script, {
           data: packet,
           x: null, // No previous value for state extraction usually

@@ -126,6 +126,14 @@ sensor:
       data[1] == 0x01 ? state['value'] : ""
 ```
 
+## CEL 분석기 (UI)
+
+분석 페이지에 있는 **CEL 분석기 카드**에서 표현식과 컨텍스트 값을 입력해 즉시 결과를 확인할 수 있습니다.
+
+*   **위치**: UI → 분석(Analysis) 페이지
+*   **입력값**: `expression`, `data`, `x`, `xstr`, `state`, `states`, `trigger`
+*   **주의**: 입력값은 JSON 형식으로 작성해야 하며, `xstr`가 있으면 문자열 입력으로 처리됩니다.
+
 ## 기존 Lambda와의 비교
 
 | 특징 | 기존 Lambda (`!lambda`) | 신규 CEL (String) |

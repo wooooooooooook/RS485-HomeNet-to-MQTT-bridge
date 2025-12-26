@@ -10,6 +10,7 @@
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import LatencyTest from '../components/analysis/LatencyTest.svelte';
+  import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
 
   let {
     stats,
@@ -76,6 +77,7 @@
     bind:recordingStartTime
     bind:recordedFile
   />
+  <CelAnalyzerCard />
 
   {#if activePortId}
     <LatencyTest portId={activePortId} />

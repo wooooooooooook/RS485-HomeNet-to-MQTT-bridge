@@ -59,6 +59,7 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 *   `bitShiftLeft(int, int)`: 비트 왼쪽 시프트 (`<<`)
 *   `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
 *   `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
+*   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `has(state.value)`)
 
 ## 사용 예시 (Config Examples)
 

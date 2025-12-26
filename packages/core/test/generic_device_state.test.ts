@@ -52,4 +52,72 @@ describe('GenericDevice', () => {
 
     expect(updates).toBeNull();
   });
+
+  it('should support has() for optional state fields in CEL', () => {
+    const protocolConfig: ProtocolConfig = {};
+    const deviceConfig: DeviceConfig = {
+      id: 'generic_3',
+      name: 'Generic Device',
+      state: {
+        data: [0x10],
+      },
+    };
+
+    const device = new GenericDevice(
+      {
+        ...deviceConfig,
+        state_value: 'has(state.value) && state.value != \"\" ? state.value : \"Unknown\"',
+      } as DeviceConfig & { state_value: string },
+      protocolConfig,
+    );
+
+    (device as unknown as { state: Record<string, any> }).state = {};
+
+    const updates = device.parseData([0x10, 0x01]);
+
+    expect(updates).toEqual({ value: 'Unknown' });
+  });
+
+  it('should reuse previous floor when data[9] is 0x40', () => {
+    const protocolConfig: ProtocolConfig = {};
+    const deviceConfig: DeviceConfig = {
+      id: 'elevator_floor',
+      name: 'Elevator Floor',
+      state: {
+        data: [0x0d],
+      },
+    };
+
+    const device = new GenericDevice(
+      {
+        ...deviceConfig,
+        state_value:
+          'data[9] == 0x40 ? (has(state.value) && state.value != \"\" ? state.value : \"Unknown\") : (data[9] >= 0xB0 ? \"B\" + string(data[9] - 0xB0) : string(data[9]))',
+      } as DeviceConfig & { state_value: string },
+      protocolConfig,
+    );
+
+    const applyUpdates = (updates: Record<string, any> | null) => {
+      if (updates) {
+        (device as unknown as { updateState: (state: Record<string, any>) => void }).updateState(
+          updates,
+        );
+      }
+    };
+
+    const initialUnknown = device.parseData([0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40]);
+    expect(initialUnknown).toEqual({ value: 'Unknown' });
+    applyUpdates(initialUnknown);
+
+    const floorUpdate = device.parseData([0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02]);
+    expect(floorUpdate).toEqual({ value: '2' });
+    applyUpdates(floorUpdate);
+
+    const keepPrevious = device.parseData([0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40]);
+    expect(keepPrevious).toEqual({ value: '2' });
+    applyUpdates(keepPrevious);
+
+    const basementUpdate = device.parseData([0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB1]);
+    expect(basementUpdate).toEqual({ value: 'B1' });
+  });
 });

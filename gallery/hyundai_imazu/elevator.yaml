@@ -3,7 +3,7 @@ meta:
   name_en: "Hyundai Telecom Elevator"
   description: "현대통신 월패드용 엘리베이터 호출 및 상태 확인 설정입니다."
   description_en: "Elevator call and status configuration for Hyundai Telecom wallpads."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["elevator", "hyundai", "imazu"]
 
@@ -34,7 +34,7 @@ entities:
         # Header(F7) is omitted in standard parsing usually, but index calculations assume F7 is x[0]
         data: [0x0D, 0x01, 0x34, 0x01, 0x41]
       state_value: >
-        uint(x[9]) >= 0xB0 ? 'B' + string(uint(x[9]) - 0xB0) : string(uint(x[9]))
+        data[9] >= 0xB0 ? 'B' + string(data[9] - 0xB0) : string(data[9])
 
     - id: 'elevator_state'
       name: 'Elevator State'
@@ -42,7 +42,7 @@ entities:
       state:
         data: [0x0D, 0x01, 0x34, 0x01, 0x41]
       state_value: >
-        (uint(x[8]) >> 4) == 0xA ? 'Up' : ((uint(x[8]) >> 4) == 0xB ? 'Down' : 'Idle')
+        bitShiftRight(data[8], 4) == 0xA ? 'Up' : (bitShiftRight(data[8], 4) == 0xB ? 'Down' : 'Idle')
 
   button:
     - id: 'elevator_call_down'

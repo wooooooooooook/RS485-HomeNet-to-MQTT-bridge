@@ -41,11 +41,12 @@ export abstract class Device {
   // Helper to extract data based on schema
   protected extractFromSchema(packet: number[], schema: StateSchema | StateNumSchema): any {
     const { offset = 0, data, mask, inverted = false } = schema;
+    const numSchema = schema as StateNumSchema;
 
     // Determine length
     let length = 1;
-    if ('length' in schema && typeof (schema as any).length === 'number') {
-      length = (schema as any).length;
+    if (typeof numSchema.length === 'number') {
+      length = numSchema.length;
     } else if (data) {
       length = data.length;
     }
@@ -99,7 +100,6 @@ export abstract class Device {
     }
 
     // 3. Process as Number (if StateNumSchema)
-    const numSchema = schema as StateNumSchema;
     const endian = numSchema.endian || 'big';
     const decode = numSchema.decode || 'none';
     const signed = numSchema.signed || false;

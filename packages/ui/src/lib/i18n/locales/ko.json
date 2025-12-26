@@ -123,6 +123,7 @@
       "xstr_placeholder": "예: \"Turbo\"",
       "data_label": "data (바이트 배열)",
       "data_placeholder": "예: [1, 2, 3, 4]",
+      "data_hint": "0x 접두어를 포함한 16진수 입력도 가능합니다. (예: [0x01, 0x02])",
       "state_label": "state (현재 상태 객체)",
       "state_placeholder": "예: {\"value\": 10}",
       "states_label": "states (전체 상태 객체)",
@@ -138,6 +139,7 @@
       "must_be_object": "입력값은 객체여야 합니다.",
       "must_be_array": "입력값은 배열이어야 합니다.",
       "invalid_number": "x 값은 숫자여야 합니다.",
+      "invalid_number_array": "배열 값은 숫자(10진/16진)여야 합니다.",
       "expression_required": "CEL 표현식을 입력하세요.",
       "request_failed": "CEL 평가 요청에 실패했습니다."
     },

@@ -58,6 +58,38 @@
     }
   };
 
+  const parseDataInput = (input: string) => {
+    if (!input.trim()) return undefined;
+    try {
+      const jsonValue = JSON.parse(input);
+      if (!Array.isArray(jsonValue)) {
+        throw new Error($t('analysis.cel_analyzer.must_be_array'));
+      }
+      return jsonValue;
+    } catch {
+      const trimmed = input.trim();
+      if (!trimmed.startsWith('[') || !trimmed.endsWith(']')) {
+        throw new Error(
+          `${$t('analysis.cel_analyzer.data_label')} ${$t('analysis.cel_analyzer.invalid_json')}`,
+        );
+      }
+      const body = trimmed.slice(1, -1).trim();
+      if (!body) return [];
+      const tokens = body.split(',').map((token) => token.trim());
+      const values = tokens.map((token) => {
+        if (!token) return NaN;
+        if (/^0x[0-9a-fA-F]+$/.test(token)) {
+          return Number.parseInt(token, 16);
+        }
+        return Number(token);
+      });
+      if (values.some((value) => Number.isNaN(value))) {
+        throw new Error($t('analysis.cel_analyzer.invalid_number_array'));
+      }
+      return values;
+    }
+  };
+
   const parseObjectInput = (input: string, label: string) => {
     const value = parseJsonInput(input, label);
     if (value === undefined) return undefined;
@@ -102,7 +134,7 @@
       const xValue = parseXInput();
       if (xValue !== undefined) context.x = xValue;
 
-      const dataValue = parseArrayInput(dataInput, $t('analysis.cel_analyzer.data_label'));
+      const dataValue = parseDataInput(dataInput);
       if (dataValue !== undefined) context.data = dataValue;
 
       const stateValue = parseObjectInput(stateInput, $t('analysis.cel_analyzer.state_label'));
@@ -124,6 +156,9 @@
       if (!response.ok) {
         error = payload?.error ?? $t('analysis.cel_analyzer.request_failed');
         return;
+      }
+      if (payload?.error) {
+        error = payload.error;
       }
       result = formatResult(payload?.result);
     } catch (err) {
@@ -196,6 +231,7 @@
           bind:value={dataInput}
           placeholder={$t('analysis.cel_analyzer.data_placeholder')}
         ></textarea>
+        <span class="inline-hint">{$t('analysis.cel_analyzer.data_hint')}</span>
       </label>
       <label>
         <span class="label">{$t('analysis.cel_analyzer.state_label')}</span>
@@ -331,6 +367,11 @@
     color: #94a3b8;
     font-size: 0.85rem;
     margin: 0;
+  }
+
+  .inline-hint {
+    color: #64748b;
+    font-size: 0.78rem;
   }
 
   .action-row {

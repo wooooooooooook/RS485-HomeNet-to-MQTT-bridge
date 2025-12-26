@@ -123,6 +123,7 @@
       "xstr_placeholder": "e.g. \"Turbo\"",
       "data_label": "data (byte array)",
       "data_placeholder": "e.g. [1, 2, 3, 4]",
+      "data_hint": "Hex values with 0x prefix are allowed. (e.g. [0x01, 0x02])",
       "state_label": "state (current state object)",
       "state_placeholder": "e.g. {\"value\": 10}",
       "states_label": "states (all states map)",
@@ -138,6 +139,7 @@
       "must_be_object": "must be an object.",
       "must_be_array": "must be an array.",
       "invalid_number": "x must be a number.",
+      "invalid_number_array": "Array values must be numbers (decimal or hex).",
       "expression_required": "Enter a CEL expression.",
       "request_failed": "Failed to evaluate CEL."
     },

@@ -143,7 +143,10 @@
       const statesValue = parseObjectInput(statesInput, $t('analysis.cel_analyzer.states_label'));
       if (statesValue !== undefined) context.states = statesValue;
 
-      const triggerValue = parseObjectInput(triggerInput, $t('analysis.cel_analyzer.trigger_label'));
+      const triggerValue = parseObjectInput(
+        triggerInput,
+        $t('analysis.cel_analyzer.trigger_label'),
+      );
       if (triggerValue !== undefined) context.trigger = triggerValue;
 
       isLoading = true;

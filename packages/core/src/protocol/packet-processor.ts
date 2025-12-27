@@ -19,6 +19,7 @@ import { TextDevice } from './devices/text.device.js';
 import { BinarySensorDevice } from './devices/binary-sensor.device.js';
 import { ProtocolConfig } from './types.js';
 import { slugify } from '../utils/common.js';
+import { logger } from '../utils/logger.js';
 
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
@@ -94,7 +95,7 @@ export class PacketProcessor extends EventEmitter {
         for (const entity of entities) {
           if (!entity.id && entity.name) {
             entity.id = slugify(entity.name);
-            console.debug(
+            logger.debug(
               `[PacketProcessor] Generated ID for ${type}: ${entity.name} -> ${entity.id}`,
             );
           }
@@ -191,7 +192,7 @@ export class PacketProcessor extends EventEmitter {
     // This method is no longer compatible with the stream-based approach.
     // We should update the caller (StateManager) to use processChunk.
     // For now, return empty to avoid breaking if called, but log warning.
-    console.warn('PacketProcessor.parseIncomingPacket is deprecated. Use processChunk instead.');
+    logger.warn('PacketProcessor.parseIncomingPacket is deprecated. Use processChunk instead.');
     return { parsedStates: [], checksumValid: true };
   }
 }

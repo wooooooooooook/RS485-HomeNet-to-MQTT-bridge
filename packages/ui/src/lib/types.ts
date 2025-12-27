@@ -107,6 +107,23 @@ export type CommandInfo = {
   discoveryLinkedId?: string;
 };
 
+export type EntityCategory = 'entity' | 'automation' | 'script';
+
+export type AutomationSummary = {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  portId?: string;
+  configFile?: string;
+};
+
+export type ScriptSummary = {
+  id: string;
+  description?: string;
+  configFile?: string;
+};
+
 export type RawPacketWithInterval = {
   payload: string;
   receivedAt: string;
@@ -130,6 +147,9 @@ export type UnifiedEntity = {
   id: string;
   displayName: string;
   type?: string;
+  category?: EntityCategory;
+  description?: string;
+  enabled?: boolean;
   statePayload?: string;
   commands: CommandInfo[];
   isStatusDevice: boolean;

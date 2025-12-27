@@ -5,7 +5,12 @@ import mqtt from 'mqtt';
 import { performance } from 'node:perf_hooks';
 
 import { logger } from '../utils/logger.js';
-import { HomenetBridgeConfig, SerialConfig, AutomationConfig } from '../config/types.js';
+import {
+  HomenetBridgeConfig,
+  SerialConfig,
+  AutomationConfig,
+  ScriptConfig,
+} from '../config/types.js';
 import { loadConfig } from '../config/index.js';
 import { EntityConfig } from '../domain/entities/base.entity.js';
 import { PacketProcessor, EntityStateProvider } from '../protocol/packet-processor.js';
@@ -172,6 +177,82 @@ export class HomeNetBridge {
     }
 
     eventBus.emit('entity:renamed', { entityId, newName: trimmedName, uniqueId: ensuredUniqueId });
+    return { success: true };
+  }
+
+  async runAutomationThen(
+    automation: AutomationConfig,
+  ): Promise<{ success: boolean; error?: string }> {
+    const context = this.getDefaultContext(automation.portId);
+    if (!context) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    await context.automationManager.runAutomationThen(automation);
+    return { success: true };
+  }
+
+  async runScript(
+    scriptId: string,
+    portId?: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const context = this.getDefaultContext(portId);
+    if (!context) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    await context.automationManager.runScript(scriptId, {
+      type: 'command',
+      timestamp: Date.now(),
+    });
+    return { success: true };
+  }
+
+  upsertAutomation(automation: AutomationConfig): { success: boolean; error?: string } {
+    if (this.portContexts.size === 0) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    for (const context of this.portContexts.values()) {
+      context.automationManager.upsertAutomation(automation);
+    }
+
+    return { success: true };
+  }
+
+  removeAutomation(automationId: string): { success: boolean; error?: string } {
+    if (this.portContexts.size === 0) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    for (const context of this.portContexts.values()) {
+      context.automationManager.removeAutomation(automationId);
+    }
+
+    return { success: true };
+  }
+
+  upsertScript(script: ScriptConfig): { success: boolean; error?: string } {
+    if (this.portContexts.size === 0) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    for (const context of this.portContexts.values()) {
+      context.automationManager.upsertScript(script);
+    }
+
+    return { success: true };
+  }
+
+  removeScript(scriptId: string): { success: boolean; error?: string } {
+    if (this.portContexts.size === 0) {
+      return { success: false, error: 'Bridge not initialized' };
+    }
+
+    for (const context of this.portContexts.values()) {
+      context.automationManager.removeScript(scriptId);
+    }
+
     return { success: true };
   }
 

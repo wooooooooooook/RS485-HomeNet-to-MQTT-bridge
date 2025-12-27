@@ -69,7 +69,7 @@ export class AutomationManager {
   private readonly mqttPublisher: MqttPublisher;
   private readonly celExecutor = new CelExecutor();
   private readonly debounceTracker = new Map<string, number>();
-  private readonly timers: NodeJS.Timeout[] = [];
+  private readonly automationTimers = new Map<string, NodeJS.Timeout[]>();
   private readonly subscriptions: {
     emitter: EventEmitter;
     event: string;
@@ -136,12 +136,52 @@ export class AutomationManager {
 
   public addAutomation(config: AutomationConfig) {
     this.automationList.push(config);
+    if (this.isStarted) {
+      this.setupAutomationTriggers(config);
+    }
   }
 
   public removeAutomation(id: string) {
     const index = this.automationList.findIndex((a) => a.id === id);
     if (index !== -1) {
       this.automationList.splice(index, 1);
+    }
+    this.clearAutomationTimers(id);
+  }
+
+  public upsertAutomation(config: AutomationConfig) {
+    const index = this.automationList.findIndex((a) => a.id === config.id);
+    if (index !== -1) {
+      this.automationList[index] = config;
+      this.clearAutomationTimers(config.id);
+    } else {
+      this.automationList.push(config);
+    }
+    if (this.isStarted) {
+      this.setupAutomationTriggers(config);
+    }
+  }
+
+  public upsertScript(script: ScriptConfig) {
+    this.scripts.set(script.id, script);
+  }
+
+  public removeScript(id: string) {
+    this.scripts.delete(id);
+  }
+
+  public async runAutomationThen(automation: AutomationConfig) {
+    const context: TriggerContext = { type: 'command', timestamp: Date.now() };
+    await this.runActions(automation.then, context, automation.portId);
+  }
+
+  public async runActions(
+    actions: AutomationAction[],
+    context: TriggerContext,
+    automationPortId?: string,
+  ) {
+    for (const action of actions) {
+      await this.executeAction(action, context, automationPortId, []);
     }
   }
 
@@ -166,28 +206,12 @@ export class AutomationManager {
     this.bind(this.packetProcessor, 'packet', packetListener);
 
     for (const automation of this.automationList) {
-      for (const trigger of automation.trigger) {
-        if (trigger.type === 'schedule') {
-          this.setupScheduleTrigger(automation, trigger);
-        }
-        if (trigger.type === 'startup') {
-          // Immediately schedule execution (to avoid blocking sync flow)
-          setTimeout(
-            () =>
-              this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
-            0,
-          );
-        }
-      }
+      this.setupAutomationTriggers(automation);
     }
   }
 
   stop() {
-    for (const timer of this.timers) {
-      clearTimeout(timer);
-      clearInterval(timer);
-    }
-    this.timers.length = 0;
+    this.clearAllAutomationTimers();
     for (const { emitter, event, handler } of this.subscriptions) {
       emitter.removeListener(event, handler);
     }
@@ -198,6 +222,22 @@ export class AutomationManager {
   private bind(emitter: EventEmitter, event: string, handler: (...args: any[]) => void) {
     emitter.on(event, handler);
     this.subscriptions.push({ emitter, event, handler });
+  }
+
+  private setupAutomationTriggers(automation: AutomationConfig) {
+    for (const trigger of automation.trigger) {
+      if (trigger.type === 'schedule') {
+        this.setupScheduleTrigger(automation, trigger);
+      }
+      if (trigger.type === 'startup') {
+        const timeout = setTimeout(
+          () =>
+            this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
+          0,
+        );
+        this.trackAutomationTimer(automation.id, timeout);
+      }
+    }
   }
 
   private setupScheduleTrigger(automation: AutomationConfig, trigger: AutomationTriggerSchedule) {
@@ -215,26 +255,58 @@ export class AutomationManager {
       const interval = setInterval(() => {
         this.runAutomation(automation, trigger, { type: 'schedule', timestamp: Date.now() });
       }, every);
-      this.timers.push(interval);
+      this.trackAutomationTimer(automation.id, interval);
     }
 
     if (trigger.cron) {
       try {
         const cron = parser.parseExpression(trigger.cron, { utc: true });
         const scheduleNext = () => {
+          if (!this.isAutomationActive(automation.id)) return;
           const next = cron.next().toDate();
           const delay = Math.max(0, next.getTime() - Date.now());
           const timeout = setTimeout(() => {
+            if (!this.isAutomationActive(automation.id)) return;
             this.runAutomation(automation, trigger, { type: 'schedule', timestamp: Date.now() });
             scheduleNext();
           }, delay);
-          this.timers.push(timeout);
+          this.trackAutomationTimer(automation.id, timeout);
         };
         scheduleNext();
       } catch (error) {
         logger.error({ error, cron: trigger.cron }, '[automation] Invalid cron expression');
       }
     }
+  }
+
+  private isAutomationActive(automationId: string) {
+    return this.automationList.some((automation) => automation.id === automationId);
+  }
+
+  private trackAutomationTimer(automationId: string, timer: NodeJS.Timeout) {
+    const timers = this.automationTimers.get(automationId) ?? [];
+    timers.push(timer);
+    this.automationTimers.set(automationId, timers);
+  }
+
+  private clearAutomationTimers(automationId: string) {
+    const timers = this.automationTimers.get(automationId);
+    if (!timers) return;
+    timers.forEach((timer) => {
+      clearTimeout(timer);
+      clearInterval(timer);
+    });
+    this.automationTimers.delete(automationId);
+  }
+
+  private clearAllAutomationTimers() {
+    for (const timers of this.automationTimers.values()) {
+      timers.forEach((timer) => {
+        clearTimeout(timer);
+        clearInterval(timer);
+      });
+    }
+    this.automationTimers.clear();
   }
 
   private handleStateTriggers(entityId: string, state: Record<string, any>) {

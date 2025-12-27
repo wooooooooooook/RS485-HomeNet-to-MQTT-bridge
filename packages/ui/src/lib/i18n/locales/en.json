@@ -259,7 +259,9 @@
     "no_devices_found": "No devices detected or commands configured for the selected port.",
     "hint_inactive_performance": "Deleting inactive entities can improve performance",
     "entity_card": {
-      "no_status": "No status info"
+      "no_status": "No status info",
+      "automation_badge": "Automation",
+      "script_badge": "Script"
     }
   },
   "entity_detail": {
@@ -268,9 +270,40 @@
     "copy_id_aria": "Copy ID {id}",
     "tabs": {
       "status": "Status & Commands",
+      "execute": "Run",
       "config": "Config (YAML)",
       "packets": "Packet Log",
       "manage": "Manage"
+    },
+    "execute": {
+      "error": "Failed to execute."
+    },
+    "automation": {
+      "execute_title": "Run automation now",
+      "execute_desc": "Immediately runs the then block for this automation.",
+      "execute_button": "Run then",
+      "execute_success": "Automation executed.",
+      "toggle_title": "Enable automation",
+      "toggle_desc": "Disabled automations will not run on triggers.",
+      "toggle_error": "Failed to update automation.",
+      "delete_title": "Delete automation",
+      "delete_desc": "Remove this automation from the configuration.",
+      "delete_button": "Delete automation",
+      "delete_confirm": "Delete this automation?",
+      "delete_success": "Automation deleted.",
+      "delete_error": "Failed to delete automation."
+    },
+    "script": {
+      "execute_title": "Run script now",
+      "execute_desc": "Executes the script action sequence immediately.",
+      "execute_button": "Run script",
+      "execute_success": "Script executed.",
+      "delete_title": "Delete script",
+      "delete_desc": "Remove this script from the configuration.",
+      "delete_button": "Delete script",
+      "delete_confirm": "Delete this script?",
+      "delete_success": "Script deleted.",
+      "delete_error": "Failed to delete script."
     },
     "status": {
       "title": "Current Status",

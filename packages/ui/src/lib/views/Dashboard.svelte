@@ -6,6 +6,7 @@
     ActivityLog,
     BridgeStatus,
     StatusMessage,
+    EntityCategory,
   } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
@@ -50,7 +51,7 @@
     connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
     statusMessage?: StatusMessage | null;
     portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
-    onSelect?: (entityId: string, portId?: string) => void;
+    onSelect?: (entityId: string, portId: string | undefined, category: EntityCategory) => void;
     onToggleInactive?: () => void;
     onPortChange?: (portId: string) => void;
   } = $props();
@@ -91,8 +92,8 @@
     return portStatus?.message;
   }
 
-  function handleSelect(entityId: string, portId?: string) {
-    onSelect?.(entityId, portId);
+  function handleSelect(entityId: string, portId: string | undefined, category: EntityCategory) {
+    onSelect?.(entityId, portId, category);
   }
 </script>
 
@@ -216,7 +217,10 @@
         </div>
       {:else}
         {#each visibleEntities as entity (entity.id)}
-          <EntityCard {entity} onSelect={() => handleSelect(entity.id, entity.portId)} />
+          <EntityCard
+            {entity}
+            onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
+          />
         {/each}
       {/if}
     </div>

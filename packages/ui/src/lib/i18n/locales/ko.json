@@ -259,7 +259,9 @@
     "no_devices_found": "선택한 포트에서 감지된 장치나 설정된 명령이 없습니다.",
     "hint_inactive_performance": "비활성화 엔티티를 삭제하면 성능을 개선할 수 있습니다",
     "entity_card": {
-      "no_status": "상태 정보 없음"
+      "no_status": "상태 정보 없음",
+      "automation_badge": "자동화",
+      "script_badge": "스크립트"
     }
   },
   "entity_detail": {
@@ -268,9 +270,40 @@
     "copy_id_aria": "ID {id} 복사",
     "tabs": {
       "status": "상태 & 명령",
+      "execute": "실행",
       "config": "설정 (YAML)",
       "packets": "패킷 로그",
       "manage": "관리"
+    },
+    "execute": {
+      "error": "실행에 실패했습니다."
+    },
+    "automation": {
+      "execute_title": "자동화 즉시 실행",
+      "execute_desc": "해당 자동화의 then 블록을 즉시 실행합니다.",
+      "execute_button": "then 실행",
+      "execute_success": "자동화를 실행했습니다.",
+      "toggle_title": "자동화 활성화",
+      "toggle_desc": "비활성화된 자동화는 트리거에 반응하지 않습니다.",
+      "toggle_error": "자동화 설정을 업데이트하지 못했습니다.",
+      "delete_title": "자동화 삭제",
+      "delete_desc": "이 자동화를 설정에서 제거합니다.",
+      "delete_button": "자동화 삭제",
+      "delete_confirm": "이 자동화를 삭제할까요?",
+      "delete_success": "자동화를 삭제했습니다.",
+      "delete_error": "자동화를 삭제하지 못했습니다."
+    },
+    "script": {
+      "execute_title": "스크립트 즉시 실행",
+      "execute_desc": "스크립트 액션 시퀀스를 즉시 실행합니다.",
+      "execute_button": "스크립트 실행",
+      "execute_success": "스크립트를 실행했습니다.",
+      "delete_title": "스크립트 삭제",
+      "delete_desc": "이 스크립트를 설정에서 제거합니다.",
+      "delete_button": "스크립트 삭제",
+      "delete_confirm": "이 스크립트를 삭제할까요?",
+      "delete_success": "스크립트를 삭제했습니다.",
+      "delete_error": "스크립트를 삭제하지 못했습니다."
     },
     "status": {
       "title": "현재 상태",

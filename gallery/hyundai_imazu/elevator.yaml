@@ -33,7 +33,7 @@ entities:
         # Match Query Packet: F7 0D 01 34 01 41 10 00 [State] [Floor] [ID] [CS] EE
         # Header(F7) is omitted in standard parsing usually, but index calculations assume F7 is x[0]
         data: [0x0D, 0x01, 0x34, 0x01, 0x41]
-      state_value: >
+      state_text: >
         data[9] >= 0xB0 ? 'B' + string(data[9] - 0xB0) : string(bcd_to_int(data[9]))
 
     - id: 'elevator_state'
@@ -41,7 +41,7 @@ entities:
       icon: 'mdi:elevator-passenger'
       state:
         data: [0x0D, 0x01, 0x34, 0x01, 0x41]
-      state_value: >
+      state_text: >
         bitShiftRight(data[8], 4) == 0xA ? 'Up' : (bitShiftRight(data[8], 4) == 0xB ? 'Down' : 'Idle')
 
   button:

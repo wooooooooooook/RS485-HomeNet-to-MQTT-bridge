@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-27T06:38:45.795Z",
+  "generated_at": "2025-12-27T06:39:05.723Z",
   "vendors": [
     {
       "id": "commax",
@@ -523,28 +523,6 @@
             },
             "automations": 2,
             "scripts": 0
-          }
-        },
-        {
-          "file": "hyundai_imazu/elevator copy.yaml",
-          "name": "현대통신 엘리베이터 2대",
-          "name_en": "Hyundai Telecom Elevator x2",
-          "description": "현대통신 월패드용 엘리베이터 2대가 있는 경우 호출 및 상태 확인 설정입니다.",
-          "description_en": "Elevator call and status configuration for Hyundai Telecom wallpads.",
-          "version": "1.0.0",
-          "author": "wooooooooooook",
-          "tags": [
-            "elevator",
-            "hyundai",
-            "imazu"
-          ],
-          "content_summary": {
-            "entities": {
-              "text_sensor": 4,
-              "button": 2
-            },
-            "automations": 0,
-            "scripts": 2
           }
         },
         {

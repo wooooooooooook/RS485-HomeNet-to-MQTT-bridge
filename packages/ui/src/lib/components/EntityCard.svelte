@@ -45,14 +45,27 @@
   onkeydown={(e) => ['Enter', ' '].includes(e.key) && onSelect?.()}
 >
   <header class="card-header">
-    <h3>{entity.displayName}</h3>
+    <div class="header-title">
+      <h3>{entity.displayName}</h3>
+      {#if entity.category === 'automation'}
+        <span class="entity-type-badge automation">{$t('dashboard.entity_card.automation_badge')}</span>
+      {:else if entity.category === 'script'}
+        <span class="entity-type-badge script">{$t('dashboard.entity_card.script_badge')}</span>
+      {/if}
+    </div>
     <span class="entity-id-badge">{entity.id}</span>
   </header>
 
   <div class="card-body">
     <!-- Status Section -->
     <div class="status-section">
-      {#if entity.statePayload}
+      {#if entity.category && entity.category !== 'entity'}
+        {#if entity.description}
+          <p class="entity-description">{entity.description}</p>
+        {:else}
+          <span class="no-status">{$t('dashboard.entity_card.no_status')}</span>
+        {/if}
+      {:else if entity.statePayload}
         {@const parsedPayload = parsePayload(entity.statePayload)}
         {#if parsedPayload}
           <div class="payload-list">
@@ -116,6 +129,31 @@
     margin: 0;
   }
 
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .entity-type-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .entity-type-badge.automation {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
+  .entity-type-badge.script {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+  }
+
   .entity-id-badge {
     font-size: 0.75rem;
     background: rgba(148, 163, 184, 0.1);
@@ -176,6 +214,13 @@
     color: #64748b;
     font-style: italic;
     font-size: 0.9rem;
+  }
+
+  .entity-description {
+    margin: 0;
+    color: #cbd5f5;
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
   @media (max-width: 480px) {
     .card-header {

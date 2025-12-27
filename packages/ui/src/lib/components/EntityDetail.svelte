@@ -3,7 +3,13 @@
   import { fade, scale } from 'svelte/transition';
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
-  import type { UnifiedEntity, CommandInfo, ParsedPacket, CommandPacket } from '../types';
+  import type {
+    UnifiedEntity,
+    CommandInfo,
+    ParsedPacket,
+    CommandPacket,
+    EntityCategory,
+  } from '../types';
 
   let {
     entity,
@@ -27,7 +33,8 @@
     onRename?: (newName: string) => void;
   } = $props();
 
-  let activeTab = $state<'status' | 'config' | 'packets' | 'manage'>('status');
+  let activeTab = $state<'status' | 'config' | 'packets' | 'manage' | 'execute'>('status');
+  let activeTabEntityId = $state<string | null>(null);
   let editingConfig = $state('');
   let configLoading = $state(false);
   let configError = $state<string | null>(null);
@@ -38,6 +45,12 @@
   let renameEntityId = $state<string | null>(null);
   let effectiveRenameError = $state('');
   let idCopied = $state(false);
+  let isExecutingAutomation = $state(false);
+  let isExecutingScript = $state(false);
+  let executeMessage = $state('');
+  let executeError = $state<string | null>(null);
+  let isTogglingAutomation = $state(false);
+  let automationToggleError = $state<string | null>(null);
 
   let isTogglingDiscoveryAlways = $state(false);
   let forceActiveError = $state<string | null>(null);
@@ -47,6 +60,11 @@
 
   let showRx = $state(true);
   let showTx = $state(true);
+
+  const entityCategory = $derived.by<EntityCategory>(() => entity.category ?? 'entity');
+  const isDeviceEntity = $derived.by(() => entityCategory === 'entity');
+  const isAutomation = $derived.by(() => entityCategory === 'automation');
+  const isScript = $derived.by(() => entityCategory === 'script');
 
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
@@ -77,6 +95,15 @@
       renameInput = entity.displayName;
       renameEntityId = entity.id;
       renameLocalError = null;
+    }
+  });
+
+  $effect(() => {
+    if (entity && entity.id !== activeTabEntityId) {
+      activeTab = isDeviceEntity ? 'status' : 'execute';
+      activeTabEntityId = entity.id;
+      executeMessage = '';
+      executeError = null;
     }
   });
 
@@ -154,7 +181,7 @@
     configError = null;
     saveMessage = '';
     try {
-      const res = await fetch(`./api/config/raw/${entity.id}`);
+      const res = await fetch(`./api/config/raw/${entityCategory}/${entity.id}`);
       if (!res.ok) throw new Error('Failed to load config');
       const data = await res.json();
       editingConfig = data.yaml;
@@ -180,6 +207,7 @@
           entityId: entity.id,
           yaml: editingConfig,
           portId: entity.portId,
+          type: entityCategory,
         }),
       });
 
@@ -228,6 +256,115 @@
       window.location.reload(); // Reload to refresh entity list since it's a major change
     } catch (e) {
       alert(e instanceof Error ? e.message : $t('entity_detail.manage.delete.error'));
+    }
+  }
+
+  async function handleExecuteAutomation() {
+    if (isExecutingAutomation) return;
+    isExecutingAutomation = true;
+    executeMessage = '';
+    executeError = null;
+
+    try {
+      const res = await fetch('./api/automations/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ automationId: entity.id }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || $t('entity_detail.execute.error'));
+      }
+      executeMessage = $t('entity_detail.automation.execute_success');
+    } catch (err) {
+      executeError = err instanceof Error ? err.message : $t('entity_detail.execute.error');
+    } finally {
+      isExecutingAutomation = false;
+    }
+  }
+
+  async function handleExecuteScript() {
+    if (isExecutingScript) return;
+    isExecutingScript = true;
+    executeMessage = '';
+    executeError = null;
+
+    try {
+      const res = await fetch('./api/scripts/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scriptId: entity.id }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || $t('entity_detail.execute.error'));
+      }
+      executeMessage = $t('entity_detail.script.execute_success');
+    } catch (err) {
+      executeError = err instanceof Error ? err.message : $t('entity_detail.execute.error');
+    } finally {
+      isExecutingScript = false;
+    }
+  }
+
+  async function handleToggleAutomationEnabled(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const newValue = target.checked;
+
+    isTogglingAutomation = true;
+    automationToggleError = null;
+
+    try {
+      const res = await fetch(`./api/automations/${entity.id}/enabled`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: newValue }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || $t('entity_detail.automation.toggle_error'));
+      }
+      entity.enabled = newValue;
+    } catch (err) {
+      automationToggleError =
+        err instanceof Error ? err.message : $t('entity_detail.automation.toggle_error');
+      target.checked = !newValue;
+    } finally {
+      isTogglingAutomation = false;
+    }
+  }
+
+  async function handleDeleteAutomation() {
+    if (!confirm($t('entity_detail.automation.delete_confirm'))) return;
+
+    try {
+      const res = await fetch(`./api/automations/${entity.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || $t('entity_detail.automation.delete_error'));
+      }
+      alert($t('entity_detail.automation.delete_success'));
+      close();
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : $t('entity_detail.automation.delete_error'));
+    }
+  }
+
+  async function handleDeleteScript() {
+    if (!confirm($t('entity_detail.script.delete_confirm'))) return;
+
+    try {
+      const res = await fetch(`./api/scripts/${entity.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || $t('entity_detail.script.delete_error'));
+      }
+      alert($t('entity_detail.script.delete_success'));
+      close();
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : $t('entity_detail.script.delete_error'));
     }
   }
 
@@ -342,14 +479,25 @@
       </header>
 
       <div class="modal-tabs" role="tablist">
-        <button
-          role="tab"
-          id="tab-status"
-          aria-selected={activeTab === 'status'}
-          aria-controls="panel-status"
-          class:active={activeTab === 'status'}
-          onclick={() => (activeTab = 'status')}>{$t('entity_detail.tabs.status')}</button
-        >
+        {#if isDeviceEntity}
+          <button
+            role="tab"
+            id="tab-status"
+            aria-selected={activeTab === 'status'}
+            aria-controls="panel-status"
+            class:active={activeTab === 'status'}
+            onclick={() => (activeTab = 'status')}>{$t('entity_detail.tabs.status')}</button
+          >
+        {:else}
+          <button
+            role="tab"
+            id="tab-execute"
+            aria-selected={activeTab === 'execute'}
+            aria-controls="panel-execute"
+            class:active={activeTab === 'execute'}
+            onclick={() => (activeTab = 'execute')}>{$t('entity_detail.tabs.execute')}</button
+          >
+        {/if}
         <button
           role="tab"
           id="tab-config"
@@ -358,14 +506,16 @@
           class:active={activeTab === 'config'}
           onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
         >
-        <button
-          role="tab"
-          id="tab-packets"
-          aria-selected={activeTab === 'packets'}
-          aria-controls="panel-packets"
-          class:active={activeTab === 'packets'}
-          onclick={() => (activeTab = 'packets')}>{$t('entity_detail.tabs.packets')}</button
-        >
+        {#if isDeviceEntity}
+          <button
+            role="tab"
+            id="tab-packets"
+            aria-selected={activeTab === 'packets'}
+            aria-controls="panel-packets"
+            class:active={activeTab === 'packets'}
+            onclick={() => (activeTab = 'packets')}>{$t('entity_detail.tabs.packets')}</button
+          >
+        {/if}
         <button
           role="tab"
           id="tab-manage"
@@ -444,6 +594,38 @@
                 </div>
               </div>
             {/if}
+          </div>
+        {:else if activeTab === 'execute'}
+          <div role="tabpanel" id="panel-execute" aria-labelledby="tab-execute" tabindex="0">
+            <div class="section status-section">
+              {#if isAutomation}
+                <h3>{$t('entity_detail.automation.execute_title')}</h3>
+                <p class="subtle">{$t('entity_detail.automation.execute_desc')}</p>
+                <Button
+                  variant="primary"
+                  onclick={handleExecuteAutomation}
+                  isLoading={isExecutingAutomation}
+                >
+                  {$t('entity_detail.automation.execute_button')}
+                </Button>
+              {:else if isScript}
+                <h3>{$t('entity_detail.script.execute_title')}</h3>
+                <p class="subtle">{$t('entity_detail.script.execute_desc')}</p>
+                <Button
+                  variant="primary"
+                  onclick={handleExecuteScript}
+                  isLoading={isExecutingScript}
+                >
+                  {$t('entity_detail.script.execute_button')}
+                </Button>
+              {/if}
+              {#if executeMessage}
+                <div class="save-message success">{executeMessage}</div>
+              {/if}
+              {#if executeError}
+                <div class="save-message error">{executeError}</div>
+              {/if}
+            </div>
           </div>
         {:else if activeTab === 'config'}
           <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
@@ -533,76 +715,114 @@
           </div>
         {:else if activeTab === 'manage'}
           <div role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" tabindex="0">
-            <div class="section manage-card">
-              <h3>{$t('entity_detail.manage.rename.title')}</h3>
-              <p class="subtle">{$t('entity_detail.manage.rename.desc')}</p>
-              <div class="rename-form">
-                <input
-                  type="text"
-                  bind:value={renameInput}
-                  placeholder={$t('entity_detail.manage.rename.placeholder')}
-                  aria-label={$t('entity_detail.manage.rename.placeholder')}
-                  oninput={() => (renameLocalError = null)}
-                />
-                <Button
-                  variant="success"
-                  onclick={handleRename}
-                  isLoading={isRenaming}
-                  ariaLabel={isRenaming
-                    ? $t('entity_detail.manage.rename.saving')
-                    : $t('entity_detail.manage.rename.save')}
-                >
-                  {$t('entity_detail.manage.rename.save')}
-                </Button>
-              </div>
-              {#if effectiveRenameError}
-                <div class="rename-error">{effectiveRenameError}</div>
-              {/if}
-            </div>
-
-            {#if entity.isActive}
+            {#if isDeviceEntity}
               <div class="section manage-card">
-                <h3>{$t('entity_detail.manage.revoke.title')}</h3>
+                <h3>{$t('entity_detail.manage.rename.title')}</h3>
+                <p class="subtle">{$t('entity_detail.manage.rename.desc')}</p>
+                <div class="rename-form">
+                  <input
+                    type="text"
+                    bind:value={renameInput}
+                    placeholder={$t('entity_detail.manage.rename.placeholder')}
+                    aria-label={$t('entity_detail.manage.rename.placeholder')}
+                    oninput={() => (renameLocalError = null)}
+                  />
+                  <Button
+                    variant="success"
+                    onclick={handleRename}
+                    isLoading={isRenaming}
+                    ariaLabel={isRenaming
+                      ? $t('entity_detail.manage.rename.saving')
+                      : $t('entity_detail.manage.rename.save')}
+                  >
+                    {$t('entity_detail.manage.rename.save')}
+                  </Button>
+                </div>
+                {#if effectiveRenameError}
+                  <div class="rename-error">{effectiveRenameError}</div>
+                {/if}
+              </div>
+
+              {#if entity.isActive}
+                <div class="section manage-card">
+                  <h3>{$t('entity_detail.manage.revoke.title')}</h3>
+                  <p class="subtle">
+                    {@html $t('entity_detail.manage.revoke.desc')}
+                  </p>
+                  <Button variant="secondary" onclick={handleRevokeDiscovery}>
+                    {$t('entity_detail.manage.revoke.button')}
+                  </Button>
+                </div>
+              {/if}
+
+              {#if !entity.isActive || entity.discoveryAlways}
+                <div class="section manage-card">
+                  <div class="toggle-row">
+                    <div class="toggle-info">
+                      <h3>{$t('entity_detail.manage.force_active.title')}</h3>
+                      <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={entity.discoveryAlways ?? false}
+                        onchange={handleToggleDiscoveryAlways}
+                        disabled={isTogglingDiscoveryAlways}
+                      />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  {#if forceActiveError}
+                    <div class="rename-error">{forceActiveError}</div>
+                  {/if}
+                </div>
+              {/if}
+              <div class="section manage-card danger-zone">
+                <h3>{$t('entity_detail.manage.delete.title')}</h3>
                 <p class="subtle">
-                  {@html $t('entity_detail.manage.revoke.desc')}
+                  {@html $t('entity_detail.manage.delete.desc')}
                 </p>
-                <Button variant="secondary" onclick={handleRevokeDiscovery}>
-                  {$t('entity_detail.manage.revoke.button')}
+                <Button variant="danger" onclick={handleDeleteEntity}>
+                  {$t('entity_detail.manage.delete.button')}
                 </Button>
               </div>
-            {/if}
-
-            {#if !entity.isActive || entity.discoveryAlways}
+            {:else if isAutomation}
               <div class="section manage-card">
                 <div class="toggle-row">
                   <div class="toggle-info">
-                    <h3>{$t('entity_detail.manage.force_active.title')}</h3>
-                    <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
+                    <h3>{$t('entity_detail.automation.toggle_title')}</h3>
+                    <p class="subtle">{$t('entity_detail.automation.toggle_desc')}</p>
                   </div>
                   <label class="toggle-switch">
                     <input
                       type="checkbox"
-                      checked={entity.discoveryAlways ?? false}
-                      onchange={handleToggleDiscoveryAlways}
-                      disabled={isTogglingDiscoveryAlways}
+                      checked={entity.enabled ?? true}
+                      onchange={handleToggleAutomationEnabled}
+                      disabled={isTogglingAutomation}
                     />
                     <span class="toggle-slider"></span>
                   </label>
                 </div>
-                {#if forceActiveError}
-                  <div class="rename-error">{forceActiveError}</div>
+                {#if automationToggleError}
+                  <div class="rename-error">{automationToggleError}</div>
                 {/if}
               </div>
+              <div class="section manage-card danger-zone">
+                <h3>{$t('entity_detail.automation.delete_title')}</h3>
+                <p class="subtle">{$t('entity_detail.automation.delete_desc')}</p>
+                <Button variant="danger" onclick={handleDeleteAutomation}>
+                  {$t('entity_detail.automation.delete_button')}
+                </Button>
+              </div>
+            {:else if isScript}
+              <div class="section manage-card danger-zone">
+                <h3>{$t('entity_detail.script.delete_title')}</h3>
+                <p class="subtle">{$t('entity_detail.script.delete_desc')}</p>
+                <Button variant="danger" onclick={handleDeleteScript}>
+                  {$t('entity_detail.script.delete_button')}
+                </Button>
+              </div>
             {/if}
-            <div class="section manage-card danger-zone">
-              <h3>{$t('entity_detail.manage.delete.title')}</h3>
-              <p class="subtle">
-                {@html $t('entity_detail.manage.delete.desc')}
-              </p>
-              <Button variant="danger" onclick={handleDeleteEntity}>
-                {$t('entity_detail.manage.delete.button')}
-              </Button>
-            </div>
           </div>
         {/if}
       </div>

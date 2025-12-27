@@ -19,7 +19,11 @@ import {
   MqttMessageEvent,
 } from '@rs485-homenet/core';
 import { CelExecutor } from '@rs485-homenet/core/protocol/cel-executor';
-import type { SerialConfig } from '@rs485-homenet/core/config/types';
+import type {
+  SerialConfig,
+  AutomationConfig,
+  ScriptConfig,
+} from '@rs485-homenet/core/config/types';
 import { createSerialPortConnection } from '@rs485-homenet/core/transports/serial/serial.factory';
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
@@ -1360,6 +1364,31 @@ const findConfigIndexForEntity = (entityId: string): number => {
   return -1;
 };
 
+const findConfigIndexForAutomation = (automationId: string): number => {
+  for (let i = 0; i < currentConfigs.length; i += 1) {
+    const config = currentConfigs[i];
+    const automations = config.automation as Array<any> | undefined;
+    if (
+      Array.isArray(automations) &&
+      automations.some((automation) => automation.id === automationId)
+    ) {
+      return i;
+    }
+  }
+  return -1;
+};
+
+const findConfigIndexForScript = (scriptId: string): number => {
+  for (let i = 0; i < currentConfigs.length; i += 1) {
+    const config = currentConfigs[i];
+    const scripts = config.scripts as Array<any> | undefined;
+    if (Array.isArray(scripts) && scripts.some((script) => script.id === scriptId)) {
+      return i;
+    }
+  }
+  return -1;
+};
+
 const findBridgeForEntity = (entityId: string): BridgeInstance | undefined => {
   for (let i = 0; i < currentConfigs.length; i += 1) {
     const config = currentConfigs[i];
@@ -1568,6 +1597,91 @@ app.get('/api/commands', (_req, res) => {
   res.json({ commands });
 });
 
+app.get('/api/automations', (_req, res) => {
+  if (currentConfigs.length === 0) {
+    return res.status(400).json({ error: 'Config not loaded' });
+  }
+
+  const automations = currentConfigs.flatMap((config, index) => {
+    const list = config.automation ?? [];
+    return list.map((automation) => ({
+      id: automation.id,
+      name: automation.name ?? automation.id,
+      description: automation.description,
+      enabled: automation.enabled !== false,
+      portId: automation.portId,
+      configFile: currentConfigFiles[index],
+    }));
+  });
+
+  res.json({ automations });
+});
+
+app.get('/api/scripts', (_req, res) => {
+  if (currentConfigs.length === 0) {
+    return res.status(400).json({ error: 'Config not loaded' });
+  }
+
+  const scripts = currentConfigs.flatMap((config, index) => {
+    const list = config.scripts ?? [];
+    return list.map((script) => ({
+      id: script.id,
+      description: script.description,
+      configFile: currentConfigFiles[index],
+    }));
+  });
+
+  res.json({ scripts });
+});
+
+app.get('/api/config/raw/:type/:entityId', (req, res) => {
+  if (currentRawConfigs.length === 0) {
+    return res.status(400).json({ error: 'Config not loaded' });
+  }
+
+  const { type, entityId } = req.params;
+  let foundEntity: any = null;
+
+  if (type === 'entity') {
+    for (const rawConfig of currentRawConfigs) {
+      for (const entityType of ENTITY_TYPE_KEYS) {
+        const entities = rawConfig[entityType] as Array<any> | undefined;
+        if (Array.isArray(entities)) {
+          foundEntity = entities.find((e) => e.id === entityId);
+          if (foundEntity) break;
+        }
+      }
+      if (foundEntity) break;
+    }
+  } else if (type === 'automation') {
+    for (const rawConfig of currentRawConfigs) {
+      const automations = rawConfig.automation as Array<any> | undefined;
+      if (Array.isArray(automations)) {
+        foundEntity = automations.find((automation) => automation.id === entityId);
+        if (foundEntity) break;
+      }
+    }
+  } else if (type === 'script') {
+    for (const rawConfig of currentRawConfigs) {
+      const scripts = rawConfig.scripts as Array<any> | undefined;
+      if (Array.isArray(scripts)) {
+        foundEntity = scripts.find((script) => script.id === entityId);
+        if (foundEntity) break;
+      }
+    }
+  } else {
+    return res.status(400).json({ error: 'Unknown config type' });
+  }
+
+  if (foundEntity) {
+    res.json({
+      yaml: dumpConfigToYaml(foundEntity),
+    });
+  } else {
+    res.status(404).json({ error: 'Entity not found in config' });
+  }
+});
+
 app.get('/api/config/raw/:entityId', (req, res) => {
   if (currentRawConfigs.length === 0) {
     return res.status(400).json({ error: 'Config not loaded' });
@@ -1606,10 +1720,29 @@ app.post('/api/config/update', async (req, res) => {
     entityId,
     yaml: newEntityYaml,
     portId,
-  } = req.body as { entityId: string; yaml: string; portId?: string };
+    type = 'entity',
+  } = req.body as {
+    entityId: string;
+    yaml: string;
+    portId?: string;
+    type?: 'entity' | 'automation' | 'script';
+  };
+
+  if (!entityId || typeof entityId !== 'string') {
+    return res.status(400).json({ error: 'entityId가 필요합니다.' });
+  }
 
   // Find config by portId if provided, otherwise fallback to finding by entityId
-  let configIndex = portId ? findConfigIndexByPortId(portId) : findConfigIndexForEntity(entityId);
+  let configIndex = -1;
+  if (type === 'entity') {
+    configIndex = portId ? findConfigIndexByPortId(portId) : findConfigIndexForEntity(entityId);
+  } else if (type === 'automation') {
+    configIndex = findConfigIndexForAutomation(entityId);
+  } else if (type === 'script') {
+    configIndex = findConfigIndexForScript(entityId);
+  } else {
+    return res.status(400).json({ error: 'Unknown config type' });
+  }
   if (configIndex === -1) {
     return res.status(404).json({ error: 'Entity not found in any loaded config' });
   }
@@ -1627,6 +1760,13 @@ app.post('/api/config/update', async (req, res) => {
 
     if (!newEntity || typeof newEntity !== 'object') {
       return res.status(400).json({ error: 'Invalid YAML content' });
+    }
+
+    if (
+      (type === 'automation' || type === 'script') &&
+      (!newEntity.id || typeof newEntity.id !== 'string')
+    ) {
+      return res.status(400).json({ error: 'ID가 필요합니다.' });
     }
 
     // Ensure ID matches or at least exists
@@ -1653,25 +1793,46 @@ app.post('/api/config/update', async (req, res) => {
       loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
     );
 
-    // 4. Backup
-    const backupPath = await saveBackup(configPath, loadedYamlFromFile, 'entity_update');
+    const backupPath = await saveBackup(configPath, loadedYamlFromFile, `${type}_update`);
 
-    // 3. Find and update entity
-    let found = false;
-    for (const type of ENTITY_TYPE_KEYS) {
-      const list = normalizedFullConfig[type] as any[]; // Use normalizedFullConfig here
-      if (Array.isArray(list)) {
-        const index = list.findIndex((e) => e.id === entityId);
-        if (index !== -1) {
-          list[index] = newEntity;
-          found = true;
-          break;
+    if (type === 'entity') {
+      // 3. Find and update entity
+      let found = false;
+      for (const entityType of ENTITY_TYPE_KEYS) {
+        const list = normalizedFullConfig[entityType] as any[]; // Use normalizedFullConfig here
+        if (Array.isArray(list)) {
+          const index = list.findIndex((e) => e.id === entityId);
+          if (index !== -1) {
+            list[index] = newEntity;
+            found = true;
+            break;
+          }
         }
       }
-    }
 
-    if (!found) {
-      return res.status(404).json({ error: 'Entity not found in current config' });
+      if (!found) {
+        return res.status(404).json({ error: 'Entity not found in current config' });
+      }
+    } else if (type === 'automation') {
+      const list = normalizedFullConfig.automation as any[] | undefined;
+      if (!Array.isArray(list)) {
+        return res.status(404).json({ error: 'Automation not found in current config' });
+      }
+      const index = list.findIndex((automation) => automation.id === entityId);
+      if (index === -1) {
+        return res.status(404).json({ error: 'Automation not found in current config' });
+      }
+      list[index] = newEntity;
+    } else if (type === 'script') {
+      const list = normalizedFullConfig.scripts as any[] | undefined;
+      if (!Array.isArray(list)) {
+        return res.status(404).json({ error: 'Script not found in current config' });
+      }
+      const index = list.findIndex((script) => script.id === entityId);
+      if (index === -1) {
+        return res.status(404).json({ error: 'Script not found in current config' });
+      }
+      list[index] = newEntity;
     }
 
     // After updating normalizedFullConfig, we need to dump it back to YAML.
@@ -1692,8 +1853,33 @@ app.post('/api/config/update', async (req, res) => {
     currentConfigs[configIndex] = normalizedFullConfig;
     rebuildPortMappings();
 
+    const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
+    if (type === 'automation' && targetBridge) {
+      const updatedAutomation = newEntity as AutomationConfig;
+      if (updatedAutomation.id && updatedAutomation.id !== entityId) {
+        targetBridge.bridge.removeAutomation(entityId);
+      }
+      if (updatedAutomation.enabled === false) {
+        targetBridge.bridge.removeAutomation(updatedAutomation.id ?? entityId);
+      } else {
+        targetBridge.bridge.upsertAutomation(updatedAutomation);
+      }
+    }
+
+    if (type === 'script' && targetBridge) {
+      const updatedScript = newEntity as ScriptConfig;
+      if (updatedScript.id && updatedScript.id !== entityId) {
+        targetBridge.bridge.removeScript(entityId);
+      }
+      if (updatedScript.id) {
+        targetBridge.bridge.upsertScript(updatedScript);
+      }
+    }
+
     logger.info(
-      `[service] Config updated for entity ${entityId}. Backup created at ${path.basename(backupPath)}`,
+      `[service] Config updated for ${type} ${entityId}. Backup created at ${path.basename(
+        backupPath,
+      )}`,
     );
     res.json({ success: true, backup: path.basename(backupPath) });
   } catch (err) {
@@ -2602,6 +2788,270 @@ app.delete('/api/entities/:entityId', async (req, res) => {
     res.json({ success: true, backup: path.basename(backupPath) });
   } catch (err) {
     logger.error({ err }, '[service] Failed to delete entity');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Delete failed' });
+  }
+});
+
+app.post('/api/automations/execute', async (req, res) => {
+  if (!commandRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { automationId } = req.body as { automationId?: string };
+
+  if (!automationId) {
+    return res.status(400).json({ error: 'automationId가 필요합니다.' });
+  }
+
+  const configIndex = findConfigIndexForAutomation(automationId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Automation not found in loaded configs' });
+  }
+
+  const automation = currentConfigs[configIndex]?.automation?.find(
+    (item) => item.id === automationId,
+  );
+  if (!automation) {
+    return res.status(404).json({ error: 'Automation not found in loaded configs' });
+  }
+
+  const targetBridge = bridges.find(
+    (instance) => instance.configFile === currentConfigFiles[configIndex],
+  );
+  if (!targetBridge) {
+    return res.status(404).json({ error: 'Bridge not started' });
+  }
+
+  const result = await targetBridge.bridge.runAutomationThen(automation);
+  if (result.success) {
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ error: result.error });
+  }
+});
+
+app.post('/api/scripts/execute', async (req, res) => {
+  if (!commandRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { scriptId } = req.body as { scriptId?: string };
+
+  if (!scriptId) {
+    return res.status(400).json({ error: 'scriptId가 필요합니다.' });
+  }
+
+  const configIndex = findConfigIndexForScript(scriptId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Script not found in loaded configs' });
+  }
+
+  const targetBridge = bridges.find(
+    (instance) => instance.configFile === currentConfigFiles[configIndex],
+  );
+  if (!targetBridge) {
+    return res.status(404).json({ error: 'Bridge not started' });
+  }
+
+  const result = await targetBridge.bridge.runScript(scriptId);
+  if (result.success) {
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ error: result.error });
+  }
+});
+
+app.patch('/api/automations/:automationId/enabled', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Toggle automation rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { automationId } = req.params;
+  const { enabled } = req.body as { enabled?: boolean };
+
+  if (enabled === undefined) {
+    return res.status(400).json({ error: 'enabled 값이 필요합니다.' });
+  }
+
+  const configIndex = findConfigIndexForAutomation(automationId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Automation not found in loaded configs' });
+  }
+
+  const targetConfigFile = currentConfigFiles[configIndex];
+
+  try {
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent) as {
+      homenet_bridge: PersistableHomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
+    }
+
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
+
+    const automationList = normalizedConfig.automation;
+    if (!Array.isArray(automationList)) {
+      return res.status(404).json({ error: 'Automation not found in config' });
+    }
+
+    const automation = automationList.find((item) => item.id === automationId);
+    if (!automation) {
+      return res.status(404).json({ error: 'Automation not found in config' });
+    }
+
+    const backupPath = await saveBackup(configPath, loadedYamlFromFile, 'automation_toggle');
+
+    automation.enabled = enabled;
+
+    loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
+    rebuildPortMappings();
+
+    const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
+    if (targetBridge) {
+      if (enabled) {
+        targetBridge.bridge.upsertAutomation(automation);
+      } else {
+        targetBridge.bridge.removeAutomation(automationId);
+      }
+    }
+
+    res.json({ success: true, backup: path.basename(backupPath) });
+  } catch (err) {
+    logger.error({ err }, '[service] Failed to toggle automation');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Toggle failed' });
+  }
+});
+
+app.delete('/api/automations/:automationId', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Delete automation rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { automationId } = req.params;
+  const configIndex = findConfigIndexForAutomation(automationId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Automation not found in loaded configs' });
+  }
+
+  const targetConfigFile = currentConfigFiles[configIndex];
+
+  try {
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent) as {
+      homenet_bridge: PersistableHomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
+    }
+
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
+
+    const automationList = normalizedConfig.automation;
+    if (!Array.isArray(automationList)) {
+      return res.status(404).json({ error: 'Automation not found in config' });
+    }
+
+    const index = automationList.findIndex((item) => item.id === automationId);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Automation not found in config' });
+    }
+
+    const backupPath = await saveBackup(configPath, loadedYamlFromFile, 'automation_delete');
+
+    automationList.splice(index, 1);
+
+    loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
+    rebuildPortMappings();
+
+    const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
+    targetBridge?.bridge.removeAutomation(automationId);
+
+    res.json({ success: true, backup: path.basename(backupPath) });
+  } catch (err) {
+    logger.error({ err }, '[service] Failed to delete automation');
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Delete failed' });
+  }
+});
+
+app.delete('/api/scripts/:scriptId', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Delete script rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { scriptId } = req.params;
+  const configIndex = findConfigIndexForScript(scriptId);
+  if (configIndex === -1) {
+    return res.status(404).json({ error: 'Script not found in loaded configs' });
+  }
+
+  const targetConfigFile = currentConfigFiles[configIndex];
+
+  try {
+    const configPath = path.join(CONFIG_DIR, targetConfigFile);
+    const fileContent = await fs.readFile(configPath, 'utf8');
+    const loadedYamlFromFile = yaml.load(fileContent) as {
+      homenet_bridge: PersistableHomenetBridgeConfig;
+    };
+
+    if (!loadedYamlFromFile.homenet_bridge) {
+      throw new Error('Invalid config file structure');
+    }
+
+    const normalizedConfig = normalizeConfig(
+      loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+    );
+
+    const scripts = normalizedConfig.scripts;
+    if (!Array.isArray(scripts)) {
+      return res.status(404).json({ error: 'Script not found in config' });
+    }
+
+    const index = scripts.findIndex((item) => item.id === scriptId);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Script not found in config' });
+    }
+
+    const backupPath = await saveBackup(configPath, loadedYamlFromFile, 'script_delete');
+
+    scripts.splice(index, 1);
+
+    loadedYamlFromFile.homenet_bridge = stripLegacyKeysBeforeSave(normalizedConfig);
+    const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
+    await fs.writeFile(configPath, newFileContent, 'utf8');
+
+    currentRawConfigs[configIndex] = normalizedConfig;
+    currentConfigs[configIndex] = normalizedConfig;
+    rebuildPortMappings();
+
+    const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
+    targetBridge?.bridge.removeScript(scriptId);
+
+    res.json({ success: true, backup: path.basename(backupPath) });
+  } catch (err) {
+    logger.error({ err }, '[service] Failed to delete script');
     res.status(500).json({ error: err instanceof Error ? err.message : 'Delete failed' });
   }
 });

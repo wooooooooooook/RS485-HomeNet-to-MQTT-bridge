@@ -19,6 +19,9 @@
     FrontendSettings,
     ActivityLog,
     StatusMessage,
+    AutomationSummary,
+    ScriptSummary,
+    EntityCategory,
   } from './lib/types';
   import Sidebar from './lib/components/Sidebar.svelte';
   import Header from './lib/components/Header.svelte';
@@ -34,19 +37,37 @@
 
   // -- State --
   let activeView = $state<'dashboard' | 'analysis' | 'gallery' | 'settings'>('dashboard');
-  // Entity selection uses a composite key: "portId:entityId" to distinguish entities across ports
+  // Entity selection uses a composite key: "category:portId:entityId" to distinguish entities across ports
   let selectedEntityKey = $state<string | null>(null);
   let isSidebarOpen = $state(false);
   let showInactiveEntities = $state(false);
 
   // Helper to create/parse entity composite keys
-  const makeEntityKey = (portId: string | undefined, entityId: string) =>
-    `${portId ?? 'unknown'}:${entityId}`;
-  const parseEntityKey = (key: string): { portId: string | undefined; entityId: string } => {
-    const idx = key.indexOf(':');
-    if (idx === -1) return { portId: undefined, entityId: key };
-    const portId = key.slice(0, idx);
-    return { portId: portId === 'unknown' ? undefined : portId, entityId: key.slice(idx + 1) };
+  const makeEntityKey = (
+    portId: string | undefined,
+    entityId: string,
+    category: EntityCategory = 'entity',
+  ) => `${category}:${portId ?? 'unknown'}:${entityId}`;
+  const parseEntityKey = (
+    key: string,
+  ): { portId: string | undefined; entityId: string; category: EntityCategory } => {
+    const parts = key.split(':');
+    if (parts.length < 3) {
+      const idx = key.indexOf(':');
+      if (idx === -1) return { portId: undefined, entityId: key, category: 'entity' };
+      const portId = key.slice(0, idx);
+      return {
+        portId: portId === 'unknown' ? undefined : portId,
+        entityId: key.slice(idx + 1),
+        category: 'entity',
+      };
+    }
+    const [category, portId, ...rest] = parts;
+    return {
+      category: (category as EntityCategory) ?? 'entity',
+      portId: portId === 'unknown' ? undefined : portId,
+      entityId: rest.join(':'),
+    };
   };
 
   let bridgeInfo = $state<BridgeInfo | null>(null);
@@ -67,6 +88,8 @@
   let availableCommands = $state<CommandInfo[]>([]);
   let commandsLoading = $state(false);
   let commandsError = $state('');
+  let automationItems = $state<AutomationSummary[]>([]);
+  let scriptItems = $state<ScriptSummary[]>([]);
   // Generic input state map for various input types
 
   let executingCommands = $state(new Set<string>());
@@ -358,6 +381,8 @@
 
       startMqttStream();
       loadCommands();
+      loadAutomations();
+      loadScripts();
       loadPacketHistory();
     } catch (err) {
       bridgeInfo = null;
@@ -719,6 +744,26 @@
     }
   }
 
+  async function loadAutomations() {
+    try {
+      const data = await apiRequest<{ automations: AutomationSummary[] }>('./api/automations');
+      automationItems = data.automations ?? [];
+    } catch (err) {
+      console.error('Failed to load automations:', err);
+      automationItems = [];
+    }
+  }
+
+  async function loadScripts() {
+    try {
+      const data = await apiRequest<{ scripts: ScriptSummary[] }>('./api/scripts');
+      scriptItems = data.scripts ?? [];
+    } catch (err) {
+      console.error('Failed to load scripts:', err);
+      scriptItems = [];
+    }
+  }
+
   async function executeCommand(cmd: CommandInfo, value?: any) {
     const key = `${cmd.entityId}_${cmd.commandName}`;
     if (executingCommands.has(key)) return;
@@ -830,8 +875,11 @@
     const entities = new Map<string, UnifiedEntity>();
 
     // 복합 키 생성 헬퍼
-    const makeKey = (portId: string | undefined, entityId: string) =>
-      `${portId ?? 'unknown'}:${entityId}`;
+    const makeKey = (
+      portId: string | undefined,
+      entityId: string,
+      category: EntityCategory = 'entity',
+    ) => `${category}:${portId ?? 'unknown'}:${entityId}`;
 
     // 1. Initialize with Commands (Source of Truth for Configured Names)
     for (const cmd of availableCommands) {
@@ -839,13 +887,14 @@
       const portId =
         cmd.portId ?? (cmd.configFile ? configPortMap.get(cmd.configFile) : null) ?? undefined;
 
-      const key = makeKey(portId, cmd.entityId);
+      const key = makeKey(portId, cmd.entityId, 'entity');
 
       if (!entities.has(key)) {
         entities.set(key, {
           id: cmd.entityId,
           displayName: cmd.entityName || cmd.entityId,
           type: cmd.entityType,
+          category: 'entity',
           commands: [],
           isStatusDevice: false,
           portId,
@@ -868,13 +917,14 @@
       const payload = entry?.payload ?? '';
       const portId = entry?.portId;
 
-      const key = makeKey(portId, entityId);
+      const key = makeKey(portId, entityId, 'entity');
 
       if (!entities.has(key)) {
         // Unknown entity (read-only or no commands configured)
         entities.set(key, {
           id: entityId,
           displayName: entityId, // Fallback to ID
+          category: 'entity',
           commands: [],
           isStatusDevice: false,
           portId,
@@ -885,8 +935,54 @@
       entity.statePayload = payload;
     }
 
+    for (const automation of automationItems) {
+      const portId =
+        automation.portId ??
+        (automation.configFile ? configPortMap.get(automation.configFile) : null) ??
+        undefined;
+      const key = makeKey(portId, automation.id, 'automation');
+      if (!entities.has(key)) {
+        entities.set(key, {
+          id: automation.id,
+          displayName: automation.name || automation.id,
+          category: 'automation',
+          description: automation.description,
+          enabled: automation.enabled,
+          commands: [],
+          isStatusDevice: false,
+          portId,
+        });
+      }
+    }
+
+    for (const script of scriptItems) {
+      const portId =
+        (script.configFile ? configPortMap.get(script.configFile) : null) ?? undefined;
+      const key = makeKey(portId, script.id, 'script');
+      if (!entities.has(key)) {
+        entities.set(key, {
+          id: script.id,
+          displayName: script.id,
+          category: 'script',
+          description: script.description,
+          commands: [],
+          isStatusDevice: false,
+          portId,
+        });
+      }
+    }
+
     // Calculate isActive for all entities
     for (const entity of entities.values()) {
+      if (entity.category === 'automation') {
+        entity.isActive = entity.enabled !== false;
+        continue;
+      }
+      if (entity.category === 'script') {
+        entity.isActive = true;
+        continue;
+      }
+
       let isActive = false;
       if (entity.statePayload) {
         isActive = true;
@@ -894,7 +990,7 @@
         isActive = true;
       } else if (entity.discoveryLinkedId) {
         // Check if the linked entity has state
-        const linkedKey = makeKey(entity.portId, entity.discoveryLinkedId);
+        const linkedKey = makeKey(entity.portId, entity.discoveryLinkedId, 'entity');
         const linkedEntity = entities.get(linkedKey);
         if (linkedEntity && linkedEntity.statePayload) {
           isActive = true;
@@ -957,12 +1053,16 @@
 
   const selectedEntity = $derived.by<UnifiedEntity | null>(() => {
     if (!selectedEntityKey) return null;
-    const { portId, entityId } = parseEntityKey(selectedEntityKey);
-    return unifiedEntities.find((e) => e.id === entityId && e.portId === portId) || null;
+    const { portId, entityId, category } = parseEntityKey(selectedEntityKey);
+    return (
+      unifiedEntities.find(
+        (e) => e.id === entityId && e.portId === portId && e.category === category,
+      ) || null
+    );
   });
 
   const selectedEntityParsedPackets = $derived.by<ParsedPacket[]>(() =>
-    selectedEntity && parsedPackets
+    selectedEntity && parsedPackets && selectedEntity.category === 'entity'
       ? parsedPackets
           .filter(
             (p) =>
@@ -975,7 +1075,7 @@
 
   // Command packets ARE structured with entity property but we now have entityId
   const selectedEntityCommandPackets = $derived.by<CommandPacket[]>(() =>
-    selectedEntity && commandPackets
+    selectedEntity && commandPackets && selectedEntity.category === 'entity'
       ? commandPackets
           .filter(
             (p) =>
@@ -988,9 +1088,9 @@
 
   $effect(() => {
     if (selectedEntityKey) {
-      const { portId, entityId } = parseEntityKey(selectedEntityKey);
+      const { portId, entityId, category } = parseEntityKey(selectedEntityKey);
       const exists = unifiedEntities.some(
-        (entity) => entity.id === entityId && entity.portId === portId,
+        (entity) => entity.id === entityId && entity.portId === portId && entity.category === category,
       );
       if (!exists) {
         selectedEntityKey = null;
@@ -1104,7 +1204,8 @@
             {connectionStatus}
             {statusMessage}
             {portStatuses}
-            onSelect={(entityId, portId) => (selectedEntityKey = makeEntityKey(portId, entityId))}
+            onSelect={(entityId, portId, category) =>
+              (selectedEntityKey = makeEntityKey(portId, entityId, category))}
             onToggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
             onPortChange={(portId) => (selectedPortId = portId)}
           />

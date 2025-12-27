@@ -5,3 +5,10 @@
 1.  **Clear Ownership:** Assign ownership of data structures to the service that primarily manages them (`LogRetentionService`).
 2.  **Lifecycle Management:** Implement pruning/cleanup logic for any unbounded collection (Map/Set/Array) that receives external input.
 3.  **Monotonic Counters:** When generating IDs for items that might be pruned, use a monotonic counter instead of `size + 1` to avoid ID collisions if items are removed.
+
+## 2025-12-27 - [Hardcoded API Key Fallback]
+**Vulnerability:** A hardcoded string `'h2m-log-collector-is-cool'` was used as a fallback for the `LOG_COLLECTOR_API_KEY` environment variable. This meant that if the environment variable was missing, the service would default to using this insecure, publicly visible string as an API key.
+**Learning:** Fallback values for security credentials can silently downgrade security. Developers might assume a secure environment variable is being used, while the system is actually running with a compromised default.
+**Prevention:**
+1.  **Fail Securely:** Do not provide default values for secrets. If a required secret is missing, the feature should explicitly fail or disable itself with a warning.
+2.  **Explicit Configuration:** Force the user/administrator to provide credentials explicitly via environment variables or secure configuration stores.

@@ -22,7 +22,8 @@ const LEGACY_CONSENT_FILE = path.join(CONFIG_DIR, '.share_logs');
 const LOG_CONFIG_FILE = path.join(CONFIG_DIR, 'log_sharing.json');
 
 const LOG_COLLECTOR_URL = 'https://h2m-log-collector.nubiz.workers.dev/';
-const API_KEY = process.env.LOG_COLLECTOR_API_KEY || 'h2m-log-collector-is-cool';
+// 🛡️ Sentinel: Removed hardcoded fallback key. API Key must be provided via environment variable.
+const API_KEY = process.env.LOG_COLLECTOR_API_KEY;
 
 interface LogConfig {
   consent: boolean | null;
@@ -176,6 +177,11 @@ export class LogCollectorService {
 
     if (!this.config.uid) {
       logger.warn('[LogCollector] No UID present, skipping upload despite collection.');
+      return;
+    }
+
+    if (!API_KEY) {
+      logger.warn('[LogCollector] No API Key configured, skipping upload.');
       return;
     }
 

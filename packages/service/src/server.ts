@@ -628,7 +628,8 @@ app.post('/api/logs/packet/start', (req, res) => {
       stats,
     };
 
-    rawPacketLogger.start(meta);
+    const mode = getRawPacketMode(req.body?.mode);
+    rawPacketLogger.start(meta, { mode });
     // 스트리밍은 UI에서 Analysis 페이지 진입 시 자동으로 시작되므로 별도로 리스너를 시작하지 않음
     res.json({ success: true, message: 'Logging started' });
   } catch (error) {
@@ -832,6 +833,8 @@ type StreamMessage<T = unknown> = {
   data: T;
 };
 
+type RawPacketStreamMode = 'all' | 'valid';
+
 type RawPacketPayload = {
   payload?: string;
   interval?: number | null;
@@ -949,14 +952,23 @@ const broadcastStreamEvent = <T>(event: StreamEvent, payload: T) => {
   });
 };
 
-const rawPacketSubscribers = new Set<WebSocket>();
+const rawPacketSubscribers = new Map<WebSocket, RawPacketStreamMode>();
 
-const sendToRawSubscribers = <T>(event: StreamEvent, payload: T) => {
-  rawPacketSubscribers.forEach((client) => {
+const sendToRawSubscribers = <T>(
+  event: StreamEvent,
+  payload: T,
+  mode: RawPacketStreamMode | null = null,
+) => {
+  rawPacketSubscribers.forEach((subscriberMode, client) => {
+    if (mode && subscriberMode !== mode) return;
     if (client.readyState === WebSocket.OPEN) {
       sendStreamEvent(client, event, payload);
     }
   });
+};
+
+const getRawPacketMode = (value: unknown): RawPacketStreamMode => {
+  return value === 'valid' ? 'valid' : 'all';
 };
 
 const registerGlobalEventHandlers = () => {
@@ -1002,6 +1014,14 @@ const registerGlobalEventHandlers = () => {
     sendToRawSubscribers(
       'raw-data-with-interval',
       normalizeRawPacket({ ...data, direction: 'RX' }),
+      'all',
+    );
+  });
+  eventBus.on('raw-valid-packet', (data: RawPacketPayload) => {
+    sendToRawSubscribers(
+      'raw-data-with-interval',
+      normalizeRawPacket({ ...data, direction: 'RX' }),
+      'valid',
     );
   });
   eventBus.on('raw-tx-packet', (data: { portId: string; payload: string; timestamp: string }) => {
@@ -1014,6 +1034,7 @@ const registerGlobalEventHandlers = () => {
         interval: null, // TX 패킷은 interval 계산하지 않음
         direction: 'TX',
       }),
+      'all',
     );
   });
   eventBus.on('packet-interval-stats', (data: unknown) => {
@@ -1044,21 +1065,17 @@ const registerPacketStream = () => {
       try {
         const parsed = JSON.parse(message);
         if (parsed.command === 'start') {
-          if (!rawPacketSubscribers.has(socket)) {
-            const wasEmpty = rawPacketSubscribers.size === 0;
-            rawPacketSubscribers.add(socket);
-            if (wasEmpty) {
-              logger.info('[service] UI requested to start streaming raw packets.');
-              startAllRawPacketListeners();
-            }
+          const mode = getRawPacketMode(parsed.mode);
+          const wasEmpty = rawPacketSubscribers.size === 0;
+          rawPacketSubscribers.set(socket, mode);
+          if (wasEmpty) {
+            logger.info('[service] UI requested to start streaming raw packets.');
+            startAllRawPacketListeners();
           }
         } else if (parsed.command === 'stop') {
-          if (rawPacketSubscribers.has(socket)) {
-            rawPacketSubscribers.delete(socket);
-            if (rawPacketSubscribers.size === 0) {
-              logger.info('[service] UI requested to stop streaming raw packets.');
-              stopAllRawPacketListeners();
-            }
+          if (rawPacketSubscribers.delete(socket) && rawPacketSubscribers.size === 0) {
+            logger.info('[service] UI requested to stop streaming raw packets.');
+            stopAllRawPacketListeners();
           }
         }
       } catch (error) {
@@ -1077,20 +1094,14 @@ const registerPacketStream = () => {
     }, 15000);
     socket.on('close', () => {
       clearInterval(heartbeat);
-      if (rawPacketSubscribers.has(socket)) {
-        rawPacketSubscribers.delete(socket);
-        if (rawPacketSubscribers.size === 0) {
-          stopAllRawPacketListeners();
-        }
+      if (rawPacketSubscribers.delete(socket) && rawPacketSubscribers.size === 0) {
+        stopAllRawPacketListeners();
       }
     });
     socket.on('error', () => {
       clearInterval(heartbeat);
-      if (rawPacketSubscribers.has(socket)) {
-        rawPacketSubscribers.delete(socket);
-        if (rawPacketSubscribers.size === 0) {
-          stopAllRawPacketListeners();
-        }
+      if (rawPacketSubscribers.delete(socket) && rawPacketSubscribers.size === 0) {
+        stopAllRawPacketListeners();
       }
     });
   });

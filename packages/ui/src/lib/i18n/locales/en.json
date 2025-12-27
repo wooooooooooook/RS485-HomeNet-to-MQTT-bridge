@@ -98,6 +98,8 @@
       "filter_placeholder": "Search payload, direction (RX/TX)",
       "clear_filter": "Clear Filter",
       "filter_hint": "Support wildcards (*, ?). Only the most recent 1000 packets are searched. Intervals are hidden while filtering.",
+      "valid_only_label": "Show valid packets only",
+      "valid_only_hint": "Shows packets with valid header, checksum, and footer.",
       "empty": "No packets to display.",
       "collected_packets": "Collected Packets: {count}",
       "recording_duration": "Recording Duration: {duration}",

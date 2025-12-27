@@ -22,6 +22,7 @@
     onPortChange,
     onStart,
     onStop,
+    validOnly = $bindable(false),
     isRecording = $bindable(),
     recordingStartTime = $bindable(),
     recordedFile = $bindable(),
@@ -36,6 +37,7 @@
     onPortChange?: (portId: string) => void;
     onStart?: () => void;
     onStop?: () => void;
+    validOnly: boolean;
     isRecording: boolean;
     recordingStartTime: number | null;
     recordedFile: { filename: string; path: string } | null;
@@ -72,6 +74,7 @@
     {stats}
     {onStart}
     {onStop}
+    bind:validOnly
     bind:isRecording
     bind:recordingStartTime
     bind:recordedFile

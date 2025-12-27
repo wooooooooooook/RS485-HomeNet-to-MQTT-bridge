@@ -104,6 +104,21 @@ export class CelExecutor {
    * @returns The result of the expression, with BigInts converted back to Numbers.
    */
   public execute(script: string, contextData: Record<string, any>): any {
+    const { result } = this.executeWithDiagnostics(script, contextData);
+    return result;
+  }
+
+  /**
+   * Evaluates a CEL script and returns the result with error details if any.
+   *
+   * @param script - The CEL expression string to evaluate.
+   * @param contextData - A dictionary of variables to expose to the script.
+   * @returns Object containing result and optional error message.
+   */
+  public executeWithDiagnostics(
+    script: string,
+    contextData: Record<string, any>,
+  ): { result: any; error?: string } {
     try {
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'
       const safeContext: Record<string, any> = {};
@@ -155,13 +170,13 @@ export class CelExecutor {
       const res = this.env.evaluate(script, safeContext);
 
       // Post-process result: Convert BigInt back to Number, List to Array
-      return this.convertResult(res);
+      return { result: this.convertResult(res) };
     } catch (error) {
       // Improve error logging - extract message from Error object
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       logger.error({ error: errorMessage, stack: errorStack, script }, '[CEL] Execution failed');
-      return null;
+      return { result: null, error: errorMessage };
     }
   }
 

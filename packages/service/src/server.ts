@@ -638,11 +638,11 @@ app.post('/api/cel/evaluate', async (req, res) => {
   }
 
   try {
-    const result = celExecutor.execute(script, context ?? {});
+    const { result, error: celError } = celExecutor.executeWithDiagnostics(script, context ?? {});
     if (result === null) {
       return res.json({
         result,
-        error: 'CEL 평가 실패 또는 null 반환',
+        error: celError ?? 'CEL 평가 실패 또는 null 반환',
       });
     }
     res.json({ result });

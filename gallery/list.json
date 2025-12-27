@@ -636,6 +636,28 @@
           }
         },
         {
+          "file": "hyundai_imazu/lights_all_off.yaml",
+          "name": "일괄소등 스위치",
+          "name_en": "All Lights Off Switch",
+          "description": "현대 이마주 일괄소등 스위치 설정입니다. 일괄소등 ON/OFF만 지원합니다.",
+          "description_en": "Hyundai Imazu all lights off switch configuration (ON/OFF only).",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "light",
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
           "file": "hyundai_imazu/lights_hallway.yaml",
           "name": "Room 1, 5번등 (복도등)",
           "name_en": "Room 1, 5 Light (Hallway Light)",

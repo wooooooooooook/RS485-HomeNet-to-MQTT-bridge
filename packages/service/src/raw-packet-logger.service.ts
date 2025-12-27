@@ -7,6 +7,8 @@ interface LogOptions {
   configDir: string;
 }
 
+type RawPacketLogMode = 'all' | 'valid';
+
 export class RawPacketLoggerService {
   private isLogging = false;
   private currentLogFile: string | null = null;
@@ -14,15 +16,17 @@ export class RawPacketLoggerService {
   private configDir: string;
   private packetCount = 0;
   private startTime: number | null = null;
+  private logMode: RawPacketLogMode = 'all';
 
   constructor(configDir: string) {
     this.configDir = configDir;
   }
 
-  public start(meta?: any) {
+  public start(meta?: any, options?: { mode?: RawPacketLogMode }) {
     if (this.isLogging) return;
 
     try {
+      this.logMode = options?.mode ?? 'all';
       const logDir = path.join(this.configDir, 'logs');
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
@@ -46,6 +50,7 @@ export class RawPacketLoggerService {
           '==================================================',
           '[METADATA]',
           `Log Started: ${new Date().toISOString()}`,
+          `Log Mode: ${this.logMode === 'valid' ? 'valid-only' : 'all'}`,
           `Config Files: ${Array.isArray(meta.configFiles) ? meta.configFiles.join(', ') : 'N/A'}`,
           'Serials:',
           ...(Array.isArray(meta.serials)
@@ -128,6 +133,7 @@ export class RawPacketLoggerService {
       startTime: this.startTime,
       packetCount: this.packetCount,
       filename: this.currentLogFile ? path.basename(this.currentLogFile) : null,
+      mode: this.isLogging ? this.logMode : null,
     };
   }
 
@@ -136,6 +142,10 @@ export class RawPacketLoggerService {
   }
 
   private setupListeners() {
+    if (this.logMode === 'valid') {
+      eventBus.on('raw-valid-packet', this.handleRxPacket);
+      return;
+    }
     eventBus.on('raw-data-with-interval', this.handleRxPacket);
     eventBus.on('raw-tx-packet', this.handleTxPacket);
   }
@@ -143,6 +153,7 @@ export class RawPacketLoggerService {
   private removeListeners() {
     eventBus.off('raw-data-with-interval', this.handleRxPacket);
     eventBus.off('raw-tx-packet', this.handleTxPacket);
+    eventBus.off('raw-valid-packet', this.handleRxPacket);
   }
 
   private handleRxPacket = (data: any) => {

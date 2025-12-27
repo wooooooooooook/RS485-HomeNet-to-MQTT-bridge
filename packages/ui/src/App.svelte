@@ -76,6 +76,7 @@
   let packetStatsByPort = $state(new Map<string, PacketStats>());
   let hasIntervalPackets = $state(false);
   let lastRawPacketTimestamp = $state<number | null>(null);
+  let validRawPacketsOnly = $state(false);
   let toasts = $state<ToastMessage[]>([]);
   const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   const MAX_TOASTS = 4;
@@ -101,6 +102,11 @@
   let isRecording = $state(false);
   let recordingStartTime = $state<number | null>(null);
   let recordedFile = $state<{ filename: string; path: string } | null>(null);
+  type RawPacketStreamMode = 'all' | 'valid';
+  const rawPacketStreamMode = $derived.by<RawPacketStreamMode>(() =>
+    validRawPacketsOnly ? 'valid' : 'all',
+  );
+  let lastAppliedRawPacketMode = $state<RawPacketStreamMode>('all');
 
   type StreamEvent =
     | 'status'
@@ -280,7 +286,8 @@
     if (activeView === 'analysis' || isRecording) {
       // 스트리밍 시작 & 데이터 초기화 (처음 들어올 때만)
       if (!isStreaming) {
-        sendStreamCommand('start');
+        sendStreamCommand('start', rawPacketStreamMode);
+        lastAppliedRawPacketMode = rawPacketStreamMode;
         isStreaming = true;
       }
       if (activeView === 'analysis' && rawPackets.length === 0 && !isRecording) {
@@ -294,6 +301,17 @@
         isStreaming = false;
       }
     }
+  });
+
+  $effect(() => {
+    if (!isStreaming || connectionStatus !== 'connected') return;
+    if (rawPacketStreamMode === lastAppliedRawPacketMode) return;
+    lastAppliedRawPacketMode = rawPacketStreamMode;
+    rawPackets = [];
+    packetStatsByPort = new Map();
+    hasIntervalPackets = false;
+    lastRawPacketTimestamp = null;
+    sendStreamCommand('start', rawPacketStreamMode);
   });
 
   // API 요청 helper 함수
@@ -489,12 +507,6 @@
 
     socket = new WebSocket(url.toString());
 
-    const sendStreamCommand = (command: 'start' | 'stop') => {
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ command }));
-      }
-    };
-
     const handleStatus = (data: Record<string, unknown>) => {
       const state = data.state;
       if (state === 'connected') {
@@ -660,9 +672,13 @@
     socket.addEventListener('error', handleDisconnect);
   }
 
-  function sendStreamCommand(command: 'start' | 'stop') {
+  function sendStreamCommand(command: 'start' | 'stop', mode?: RawPacketStreamMode) {
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ command }));
+      const payload: { command: 'start' | 'stop'; mode?: RawPacketStreamMode } = { command };
+      if (command === 'start') {
+        payload.mode = mode ?? rawPacketStreamMode;
+      }
+      socket.send(JSON.stringify(payload));
     }
   }
 
@@ -1119,6 +1135,7 @@
             selectedPortId={activePortId}
             onPortChange={(portId) => (selectedPortId = portId)}
             onStart={handleRawRecordingStart}
+            bind:validOnly={validRawPacketsOnly}
             bind:isRecording
             bind:recordingStartTime
             bind:recordedFile

@@ -98,6 +98,8 @@
       "filter_placeholder": "payload, 방향(RX/TX) 검색",
       "clear_filter": "필터 해제",
       "filter_hint": "와일드카드(*, ?) 사용 가능. 최근 1000개 패킷만 검색됩니다. 필터링 중 간격은 숨겨집니다.",
+      "valid_only_label": "유효 패킷만 보기",
+      "valid_only_hint": "헤더, 체크섬, 푸터가 유효한 패킷만 표시합니다.",
       "empty": "표시할 패킷이 없습니다.",
       "collected_packets": "수집된 패킷: {count}",
       "recording_duration": "녹화 시간: {duration}",

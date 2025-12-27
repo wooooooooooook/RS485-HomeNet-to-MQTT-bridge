@@ -12,6 +12,7 @@
     stats = null,
     onStart,
     onStop,
+    validOnly = $bindable(false),
     isRecording = $bindable(false),
     recordingStartTime = $bindable(null),
     recordedFile = $bindable(null),
@@ -21,6 +22,7 @@
     stats?: PacketStatsType | null;
     onStart?: () => void;
     onStop?: () => void;
+    validOnly: boolean;
     isRecording: boolean;
     recordingStartTime: number | null;
     recordedFile: { filename: string; path: string } | null;
@@ -235,7 +237,10 @@
         const response = await fetch('./api/logs/packet/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uiStats: statsPayload }),
+          body: JSON.stringify({
+            uiStats: statsPayload,
+            mode: validOnly ? 'valid' : 'all',
+          }),
         });
         if (response.ok) {
           isRecording = true;
@@ -415,6 +420,10 @@
         bind:value={filterText}
       />
     </label>
+    <label class="filter-toggle">
+      <input type="checkbox" bind:checked={validOnly} />
+      <span>{$t('analysis.raw_log.valid_only_label')}</span>
+    </label>
     {#if isFiltering}
       <Button variant="secondary" onclick={() => (filterText = '')}>
         {$t('analysis.raw_log.clear_filter')}
@@ -423,6 +432,9 @@
   </div>
   {#if isFiltering}
     <p class="filter-hint">{$t('analysis.raw_log.filter_hint')}</p>
+  {/if}
+  {#if validOnly}
+    <p class="filter-hint">{$t('analysis.raw_log.valid_only_hint')}</p>
   {/if}
 
   {#if showSaveDialog && recordedFile}
@@ -582,6 +594,22 @@
     outline: none;
     border-color: rgba(59, 130, 246, 0.6);
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+  }
+
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .filter-toggle input {
+    accent-color: #38bdf8;
   }
 
   .filter-hint {

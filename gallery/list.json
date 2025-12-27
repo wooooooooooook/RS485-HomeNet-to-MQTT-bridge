@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-27T06:42:05.309Z",
+  "generated_at": "2025-12-27T14:26:21.873Z",
   "vendors": [
     {
       "id": "commax",
@@ -531,7 +531,7 @@
           "name_en": "Hyundai Telecom Elevator",
           "description": "현대통신 월패드용 엘리베이터 호출 및 상태 확인 설정입니다.",
           "description_en": "Elevator call and status configuration for Hyundai Telecom wallpads.",
-          "version": "1.0.2",
+          "version": "1.0.3",
           "author": "wooooooooooook",
           "tags": [
             "elevator",

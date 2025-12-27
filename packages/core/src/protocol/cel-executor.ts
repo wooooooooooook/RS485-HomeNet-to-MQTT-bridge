@@ -30,6 +30,10 @@ import { logger } from '../utils/logger.js';
 export class CelExecutor {
   private static sharedInstance?: CelExecutor;
   private env: Environment;
+  // Pre-allocate BigInts for bytes 0-255 to avoid constructor overhead in hot paths
+  private readonly BIGINT_CACHE: bigint[] = new Array(256)
+    .fill(0)
+    .map((_, i) => BigInt(i));
 
   public static shared(): CelExecutor {
     if (!CelExecutor.sharedInstance) {
@@ -147,7 +151,8 @@ export class CelExecutor {
         const len = contextData.data.length;
         const arr = new Array(len);
         for (let i = 0; i < len; i++) {
-          arr[i] = BigInt(contextData.data[i]);
+          // Use cached BigInts for byte values (0-255) to avoid constructor overhead
+          arr[i] = this.BIGINT_CACHE[contextData.data[i]];
         }
         safeContext.data = arr;
       } else {

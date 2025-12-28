@@ -1102,6 +1102,24 @@
       : [],
   );
 
+  const selectedEntityActivityLogs = $derived.by<ActivityLog[]>(() => {
+    if (!selectedEntity) return [];
+    if (selectedEntity.category === 'automation') {
+      return activityLogs.filter(
+        (log) =>
+          log.code.startsWith('log.automation_') &&
+          log.params?.automationId === selectedEntity.id,
+      );
+    }
+    if (selectedEntity.category === 'script') {
+      return activityLogs.filter(
+        (log) =>
+          log.code.startsWith('log.script_') && log.params?.scriptId === selectedEntity.id,
+      );
+    }
+    return [];
+  });
+
   $effect(() => {
     if (selectedEntityKey) {
       const { portId, entityId, category } = parseEntityKey(selectedEntityKey);
@@ -1151,6 +1169,12 @@
     activePortId
       ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
       : activityLogs,
+  );
+
+  const filteredAutomationScriptLogs = $derived.by<ActivityLog[]>(() =>
+    filteredActivityLogs.filter(
+      (log) => log.code.startsWith('log.automation_') || log.code.startsWith('log.script_'),
+    ),
   );
 
   const portStatuses = $derived.by(() => {
@@ -1233,6 +1257,7 @@
             rawPackets={filteredRawPackets}
             {isStreaming}
             {portMetadata}
+            activityLogs={filteredAutomationScriptLogs}
             selectedPortId={activePortId}
             onPortChange={(portId) => (selectedPortId = portId)}
             onStart={handleRawRecordingStart}
@@ -1262,6 +1287,7 @@
         isOpen={!!selectedEntityKey}
         parsedPackets={selectedEntityParsedPackets}
         commandPackets={selectedEntityCommandPackets}
+        activityLogs={selectedEntityActivityLogs}
         onClose={() => (selectedEntityKey = null)}
         onExecute={(cmd, value) => executeCommand(cmd, value)}
         isRenaming={renamingEntityId === selectedEntity.id}

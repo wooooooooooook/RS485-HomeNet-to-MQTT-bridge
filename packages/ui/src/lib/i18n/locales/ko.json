@@ -62,6 +62,10 @@
   "analysis": {
     "port_tabs_aria": "포트별 로그 보기",
     "no_config": "포트 구성이 없습니다.",
+    "automation_logs": {
+      "title": "자동화/스크립트 기록",
+      "empty": "표시할 자동화 또는 스크립트 기록이 없습니다."
+    },
     "latency": {
       "title": "패킷 처리 지연시간 분석 (Latency)",
       "desc": "가상 패킷을 생성하여 처리 파이프라인(수신 -> 파서 -> 자동화 -> 명령 생성)을 통과하는 시간을 측정합니다. <br />실제 시리얼 포트로 데이터가 전송되지는 않습니다. (100회 반복 측정)",
@@ -275,7 +279,8 @@
       "execute": "실행",
       "config": "설정 (YAML)",
       "packets": "패킷 로그",
-      "manage": "관리"
+      "manage": "관리",
+      "logs": "실행 기록"
     },
     "execute": {
       "error": "실행에 실패했습니다."
@@ -285,6 +290,8 @@
       "execute_desc": "해당 자동화의 then 블록을 즉시 실행합니다.",
       "execute_button": "then 실행",
       "execute_success": "자동화를 실행했습니다.",
+      "logs_title": "자동화 실행 기록",
+      "logs_empty": "표시할 자동화 기록이 없습니다.",
       "toggle_title": "자동화 활성화",
       "toggle_desc": "비활성화된 자동화는 트리거에 반응하지 않습니다.",
       "toggle_error": "자동화 설정을 업데이트하지 못했습니다.",
@@ -300,6 +307,8 @@
       "execute_desc": "스크립트 액션 시퀀스를 즉시 실행합니다.",
       "execute_button": "스크립트 실행",
       "execute_success": "스크립트를 실행했습니다.",
+      "logs_title": "스크립트 실행 기록",
+      "logs_empty": "표시할 스크립트 기록이 없습니다.",
       "delete_title": "스크립트 삭제",
       "delete_desc": "이 스크립트를 설정에서 제거합니다.",
       "delete_button": "스크립트 삭제",
@@ -365,6 +374,11 @@
   "logs": {
     "state_change": "{entityId} 상태 변경: {attribute} {from} → {to}",
     "command_received": "명령 수신: {topic}",
+    "automation_triggered": "자동화 트리거됨: {automationId} ({trigger})",
+    "automation_guard_passed": "자동화 가드 통과: {automationId} ({trigger})",
+    "automation_guard_failed": "자동화 가드 실패: {automationId} ({trigger})",
+    "automation_action_executed": "자동화 액션 실행: {automationId} ({action})",
+    "script_action_executed": "스크립트 액션 실행: {scriptId} ({action})",
     "core_started": "코어 서비스가 시작되었습니다.",
     "core_stopped": "코어 서비스가 중지되었습니다.",
     "service_started": "서비스가 시작되었습니다."

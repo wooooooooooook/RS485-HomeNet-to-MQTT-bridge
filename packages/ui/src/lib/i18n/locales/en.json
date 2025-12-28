@@ -62,6 +62,10 @@
   "analysis": {
     "port_tabs_aria": "View logs by port",
     "no_config": "No port configuration found.",
+    "automation_logs": {
+      "title": "Automation/Script logs",
+      "empty": "No automation or script logs to display."
+    },
     "latency": {
       "title": "Packet Processing Latency Analysis",
       "desc": "Measures the time it takes for a generated virtual packet to pass through the processing pipeline (Receive -> Parser -> Automation -> Command Generation). <br />Data is not sent to the actual serial port. (100 iterations)",
@@ -275,7 +279,8 @@
       "execute": "Run",
       "config": "Config (YAML)",
       "packets": "Packet Log",
-      "manage": "Manage"
+      "manage": "Manage",
+      "logs": "Run logs"
     },
     "execute": {
       "error": "Failed to execute."
@@ -285,6 +290,8 @@
       "execute_desc": "Immediately runs the then block for this automation.",
       "execute_button": "Run then",
       "execute_success": "Automation executed.",
+      "logs_title": "Automation run logs",
+      "logs_empty": "No automation logs to display.",
       "toggle_title": "Enable automation",
       "toggle_desc": "Disabled automations will not run on triggers.",
       "toggle_error": "Failed to update automation.",
@@ -300,6 +307,8 @@
       "execute_desc": "Executes the script action sequence immediately.",
       "execute_button": "Run script",
       "execute_success": "Script executed.",
+      "logs_title": "Script run logs",
+      "logs_empty": "No script logs to display.",
       "delete_title": "Delete script",
       "delete_desc": "Remove this script from the configuration.",
       "delete_button": "Delete script",
@@ -365,6 +374,11 @@
   "logs": {
     "state_change": "{entityId} State changed: {attribute} {from} → {to}",
     "command_received": "Command received: {topic}",
+    "automation_triggered": "Automation triggered: {automationId} ({trigger})",
+    "automation_guard_passed": "Automation guard passed: {automationId} ({trigger})",
+    "automation_guard_failed": "Automation guard failed: {automationId} ({trigger})",
+    "automation_action_executed": "Automation action executed: {automationId} ({action})",
+    "script_action_executed": "Script action executed: {scriptId} ({action})",
     "core_started": "Core service started.",
     "core_stopped": "Core service stopped.",
     "service_started": "Service started."

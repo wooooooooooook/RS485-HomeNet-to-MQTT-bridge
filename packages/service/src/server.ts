@@ -2818,7 +2818,7 @@ app.post('/api/automations/execute', async (req, res) => {
     return res.status(404).json({ error: 'Automation not found in loaded configs' });
   }
 
-  const automation = currentConfigs[configIndex]?.automation?.find(
+  const automation: AutomationConfig | undefined = currentConfigs[configIndex]?.automation?.find(
     (item) => item.id === automationId,
   );
   if (!automation) {
@@ -2911,7 +2911,9 @@ app.patch('/api/automations/:automationId/enabled', async (req, res) => {
       return res.status(404).json({ error: 'Automation not found in config' });
     }
 
-    const automation = automationList.find((item) => item.id === automationId);
+    const automation: AutomationConfig | undefined = automationList.find(
+      (item) => item.id === automationId,
+    );
     if (!automation) {
       return res.status(404).json({ error: 'Automation not found in config' });
     }
@@ -3370,7 +3372,7 @@ server.listen(port, async () => {
 
     const configFilesFromEnv = envConfigFiles.values;
     const discoveredConfigFiles = (await fs.readdir(CONFIG_DIR)).filter(
-      (file) =>
+      (file: string) =>
         file === DEFAULT_CONFIG_FILENAME ||
         file === LEGACY_DEFAULT_CONFIG_FILENAME ||
         /\.homenet_bridge\.ya?ml$/.test(file),

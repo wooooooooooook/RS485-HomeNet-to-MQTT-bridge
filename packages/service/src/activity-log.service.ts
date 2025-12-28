@@ -1,4 +1,12 @@
-import { eventBus, type StateChangedEvent, type MqttMessageEvent } from '@rs485-homenet/core';
+import {
+  eventBus,
+  type StateChangedEvent,
+  type MqttMessageEvent,
+  type AutomationTriggeredEvent,
+  type AutomationGuardEvent,
+  type AutomationActionEvent,
+  type ScriptActionEvent,
+} from '@rs485-homenet/core';
 
 export interface ActivityLog {
   timestamp: number;
@@ -91,6 +99,50 @@ export class ActivityLogService {
 
     eventBus.on('core:stopped', () => {
       this.addLog('log.core_stopped');
+    });
+
+    eventBus.on('automation:triggered', (event: AutomationTriggeredEvent) => {
+      this.addLog(
+        'log.automation_triggered',
+        {
+          automationId: event.automationId,
+          trigger: event.triggerType,
+        },
+        event.portId,
+      );
+    });
+
+    eventBus.on('automation:guard', (event: AutomationGuardEvent) => {
+      this.addLog(
+        event.result ? 'log.automation_guard_passed' : 'log.automation_guard_failed',
+        {
+          automationId: event.automationId,
+          trigger: event.triggerType,
+        },
+        event.portId,
+      );
+    });
+
+    eventBus.on('automation:action', (event: AutomationActionEvent) => {
+      this.addLog(
+        'log.automation_action_executed',
+        {
+          automationId: event.automationId,
+          action: event.action,
+        },
+        event.portId,
+      );
+    });
+
+    eventBus.on('script:action', (event: ScriptActionEvent) => {
+      this.addLog(
+        'log.script_action_executed',
+        {
+          scriptId: event.scriptId,
+          action: event.action,
+        },
+        event.portId,
+      );
     });
   }
 

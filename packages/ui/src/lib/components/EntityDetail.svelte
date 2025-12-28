@@ -3,18 +3,21 @@
   import { fade, scale } from 'svelte/transition';
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
+  import ActivityLogList from './ActivityLogList.svelte';
   import type {
     UnifiedEntity,
     CommandInfo,
     ParsedPacket,
     CommandPacket,
     EntityCategory,
+    ActivityLog,
   } from '../types';
 
   let {
     entity,
     parsedPackets = [],
     commandPackets = [],
+    activityLogs = [],
     isOpen,
     isRenaming = false,
     renameError = null,
@@ -25,6 +28,7 @@
     entity: UnifiedEntity;
     parsedPackets?: ParsedPacket[];
     commandPackets?: CommandPacket[];
+    activityLogs?: ActivityLog[];
     isOpen: boolean;
     isRenaming?: boolean;
     renameError?: string | null;
@@ -33,7 +37,7 @@
     onRename?: (newName: string) => void;
   } = $props();
 
-  let activeTab = $state<'status' | 'config' | 'packets' | 'manage' | 'execute'>('status');
+  let activeTab = $state<'status' | 'config' | 'packets' | 'manage' | 'execute' | 'logs'>('status');
   let activeTabEntityId = $state<string | null>(null);
   let editingConfig = $state('');
   let configLoading = $state(false);
@@ -65,6 +69,16 @@
   const isDeviceEntity = $derived.by(() => entityCategory === 'entity');
   const isAutomation = $derived.by(() => entityCategory === 'automation');
   const isScript = $derived.by(() => entityCategory === 'script');
+  const logTitle = $derived.by(() =>
+    isAutomation
+      ? $t('entity_detail.automation.logs_title')
+      : $t('entity_detail.script.logs_title'),
+  );
+  const logEmptyMessage = $derived.by(() =>
+    isAutomation
+      ? $t('entity_detail.automation.logs_empty')
+      : $t('entity_detail.script.logs_empty'),
+  );
 
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
@@ -506,6 +520,16 @@
           class:active={activeTab === 'config'}
           onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
         >
+        {#if isAutomation || isScript}
+          <button
+            role="tab"
+            id="tab-logs"
+            aria-selected={activeTab === 'logs'}
+            aria-controls="panel-logs"
+            class:active={activeTab === 'logs'}
+            onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
+          >
+        {/if}
         {#if isDeviceEntity}
           <button
             role="tab"
@@ -711,6 +735,17 @@
                   {/each}
                 {/if}
               </div>
+            </div>
+          </div>
+        {:else if activeTab === 'logs'}
+          <div role="tabpanel" id="panel-logs" aria-labelledby="tab-logs" tabindex="0">
+            <div class="section">
+              <ActivityLogList
+                logs={activityLogs}
+                title={logTitle}
+                emptyMessage={logEmptyMessage}
+                height="260px"
+              />
             </div>
           </div>
         {:else if activeTab === 'manage'}

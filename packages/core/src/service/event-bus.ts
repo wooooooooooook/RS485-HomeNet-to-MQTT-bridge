@@ -17,4 +17,34 @@ export interface StateChangedEvent {
   timestamp: string;
 }
 
+export interface AutomationTriggeredEvent {
+  automationId: string;
+  triggerType: string;
+  portId?: string;
+  timestamp: number;
+}
+
+export interface AutomationGuardEvent {
+  automationId: string;
+  triggerType: string;
+  result: boolean;
+  portId?: string;
+  timestamp: number;
+}
+
+export interface AutomationActionEvent {
+  automationId: string;
+  triggerType: string;
+  action: string;
+  portId?: string;
+  timestamp: number;
+}
+
+export interface ScriptActionEvent {
+  scriptId: string;
+  action: string;
+  portId?: string;
+  timestamp: number;
+}
+
 export const eventBus = new EventEmitter();

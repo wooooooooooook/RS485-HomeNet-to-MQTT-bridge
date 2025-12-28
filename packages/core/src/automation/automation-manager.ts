@@ -102,6 +102,45 @@ export class AutomationManager {
     return commandName.startsWith('command_') ? commandName : `command_${commandName}`;
   }
 
+  private summarizeAction(action: AutomationAction): string {
+    const actionType = action.action;
+    if (actionType === 'command') {
+      return `command:${(action as AutomationActionCommand).target}`;
+    }
+    if (actionType === 'publish') {
+      return `publish:${(action as AutomationActionPublish).topic}`;
+    }
+    if (actionType === 'log') {
+      return `log:${(action as AutomationActionLog).message}`;
+    }
+    if (actionType === 'delay') {
+      return `delay:${(action as AutomationActionDelay).milliseconds}`;
+    }
+    if (actionType === 'script') {
+      const scriptId = (action as AutomationActionScript).script ?? 'unknown';
+      return `script:${scriptId}`;
+    }
+    if (actionType === 'send_packet') {
+      return 'send_packet';
+    }
+    if (actionType === 'if') {
+      return 'if';
+    }
+    if (actionType === 'choose') {
+      return 'choose';
+    }
+    if (actionType === 'repeat') {
+      return 'repeat';
+    }
+    if (actionType === 'wait_until') {
+      return 'wait_until';
+    }
+    if (actionType === 'stop') {
+      return 'stop';
+    }
+    return actionType;
+  }
+
   private getCommandSchema(entity: any, commandName: string) {
     const normalized = this.normalizeCommandName(commandName);
     const schema = (entity as any)[normalized] as any;
@@ -130,6 +169,12 @@ export class AutomationManager {
 
     logger.info({ script: scriptId }, '[automation] Script 실행 시작');
     for (const action of script.actions) {
+      eventBus.emit('script:action', {
+        scriptId,
+        action: this.summarizeAction(action),
+        portId: this.contextPortId,
+        timestamp: Date.now(),
+      });
       await this.executeAction(action, scriptContext, this.contextPortId, nextStack);
     }
   }
@@ -172,15 +217,31 @@ export class AutomationManager {
 
   public async runAutomationThen(automation: AutomationConfig) {
     const context: TriggerContext = { type: 'command', timestamp: Date.now() };
-    await this.runActions(automation.then, context, automation.portId);
+    eventBus.emit('automation:triggered', {
+      automationId: automation.id,
+      triggerType: context.type,
+      portId: automation.portId ?? this.contextPortId,
+      timestamp: Date.now(),
+    });
+    await this.runActions(automation.then, context, automation.portId, automation.id);
   }
 
   public async runActions(
     actions: AutomationAction[],
     context: TriggerContext,
     automationPortId?: string,
+    automationId?: string,
   ) {
     for (const action of actions) {
+      if (automationId) {
+        eventBus.emit('automation:action', {
+          automationId,
+          triggerType: context.type,
+          action: this.summarizeAction(action),
+          portId: automationPortId ?? this.contextPortId,
+          timestamp: Date.now(),
+        });
+      }
       await this.executeAction(action, context, automationPortId, []);
     }
   }
@@ -379,6 +440,13 @@ export class AutomationManager {
     const mode = automation.mode || 'parallel';
     const automationId = automation.id;
 
+    eventBus.emit('automation:triggered', {
+      automationId,
+      triggerType: trigger.type,
+      portId: automation.portId ?? this.contextPortId,
+      timestamp: Date.now(),
+    });
+
     // Handle mode-specific behavior
     if (mode === 'single') {
       if (this.runningAutomations.has(automationId)) {
@@ -432,6 +500,13 @@ export class AutomationManager {
     try {
       const guardResult =
         this.evaluateGuard(trigger.guard, context) && this.evaluateGuard(automation.guard, context);
+      eventBus.emit('automation:guard', {
+        automationId,
+        triggerType: trigger.type,
+        result: guardResult,
+        portId: automation.portId ?? this.contextPortId,
+        timestamp: Date.now(),
+      });
       const actions = guardResult ? automation.then : automation.else;
       if (!actions || actions.length === 0) return;
 
@@ -440,6 +515,13 @@ export class AutomationManager {
         '[automation] Executing',
       );
       for (const action of actions) {
+        eventBus.emit('automation:action', {
+          automationId,
+          triggerType: trigger.type,
+          action: this.summarizeAction(action),
+          portId: automation.portId ?? this.contextPortId,
+          timestamp: Date.now(),
+        });
         // Check if aborted
         if (abortController.signal.aborted) {
           logger.debug({ automation: automationId }, '[automation] Aborted');

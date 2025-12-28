@@ -12,3 +12,11 @@
 **Prevention:**
 1.  **Fail Securely:** Do not provide default values for secrets. If a required secret is missing, the feature should explicitly fail or disable itself with a warning.
 2.  **Explicit Configuration:** Force the user/administrator to provide credentials explicitly via environment variables or secure configuration stores.
+
+## 2025-12-28 - [Directory Prefix Path Traversal]
+**Vulnerability:** The log download endpoints (`/api/logs/packet/download/:filename` etc.) validated file paths using `startsWith` without a trailing path separator (e.g., `path.startsWith('/config/logs')`). This allowed attackers to access files in sibling directories that shared the same prefix (e.g., `/config/logs_secret.txt`).
+**Learning:** `startsWith` is a string comparison, not a path structure comparison. When validating directory containment, simply checking if path A starts with path B is insufficient because it ignores path boundaries.
+**Prevention:**
+1.  **Trailing Separator:** Always append `path.sep` to the allowed directory path when using `startsWith` for validation (e.g., `allowedPath + path.sep`).
+2.  **Path Normalization:** Use `path.resolve` or `path.normalize` on both the target and allowed paths before comparison to handle `..` and redundant separators.
+3.  **Relative Path Check:** Alternatively, check if `path.relative(allowed, target)` starts with `..` or is absolute, which explicitly checks hierarchy.

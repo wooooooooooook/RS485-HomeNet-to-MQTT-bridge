@@ -746,7 +746,7 @@ app.get('/api/logs/packet/download/:filename', async (req, res) => {
   const filePath = rawPacketLogger.getFilePath(filename);
 
   // Security check: ensure path is within config/logs
-  if (!filePath.startsWith(path.join(CONFIG_DIR, 'logs'))) {
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'logs') + path.sep)) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -758,7 +758,6 @@ app.get('/api/logs/packet/download/:filename', async (req, res) => {
     }
   } catch (error) {
     logger.error({ err: error }, '[service] Download failed');
-    res.status(500).json({ error: 'Download failed' });
     res.status(500).json({ error: 'Download failed' });
   }
 });
@@ -847,7 +846,7 @@ app.get('/api/logs/cache/download/:filename', async (req, res) => {
   const filePath = logRetentionService.getFilePath(filename);
 
   // Security check: ensure path is within cache-logs
-  if (!filePath.startsWith(path.join(CONFIG_DIR, 'cache-logs'))) {
+  if (!filePath.startsWith(path.join(CONFIG_DIR, 'cache-logs') + path.sep)) {
     return res.status(403).json({ error: 'Access denied' });
   }
 

@@ -31,9 +31,7 @@ export class CelExecutor {
   private static sharedInstance?: CelExecutor;
   private env: Environment;
   // Pre-allocate BigInts for bytes 0-255 to avoid constructor overhead in hot paths
-  private readonly BIGINT_CACHE: bigint[] = new Array(256)
-    .fill(0)
-    .map((_, i) => BigInt(i));
+  private readonly BIGINT_CACHE: bigint[] = new Array(256).fill(0).map((_, i) => BigInt(i));
 
   public static shared(): CelExecutor {
     if (!CelExecutor.sharedInstance) {

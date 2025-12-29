@@ -292,8 +292,7 @@ export class AutomationManager {
       }
       if (trigger.type === 'startup') {
         const timeout = setTimeout(
-          () =>
-            this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
+          () => this.runAutomation(automation, trigger, { type: 'startup', timestamp: Date.now() }),
           0,
         );
         this.trackAutomationTimer(automation.id, timeout);

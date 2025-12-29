@@ -99,7 +99,7 @@
   let packetStatsByPort = $state(new Map<string, PacketStats>());
   let hasIntervalPackets = $state(false);
   let lastRawPacketTimestamp = $state<number | null>(null);
-  let validRawPacketsOnly = $state(false);
+  let validRawPacketsOnly = $state(true);
   let toasts = $state<ToastMessage[]>([]);
   const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   const MAX_TOASTS = 4;
@@ -129,7 +129,7 @@
   const rawPacketStreamMode = $derived.by<RawPacketStreamMode>(() =>
     validRawPacketsOnly ? 'valid' : 'all',
   );
-  let lastAppliedRawPacketMode = $state<RawPacketStreamMode>('all');
+  let lastAppliedRawPacketMode = $state<RawPacketStreamMode>('valid');
 
   type StreamEvent =
     | 'status'

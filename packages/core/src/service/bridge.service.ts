@@ -440,6 +440,7 @@ export class HomeNetBridge {
     // 2. Find a target for the response
     // We need ANY entity with ANY command to use as the action target.
     // The action doesn't actually execute on the device, we mock it.
+    // IMPORTANT: Skip commands with 'script' property since they don't call commandManager.send()
     let targetEntity: EntityConfig | undefined;
     let targetCommand: string | undefined;
 
@@ -447,7 +448,16 @@ export class HomeNetBridge {
       const entities = this.config[type] as EntityConfig[] | undefined;
       if (entities && entities.length > 0) {
         for (const e of entities) {
-          const cmdKey = Object.keys(e).find((k) => k.startsWith('command_'));
+          // Find a command that is NOT script-based
+          const cmdKey = Object.keys(e).find((k) => {
+            if (!k.startsWith('command_')) return false;
+            const cmdSchema = (e as any)[k];
+            // Skip if command is script-based (won't call commandManager.send)
+            if (cmdSchema && typeof cmdSchema === 'object' && cmdSchema.script) {
+              return false;
+            }
+            return true;
+          });
           if (cmdKey) {
             targetEntity = e;
             targetCommand = cmdKey.replace('command_', '');
@@ -492,18 +502,30 @@ export class HomeNetBridge {
     // Ignore updates for this entity in StateManager to prevent MQTT spam (though we are using a real entity now)
     context.stateManager.setIgnoreEntity(targetEntity.id);
 
+    // 5. Pause serial port data listener during test to prevent interference
+    const dataListeners = context.port.listeners('data') as ((...args: any[]) => void)[];
+    context.port.removeAllListeners('data');
+
     const measurements: number[] = [];
     let resolveTestIteration: (() => void) | null = null;
+    let iterationResolved = false; // Guard to ensure single resolve per iteration
 
     // Replace send with our measurement hook
     context.commandManager.send = async (_entity, _packet) => {
-      if (resolveTestIteration) resolveTestIteration();
+      logger.info('[LatencyTest] Mock commandManager.send called');
+      if (resolveTestIteration && !iterationResolved) {
+        iterationResolved = true;
+        resolveTestIteration();
+      }
       return Promise.resolve();
     };
 
     try {
-      // 5. Loop 100 times
+      // 6. Loop 100 times
       for (let i = 0; i < 100; i++) {
+        // Reset state for new iteration
+        iterationResolved = false;
+
         // Wait a bit to ensure clean state
         await new Promise((r) => setTimeout(r, 10));
 
@@ -533,6 +555,10 @@ export class HomeNetBridge {
       context.commandManager.send = originalSend;
       context.automationManager.removeAutomation(automationId);
       context.stateManager.setIgnoreEntity(null);
+      // Restore serial port data listeners
+      for (const listener of dataListeners) {
+        context.port.on('data', listener);
+      }
     }
 
     // 6. Calculate Stats

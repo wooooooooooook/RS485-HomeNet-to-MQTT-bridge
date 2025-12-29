@@ -160,7 +160,10 @@ export class ActivityLogService {
     if (!this.isEnabled()) return;
 
     this.logs.push(logEntry);
-    this.cleanupOldLogs();
+    // Only cleanup when we exceed the limit to avoid expensive operations on every log
+    if (this.logs.length > MAX_LOGS) {
+      this.cleanupOldLogs();
+    }
   }
 
   public getRecentLogs(): ActivityLog[] {

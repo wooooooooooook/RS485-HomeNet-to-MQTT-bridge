@@ -52,9 +52,12 @@ export class StateManager {
 
   public processIncomingData(chunk: Buffer): void {
     // Emit raw data for the service/UI to consume
-    const hex = chunk.toString('hex');
-    logger.trace({ hex }, '[core] Received chunk');
-    eventBus.emit('raw-data', hex);
+    // Optimization: avoid string allocation if not needed
+    if (logger.isLevelEnabled('trace') || eventBus.listenerCount('raw-data') > 0) {
+      const hex = chunk.toString('hex');
+      logger.trace({ hex }, '[core] Received chunk');
+      eventBus.emit('raw-data', hex);
+    }
     this.packetProcessor.processChunk(chunk);
   }
 

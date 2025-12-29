@@ -13,6 +13,7 @@
   import SetupWizard from '../components/SetupWizard.svelte';
   import WizardModal from '../components/WizardModal.svelte';
   import HintBubble from '$lib/components/HintBubble.svelte';
+  import Toggle from '$lib/components/Toggle.svelte';
   import { t } from 'svelte-i18n';
 
   let {
@@ -176,11 +177,11 @@
             {$t('dashboard.hint_inactive_performance')}
           </HintBubble>
         {/if}
-        <label class="toggle-switch">
-          <input type="checkbox" checked={showInactive} onchange={() => onToggleInactive?.()} />
-          <span class="slider"></span>
-          {$t('dashboard.show_inactive_entities')}
-        </label>
+        <Toggle
+          checked={showInactive}
+          onchange={onToggleInactive}
+          label={$t('dashboard.show_inactive_entities')}
+        />
       </div>
     </div>
 
@@ -496,52 +497,6 @@
     border-color: #60a5fa !important;
     color: #60a5fa !important;
     background: rgba(59, 130, 246, 0.1) !important;
-  }
-
-  .toggle-switch {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #cbd5e1;
-    gap: 0.5rem;
-  }
-
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .slider {
-    width: 36px;
-    height: 20px;
-    background-color: #334155;
-    border-radius: 10px;
-    transition: background-color 0.2s;
-    margin-right: 0.25rem;
-    position: relative;
-  }
-
-  .slider:before {
-    content: '';
-    position: absolute;
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-
-  input:checked + .slider {
-    background-color: #3b82f6;
-  }
-
-  input:checked + .slider:before {
-    transform: translateX(16px);
   }
 
   @keyframes pulse {

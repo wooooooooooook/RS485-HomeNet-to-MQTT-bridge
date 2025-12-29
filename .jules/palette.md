@@ -1,3 +1,3 @@
-## 2024-05-22 - Consistent Button Component Usage
-**Learning:** Inconsistent usage of raw HTML elements vs Design System components degrades UX and Accessibility. Replacing raw `<button>` elements with a robust `Button` component not only unifies visual design but immediately provides critical accessibility features (ARIA labels, busy states) and interaction feedback (loading spinners) that were previously missing.
-**Action:** When auditing UI, look for "rogue" raw HTML elements that should be using established system components. The "micro" improvement of swapping these often yields macro benefits in consistency and accessibility.
+## 2024-05-23 - Reusable Toggle Component
+**Learning:** Replacing ad-hoc checkbox hacks with a semantic `<button role="switch">` component significantly improves accessibility (focus states, screen reader support) and code maintainability.
+**Action:** When encountering custom checkbox-based toggles, refactor them into a reusable `Toggle` component that handles ARIA attributes and keyboard interaction centrally.

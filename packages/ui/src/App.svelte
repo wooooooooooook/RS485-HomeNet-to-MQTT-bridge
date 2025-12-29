@@ -212,6 +212,7 @@
     receivedAt: data.receivedAt ?? new Date().toISOString(),
     interval: typeof data.interval === 'number' ? data.interval : null,
     portId: getExplicitPortId(data.portId),
+    direction: data.direction, // TX/RX 방향 정보 전달
   });
 
   const appendRawPacket = (packet: RawPacketWithInterval) => {

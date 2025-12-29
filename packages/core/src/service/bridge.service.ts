@@ -108,7 +108,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
 
     for (const context of this.portContexts.values()) {
@@ -736,29 +736,9 @@ export class HomeNetBridge {
         this.client.on('connect', () => discoveryManager.discover());
       }
 
-      // Intercept write for logging
-      const originalWrite = port.write.bind(port);
-      port.write = (
-        chunk: any,
-        encoding?: BufferEncoding | ((error: Error | null | undefined) => void),
-        cb?: (error: Error | null | undefined) => void,
-      ): boolean => {
-        // Handle argument shifting for write(chunk, cb)
-        if (typeof encoding === 'function') {
-          cb = encoding;
-          encoding = undefined;
-        }
+      // Note: raw-tx-packet event is emitted directly from CommandManager.executeJob()
+      // No need to intercept port.write here
 
-        if (Buffer.isBuffer(chunk) && eventBus.listenerCount('raw-tx-packet') > 0) {
-          const hexData = chunk.toString('hex');
-          eventBus.emit('raw-tx-packet', {
-            portId: normalizedPortId,
-            payload: hexData,
-            timestamp: new Date().toISOString(),
-          });
-        }
-        return originalWrite(chunk, encoding as BufferEncoding, cb);
-      };
 
       const context: PortContext = {
         portId: normalizedPortId,

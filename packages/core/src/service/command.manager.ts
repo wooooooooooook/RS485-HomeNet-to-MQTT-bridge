@@ -212,7 +212,15 @@ export class CommandManager {
           { entity: job.entity?.name ?? 'raw' },
           `[CommandManager] Trying to send command (${attemptNumber}/${totalAttempts})`,
         );
-        this.serialPort.write(Buffer.from(job.packet));
+        const packetBuffer = Buffer.from(job.packet);
+        this.serialPort.write(packetBuffer);
+
+        // Emit raw-tx-packet event for logging
+        eventBus.emit('raw-tx-packet', {
+          portId: this.portId,
+          payload: packetBuffer.toString('hex'),
+          timestamp: new Date().toISOString(),
+        });
 
         // If no ACK required (raw command without match, or entity without retry), resolve immediately?
         // Logic for entity: it always waits if retryConfig.attempts > 0?

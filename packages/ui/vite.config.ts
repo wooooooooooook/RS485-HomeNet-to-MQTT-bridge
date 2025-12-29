@@ -25,6 +25,15 @@ export default defineConfig({
         target: process.env.VITE_API_URL || 'http://app:3000', // Use Docker service name by default
         changeOrigin: true,
         ws: true, // WebSocket 프록시 활성화 (MQTT 스트림용)
+        configure: (proxy) => {
+          // 백엔드 연결 오류 시 502 Bad Gateway 반환 (브라우저가 자동으로 재시도 가능)
+          proxy.on('error', (err, _req, res) => {
+            if (res && !res.headersSent && typeof res.writeHead === 'function') {
+              res.writeHead(502, { 'Content-Type': 'text/plain' });
+              res.end('Backend server is unavailable. Please wait and refresh.');
+            }
+          });
+        },
       },
     },
   },

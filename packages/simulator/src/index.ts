@@ -1,8 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
-import { setInterval as createInterval, clearInterval } from 'node:timers';
 import { pathToFileURL } from 'node:url';
-import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
 import { SerialPort } from 'serialport';
 
@@ -13,8 +11,6 @@ import { CVNET_PACKETS } from './cvnet.js';
 import { EZVILLE_PACKETS } from './ezville.js';
 import { HYUNDAI_IMAZU_PACKETS } from './hyundai_imazu.js';
 import { KOCOM_PACKETS } from './kocom.js';
-
-const DEFAULT_INTERVAL_MS = 1000;
 
 export const DEFAULT_PACKETS: readonly Buffer[] = [
   Buffer.from([0xaa, 0x55, 0x10, 0x02, 0x01, 0x00, 0xff]),
@@ -40,6 +36,7 @@ export interface SimulatorOptions {
   device?: DeviceType;
   baudRate?: number;
   parity?: 'none' | 'even' | 'mark' | 'space' | 'odd';
+  slow?: number;
 }
 
 export interface Simulator {
@@ -90,12 +87,12 @@ class PacketStreamer {
   constructor(
     packets: Buffer[],
     baudRate: number,
+    slow: number,
     private writer: (data: Buffer) => void,
   ) {
     this.allBytes = Buffer.concat(packets);
-    // 11 bits per byte (8-E-1) for typical RS485 devices in this project
-    // Remove artificial slowdown (* 4) to allow full speed simulation
-    this.nsPerByte = BigInt(Math.floor(1_000_000_000 / (baudRate / 11)));
+    const slowFactor = Math.max(1, slow);
+    this.nsPerByte = BigInt(Math.floor((1_000_000_000 / (baudRate / 11)) * slowFactor));
   }
 
   get running() {
@@ -152,7 +149,7 @@ export interface TcpSimulator extends Simulator {
 export function createTcpSimulator(
   options: SimulatorOptions & { port?: number } = {},
 ): TcpSimulator {
-  const { baudRate = 9600, packets: userPackets, port = 8888, device = 'commax' } = options;
+  const { baudRate = 9600, packets: userPackets, port = 8888, device = 'commax', slow = 1 } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
   const clients = new Set<any>();
@@ -165,11 +162,11 @@ export function createTcpSimulator(
 
   server.listen(port, '0.0.0.0');
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, (data) => {
+  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => {
     for (const client of clients) {
       try {
         client.write(data);
-      } catch (e) {}
+      } catch (e) { }
     }
   });
 
@@ -190,7 +187,7 @@ export function createTcpSimulator(
 }
 
 export function createSimulator(options: SimulatorOptions = {}): Simulator {
-  const { baudRate = 9600, packets: userPackets, device = 'commax' } = options;
+  const { baudRate = 9600, packets: userPackets, device = 'commax', slow = 1 } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
   const { open: openPty } = pty as PtyModule;
@@ -201,7 +198,7 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   if (spawnSync('stty', ['-F', ptyPath, 'raw', '-echo']).status !== 0)
     console.warn('RAW 모드 전환 실패');
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, (data) => writer.write(data));
+  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => writer.write(data));
 
   return {
     get running() {
@@ -226,6 +223,7 @@ export function createExternalPortSimulator(
     device = 'commax',
     portPath,
     parity = 'none',
+    slow = 1,
   } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
@@ -241,7 +239,7 @@ export function createExternalPortSimulator(
     if (err) console.error(`[ExternalPortSimulator] Failed to open ${portPath}:`, err);
   });
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, (data) => {
+  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => {
     if (port.isOpen) {
       port.write(data);
     }
@@ -266,19 +264,20 @@ async function main() {
   const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
   const protocol = process.env.SIMULATOR_PROTOCOL || 'pty';
   const portPath = process.env.SIMULATOR_PORT_PATH;
+  const slow = process.env.SIMULATOR_SLOW ? parseFloat(process.env.SIMULATOR_SLOW) : 1;
 
   let simulator: Simulator;
 
   if (protocol === 'serial' && portPath) {
-    simulator = createExternalPortSimulator({ device, baudRate: 9600, portPath });
+    simulator = createExternalPortSimulator({ device, baudRate: 9600, portPath, slow });
   } else if (protocol === 'tcp') {
-    simulator = createTcpSimulator({ device, baudRate: 9600 });
+    simulator = createTcpSimulator({ device, baudRate: 9600, slow });
   } else {
     // PTY mode
-    simulator = createSimulator({ device, baudRate: 9600 });
+    simulator = createSimulator({ device, baudRate: 9600, slow });
   }
 
-  console.log(JSON.stringify({ ptyPath: simulator.ptyPath }));
+  console.log(JSON.stringify({ ptyPath: simulator.ptyPath, slow }));
   simulator.start();
   const handleExit = () => {
     simulator.dispose();

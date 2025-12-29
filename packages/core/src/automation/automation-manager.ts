@@ -529,7 +529,14 @@ export class AutomationManager {
         }
 
         try {
-          await this.executeAction(action, context, automation.portId, [], abortController.signal);
+          await this.executeAction(
+            action,
+            context,
+            automation.portId,
+            [],
+            abortController.signal,
+            automationId,
+          );
         } catch (error) {
           if ((error as Error).name === 'AbortError') {
             logger.debug({ automation: automationId }, '[automation] Aborted during action');
@@ -582,6 +589,7 @@ export class AutomationManager {
     automationPortId?: string,
     scriptStack: string[] = [],
     signal?: AbortSignal,
+    automationId?: string,
   ) {
     if (action.action === 'command') return this.executeCommandAction(action, context, scriptStack);
     if (action.action === 'publish') return this.executePublishAction(action, context);
@@ -595,6 +603,8 @@ export class AutomationManager {
         action as AutomationActionSendPacket,
         context,
         automationPortId,
+        scriptStack,
+        automationId,
       );
     if (action.action === 'if')
       return this.executeIfAction(
@@ -629,6 +639,8 @@ export class AutomationManager {
     action: AutomationActionSendPacket,
     context: TriggerContext,
     automationPortId?: string,
+    scriptStack: string[] = [],
+    automationId?: string,
   ) {
     let packetData: number[] = [];
 
@@ -706,6 +718,26 @@ export class AutomationManager {
     const finalPacket = [...packetWithHeader, ...footer];
 
     const targetPortId = action.portId || automationPortId || this.contextPortId;
+    const hexPacket = Buffer.from(finalPacket).toString('hex');
+
+    // Determine source name (script > automation > generic)
+    let sourceName = 'send_packet';
+    if (scriptStack.length > 0) {
+      sourceName = `script:${scriptStack[0]}`;
+    } else if (automationId) {
+      sourceName = `automation:${automationId}`;
+    }
+
+    // Emit command-packet event for packet log display
+    eventBus.emit('command-packet', {
+      entity: sourceName,
+      entityId: sourceName,
+      command: 'send_packet',
+      value: undefined,
+      packet: hexPacket,
+      portId: targetPortId,
+      timestamp: new Date().toISOString(),
+    });
 
     if (this.commandSender) {
       await this.commandSender(targetPortId, finalPacket, {

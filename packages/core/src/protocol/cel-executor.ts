@@ -143,18 +143,28 @@ export class CelExecutor {
         safeContext.xstr = '';
       }
 
+      // Optimization: Only convert 'data' buffer if the script actually references it.
+      // This avoids expensive O(N) allocation for simple scripts (e.g., "x / 10").
+      const scriptUsesData = script.includes('data');
+
       if (Array.isArray(contextData.data)) {
         safeContext.data = contextData.data.map((d: any) => BigInt(d));
       } else if (Buffer.isBuffer(contextData.data) || contextData.data instanceof Uint8Array) {
-        // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
-        // to avoid intermediate array allocation and function call overhead.
-        const len = contextData.data.length;
-        const arr = new Array(len);
-        for (let i = 0; i < len; i++) {
-          // Use cached BigInts for byte values (0-255) to avoid constructor overhead
-          arr[i] = this.BIGINT_CACHE[contextData.data[i]];
+        if (scriptUsesData) {
+          // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
+          // to avoid intermediate array allocation and function call overhead.
+          const len = contextData.data.length;
+          const arr = new Array(len);
+          for (let i = 0; i < len; i++) {
+            // Use cached BigInts for byte values (0-255) to avoid constructor overhead
+            arr[i] = this.BIGINT_CACHE[contextData.data[i]];
+          }
+          safeContext.data = arr;
+        } else {
+          // If script doesn't use data, provide empty array to satisfy type requirements
+          // without paying the conversion cost.
+          safeContext.data = [];
         }
-        safeContext.data = arr;
       } else {
         safeContext.data = [];
       }

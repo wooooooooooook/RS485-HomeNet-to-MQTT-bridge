@@ -9,6 +9,7 @@
   import { t } from 'svelte-i18n';
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
+  import RawPacketIntervalAnalysis from '../components/RawPacketIntervalAnalysis.svelte';
   import LatencyTest from '../components/analysis/LatencyTest.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
 
@@ -81,6 +82,9 @@
     bind:recordedFile
     portId={activePortId}
   />
+  {#if activePortId}
+    <RawPacketIntervalAnalysis {stats} />
+  {/if}
   <CelAnalyzerCard />
 
   {#if activePortId}

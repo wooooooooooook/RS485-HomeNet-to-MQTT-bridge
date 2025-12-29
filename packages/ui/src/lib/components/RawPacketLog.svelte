@@ -1,7 +1,6 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
-  import PacketStats from './PacketStats.svelte';
   import { fade } from 'svelte/transition';
   import Button from './Button.svelte';
   import VirtualList from '@humanspeak/svelte-virtual-list';
@@ -489,9 +488,6 @@
       />
     {/if}
   </div>
-  {#if stats || isStreaming}
-    <PacketStats {stats} />
-  {/if}
 </div>
 
 <style>

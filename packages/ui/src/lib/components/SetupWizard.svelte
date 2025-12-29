@@ -6,9 +6,15 @@
 
   type WizardStep = 'config' | 'consent' | 'complete';
 
+  const EMPTY_CONFIG_VALUE = '__empty__';
   let examples = $state<string[]>([]);
   let selectedExample = $state('');
   let serialPath = $state('');
+  let serialPortId = $state('main');
+  let serialBaudRate = $state('9600');
+  let serialDataBits = $state('8');
+  let serialParity = $state('none');
+  let serialStopBits = $state('1');
   let loading = $state(false);
   let submitting = $state(false);
   let consentSubmitting = $state(false);
@@ -43,6 +49,11 @@
   $effect(() => {
     serialPath;
     selectedExample;
+    serialPortId;
+    serialBaudRate;
+    serialDataBits;
+    serialParity;
+    serialStopBits;
     testError = '';
     testPackets = [];
     hasTested = false;
@@ -63,6 +74,8 @@
       examples = data.examples || [];
       if (examples.length > 0) {
         selectedExample = examples[0];
+      } else {
+        selectedExample = EMPTY_CONFIG_VALUE;
       }
 
       // 로그 동의가 이미 완료된 경우 바로 complete 화면으로
@@ -87,7 +100,8 @@
   }
 
   async function handleConfigSubmit() {
-    if (!selectedExample || !serialPath.trim()) {
+    const serialConfigPayload = buildSerialConfigPayload();
+    if (!selectedExample || !serialConfigPayload) {
       error = $t('setup_wizard.validation_error');
       return;
     }
@@ -99,10 +113,17 @@
       const res = await fetch('./api/config/examples/select', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: selectedExample,
-          serialPath: serialPath.trim(),
-        }),
+        body: JSON.stringify(
+          selectedExample === EMPTY_CONFIG_VALUE
+            ? {
+                filename: EMPTY_CONFIG_VALUE,
+                serialConfig: serialConfigPayload,
+              }
+            : {
+                filename: selectedExample,
+                serialPath: serialPath.trim(),
+              },
+        ),
       });
 
       const data = await res.json();
@@ -125,7 +146,8 @@
   }
 
   async function handleSerialTest() {
-    if (!selectedExample || !serialPath.trim()) {
+    const serialConfigPayload = buildSerialConfigPayload();
+    if (!selectedExample || !serialConfigPayload) {
       testError = $t('setup_wizard.validation_error');
       return;
     }
@@ -139,10 +161,17 @@
       const res = await fetch('./api/config/examples/test-serial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: selectedExample,
-          serialPath: serialPath.trim(),
-        }),
+        body: JSON.stringify(
+          selectedExample === EMPTY_CONFIG_VALUE
+            ? {
+                filename: EMPTY_CONFIG_VALUE,
+                serialConfig: serialConfigPayload,
+              }
+            : {
+                filename: selectedExample,
+                serialPath: serialPath.trim(),
+              },
+        ),
       });
 
       const data = await res.json();
@@ -185,8 +214,48 @@
   }
 
   function getExampleDisplayName(filename: string): string {
+    if (filename === EMPTY_CONFIG_VALUE) {
+      return $t('setup_wizard.empty_option');
+    }
     const base = filename.replace(/\.homenet_bridge\.ya?ml$/, '');
     return base.charAt(0).toUpperCase() + base.slice(1).replace(/_/g, ' ');
+  }
+
+  function buildSerialConfigPayload() {
+    if (!serialPath.trim()) {
+      return null;
+    }
+
+    if (selectedExample !== EMPTY_CONFIG_VALUE) {
+      return { path: serialPath.trim() };
+    }
+
+    const baudRateValue = Number(serialBaudRate);
+    const dataBitsValue = Number(serialDataBits);
+    const stopBitsValue = Number(serialStopBits);
+    const portIdValue = serialPortId.trim();
+
+    if (
+      !portIdValue ||
+      !Number.isFinite(baudRateValue) ||
+      !Number.isFinite(dataBitsValue) ||
+      !Number.isFinite(stopBitsValue)
+    ) {
+      return null;
+    }
+
+    return {
+      portId: portIdValue,
+      path: serialPath.trim(),
+      baud_rate: baudRateValue,
+      data_bits: dataBitsValue,
+      parity: serialParity,
+      stop_bits: stopBitsValue,
+    };
+  }
+
+  function isFormReady() {
+    return Boolean(buildSerialConfigPayload());
   }
 </script>
 
@@ -235,6 +304,7 @@
         <div class="form-group">
           <label for="example-select">{$t('setup_wizard.example_label')}</label>
           <select id="example-select" bind:value={selectedExample} disabled={submitting}>
+            <option value={EMPTY_CONFIG_VALUE}>{$t('setup_wizard.empty_option')}</option>
             {#each examples as example}
               <option value={example}>{getExampleDisplayName(example)}</option>
             {/each}
@@ -252,13 +322,85 @@
             disabled={submitting}
           />
           <p class="field-hint">{$t('setup_wizard.serial_path_hint')}</p>
+        </div>
+
+        {#if selectedExample === EMPTY_CONFIG_VALUE}
+          <div class="form-group">
+            <label for="serial-port-id">{$t('setup_wizard.serial_port_id_label')}</label>
+            <input
+              type="text"
+              id="serial-port-id"
+              bind:value={serialPortId}
+              placeholder={$t('setup_wizard.serial_port_id_placeholder')}
+              disabled={submitting}
+            />
+            <p class="field-hint">{$t('setup_wizard.serial_port_id_hint')}</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="serial-baud-rate">{$t('setup_wizard.serial_baud_rate_label')}</label>
+              <input
+                type="number"
+                id="serial-baud-rate"
+                bind:value={serialBaudRate}
+                min="1"
+                step="1"
+                disabled={submitting}
+              />
+              <p class="field-hint">{$t('setup_wizard.serial_baud_rate_hint')}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="serial-data-bits">{$t('setup_wizard.serial_data_bits_label')}</label>
+              <select
+                id="serial-data-bits"
+                bind:value={serialDataBits}
+                disabled={submitting}
+              >
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+              <p class="field-hint">{$t('setup_wizard.serial_data_bits_hint')}</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="serial-parity">{$t('setup_wizard.serial_parity_label')}</label>
+              <select id="serial-parity" bind:value={serialParity} disabled={submitting}>
+                <option value="none">none</option>
+                <option value="even">even</option>
+                <option value="mark">mark</option>
+                <option value="odd">odd</option>
+                <option value="space">space</option>
+              </select>
+              <p class="field-hint">{$t('setup_wizard.serial_parity_hint')}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="serial-stop-bits">{$t('setup_wizard.serial_stop_bits_label')}</label>
+              <select id="serial-stop-bits" bind:value={serialStopBits} disabled={submitting}>
+                <option value="1">1</option>
+                <option value="1.5">1.5</option>
+                <option value="2">2</option>
+              </select>
+              <p class="field-hint">{$t('setup_wizard.serial_stop_bits_hint')}</p>
+            </div>
+          </div>
+          <p class="field-hint emphasis">{$t('setup_wizard.serial_manual_hint')}</p>
+        {/if}
+
+        <div class="form-group">
           <div class="test-actions">
             <Button
               type="button"
               variant="secondary"
               onclick={handleSerialTest}
               isLoading={testingSerial}
-              disabled={submitting || !selectedExample || !serialPath.trim()}
+              disabled={submitting || !selectedExample || !isFormReady()}
               class="wizard-test-btn"
             >
               {$t('setup_wizard.serial_test_button')}
@@ -296,7 +438,7 @@
           variant="primary"
           isLoading={submitting}
           fullWidth={true}
-          disabled={!selectedExample || !serialPath.trim()}
+          disabled={!selectedExample || !isFormReady()}
           class="wizard-submit-btn"
         >
           {$t('setup_wizard.next')}
@@ -517,6 +659,17 @@
     font-size: 0.8rem;
     color: #94a3b8;
     margin: 0.5rem 0 0 0;
+  }
+
+  .field-hint.emphasis {
+    margin-top: 0;
+    color: #e2e8f0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
   }
 
   .test-actions {

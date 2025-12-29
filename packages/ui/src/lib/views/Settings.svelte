@@ -58,14 +58,11 @@
     fetchLogSharingStatus();
   });
 
-  const handleLogSharingToggle = async (e: Event) => {
-    const input = e.currentTarget as HTMLInputElement;
-    const consent = input.checked;
+  const handleLogSharingToggle = async (checked: boolean) => {
+    const consent = checked;
 
     if (consent) {
       // Enabling: Show modal for consent
-      e.preventDefault(); // Prevent checkbox from checking immediately
-      input.checked = false; // Ensure it stays unchecked visually
       showConsentModal = true;
       return;
     }
@@ -719,7 +716,6 @@
   .setting-desc.warning {
     color: #facc15;
   }
-
 
   .error-banner {
     background: rgba(248, 113, 113, 0.15);

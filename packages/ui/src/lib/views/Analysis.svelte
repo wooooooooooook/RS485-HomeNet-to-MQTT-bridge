@@ -5,14 +5,12 @@
     RawPacketWithInterval,
     ParsedPacket,
     BridgeSerialInfo,
-    ActivityLog,
   } from '../types';
   import { t } from 'svelte-i18n';
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import LatencyTest from '../components/analysis/LatencyTest.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
-  import ActivityLogList from '../components/ActivityLogList.svelte';
 
   let {
     stats,
@@ -21,7 +19,6 @@
     rawPackets,
     isStreaming,
     portMetadata,
-    activityLogs,
     selectedPortId,
     onPortChange,
     onStart,
@@ -37,7 +34,6 @@
     rawPackets: RawPacketWithInterval[];
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
-    activityLogs: ActivityLog[];
     selectedPortId: string | null;
     onPortChange?: (portId: string) => void;
     onStart?: () => void;
@@ -85,12 +81,6 @@
     bind:recordedFile
   />
   <CelAnalyzerCard />
-  <ActivityLogList
-    logs={activityLogs}
-    title={$t('analysis.automation_logs.title')}
-    emptyMessage={$t('analysis.automation_logs.empty')}
-    height="240px"
-  />
 
   {#if activePortId}
     <LatencyTest portId={activePortId} />

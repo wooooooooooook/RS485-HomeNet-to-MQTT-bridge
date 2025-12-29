@@ -973,8 +973,7 @@
     }
 
     for (const script of scriptItems) {
-      const portId =
-        (script.configFile ? configPortMap.get(script.configFile) : null) ?? undefined;
+      const portId = (script.configFile ? configPortMap.get(script.configFile) : null) ?? undefined;
       const key = makeKey(portId, script.id, 'script');
       if (!entities.has(key)) {
         entities.set(key, {
@@ -1108,14 +1107,12 @@
     if (selectedEntity.category === 'automation') {
       return activityLogs.filter(
         (log) =>
-          log.code.startsWith('log.automation_') &&
-          log.params?.automationId === selectedEntity.id,
+          log.code.startsWith('log.automation_') && log.params?.automationId === selectedEntity.id,
       );
     }
     if (selectedEntity.category === 'script') {
       return activityLogs.filter(
-        (log) =>
-          log.code.startsWith('log.script_') && log.params?.scriptId === selectedEntity.id,
+        (log) => log.code.startsWith('log.script_') && log.params?.scriptId === selectedEntity.id,
       );
     }
     return [];
@@ -1125,7 +1122,8 @@
     if (selectedEntityKey) {
       const { portId, entityId, category } = parseEntityKey(selectedEntityKey);
       const exists = unifiedEntities.some(
-        (entity) => entity.id === entityId && entity.portId === portId && entity.category === category,
+        (entity) =>
+          entity.id === entityId && entity.portId === portId && entity.category === category,
       );
       if (!exists) {
         selectedEntityKey = null;
@@ -1170,12 +1168,6 @@
     activePortId
       ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
       : activityLogs,
-  );
-
-  const filteredAutomationScriptLogs = $derived.by<ActivityLog[]>(() =>
-    filteredActivityLogs.filter(
-      (log) => log.code.startsWith('log.automation_') || log.code.startsWith('log.script_'),
-    ),
   );
 
   const portStatuses = $derived.by(() => {
@@ -1258,7 +1250,6 @@
             rawPackets={filteredRawPackets}
             {isStreaming}
             {portMetadata}
-            activityLogs={filteredAutomationScriptLogs}
             selectedPortId={activePortId}
             onPortChange={(portId) => (selectedPortId = portId)}
             onStart={handleRawRecordingStart}

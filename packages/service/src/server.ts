@@ -24,12 +24,12 @@ import type {
   AutomationConfig,
   ScriptConfig,
 } from '@rs485-homenet/core/config/types';
-import { createSerialPortConnection } from '@rs485-homenet/core/transports/serial/serial.factory';
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
 import { RawPacketLoggerService } from './raw-packet-logger.service.js';
 import { LogRetentionService, type LogRetentionSettings } from './log-retention.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
+import { createSetupWizardService } from './setup-wizard.js';
 
 dotenv.config();
 
@@ -53,7 +53,6 @@ const DEFAULT_CONFIG_FILENAME = 'default.homenet_bridge.yaml';
 const LEGACY_DEFAULT_CONFIG_FILENAME = 'default.yaml';
 const CONFIG_INIT_MARKER = path.join(CONFIG_DIR, '.initialized');
 const CONFIG_RESTART_FLAG = path.join(CONFIG_DIR, '.restart-required');
-const EXAMPLES_DIR = path.resolve(__dirname, '../../core/config/examples');
 const GALLERY_RAW_BASE_URL =
   'https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery';
 const GALLERY_LIST_URL = `${GALLERY_RAW_BASE_URL}/list.json`;
@@ -179,60 +178,6 @@ const parseCelContext = (
   return { context };
 };
 
-const collectSerialPackets = async (
-  serialPath: string,
-  serialConfig: SerialConfig,
-  options?: { maxPackets?: number; timeoutMs?: number },
-): Promise<string[]> => {
-  const maxPackets = options?.maxPackets ?? 5;
-  const timeoutMs = options?.timeoutMs ?? 5000;
-  const packets: string[] = [];
-  const port = await createSerialPortConnection(serialPath, serialConfig);
-
-  return new Promise<string[]>((resolve, reject) => {
-    let finished = false;
-
-    const cleanup = () => {
-      if (finished) return;
-      finished = true;
-      port.off('data', onData);
-      port.off('error', onError);
-      port.destroy();
-    };
-
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve(packets);
-    }, timeoutMs);
-
-    const resolveWithTimeout = (value: string[]) => {
-      clearTimeout(timeout);
-      cleanup();
-      resolve(value);
-    };
-
-    const rejectWithTimeout = (error: Error) => {
-      clearTimeout(timeout);
-      cleanup();
-      reject(error);
-    };
-
-    const onData = (data: Buffer) => {
-      packets.push(data.toString('hex'));
-      if (packets.length >= maxPackets) {
-        resolveWithTimeout(packets);
-      }
-    };
-
-    const onError = (err: Error) => {
-      rejectWithTimeout(err);
-    };
-
-    port.on('data', onData);
-    port.once('error', onError);
-  });
-};
-
 const envConfigFiles = (() => {
   const parsed = parseEnvList('CONFIG_FILES', 'CONFIG_FILE', '설정 파일');
   if (parsed.values.length > 0) {
@@ -241,70 +186,6 @@ const envConfigFiles = (() => {
 
   return { source: 'default', values: [DEFAULT_CONFIG_FILENAME] } as const;
 })();
-
-const listExampleConfigs = async (): Promise<string[]> => {
-  try {
-    const files = await fs.readdir(EXAMPLES_DIR);
-    return files.filter((file) => file.endsWith('.yaml'));
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === 'ENOENT') return [];
-    throw error;
-  }
-};
-
-const getDefaultConfigFilename = async (): Promise<string | null> => {
-  const defaultPath = path.join(CONFIG_DIR, DEFAULT_CONFIG_FILENAME);
-  const legacyDefaultPath = path.join(CONFIG_DIR, LEGACY_DEFAULT_CONFIG_FILENAME);
-
-  if (await fileExists(defaultPath)) return DEFAULT_CONFIG_FILENAME;
-  if (await fileExists(legacyDefaultPath)) return LEGACY_DEFAULT_CONFIG_FILENAME;
-  return null;
-};
-
-const applySerialPathToConfig = (configObject: unknown, serialPath: string): boolean => {
-  if (!configObject || typeof configObject !== 'object') {
-    return false;
-  }
-
-  const bridgeConfig =
-    (configObject as Record<string, unknown>).homenet_bridge ||
-    (configObject as Record<string, unknown>).homenetBridge ||
-    configObject;
-
-  if (!bridgeConfig || typeof bridgeConfig !== 'object') {
-    return false;
-  }
-
-  let updated = false;
-  const normalizedPath = serialPath.trim();
-
-  if ((bridgeConfig as Record<string, unknown>).serial) {
-    const serial = (bridgeConfig as Record<string, unknown>).serial as Record<string, unknown>;
-    (bridgeConfig as Record<string, unknown>).serial = { ...serial, path: normalizedPath };
-    updated = true;
-  }
-
-  const serials = (bridgeConfig as Record<string, unknown>).serials;
-  if (Array.isArray(serials)) {
-    (bridgeConfig as Record<string, unknown>).serials = serials.map((serial: unknown) => {
-      if (!serial || typeof serial !== 'object') return serial;
-      return { ...(serial as Record<string, unknown>), path: normalizedPath };
-    });
-    updated = true;
-  }
-
-  return updated;
-};
-
-const extractSerialConfig = (config: HomenetBridgeConfig): SerialConfig | null => {
-  if (Array.isArray(config.serials) && config.serials.length > 0) {
-    return config.serials[0];
-  }
-
-  const legacySerial = (config as { serial?: SerialConfig }).serial;
-  return legacySerial ?? null;
-};
 
 const triggerRestart = async () => {
   // .restart-required 파일만 생성하고 종료하지 않음
@@ -327,6 +208,22 @@ const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 sec
 const configRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
 const serialTestRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
 const latencyTestRateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
+
+const setupWizardService = createSetupWizardService({
+  configDir: CONFIG_DIR,
+  examplesDir: path.resolve(__dirname, '../../core/config/examples'),
+  defaultConfigFilename: DEFAULT_CONFIG_FILENAME,
+  legacyDefaultConfigFilename: LEGACY_DEFAULT_CONFIG_FILENAME,
+  configInitMarker: CONFIG_INIT_MARKER,
+  configRestartFlag: CONFIG_RESTART_FLAG,
+  envConfigFilesSource: envConfigFiles.source,
+  fileExists,
+  dumpConfigToYaml,
+  saveBackup,
+  triggerRestart,
+  serialTestRateLimiter,
+  logger,
+});
 
 type BridgeInstance = {
   bridge: HomeNetBridge;
@@ -456,6 +353,8 @@ app.use((_req, res, next) => {
 });
 // Payload 크기 제한 설정 (DoS 방지)
 app.use(express.json({ limit: '1mb' }));
+
+setupWizardService.registerRoutes(app);
 
 // --- API Endpoints ---
 // 패킷 사전 조회 API
@@ -1412,186 +1311,6 @@ const findBridgeForEntity = (entityId: string): BridgeInstance | undefined => {
 
   return undefined;
 };
-
-const getInitializationState = async () => {
-  const [defaultConfigName, hasInitMarker] = await Promise.all([
-    getDefaultConfigFilename(),
-    fileExists(CONFIG_INIT_MARKER),
-  ]);
-
-  return {
-    defaultConfigName,
-    hasDefaultConfig: Boolean(defaultConfigName),
-    hasInitMarker,
-    requiresInitialization: !hasInitMarker,
-  };
-};
-
-app.get('/api/config/examples', async (_req, res) => {
-  try {
-    const [state, examples] = await Promise.all([getInitializationState(), listExampleConfigs()]);
-
-    res.json({
-      configRoot: CONFIG_DIR,
-      examples,
-      defaultConfigName: state.defaultConfigName,
-      requiresInitialization: state.requiresInitialization,
-      hasInitMarker: state.hasInitMarker,
-      hasCustomConfig: envConfigFiles.source !== 'default',
-    });
-  } catch (error) {
-    logger.error({ err: error }, '[service] Failed to list example configs');
-    res.status(500).json({ error: '예제 설정을 불러오지 못했습니다.' });
-  }
-});
-
-app.post('/api/config/examples/test-serial', async (req, res) => {
-  if (!serialTestRateLimiter.check(req.ip || 'unknown')) {
-    logger.warn({ ip: req.ip }, '[service] Serial test rate limit exceeded');
-    return res.status(429).json({ error: 'Too many requests' });
-  }
-
-  try {
-    const { filename, serialPath } = req.body || {};
-
-    if (typeof filename !== 'string' || filename.includes('/') || filename.includes('\\')) {
-      return res.status(400).json({ error: 'INVALID_FILENAME' });
-    }
-
-    if (typeof serialPath !== 'string' || !serialPath.trim()) {
-      return res.status(400).json({ error: 'SERIAL_PATH_REQUIRED' });
-    }
-
-    const examples = await listExampleConfigs();
-    if (!examples.includes(filename)) {
-      return res.status(404).json({ error: 'EXAMPLE_NOT_FOUND' });
-    }
-
-    const sourcePath = path.join(EXAMPLES_DIR, filename);
-    let parsedConfig: unknown;
-
-    try {
-      const rawContent = await fs.readFile(sourcePath, 'utf-8');
-      parsedConfig = yaml.load(rawContent);
-    } catch (error) {
-      logger.error({ err: error, sourcePath }, '[service] Failed to read example config for test');
-      return res.status(500).json({ error: 'EXAMPLE_READ_FAILED' });
-    }
-
-    const serialPathValue = serialPath.trim();
-
-    if (!applySerialPathToConfig(parsedConfig, serialPathValue)) {
-      return res.status(400).json({ error: 'SERIAL_CONFIG_MISSING' });
-    }
-
-    const bridgeConfig =
-      (parsedConfig as Record<string, unknown>).homenet_bridge ||
-      (parsedConfig as Record<string, unknown>).homenetBridge ||
-      parsedConfig;
-
-    const normalized = normalizeConfig(
-      JSON.parse(JSON.stringify(bridgeConfig)) as HomenetBridgeConfig,
-    );
-    const serialConfig = extractSerialConfig(normalized);
-
-    if (!serialConfig) {
-      return res.status(400).json({ error: 'SERIAL_CONFIG_MISSING' });
-    }
-
-    const packets = await collectSerialPackets(serialPathValue, serialConfig, {
-      maxPackets: 10,
-      timeoutMs: 6000,
-    });
-
-    res.json({
-      ok: true,
-      portId: normalizePortId(serialConfig.portId || 'raw', 0),
-      packets,
-    });
-  } catch (error) {
-    logger.error({ err: error }, '[service] Failed to test serial path during setup');
-    res.status(500).json({ error: 'SERIAL_TEST_FAILED' });
-  }
-});
-
-app.post('/api/config/examples/select', async (req, res) => {
-  try {
-    const state = await getInitializationState();
-    if (!state.requiresInitialization) {
-      return res.status(400).json({ error: 'INITIALIZATION_NOT_ALLOWED' });
-    }
-
-    const { filename, serialPath } = req.body || {};
-    if (typeof filename !== 'string' || filename.includes('/') || filename.includes('\\')) {
-      return res.status(400).json({ error: 'INVALID_FILENAME' });
-    }
-
-    if (typeof serialPath !== 'string' || !serialPath.trim()) {
-      return res.status(400).json({ error: 'SERIAL_PATH_REQUIRED' });
-    }
-
-    const examples = await listExampleConfigs();
-    if (!examples.includes(filename)) {
-      return res.status(404).json({ error: 'EXAMPLE_NOT_FOUND' });
-    }
-
-    const sourcePath = path.join(EXAMPLES_DIR, filename);
-    const targetPath = path.join(CONFIG_DIR, DEFAULT_CONFIG_FILENAME);
-    const serialPathValue = serialPath.trim();
-
-    let parsedConfig: unknown;
-    try {
-      const rawContent = await fs.readFile(sourcePath, 'utf-8');
-      parsedConfig = yaml.load(rawContent);
-    } catch (error) {
-      logger.error({ err: error, sourcePath }, '[service] Failed to read example config');
-      return res.status(500).json({ error: 'EXAMPLE_READ_FAILED' });
-    }
-
-    if (!applySerialPathToConfig(parsedConfig, serialPathValue)) {
-      return res.status(400).json({ error: 'SERIAL_CONFIG_MISSING' });
-    }
-
-    const updatedYaml = dumpConfigToYaml(parsedConfig, { lineWidth: 120 });
-
-    await fs.mkdir(CONFIG_DIR, { recursive: true });
-
-    // Backup existing default config if it exists
-    if (await fileExists(targetPath)) {
-      try {
-        const existingContent = await fs.readFile(targetPath, 'utf-8');
-        const existingConfig = yaml.load(existingContent);
-        if (existingConfig && typeof existingConfig === 'object') {
-          const backupPath = await saveBackup(targetPath, existingConfig, 'init_overwrite');
-          logger.info(`[service] Backed up existing config to ${path.basename(backupPath)}`);
-        }
-      } catch (err) {
-        logger.warn({ err }, '[service] Failed to backup existing config during init');
-        // Retrieve raw content for raw backup fallback?
-        // For now just log warning, as dumpConfigToYaml requires valid object
-      }
-    }
-    await fs.writeFile(targetPath, updatedYaml, 'utf-8');
-    await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
-    await fs.writeFile(CONFIG_RESTART_FLAG, 'restart', 'utf-8');
-
-    logger.info(
-      { filename, targetPath, serialPath: serialPathValue },
-      '[service] Default config seeded from example',
-    );
-
-    res.json({
-      ok: true,
-      target: DEFAULT_CONFIG_FILENAME,
-      restartScheduled: true,
-    });
-
-    await triggerRestart();
-  } catch (error) {
-    logger.error({ err: error }, '[service] Failed to select example config');
-    res.status(500).json({ error: '기본 설정 생성에 실패했습니다.' });
-  }
-});
 
 app.get('/api/commands', (_req, res) => {
   if (currentConfigs.length === 0) {
@@ -3358,7 +3077,7 @@ server.listen(port, async () => {
     }
 
     logger.info('[service] Initializing bridge on startup...');
-    const initState = await getInitializationState();
+    const initState = await setupWizardService.getInitializationState();
 
     if (initState.requiresInitialization) {
       bridgeStatus = 'error';

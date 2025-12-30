@@ -72,7 +72,8 @@
       "add_button": "Add Bridge",
       "current_configs": "Current Bridge Configurations",
       "delete_confirm": "Are you sure you want to delete {filename}? (A backup will be created)",
-      "delete_success": "Configuration file deleted."
+      "delete_success": "Configuration file deleted.",
+      "delete_last_warning": "The last bridge cannot be deleted."
     }
   },
   "analysis": {

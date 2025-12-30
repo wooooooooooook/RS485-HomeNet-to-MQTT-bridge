@@ -309,8 +309,13 @@
   }
 
   let deletingConfig = $state<string | null>(null);
+  let canDeleteBridge = $derived((bridgeInfo?.bridges?.length ?? 0) > 1);
 
   const handleDeleteConfig = async (filename: string) => {
+    if (!canDeleteBridge) {
+      alert($t('settings.bridge_config.delete_last_warning'));
+      return;
+    }
     if (!confirm($t('settings.bridge_config.delete_confirm', { values: { filename } }))) return;
 
     deletingConfig = filename;
@@ -646,8 +651,13 @@
                   class="file-action-btn"
                   onclick={() => handleDeleteConfig(bridge.configFile)}
                   isLoading={deletingConfig === bridge.configFile}
+                  disabled={!canDeleteBridge}
                   ariaLabel={$t('common.delete')}
-                  title={$t('common.delete')}
+                  title={
+                    canDeleteBridge
+                      ? $t('common.delete')
+                      : $t('settings.bridge_config.delete_last_warning')
+                  }
                 >
                   🗑
                 </Button>

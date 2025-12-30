@@ -48,7 +48,9 @@
     <div class="header-title">
       <h3>{entity.displayName}</h3>
       {#if entity.category === 'automation'}
-        <span class="entity-type-badge automation">{$t('dashboard.entity_card.automation_badge')}</span>
+        <span class="entity-type-badge automation"
+          >{$t('dashboard.entity_card.automation_badge')}</span
+        >
       {:else if entity.category === 'script'}
         <span class="entity-type-badge script">{$t('dashboard.entity_card.script_badge')}</span>
       {/if}

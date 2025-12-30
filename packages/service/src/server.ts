@@ -116,7 +116,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-      ' 사용을 권장합니다.',
+        ' 사용을 권장합니다.',
     );
   }
 
@@ -309,7 +309,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
         typeof value?.logRetention?.retentionCount === 'number' &&
-          value.logRetention.retentionCount > 0
+        value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
     },
@@ -398,7 +398,9 @@ app.post('/api/system/restart', async (req, res) => {
 
     if (!token || !restartTokens.has(token)) {
       logger.warn('[service] Invalid or expired restart token used');
-      return res.status(403).json({ error: 'Invalid or expired token. Please refresh the page and try again.' });
+      return res
+        .status(403)
+        .json({ error: 'Invalid or expired token. Please refresh the page and try again.' });
     }
 
     // Valid token, consume it
@@ -3008,7 +3010,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -3237,7 +3239,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
       logger.info('[service] Cleared .restart-required flag');
     }
 

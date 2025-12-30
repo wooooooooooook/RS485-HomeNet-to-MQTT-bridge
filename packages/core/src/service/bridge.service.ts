@@ -108,7 +108,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => { });
+      await this.startPromise.catch(() => {});
     }
 
     for (const context of this.portContexts.values()) {
@@ -860,7 +860,6 @@ export class HomeNetBridge {
 
       // Note: raw-tx-packet event is emitted directly from CommandManager.executeJob()
       // No need to intercept port.write here
-
 
       const context: PortContext = {
         portId: normalizedPortId,

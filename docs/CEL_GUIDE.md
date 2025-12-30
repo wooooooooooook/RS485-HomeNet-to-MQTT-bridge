@@ -45,6 +45,10 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 자동화 실행 여부를 결정하는 조건식에서 사용합니다.
 
 *   `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다.
+*   `trigger`: 자동화를 유발한 트리거 정보 (Map).
+    *   `trigger.type`: 트리거 유형 (`state`, `packet`, `schedule`, `startup` 등)
+    *   `trigger.state`: (state 트리거인 경우) 변경된 상태 맵
+    *   `trigger.packet`: (packet 트리거인 경우) 수신된 패킷 배열 (List of int)
 
 ## 헬퍼 함수
 

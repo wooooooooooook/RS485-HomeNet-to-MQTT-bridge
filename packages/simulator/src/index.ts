@@ -149,7 +149,13 @@ export interface TcpSimulator extends Simulator {
 export function createTcpSimulator(
   options: SimulatorOptions & { port?: number } = {},
 ): TcpSimulator {
-  const { baudRate = 9600, packets: userPackets, port = 8888, device = 'commax', slow = 1 } = options;
+  const {
+    baudRate = 9600,
+    packets: userPackets,
+    port = 8888,
+    device = 'commax',
+    slow = 1,
+  } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
   const clients = new Set<any>();
@@ -166,7 +172,7 @@ export function createTcpSimulator(
     for (const client of clients) {
       try {
         client.write(data);
-      } catch (e) { }
+      } catch (e) {}
     }
   });
 
@@ -198,7 +204,9 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   if (spawnSync('stty', ['-F', ptyPath, 'raw', '-echo']).status !== 0)
     console.warn('RAW 모드 전환 실패');
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => writer.write(data));
+  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) =>
+    writer.write(data),
+  );
 
   return {
     get running() {

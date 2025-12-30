@@ -40,3 +40,4 @@ packages/core/config/log_sharing.json
 packages/core/config/sim_commax.homenet_bridge.yaml
 deploy/.configs/
 .logs/
+packages/simulator/src/packets_from_userdata.ts

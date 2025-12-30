@@ -6,6 +6,7 @@ import { SerialPort } from 'serialport';
 
 import { SAMSUNG_SDS_PACKETS } from './samsung_sds.js';
 import { SAMSUNG_SDS_CAPTURED_PACKETS } from './samsung_sds_captured.js';
+import { PACKETS_FROM_USERDATA } from './packets_from_userdata.js';
 import { COMMAX_PACKETS } from './commax.js';
 import { CVNET_PACKETS } from './cvnet.js';
 import { EZVILLE_PACKETS } from './ezville.js';
@@ -28,7 +29,8 @@ export type DeviceType =
   | 'cvnet'
   | 'ezville'
   | 'hyundai_imazu'
-  | 'kocom';
+  | 'kocom'
+  | 'userdata';
 
 export interface SimulatorOptions {
   intervalMs?: number;
@@ -63,8 +65,10 @@ function getPacketsForDevice(device: DeviceType): readonly (Buffer | Uint8Array 
       return HYUNDAI_IMAZU_PACKETS;
     case 'kocom':
       return KOCOM_PACKETS;
+    case 'userdata':
+      return PACKETS_FROM_USERDATA;
     default:
-      return DEFAULT_PACKETS;
+      return PACKETS_FROM_USERDATA.length > 0 ? PACKETS_FROM_USERDATA : DEFAULT_PACKETS;
   }
 }
 
@@ -172,7 +176,7 @@ export function createTcpSimulator(
     for (const client of clients) {
       try {
         client.write(data);
-      } catch (e) {}
+      } catch (e) { }
     }
   });
 

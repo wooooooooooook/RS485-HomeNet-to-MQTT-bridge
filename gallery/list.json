@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-30T14:42:29.995Z",
+  "generated_at": "2025-12-30T23:45:01.434Z",
   "vendors": [
     {
       "id": "commax",
@@ -431,11 +431,11 @@
         },
         {
           "file": "ezville/heaters.yaml",
-          "name": "난방 설정 (4개)",
-          "name_en": "Heaters (4 Thermostats)",
-          "description": "Ezville 난방 온도조절기 4개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원.",
-          "description_en": "Ezville 4 heating thermostats with 0.5°C step and away preset mode.",
-          "version": "1.0.0",
+          "name": "난방 설정 (5개)",
+          "name_en": "Heaters (5 Thermostats)",
+          "description": "Ezville 난방 온도조절기 5개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원.",
+          "description_en": "Ezville 5 heating thermostats with 0.5°C step and away preset mode.",
+          "version": "1.0.1",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -445,7 +445,7 @@
           ],
           "content_summary": {
             "entities": {
-              "climate": 4
+              "climate": 5
             },
             "automations": 0,
             "scripts": 0
@@ -453,11 +453,11 @@
         },
         {
           "file": "ezville/lights.yaml",
-          "name": "조명 설정 (Room 1-4, 9개)",
-          "name_en": "Lights (Room 1-4, 9 Lights)",
-          "description": "Ezville 조명 9개 설정입니다. 방별 일괄제어 및 개별조명 포함.",
-          "description_en": "Ezville 9 lights configuration with master and individual light controls.",
-          "version": "1.0.0",
+          "name": "조명 설정 (Room 1-5, 12개)",
+          "name_en": "Lights (Room 1-5, 12 Lights)",
+          "description": "Ezville 조명 12개 설정입니다. 방별 일괄제어 및 개별조명 포함.",
+          "description_en": "Ezville 12 lights configuration with master and individual light controls.",
+          "version": "1.0.1",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -465,7 +465,7 @@
           ],
           "content_summary": {
             "entities": {
-              "light": 9
+              "light": 12
             },
             "automations": 0,
             "scripts": 0

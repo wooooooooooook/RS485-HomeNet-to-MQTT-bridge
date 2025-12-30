@@ -38,6 +38,7 @@
           type="button"
           onclick={() => onPortChange?.(portId)}
           data-state={getPortStatus(portId)}
+          aria-current={activePortId === portId ? 'true' : undefined}
         >
           {#if portStatuses.length > 0}
             <span class="port-status-dot"></span>
@@ -123,6 +124,12 @@
 
   .port-tabs button:hover {
     border-color: rgba(148, 163, 184, 0.6);
+  }
+
+  .port-tabs button:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    z-index: 10;
   }
 
   .add-bridge-btn {

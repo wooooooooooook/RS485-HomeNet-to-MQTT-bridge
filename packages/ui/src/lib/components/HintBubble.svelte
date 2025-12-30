@@ -70,4 +70,10 @@
   .close-btn:hover {
     color: white;
   }
+
+  .close-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: -2px;
+    border-radius: 4px;
+  }
 </style>

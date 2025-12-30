@@ -42,7 +42,6 @@
   class="entity-card"
   class:inactive={!entity.isActive}
   onclick={() => onSelect?.()}
-  onkeydown={(e) => ['Enter', ' '].includes(e.key) && onSelect?.()}
 >
   <header class="card-header">
     <div class="header-title">

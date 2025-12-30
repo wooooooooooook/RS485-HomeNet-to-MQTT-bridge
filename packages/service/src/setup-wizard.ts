@@ -2,11 +2,7 @@ import type { Express } from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import yaml from 'js-yaml';
-import {
-  type HomenetBridgeConfig,
-  normalizeConfig,
-  normalizePortId,
-} from '@rs485-homenet/core';
+import { type HomenetBridgeConfig, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
 import type { SerialConfig } from '@rs485-homenet/core/config/types';
 import { createSerialPortConnection } from '@rs485-homenet/core/transports/serial/serial.factory';
 
@@ -180,7 +176,10 @@ const parseSerialConfigPayload = (
   };
 };
 
-const buildEmptyConfig = (serialConfig: SerialConfig, packetDefaults?: Record<string, unknown>) => ({
+const buildEmptyConfig = (
+  serialConfig: SerialConfig,
+  packetDefaults?: Record<string, unknown>,
+) => ({
   homenet_bridge: {
     serial: serialConfig,
     ...(packetDefaults && { packet_defaults: packetDefaults }),
@@ -215,7 +214,11 @@ const collectSerialPackets = async (
       port.off('data', onData);
       port.off('error', onError);
 
-      if (typeof (port as any).isOpen === 'boolean' && (port as any).isOpen && typeof (port as any).close === 'function') {
+      if (
+        typeof (port as any).isOpen === 'boolean' &&
+        (port as any).isOpen &&
+        typeof (port as any).close === 'function'
+      ) {
         await new Promise<void>((resolveClose) => (port as any).close(() => resolveClose()));
       } else {
         port.destroy();
@@ -367,7 +370,10 @@ export const createSetupWizardService = ({
   const registerRoutes = (app: Express) => {
     app.get('/api/config/examples', async (_req, res) => {
       try {
-        const [state, examples] = await Promise.all([getInitializationState(), listExampleConfigs()]);
+        const [state, examples] = await Promise.all([
+          getInitializationState(),
+          listExampleConfigs(),
+        ]);
 
         res.json({
           configRoot: configDir,
@@ -522,10 +528,14 @@ export const createSetupWizardService = ({
             return res.status(400).json({ error: parsed.error });
           }
 
-          const packets = await collectSerialPackets(parsed.serialConfig.path, parsed.serialConfig, {
-            maxPackets: 10,
-            timeoutMs: 3000,
-          });
+          const packets = await collectSerialPackets(
+            parsed.serialConfig.path,
+            parsed.serialConfig,
+            {
+              maxPackets: 10,
+              timeoutMs: 3000,
+            },
+          );
 
           res.json({
             ok: true,
@@ -730,7 +740,7 @@ export const createSetupWizardService = ({
 
         await fs.mkdir(configDir, { recursive: true });
 
-        if (mode !== 'add' && await fileExists(targetPath)) {
+        if (mode !== 'add' && (await fileExists(targetPath))) {
           try {
             const existingContent = await fs.readFile(targetPath, 'utf-8');
             const existingConfig = yaml.load(existingContent);

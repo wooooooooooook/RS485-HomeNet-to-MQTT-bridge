@@ -37,6 +37,7 @@
   import SettingsView from './lib/views/Settings.svelte';
 
   const MAX_PACKETS = 500000; // ~24 hours at 5 packets/sec
+  const DASHBOARD_INACTIVE_KEY = 'dashboard.showInactiveEntities';
 
   // -- State --
   let activeView = $state<'dashboard' | 'analysis' | 'gallery' | 'settings'>('dashboard');
@@ -309,6 +310,12 @@
   };
 
   onMount(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem(DASHBOARD_INACTIVE_KEY);
+      if (stored !== null) {
+        showInactiveEntities = stored === 'true';
+      }
+    }
     loadBridgeInfo(true);
     loadFrontendSettings();
     loadActivityLogs();
@@ -548,6 +555,13 @@
       if (previous.locale) {
         locale.set(previous.locale);
       }
+    }
+  }
+
+  function toggleInactiveEntities() {
+    showInactiveEntities = !showInactiveEntities;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DASHBOARD_INACTIVE_KEY, String(showInactiveEntities));
     }
   }
 
@@ -1325,7 +1339,7 @@
             {portStatuses}
             onSelect={(entityId, portId, category) =>
               (selectedEntityKey = makeEntityKey(portId, entityId, category))}
-            onToggleInactive={() => (showInactiveEntities = !showInactiveEntities)}
+            onToggleInactive={toggleInactiveEntities}
             onPortChange={(portId) => (selectedPortId = portId)}
           />
         {:else if activeView === 'analysis'}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homenet Log Viewer</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --sidebar-width: 400px;
+            --primary-color: #2563eb;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        header input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        header input[type="text"] {
+            width: 300px;
+        }
+
+        header input[type="password"] {
+            width: 200px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: white;
+            color: #333;
+            border: 1px solid var(--border-color);
+        }
+
+        button.secondary:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar (List) */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .list-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .log-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .log-item:hover {
+            background-color: #f0f7ff;
+        }
+
+        .log-item.selected {
+            background-color: #e0effe;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .log-meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .log-id {
+            font-family: monospace;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Main Content (Detail) */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            font-family: "Menlo", "Monaco", "Courier New", monospace;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #888;
+            font-size: 1.2rem;
+        }
+
+        /* Loading */
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background: #eee;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h3>Log Viewer</h3>
+        <input type="text" id="apiUrl" placeholder="Worker URL (e.g. https://my-worker.workers.dev)" />
+        <input type="password" id="apiKey" placeholder="Admin Key" />
+        <input type="text" id="searchQuery" placeholder="Search (Port ID, UID)" style="width: 200px;" />
+        <button id="btnLoad">Load Logs</button>
+    </header>
+
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="list-header">
+                <strong>Recent Logs</strong>
+                <button class="secondary" id="btnMore">More (+20)</button>
+            </div>
+            <div id="logList">
+                <!-- Log items will be injected here -->
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <div class="empty-state">Select a log from the sidebar to view details</div>
+        </div>
+    </div>
+
+    <script>
+        const elApiUrl = document.getElementById('apiUrl');
+        const elApiKey = document.getElementById('apiKey');
+        const elSearchQuery = document.getElementById('searchQuery');
+        const elBtnLoad = document.getElementById('btnLoad');
+        const elBtnMore = document.getElementById('btnMore');
+        const elLogList = document.getElementById('logList');
+        const elMainContent = document.getElementById('mainContent');
+
+        let currentOffset = 0;
+        const LIMIT = 20;
+
+        // Load settings from local storage
+        elApiUrl.value = localStorage.getItem('homenet_log_api_url') || '';
+        elApiKey.value = localStorage.getItem('homenet_log_api_key') || '';
+        elSearchQuery.value = localStorage.getItem('homenet_log_search_query') || '';
+
+        // Save settings on input
+        elApiUrl.addEventListener('change', () => localStorage.setItem('homenet_log_api_url', elApiUrl.value));
+        elApiKey.addEventListener('change', () => localStorage.setItem('homenet_log_api_key', elApiKey.value));
+        elSearchQuery.addEventListener('change', () => localStorage.setItem('homenet_log_search_query', elSearchQuery.value));
+
+        // Search on Enter
+        elSearchQuery.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                currentOffset = 0;
+                elLogList.innerHTML = '';
+                fetchLogs();
+            }
+        });
+
+        // Load Button
+        elBtnLoad.addEventListener('click', () => {
+            elLogList.innerHTML = ''; // clear list
+            currentOffset = 0;
+            fetchLogs();
+        });
+
+        // More Button
+        elBtnMore.addEventListener('click', () => {
+            currentOffset += LIMIT;
+            fetchLogs();
+        });
+
+        async function fetchLogs() {
+            const url = elApiUrl.value;
+            const key = elApiKey.value;
+            const search = elSearchQuery.value.trim();
+
+            if (!url || !key) {
+                alert('Please enter API URL and Admin Key');
+                return;
+            }
+
+            try {
+                elBtnLoad.disabled = true;
+                elBtnMore.textContent = 'Loading...';
+
+                let fetchUrl = `${url}?limit=${LIMIT}&offset=${currentOffset}`;
+                if (search) {
+                    fetchUrl += `&search=${encodeURIComponent(search)}`;
+                }
+
+                const res = await fetch(fetchUrl, {
+                    headers: { 'x-api-key': key }
+                });
+
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+
+                const data = await res.json();
+                renderList(data);
+
+            } catch (err) {
+                alert('Error fetching logs: ' + err.message);
+            } finally {
+                elBtnLoad.disabled = false;
+                elBtnMore.textContent = `More (+${LIMIT})`;
+            }
+        }
+
+        function renderList(logs) {
+            if (logs.length === 0 && currentOffset === 0) {
+                elLogList.innerHTML = '<div style="padding:1rem; text-align:center; color:#888;">No logs found</div>';
+                return;
+            }
+
+            logs.forEach(log => {
+                // Use port_ids directly
+                let portInfo = log.port_ids || '';
+
+                // Fallback for older logs if needed (optional)
+                if (!portInfo && log.configs) {
+                    try {
+                        let configs = log.configs;
+                        if (typeof configs === 'string') configs = JSON.parse(configs);
+                        if (Array.isArray(configs)) {
+                            portInfo = configs.map(c => c.portId).filter(Boolean).join(', ');
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                const date = new Date(log.server_timestamp).toLocaleString('ko-KR');
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                item.innerHTML = `
+                <div class="log-meta">
+                    <span class="badge">${log.version || 'v?'}</span>
+                    ${date}
+                </div>
+                <div class="log-id">${log.id.substring(0, 8)}...</div>
+                <div class="log-meta" style="margin-top:4px;">
+                    ${portInfo ? `<strong>Port: ${portInfo}</strong><br>` : ''}
+                    UID: ${log.uid ? log.uid.substring(0, 8) + '...' : 'N/A'}
+                </div>
+            `;
+                item.onclick = () => loadDetail(log.id, item);
+                elLogList.appendChild(item);
+            });
+        }
+
+        async function loadDetail(id, listItemElement) {
+            // Highlight selection
+            document.querySelectorAll('.log-item').forEach(el => el.classList.remove('selected'));
+            if (listItemElement) listItemElement.classList.add('selected');
+
+            const url = elApiUrl.value;
+            const key = elApiKey.value;
+
+            elMainContent.innerHTML = '<div class="empty-state">Loading details...</div>';
+
+            try {
+                const res = await fetch(`${url}?id=${id}`, {
+                    headers: { 'x-api-key': key }
+                });
+
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+
+                const data = await res.json();
+                renderDetail(data);
+
+            } catch (err) {
+                elMainContent.innerHTML = `<div class="empty-state" style="color:red">Error: ${err.message}</div>`;
+            }
+        }
+
+        function renderDetail(data) {
+            // Parse JSON strings if they are strings
+            ['configs', 'app_logs', 'packets'].forEach(field => {
+                if (typeof data[field] === 'string') {
+                    try {
+                        data[field] = JSON.parse(data[field]);
+                    } catch (e) { /* ignore */ }
+                }
+            });
+
+            const jsonStr = JSON.stringify(data, null, 2);
+            const fileName = `homenet_log_${data.id.substring(0, 8)}.json`;
+
+            elMainContent.innerHTML = `
+            <div class="detail-header">
+                <h2>Log Details <span style="color:#666; font-size:1rem; font-weight:normal;">(${data.id})</span></h2>
+                <button onclick="downloadJson('${encodeURIComponent(fileName)}')">Download JSON</button>
+            </div>
+            <pre id="jsonContent">${escapeHtml(jsonStr)}</pre>
+        `;
+
+            // Store data temporarily for download
+            window._currentLogData = jsonStr;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.downloadJson = function (fileName) {
+            if (!window._currentLogData) return;
+            const blob = new Blob([window._currentLogData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = decodeURIComponent(fileName);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    </script>
+
+</body>
+
+</html>

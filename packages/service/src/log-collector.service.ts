@@ -36,14 +36,14 @@ interface ConfigFileContent {
 }
 
 export class LogCollectorService {
-  private packetBuffer: string[] = [];
+  private packetBuffers = new Map<string, string[]>();
   private isCollecting = false;
   private bridges: HomeNetBridge[] = [];
   private configFiles: ConfigFileContent[] = [];
   private packetCount = 0;
   private config: LogConfig = { consent: null, uid: null };
 
-  constructor() {}
+  constructor() { }
 
   async init(bridges: HomeNetBridge[], configFiles: ConfigFileContent[] = []) {
     this.bridges = bridges;
@@ -87,7 +87,7 @@ export class LogCollectorService {
       await this.saveConfig();
 
       // Remove legacy file after successful migration
-      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => {});
+      await fs.unlink(LEGACY_CONSENT_FILE).catch(() => { });
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
         logger.error({ err: e }, '[LogCollector] Failed to migrate legacy config');
@@ -137,7 +137,7 @@ export class LogCollectorService {
   startCollection() {
     if (this.isCollecting) return;
 
-    this.packetBuffer = [];
+    this.packetBuffers.clear();
     this.packetCount = 0;
     this.isCollecting = true;
 
@@ -163,7 +163,11 @@ export class LogCollectorService {
       return;
     }
 
-    this.packetBuffer.push(data.payload);
+    const portId = data.portId || 'unknown';
+    if (!this.packetBuffers.has(portId)) {
+      this.packetBuffers.set(portId, []);
+    }
+    this.packetBuffers.get(portId)?.push(data.payload);
     this.packetCount++;
 
     if (this.packetCount >= 1000) {
@@ -173,7 +177,7 @@ export class LogCollectorService {
   }
 
   async sendData() {
-    logger.info('[LogCollector] 1000 packets collected. Sending report...');
+    logger.info('[LogCollector] Collection finished. Sending reports per port...');
 
     if (!this.config.uid) {
       logger.warn('[LogCollector] No UID present, skipping upload despite collection.');
@@ -186,46 +190,51 @@ export class LogCollectorService {
     }
 
     const isRunningOnHASupervisor = !!process.env.SUPERVISOR_TOKEN;
+    const logs = logBuffer.getLogs();
 
     try {
-      const logs = logBuffer.getLogs();
-      // KST (UTC+9) 타임스탬프 생성
+      const version = await this.getAddonVersion();
+      const arch = process.arch;
+
+      // KST timestamp
       const kstTimestamp = new Date().toLocaleString('ko-KR', {
         timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
         hour12: false,
       });
 
-      const payload = {
-        timestamp: kstTimestamp,
-        uid: this.config.uid,
-        architecture: process.arch,
-        version: await this.getAddonVersion(),
-        isRunningOnHASupervisor,
-        configs: this.configFiles,
-        logs: logs,
-        packets: this.packetBuffer,
-      };
+      // Send a separate request for each port
+      for (const [portId, packets] of this.packetBuffers) {
+        if (packets.length === 0) continue;
 
-      const response = await fetch(LOG_COLLECTOR_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
+        const payload = {
+          timestamp: kstTimestamp,
+          uid: this.config.uid,
+          architecture: arch,
+          version: version,
+          isRunningOnHASupervisor,
+          configs: this.configFiles,
+          logs: logs,
+          packets: packets, // string[] of payloads only
+          portIds: [portId], // The single port ID for this batch
+        };
 
-      if (!response.ok) {
-        throw new Error(`Status ${response.status}: ${await response.text()}`);
+        const response = await fetch(LOG_COLLECTOR_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          logger.error({ status: response.status, portId }, '[LogCollector] Failed to upload log for port');
+        } else {
+          logger.info({ portId }, '[LogCollector] Report sent successfully for port');
+        }
       }
-
-      logger.info('[LogCollector] Report sent successfully.');
     } catch (err) {
       logger.error({ err }, '[LogCollector] Failed to send report');
     }

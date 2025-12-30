@@ -90,12 +90,5 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 - [기기별 설정 예시](docs/ENTITY_EXAMPLES.md)
 - [CEL (Common Expression Language) 가이드](docs/CEL_GUIDE.md)
 
-## 🧰 개발 명령
-- 전체 빌드: `pnpm build`
-- 시뮬레이터 제외 빌드: `pnpm build:no-simulator`
-- 전체 린트: `pnpm lint`
-- 시뮬레이터 제외 린트: `pnpm lint:no-simulator`
-- 테스트: `pnpm test`
-
 ## ⚖️ 라이선스
 이 프로젝트는 MIT License를 따릅니다.

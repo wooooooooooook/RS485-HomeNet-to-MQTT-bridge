@@ -496,7 +496,6 @@
     border: 1px solid rgba(148, 163, 184, 0.1);
     border-radius: 12px;
     padding: 1.5rem;
-    margin-bottom: 2rem;
   }
 
   @media (max-width: 480px) {

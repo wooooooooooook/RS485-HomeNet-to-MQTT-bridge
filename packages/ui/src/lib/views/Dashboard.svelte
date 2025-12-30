@@ -14,6 +14,7 @@
   import WizardModal from '../components/WizardModal.svelte';
   import HintBubble from '$lib/components/HintBubble.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
+  import PortToolbar from '$lib/components/PortToolbar.svelte';
   import { t } from 'svelte-i18n';
 
   let {
@@ -120,22 +121,6 @@
   {:else if bridgeInfo.restartRequired}
     <SetupWizard oncomplete={() => window.location.reload()} />
   {:else}
-    <!-- Minimized Metadata Section with MQTT Status -->
-    <div class="viewer-meta-mini">
-      <div class="mqtt-info">
-        <span class="label">{$t('dashboard.mqtt_label')}</span>
-        <strong>{mqttUrl}</strong>
-      </div>
-      <div class="mqtt-status" data-state={connectionStatus}>
-        <span class="dot"></span>
-        {#if statusMessage}
-          <span class="status-text">{$t(statusMessage.key, { values: statusMessage.values })}</span>
-        {:else}
-          <span class="status-text">{$t('dashboard.mqtt_waiting')}</span>
-        {/if}
-      </div>
-    </div>
-
     {#if bridgeInfo.error}
       <div class="bridge-error">
         <p class="error subtle">
@@ -145,79 +130,79 @@
     {/if}
 
     <!-- Toolbar Section -->
-    <div class="dashboard-toolbar">
-      <div class="port-tabs" aria-label={$t('dashboard.port_tabs_aria')}>
-        {#if portIds.length === 0}
-          <span class="hint">{$t('dashboard.no_configured_ports')}</span>
-        {:else}
-          {#each portIds as portId (portId)}
-            <button
-              class:active={activePortId === portId}
-              type="button"
-              onclick={() => onPortChange?.(portId)}
-              data-state={getPortStatus(portId)}
-            >
-              <span class="port-status-dot"></span>
-              {portId}
-            </button>
-          {/each}
-        {/if}
-        <button
-          class="add-bridge-btn"
-          type="button"
-          onclick={() => (showAddBridgeModal = true)}
-          aria-label={$t('settings.bridge_config.add_button')}
-        >
-          +
-        </button>
-      </div>
-      <div class="toggle-container" style="position: relative;">
-        {#if hasInactiveEntities && !hintDismissed}
-          <HintBubble onDismiss={() => (hintDismissed = true)}>
-            {$t('dashboard.hint_inactive_performance')}
-          </HintBubble>
-        {/if}
-        <Toggle
-          checked={showInactive}
-          onchange={onToggleInactive}
-          label={$t('dashboard.show_inactive_entities')}
-        />
-      </div>
-    </div>
+    <PortToolbar
+      {portIds}
+      {activePortId}
+      {portStatuses}
+      showAddButton={true}
+      {onPortChange}
+      onAddBridge={() => (showAddBridgeModal = true)}
+    />
 
-    <!-- Port-specific Details Section -->
-    <div class="port-details-container">
+    <!-- Compact Info Panel -->
+    <div class="info-panel">
+      <div class="info-row">
+        <div class="mqtt-info">
+          <span class="label">{$t('dashboard.mqtt_label')}</span>
+          <span class="value">{mqttUrl}</span>
+        </div>
+        <div class="mqtt-status" data-state={connectionStatus}>
+          <span class="dot"></span>
+          {#if statusMessage}
+            <span class="status-text"
+              >{$t(statusMessage.key, { values: statusMessage.values })}</span
+            >
+          {:else}
+            <span class="status-text">{$t('dashboard.mqtt_waiting')}</span>
+          {/if}
+        </div>
+      </div>
       {#if activePortId}
-        <!-- Port or Bridge Error Message -->
         {@const activePortMetadata = portMetadata.find((p) => p.portId === activePortId)}
+        {#if activePortMetadata && (activePortMetadata.path || activePortMetadata.configFile)}
+          <div class="info-row port-info">
+            <div class="meta-item">
+              <span class="label">{$t('dashboard.port_meta.file')}</span>
+              <span class="value">{activePortMetadata.configFile}</span>
+            </div>
+            <div class="meta-item">
+              <span class="label">{$t('dashboard.port_meta.path')}</span>
+              <span class="value">{activePortMetadata.path || 'N/A'}</span>
+            </div>
+          </div>
+        {/if}
         {#if getPortStatus(activePortId) === 'error' && (getPortErrorMessage(activePortId) || activePortMetadata?.error)}
           <div class="port-error">
-            <p class="error subtle">
+            <span class="error-text">
               {$t('dashboard.port_error', {
                 values: { error: getPortErrorMessage(activePortId) || activePortMetadata?.error },
               })}
-            </p>
+            </span>
           </div>
         {/if}
-
-        <!-- Minimized Port Metadata (Only show if path/baud exists) -->
-        {#each portMetadata.filter((p: BridgeSerialInfo & { configFile: string; error?: string }) => p.portId === activePortId && (p.path || p.baudRate)) as port (port.portId)}
-          <div class="port-meta-mini">
-            <div class="meta-item">
-              <strong>{$t('dashboard.port_meta.path')}</strong> <span>{port.path || 'N/A'}</span>
-            </div>
-            <div class="meta-item">
-              <strong>{$t('dashboard.port_meta.baud')}</strong> <span>{port.baudRate}</span>
-            </div>
-            <div class="meta-item">
-              <strong>{$t('dashboard.port_meta.file')}</strong> <span>{port.configFile}</span>
-            </div>
-          </div>
-        {/each}
-
-        <!-- Recent Activity Section -->
-        <RecentActivity activities={activityLogs} />
       {/if}
+    </div>
+
+    <!-- Recent Activity Section -->
+    {#if activePortId}
+      <RecentActivity activities={activityLogs} />
+    {/if}
+
+    <!-- Toggle for Inactive Entities -->
+    <div
+      class="toggle-container"
+      style="position: relative; display: flex; justify-content: flex-end;"
+    >
+      {#if hasInactiveEntities && !hintDismissed}
+        <HintBubble onDismiss={() => (hintDismissed = true)}>
+          {$t('dashboard.hint_inactive_performance')}
+        </HintBubble>
+      {/if}
+      <Toggle
+        checked={showInactive}
+        onchange={onToggleInactive}
+        label={$t('dashboard.show_inactive_entities')}
+      />
     </div>
 
     <!-- Entity Grid Section -->
@@ -249,13 +234,19 @@
     gap: 1rem;
   }
 
-  .viewer-meta-mini {
-    font-size: 0.8rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    background: rgba(30, 41, 59, 0.7);
+  .info-panel {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.1);
     color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .info-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -263,28 +254,43 @@
     flex-wrap: wrap;
   }
 
-  @media (max-width: 480px) {
-    .viewer-meta-mini {
-      padding: 0.5rem 0.75rem;
-    }
+  .info-row.port-info {
+    gap: 1.5rem;
+    justify-content: flex-start;
   }
 
   .mqtt-info {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .label {
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .value {
+    color: #cbd5e1;
+    font-family: monospace;
+    font-size: 0.9rem;
   }
 
   .mqtt-status {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
+    gap: 0.4rem;
   }
 
   .mqtt-status .dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background-color: #64748b;
     flex-shrink: 0;
@@ -292,7 +298,7 @@
 
   .mqtt-status[data-state='connected'] .dot {
     background-color: #10b981;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
   }
 
   .mqtt-status[data-state='connecting'] .dot {
@@ -302,10 +308,6 @@
 
   .mqtt-status[data-state='error'] .dot {
     background-color: #ef4444;
-  }
-
-  .mqtt-status[data-state='error'] {
-    color: #ef4444;
   }
 
   .mqtt-status .status-text {
@@ -320,74 +322,25 @@
     color: #ef4444;
   }
 
-  .viewer-meta-mini strong {
-    color: #cbd5e1;
-    font-weight: 600;
-    font-family: monospace;
-    word-break: break-all;
+  .port-error {
+    padding-top: 0.2rem;
   }
 
-  .port-details-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    width: 100%;
+  .port-error .error-text {
+    color: #ef4444;
+    font-size: 0.65rem;
   }
 
-  .port-meta-mini {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2rem;
-    font-size: 0.85rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    box-sizing: border-box;
-    width: 100%;
-  }
-
-  @media (max-width: 480px) {
-    .port-meta-mini {
-      padding: 0.75rem;
-      gap: 1rem;
+  @keyframes pulse {
+    0% {
+      opacity: 1;
     }
-  }
-
-  .meta-item {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .meta-item strong {
-    color: #94a3b8;
-    flex-shrink: 0;
-    font-weight: 600;
-  }
-
-  .meta-item span {
-    color: #f1f5f9;
-    word-break: break-all;
-    font-family: monospace;
-    font-size: 0.9rem;
-  }
-
-  .label {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
-  }
-
-  strong {
-    color: #f1f5f9;
-    font-size: 1rem;
-    font-family: monospace;
-    word-break: break-all;
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 
   .bridge-error {
@@ -418,96 +371,5 @@
     font-style: italic;
     text-align: center;
     padding: 2rem;
-  }
-  .dashboard-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 0;
-    flex-wrap: wrap;
-  }
-
-  .port-tabs {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .port-tabs button {
-    padding: 0.5rem 0.9rem;
-    border-radius: 10px;
-    background: rgba(148, 163, 184, 0.1);
-    color: #e2e8f0;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .port-status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #64748b;
-    flex-shrink: 0;
-  }
-
-  .port-tabs button[data-state='started'] .port-status-dot {
-    background-color: #10b981;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-  }
-
-  .port-tabs button[data-state='starting'] .port-status-dot {
-    background-color: #f59e0b;
-    animation: pulse 2s infinite;
-  }
-
-  .port-tabs button[data-state='error'] .port-status-dot {
-    background-color: #ef4444;
-  }
-
-  .port-tabs button[data-state='stopped'] .port-status-dot {
-    background-color: #64748b;
-  }
-
-  .port-tabs button.active {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.6);
-    color: #bfdbfe;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
-  }
-
-  .port-tabs button:hover {
-    border-color: rgba(148, 163, 184, 0.6);
-  }
-
-  .add-bridge-btn {
-    padding: 0.5rem 0.8rem !important;
-    background: rgba(30, 41, 59, 0.4) !important;
-    border: 1px dashed rgba(148, 163, 184, 0.4) !important;
-    color: #94a3b8 !important;
-    font-size: 1.2rem;
-    line-height: 1;
-  }
-
-  .add-bridge-btn:hover {
-    border-color: #60a5fa !important;
-    color: #60a5fa !important;
-    background: rgba(59, 130, 246, 0.1) !important;
-  }
-
-  @keyframes pulse {
-    0% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-    100% {
-      opacity: 1;
-    }
   }
 </style>

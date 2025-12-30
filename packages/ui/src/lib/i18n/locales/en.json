@@ -29,7 +29,7 @@
         "collection_item_4": "Received packet data (first 1000 packets)",
         "collection_item_5": "Application runtime logs",
         "collection_timing_title": "Collection Timing",
-        "collection_timing": "Packet collection starts upon consent and <strong>automatically stops after sending once when 1000 packets are collected.</strong> No continuous monitoring or collection.",
+        "collection_timing_desc": "Packet collection starts every time the add-on starts after consent. Once <strong>1000 packets are collected, they are sent once</strong> and collection automatically stops. No further collection occurs until the add-on is restarted.",
         "privacy_note": "* No personal information is included. You can change this setting anytime.",
         "decline": "Decline",
         "accept": "Accept & Start"

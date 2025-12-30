@@ -29,7 +29,7 @@
         "collection_item_4": "수신 패킷 데이터 (최초 1000개)",
         "collection_item_5": "애플리케이션 실행 로그",
         "collection_timing_title": "수집 시점",
-        "collection_timing": "동의 시점부터 패킷 수집이 시작되며, <strong>1000개의 패킷이 모이면 1회 전송</strong> 후 자동으로 수집이 종료됩니다. 지속적으로 감시하거나 수집하지 않습니다.",
+        "collection_timing": "동의 시점부터 애드온이 시작될 때 마다 패킷 수집이 시작되며, <strong>1000개의 패킷이 모이면 1회 전송</strong> 후 자동으로 수집이 종료됩니다. 애드온이 재시작되기 전까지 추가로 수집하지 않습니다.",
         "privacy_note": "* 개인정보는 포함되지 않으며, 설정에서 언제든지 변경할 수 있습니다.",
         "decline": "거절",
         "accept": "동의 및 시작"

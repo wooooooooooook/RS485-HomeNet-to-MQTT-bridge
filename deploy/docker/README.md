@@ -14,7 +14,7 @@ services:
     image: nubiz/homenet2mqtt:latest
     container_name: homenet2mqtt
     environment:
-      CONFIG_FILES: default.homenet_bridge.yaml
+      CONFIG_FILES: default.homenet_bridge.yaml,
       MQTT_URL: mqtt://localhost:1883
       PORT: '3000'
       LOG_LEVEL: info
@@ -43,7 +43,7 @@ services:
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `CONFIG_FILES` | `default.homenet_bridge.yaml` | 설정 파일 목록 (쉼표로 구분) |
+| `CONFIG_FILES` | `default.homenet_bridge.yaml,` | 설정 파일 목록 (쉼표로 구분) |
 | `CONFIG_ROOT` | `/config` | 설정 파일 경로 |
 | `MQTT_URL` | `mqtt://localhost:1883` | MQTT 브로커 URL |
 | `MQTT_NEED_LOGIN` | `false` | MQTT 인증 사용 여부 |

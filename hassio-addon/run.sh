@@ -22,7 +22,7 @@ if [ -f "$CONFIG_PATH" ]; then
   fi
   
   if [ -z "$CONFIG_FILES" ] || [ "$CONFIG_FILES" == "null" ]; then
-    CONFIG_FILES="default.homenet_bridge.yaml"
+    CONFIG_FILES="default.homenet_bridge.yaml,"
   fi
   
   export CONFIG_FILES="$CONFIG_FILES"
@@ -38,7 +38,7 @@ else
   export MQTT_USER="${MQTT_USER:-}"
   export MQTT_PASSWD="${MQTT_PASSWD:-}"
   export MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX:-homenet2mqtt}"
-  export CONFIG_FILES="${CONFIG_FILES:-default.homenet_bridge.yaml}"
+  export CONFIG_FILES="${CONFIG_FILES:-default.homenet_bridge.yaml,}"
   
   # CONFIG_ROOT 환경변수 또는 기본값 /config 사용
   HA_CONFIG_DIR="${CONFIG_ROOT:-/config}"

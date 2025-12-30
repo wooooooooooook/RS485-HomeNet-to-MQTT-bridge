@@ -1,9 +1,9 @@
 meta:
-  name: "난방 설정 (4개)"
-  name_en: "Heaters (4 Thermostats)"
-  description: "Ezville 난방 온도조절기 4개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원."
-  description_en: "Ezville 4 heating thermostats with 0.5°C step and away preset mode."
-  version: "1.0.0"
+  name: "난방 설정 (5개)"
+  name_en: "Heaters (5 Thermostats)"
+  description: "Ezville 난방 온도조절기 5개 설정입니다. 0.5°C 단위 조절, 외출 모드 지원."
+  description_en: "Ezville 5 heating thermostats with 0.5°C step and away preset mode."
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["climate", "heater", "thermostat", "ezville"]
 
@@ -180,3 +180,43 @@ entities:
       command_preset_none:
         data: [0x36, 0x14, 0x45, 0x01, 0x00]
         ack: [0x36, 0x14, 0xc5]
+    - id: thermostat_5
+      name: Thermostat 5
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 0.5 °C
+      state:
+        data: [0x36, 0x1F, 0x81]
+      state_temperature_target: 'double(bitAnd(data[18], 0x7F)) + (bitAnd(data[18], 0x80) != 0 ? 0.5 : 0.0)'
+      state_temperature_current: 'double(bitAnd(data[19], 0x7F)) + (bitAnd(data[19], 0x80) != 0 ? 0.5 : 0.0)'
+      state_off:
+        offset: 5
+        data: [0x00]
+        mask: [0x10]
+      state_heat:
+        offset: 5
+        data: [0x10]
+        mask: [0x10]
+      state_preset_away:
+        offset: 6
+        mask: [0x10]
+        data: [0x10]
+      state_preset_none:
+        offset: 6
+        mask: [0x10]
+        data: [0x10]
+      command_off:
+        data: [0x36, 0x15, 0x43, 0x01, 0x00]
+        ack: [0x36, 0x15, 0xC3]
+      command_heat:
+        data: [0x36, 0x15, 0x43, 0x01, 0x01]
+        ack: [0x36, 0x15, 0xC3]
+      command_temperature: >-
+        [[0x36, 0x15, 0x44, 0x01, x], [0x36, 0x15, 0xc4]]
+      command_preset_away:
+        data: [0x36, 0x15, 0x45, 0x01, 0x01]
+        ack: [0x36, 0x15, 0xC5]
+      command_preset_none:
+        data: [0x36, 0x15, 0x45, 0x01, 0x00]
+        ack: [0x36, 0x15, 0xC5]

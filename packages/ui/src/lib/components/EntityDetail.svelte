@@ -3,6 +3,7 @@
   import { fade, scale } from 'svelte/transition';
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
+  import Toggle from '$lib/components/Toggle.svelte';
   import ActivityLogList from './ActivityLogList.svelte';
   import type {
     UnifiedEntity,
@@ -321,9 +322,10 @@
     }
   }
 
-  async function handleToggleAutomationEnabled(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const newValue = target.checked;
+  async function handleToggleAutomationEnabled(newValue: boolean) {
+    const oldValue = entity.enabled;
+    // Optimistic update
+    entity.enabled = newValue;
 
     isTogglingAutomation = true;
     automationToggleError = null;
@@ -338,11 +340,11 @@
         const data = await res.json();
         throw new Error(data.error || $t('entity_detail.automation.toggle_error'));
       }
-      entity.enabled = newValue;
     } catch (err) {
       automationToggleError =
         err instanceof Error ? err.message : $t('entity_detail.automation.toggle_error');
-      target.checked = !newValue;
+      // Revert on error
+      entity.enabled = oldValue;
     } finally {
       isTogglingAutomation = false;
     }
@@ -382,9 +384,10 @@
     }
   }
 
-  async function handleToggleDiscoveryAlways(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const newValue = target.checked;
+  async function handleToggleDiscoveryAlways(newValue: boolean) {
+    const oldValue = entity.discoveryAlways;
+    // Optimistic update
+    entity.discoveryAlways = newValue;
 
     isTogglingDiscoveryAlways = true;
     forceActiveError = null;
@@ -403,14 +406,11 @@
         const data = await res.json();
         throw new Error(data.error || $t('entity_detail.manage.force_active.error'));
       }
-
-      // Update local entity state (for UI reactivity)
-      entity.discoveryAlways = newValue;
     } catch (err) {
       forceActiveError =
         err instanceof Error ? err.message : $t('entity_detail.manage.force_active.error');
-      // Revert checkbox state on error
-      target.checked = !newValue;
+      // Revert on error
+      entity.discoveryAlways = oldValue;
     } finally {
       isTogglingDiscoveryAlways = false;
     }
@@ -794,18 +794,15 @@
                 <div class="section manage-card">
                   <div class="toggle-row">
                     <div class="toggle-info">
-                      <h3>{$t('entity_detail.manage.force_active.title')}</h3>
+                      <h3 id="force-active-title">{$t('entity_detail.manage.force_active.title')}</h3>
                       <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
                     </div>
-                    <label class="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={entity.discoveryAlways ?? false}
-                        onchange={handleToggleDiscoveryAlways}
-                        disabled={isTogglingDiscoveryAlways}
-                      />
-                      <span class="toggle-slider"></span>
-                    </label>
+                    <Toggle
+                      checked={entity.discoveryAlways ?? false}
+                      onchange={handleToggleDiscoveryAlways}
+                      disabled={isTogglingDiscoveryAlways}
+                      ariaLabelledBy="force-active-title"
+                    />
                   </div>
                   {#if forceActiveError}
                     <div class="rename-error">{forceActiveError}</div>
@@ -825,18 +822,17 @@
               <div class="section manage-card">
                 <div class="toggle-row">
                   <div class="toggle-info">
-                    <h3>{$t('entity_detail.automation.toggle_title')}</h3>
+                    <h3 id="automation-toggle-title">
+                      {$t('entity_detail.automation.toggle_title')}
+                    </h3>
                     <p class="subtle">{$t('entity_detail.automation.toggle_desc')}</p>
                   </div>
-                  <label class="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={entity.enabled ?? true}
-                      onchange={handleToggleAutomationEnabled}
-                      disabled={isTogglingAutomation}
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
+                  <Toggle
+                    checked={entity.enabled ?? true}
+                    onchange={handleToggleAutomationEnabled}
+                    disabled={isTogglingAutomation}
+                    ariaLabelledBy="automation-toggle-title"
+                  />
                 </div>
                 {#if automationToggleError}
                   <div class="rename-error">{automationToggleError}</div>
@@ -1331,56 +1327,6 @@
     margin-bottom: 0;
   }
 
-  .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 52px;
-    height: 28px;
-    flex-shrink: 0;
-  }
-
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #475569;
-    transition: 0.3s;
-    border-radius: 28px;
-  }
-
-  .toggle-slider:before {
-    position: absolute;
-    content: '';
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-  }
-
-  .toggle-switch input:checked + .toggle-slider {
-    background-color: #10b981;
-  }
-
-  .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(24px);
-  }
-
-  .toggle-switch input:disabled + .toggle-slider {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 
   @media (max-width: 768px) {
     .overlay {

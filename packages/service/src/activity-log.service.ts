@@ -36,6 +36,8 @@ const formatStateValue = (value: unknown): string => {
 
 export class ActivityLogService {
   private logs: ActivityLog[] = [];
+  private pendingLogs: ActivityLog[] = [];
+  private flushScheduled = false;
   private isEnabledCallback: (() => boolean) | null = null;
 
   constructor() {
@@ -153,20 +155,14 @@ export class ActivityLogService {
       params,
       portId,
     };
-    // Always emit the event (for real-time streaming)
-    eventBus.emit('activity-log:added', logEntry);
-
-    // Only store if caching is enabled
-    if (!this.isEnabled()) return;
-
-    this.logs.push(logEntry);
-    // Only cleanup when we exceed the limit to avoid expensive operations on every log
-    if (this.logs.length > MAX_LOGS) {
-      this.cleanupOldLogs();
-    }
+    this.pendingLogs.push(logEntry);
+    this.scheduleFlush();
   }
 
   public getRecentLogs(): ActivityLog[] {
+    if (this.pendingLogs.length > 0) {
+      this.flushPendingLogs();
+    }
     return this.logs;
   }
 
@@ -190,6 +186,31 @@ export class ActivityLogService {
 
     if (ttlRemoved > 0) {
       // Log removed
+    }
+  }
+
+  private scheduleFlush(): void {
+    if (this.flushScheduled) return;
+    this.flushScheduled = true;
+    setImmediate(() => this.flushPendingLogs());
+  }
+
+  private flushPendingLogs(): void {
+    this.flushScheduled = false;
+    if (this.pendingLogs.length === 0) return;
+
+    const logsToFlush = this.pendingLogs;
+    this.pendingLogs = [];
+
+    for (const logEntry of logsToFlush) {
+      eventBus.emit('activity-log:added', logEntry);
+    }
+
+    if (!this.isEnabled()) return;
+
+    this.logs.push(...logsToFlush);
+    if (this.logs.length > MAX_LOGS) {
+      this.cleanupOldLogs();
     }
   }
 }

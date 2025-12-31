@@ -1038,6 +1038,11 @@ const startAllRawPacketListeners = () => {
   bridges.forEach((instance) => instance.bridge.startRawPacketListener());
 };
 
+const sendStreamEventSerialized = (socket: WebSocket, message: string) => {
+  if (socket.readyState !== WebSocket.OPEN) return;
+  socket.send(message);
+};
+
 const sendStreamEvent = <T>(socket: WebSocket, event: StreamEvent, payload: T) => {
   if (socket.readyState !== WebSocket.OPEN) return;
   const message: StreamMessage<T> = { event, data: payload };
@@ -1051,8 +1056,10 @@ const getRequestUrl = (req?: IncomingMessage) => {
 };
 
 const broadcastStreamEvent = <T>(event: StreamEvent, payload: T) => {
+  if (wss.clients.size === 0) return;
+  const message = JSON.stringify({ event, data: payload });
   wss.clients.forEach((client) => {
-    sendStreamEvent(client, event, payload);
+    sendStreamEventSerialized(client, message);
   });
 };
 
@@ -1063,10 +1070,12 @@ const sendToRawSubscribers = <T>(
   payload: T,
   mode: RawPacketStreamMode | null = null,
 ) => {
+  if (rawPacketSubscribers.size === 0) return;
+  const message = JSON.stringify({ event, data: payload });
   rawPacketSubscribers.forEach((subscriberMode, client) => {
     if (mode && subscriberMode !== mode) return;
     if (client.readyState === WebSocket.OPEN) {
-      sendStreamEvent(client, event, payload);
+      sendStreamEventSerialized(client, message);
     }
   });
 };

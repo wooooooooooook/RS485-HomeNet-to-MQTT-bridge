@@ -200,9 +200,6 @@ export class ProtocolManager extends EventEmitter {
   }
 
   private processPacket(packet: Buffer) {
-    // Optimization: Efficient hex logging without intermediate string array allocation
-    const packetHex = packet.toString('hex').replace(/../g, '0x$& ').trim();
-
     // Compatibility: Convert Buffer to number[] for downstream devices expecting it.
     // This maintains backward compatibility with the Device.parseData(number[]) signature
     // while allowing efficient processing up to this point.
@@ -213,14 +210,24 @@ export class ProtocolManager extends EventEmitter {
 
     let matchedAny = false;
 
+    // Optimization: Only generate hex string if debug logging is enabled
+    // This avoids expensive string allocation/regex ops in the hot path
+    const isDebug = logger.isLevelEnabled('debug');
+    let packetHex = '';
+    if (isDebug) {
+      packetHex = packet.toString('hex').replace(/../g, '0x$& ').trim();
+    }
+
     for (const device of this.devices) {
       const stateUpdates = device.parseData(packetArray);
       if (stateUpdates) {
         matchedAny = true;
-        const stateStr = JSON.stringify(stateUpdates).replace(/["{}]/g, '').replace(/,/g, ', ');
-        logger.debug(
-          `[ProtocolManager] ${device.getId()} (${device.getName()}): ${packetHex} → {${stateStr}}`,
-        );
+        if (isDebug) {
+          const stateStr = JSON.stringify(stateUpdates).replace(/["{}]/g, '').replace(/,/g, ', ');
+          logger.debug(
+            `[ProtocolManager] ${device.getId()} (${device.getName()}): ${packetHex} → {${stateStr}}`,
+          );
+        }
         this.emit('state', { deviceId: device.getId(), state: stateUpdates });
         this.emit('parsed-packet', {
           deviceId: device.getId(),
@@ -230,7 +237,7 @@ export class ProtocolManager extends EventEmitter {
       }
     }
 
-    if (!matchedAny) {
+    if (!matchedAny && isDebug) {
       logger.debug(`[ProtocolManager] Packet not matched: ${packetHex}`);
     }
   }

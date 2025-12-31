@@ -389,7 +389,11 @@ app.get('/api/health', (_req, res) => {
 
 const restartTokens = new Set<string>();
 
-app.get('/api/system/restart/token', (_req, res) => {
+app.get('/api/system/restart/token', (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const token = crypto.randomUUID();
   restartTokens.add(token);
   // Token valid for 1 minute

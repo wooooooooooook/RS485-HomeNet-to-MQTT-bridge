@@ -20,3 +20,10 @@
 1.  **Trailing Separator:** Always append `path.sep` to the allowed directory path when using `startsWith` for validation (e.g., `allowedPath + path.sep`).
 2.  **Path Normalization:** Use `path.resolve` or `path.normalize` on both the target and allowed paths before comparison to handle `..` and redundant separators.
 3.  **Relative Path Check:** Alternatively, check if `path.relative(allowed, target)` starts with `..` or is absolute, which explicitly checks hierarchy.
+
+## 2025-12-31 - [Unprotected Resource Allocation]
+**Vulnerability:** The `/api/system/restart/token` endpoint generated a UUID and stored it in a memory set with a timeout for every request, without any rate limiting. An attacker could flood this endpoint to exhaust server memory or create excessive timer objects (DoS).
+**Learning:** Even "lightweight" operations (like generating a token) can become Denial of Service vectors if they allocate resources (memory, timers, file handles) based on unauthenticated or unlimited user input.
+**Prevention:**
+1.  **Rate Limiting:** Apply rate limiting to all public endpoints, especially those that trigger resource allocation.
+2.  **Resource Limits:** Set hard limits on the size of collections (e.g., max 1000 active tokens) even if they have TTL cleanup.

@@ -36,6 +36,7 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
   }
 
   const portId = normalizedSerial?.portId ?? 'default';
+  const usedIds = new Set<string>();
   const usedUniqueIds = new Set<string>();
 
   ENTITY_TYPE_KEYS.forEach((type) => {
@@ -58,6 +59,29 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
           .replace(/[^a-z0-9_]/g, '');
         entity.id = slug;
         logger.trace({ entity: entity.name, id: slug }, '[config] Generated entity ID from name');
+      }
+
+      if (entity && typeof entity === 'object' && 'id' in entity) {
+        let currentId = (entity as any).id;
+        if (typeof currentId === 'string' && currentId.trim().length > 0) {
+          currentId = currentId.trim();
+          const originalId = currentId;
+          let suffix = 2;
+
+          while (usedIds.has(currentId)) {
+            currentId = `${originalId}_${suffix}`;
+            suffix += 1;
+          }
+
+          if (currentId !== originalId) {
+            (entity as any).id = currentId;
+            logger.warn(
+              { original: originalId, new: currentId },
+              '[config] Detected duplicate entity ID, renamed to avoid conflict',
+            );
+          }
+          usedIds.add(currentId);
+        }
       }
 
       if (entity && typeof entity === 'object') {

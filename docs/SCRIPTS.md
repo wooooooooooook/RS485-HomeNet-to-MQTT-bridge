@@ -23,7 +23,8 @@ homenet_bridge:
 - `id` (필수): 스크립트 식별자입니다. 자동화 액션이나 커맨드 스키마에서 이 값을 참조합니다.
 - `description` (선택): 스크립트 용도를 설명하는 메모입니다.
 - `actions` (필수): 자동화 액션 배열입니다. `automation.then`/`automation.else`에서 사용하는 액션들과 동일한
-  스키마(`command`, `delay`, `log`, `publish`, `send_packet` 등)를 그대로 사용합니다.
+  스키마(`command`, `delay`, `log`, `publish`, `send_packet` 등)를 그대로 사용합니다. 상세한 액션 목록과 설정 방법은 [자동화 설정 가이드](AUTOMATION.md#액션-actions)를 참고하세요.
+
 
 > 순환 호출 방지를 위해 스크립트가 자신을 다시 호출하면 실행이 중단됩니다.
 

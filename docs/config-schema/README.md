@@ -1,6 +1,6 @@
 # 엔티티별 설정 스키마 가이드
 
-이 디렉터리는 RS485-HomeNet-to-MQTT-bridge에서 지원하는 엔티티 타입마다 YAML 설정을 작성하는 방법을 정리합니다. 각 문서는 `packages/core/config/*.homenet_bridge.yaml`의 실제 예제를 바탕으로 필수 필드, 상태 매핑, 명령 패턴을 설명합니다.
+이 디렉터리는 RS485-HomeNet-to-MQTT-bridge에서 지원하는 엔티티 타입마다 YAML 설정을 작성하는 방법을 정리합니다.
 
 ## 문서 목록
 ### 공통 상위 설정

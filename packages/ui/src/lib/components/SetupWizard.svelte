@@ -591,7 +591,7 @@
           <label for="example-select">{$t('setup_wizard.example_label')}</label>
           <select id="example-select" bind:value={selectedExample} disabled={submitting}>
             <option value={EMPTY_CONFIG_VALUE}>{$t('setup_wizard.empty_option')}</option>
-            {#each examples as example}
+            {#each examples as example (example)}
               <option value={example}>{getExampleDisplayName(example)}</option>
             {/each}
           </select>
@@ -712,7 +712,7 @@
                 <div class="result-list">
                   <div class="result-row">
                     <code>
-                      {#each testPackets as packet, index}
+                      {#each testPackets as packet, index (`${packet}-${index}`)}
                         {packet}
                       {/each}
                     </code>
@@ -886,7 +886,7 @@
           </div>
         {:else}
           <div class="entity-list-container">
-            {#each Object.entries(entities) as [type, items]}
+            {#each Object.entries(entities) as [type, items] (type)}
               <div class="entity-group">
                 <div class="entity-type-header">
                   <label class="checkbox-label">
@@ -903,7 +903,7 @@
                   </label>
                 </div>
                 <div class="entity-items">
-                  {#each items as item}
+                  {#each items as item (item.id)}
                     <label class="checkbox-label entity-item">
                       <input
                         type="checkbox"

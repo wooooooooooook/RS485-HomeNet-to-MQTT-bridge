@@ -325,7 +325,7 @@
           <div class="contents-summary">
             <h4>{$t('gallery.preview.contents')}</h4>
             <div class="summary-badges">
-              {#each Object.entries(item.content_summary.entities) as [type, count]}
+              {#each Object.entries(item.content_summary.entities) as [type, count], index (`${type}-${index}`)}
                 <span class="badge entity"
                   >{$t('gallery.preview.entity_count', {
                     values: { type, count },
@@ -351,7 +351,7 @@
             <div class="tags-section">
               <span class="info-label">{$t('gallery.tags')}</span>
               <div class="tags">
-                {#each item.tags as tag}
+                {#each item.tags as tag, index (`${tag}-${index}`)}
                   <span class="tag">{tag}</span>
                 {/each}
               </div>
@@ -382,7 +382,7 @@
           <div class="port-select">
             <label for="port-select">{$t('gallery.preview.select_port')}</label>
             <select id="port-select" bind:value={selectedPortId}>
-              {#each ports as port}
+              {#each ports as port, index (`${port.portId}-${index}`)}
                 <option value={port.portId}>{port.portId} ({port.path})</option>
               {/each}
             </select>
@@ -421,7 +421,7 @@
           <h4>⚠️ {$t('gallery.preview.compatibility.incompatible')}</h4>
           <p class="mismatch-label">{$t('gallery.preview.compatibility.mismatch_label')}:</p>
           <ul class="mismatch-list">
-            {#each compatibility.mismatches as mismatch}
+            {#each compatibility.mismatches as mismatch, index (`${mismatch.field}-${index}`)}
               <li>
                 <code>{mismatch.field}</code>:
                 <span class="expected"
@@ -456,7 +456,7 @@
         </p>
 
         <div class="conflict-list">
-          {#each conflicts as conflict}
+          {#each conflicts as conflict, index (`${conflict.id}-${index}`)}
             <div class="conflict-item">
               <div class="conflict-header">
                 <span class="conflict-id">
@@ -530,7 +530,7 @@
         <div class="new-items-section">
           <h4>{$t('gallery.preview.new_items', { values: { count: newItems.length } })}</h4>
           <ul class="new-items-list">
-            {#each newItems as newItem}
+            {#each newItems as newItem, index (`${newItem.id}-${index}`)}
               <li>
                 • {newItem.id} ({newItem.type})
               </li>

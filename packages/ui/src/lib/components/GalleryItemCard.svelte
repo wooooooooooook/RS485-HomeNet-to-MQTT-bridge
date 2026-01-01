@@ -72,7 +72,7 @@
       <div class="summary-section">
         <span class="summary-label">{$t('gallery.entities')}:</span>
         <div class="summary-items">
-          {#each entityTypes as [type, count]}
+          {#each entityTypes as [type, count], index (`${type}-${index}`)}
             <span class="badge entity">{type}: {count}</span>
           {/each}
         </div>
@@ -94,7 +94,7 @@
 
   {#if item.tags.length > 0}
     <div class="tags">
-      {#each item.tags as tag}
+      {#each item.tags as tag, index (`${tag}-${index}`)}
         <span class="tag">{tag}</span>
       {/each}
     </div>

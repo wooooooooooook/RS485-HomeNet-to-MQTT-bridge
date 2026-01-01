@@ -456,7 +456,11 @@
     "SERIAL_PARITY_INVALID": "Check the parity setting.",
     "SERIAL_STOP_BITS_INVALID": "Check the stop bits setting.",
     "SERIAL_PATH_DUPLICATE": "The serial path is already in use. Please choose another path.",
-    "PORT_ID_DUPLICATE": "The port ID is already in use. Please enter a different ID."
+    "PORT_ID_DUPLICATE": "The port ID is already in use. Please enter a different ID.",
+    "RUNTIME_ERROR_TITLE": "A frontend error occurred",
+    "RUNTIME_ERROR_DETAILS": "Show details",
+    "RUNTIME_ERROR_DISMISS": "Dismiss",
+    "RUNTIME_ERROR_RELOAD": "Reload"
   },
   "setup_wizard": {
     "title": "Initial Setup",

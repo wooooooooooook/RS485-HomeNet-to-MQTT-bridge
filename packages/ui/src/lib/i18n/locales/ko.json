@@ -456,7 +456,11 @@
     "SERIAL_PARITY_INVALID": "패리티 설정을 확인해주세요.",
     "SERIAL_STOP_BITS_INVALID": "스톱 비트 설정을 확인해주세요.",
     "SERIAL_PATH_DUPLICATE": "이미 사용 중인 시리얼 경로입니다. 다른 경로를 선택해주세요.",
-    "PORT_ID_DUPLICATE": "이미 사용 중인 포트 ID입니다. 다른 ID를 입력해주세요."
+    "PORT_ID_DUPLICATE": "이미 사용 중인 포트 ID입니다. 다른 ID를 입력해주세요.",
+    "RUNTIME_ERROR_TITLE": "프론트엔드 오류가 발생했습니다",
+    "RUNTIME_ERROR_DETAILS": "자세히 보기",
+    "RUNTIME_ERROR_DISMISS": "닫기",
+    "RUNTIME_ERROR_RELOAD": "새로고침"
   },
   "setup_wizard": {
     "title": "초기 설정",

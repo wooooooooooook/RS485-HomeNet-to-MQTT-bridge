@@ -154,6 +154,15 @@
   let activityLoading = $state(true);
   let activityError = $state('');
 
+  type RuntimeErrorPayload = {
+    message: string;
+    detail?: string;
+    timestamp: string;
+  };
+
+  const runtimeErrorEventName = 'runtime-error';
+  let runtimeError = $state<RuntimeErrorPayload | null>(null);
+
   let isRecording = $state(false);
   let recordingStartTime = $state<number | null>(null);
   let recordedFile = $state<{ filename: string; path: string } | null>(null);
@@ -325,6 +334,25 @@
     loadFrontendSettings();
     loadActivityLogs();
     checkRecordingStatus();
+
+    const queue = (window as Window & { __runtimeErrorQueue?: RuntimeErrorPayload[] })
+      .__runtimeErrorQueue;
+    if (queue && queue.length > 0) {
+      runtimeError = queue[queue.length - 1];
+    }
+
+    const handleRuntimeError = (event: Event) => {
+      const customEvent = event as CustomEvent<RuntimeErrorPayload>;
+      if (customEvent.detail) {
+        runtimeError = customEvent.detail;
+      }
+    };
+
+    window.addEventListener(runtimeErrorEventName, handleRuntimeError);
+
+    return () => {
+      window.removeEventListener(runtimeErrorEventName, handleRuntimeError);
+    };
   });
 
   async function checkRecordingStatus() {
@@ -1366,6 +1394,36 @@
 {:else}
   <a href="#main-content" class="skip-link">{$t('header.skip_to_content')}</a>
   <main class="app-container">
+    {#if runtimeError}
+      <div class="runtime-error-banner" role="alert">
+        <div class="runtime-error-header">
+          <strong>{$t('errors.RUNTIME_ERROR_TITLE')}</strong>
+          <div class="runtime-error-actions">
+            <button
+              type="button"
+              class="runtime-error-action secondary"
+              onclick={() => (runtimeError = null)}
+            >
+              {$t('errors.RUNTIME_ERROR_DISMISS')}
+            </button>
+            <button
+              type="button"
+              class="runtime-error-action"
+              onclick={() => window.location.reload()}
+            >
+              {$t('errors.RUNTIME_ERROR_RELOAD')}
+            </button>
+          </div>
+        </div>
+        <div class="runtime-error-message">{runtimeError.message}</div>
+        {#if runtimeError.detail}
+          <details class="runtime-error-details">
+            <summary>{$t('errors.RUNTIME_ERROR_DETAILS')}</summary>
+            <pre>{runtimeError.detail}</pre>
+          </details>
+        {/if}
+      </div>
+    {/if}
     <Header onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
     <div class="content-body">
       <Sidebar bind:activeView isOpen={isSidebarOpen} onClose={() => (isSidebarOpen = false)} />
@@ -1531,5 +1589,75 @@
 
   .skip-link:focus {
     top: 0;
+  }
+
+  .runtime-error-banner {
+    background: rgba(185, 28, 28, 0.2);
+    border-bottom: 1px solid rgba(248, 113, 113, 0.4);
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .runtime-error-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .runtime-error-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .runtime-error-action {
+    border: 1px solid rgba(248, 113, 113, 0.6);
+    background: rgba(248, 113, 113, 0.2);
+    color: #fee2e2;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .runtime-error-action.secondary {
+    border-color: rgba(148, 163, 184, 0.5);
+    background: rgba(15, 23, 42, 0.6);
+    color: #e2e8f0;
+  }
+
+  .runtime-error-action:hover {
+    filter: brightness(1.1);
+  }
+
+  .runtime-error-message {
+    font-size: 0.95rem;
+    color: #fee2e2;
+    word-break: break-word;
+  }
+
+  .runtime-error-details {
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 6px;
+    padding: 0.75rem;
+    color: #fca5a5;
+    font-size: 0.85rem;
+  }
+
+  .runtime-error-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .runtime-error-details pre {
+    margin: 0;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow: auto;
   }
 </style>

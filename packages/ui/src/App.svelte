@@ -184,7 +184,10 @@
     normalizeTopicParts(bridgeInfo?.bridges?.[0]?.mqttTopicPrefix ?? '');
 
   const getKnownPortIds = () =>
-    bridgeInfo?.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
+    bridgeInfo?.bridges?.reduce<string[]>(
+      (acc, bridge) => acc.concat(bridge.serials.map((serial) => serial.portId)),
+      [],
+    ) ?? [];
   // portId는 명시적으로 전달받은 값만 사용합니다. 추론하여 기본값으로 대체하지 않습니다.
   const getExplicitPortId = (explicit?: string | null, topic?: string): string | undefined => {
     // 명시적으로 전달받은 portId가 있으면 사용
@@ -224,7 +227,7 @@
       return parts[parts.length - 2];
     }
 
-    return parts.at(-1) ?? topic;
+    return parts.length > 0 ? parts[parts.length - 1] : topic;
   };
 
   const isBridgeStatusTopic = (topic: string) => {
@@ -430,7 +433,10 @@
       packetStatsByPort = new Map();
 
       const portIds =
-        data.bridges?.flatMap((bridge) => bridge.serials.map((serial) => serial.portId)) ?? [];
+        data.bridges?.reduce<string[]>(
+          (acc, bridge) => acc.concat(bridge.serials.map((serial) => serial.portId)),
+          [],
+        ) ?? [];
       const defaultPortId = portIds[0] ?? null;
       if (!selectedPortId || (selectedPortId && !portIds.includes(selectedPortId))) {
         selectedPortId = defaultPortId;
@@ -938,39 +944,43 @@
     }
   }
 
+  type PortMetadata = BridgeSerialInfo & {
+    configFile: string;
+    error?: string;
+    status?: 'idle' | 'starting' | 'started' | 'error' | 'stopped';
+  };
+
   const portMetadata = $derived.by(() => {
-    if (!bridgeInfo?.bridges)
-      return [] as Array<
-        BridgeSerialInfo & {
-          configFile: string;
-          error?: string;
-          status?: 'idle' | 'starting' | 'started' | 'error' | 'stopped';
-        }
-      >;
+    if (!bridgeInfo?.bridges) return [] as PortMetadata[];
 
     // 1. Flatten all ports from all bridges
-    const allPorts = bridgeInfo.bridges.flatMap((bridge) => {
-      if (bridge.serials.length === 0 && (bridge.error || bridge.status === 'error')) {
-        // Serials가 없지만 에러가 있는 경우, placeholder 포트를 추가하여 UI 탭에 표시되도록 함
-        return [
-          {
-            portId: bridge.configFile, // 파일명을 ID로 사용
-            path: '',
-            baudRate: 0,
-            topic: '',
+    const allPorts = bridgeInfo.bridges.reduce<PortMetadata[]>(
+      (acc, bridge) => {
+        if (bridge.serials.length === 0 && (bridge.error || bridge.status === 'error')) {
+          // Serials가 없지만 에러가 있는 경우, placeholder 포트를 추가하여 UI 탭에 표시되도록 함
+          return acc.concat([
+            {
+              portId: bridge.configFile, // 파일명을 ID로 사용
+              path: '',
+              baudRate: 0,
+              topic: '',
+              configFile: bridge.configFile,
+              error: bridge.error,
+              status: bridge.status,
+            },
+          ]);
+        }
+        return acc.concat(
+          bridge.serials.map((serial) => ({
+            ...serial,
             configFile: bridge.configFile,
             error: bridge.error,
             status: bridge.status,
-          },
-        ];
-      }
-      return bridge.serials.map((serial) => ({
-        ...serial,
-        configFile: bridge.configFile,
-        error: bridge.error,
-        status: bridge.status,
-      }));
-    });
+          })),
+        );
+      },
+      [],
+    );
 
     // 2. Deduplicate by portId
     const uniquePorts: typeof allPorts = [];

@@ -1,4 +1,4 @@
-import { Environment } from '@marcbachmann/cel-js';
+import { Environment, ParseResult } from '@marcbachmann/cel-js';
 import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
 
@@ -30,6 +30,10 @@ import { logger } from '../utils/logger.js';
 export class CelExecutor {
   private static sharedInstance?: CelExecutor;
   private env: Environment;
+  // Cache for parsed scripts to avoid expensive re-parsing
+  private scriptCache: Map<string, ParseResult> = new Map();
+  private readonly MAX_CACHE_SIZE = 1000;
+
   // Pre-allocate BigInts for bytes 0-255 to avoid constructor overhead in hot paths
   private readonly BIGINT_CACHE: bigint[] = new Array(256).fill(0).map((_, i) => BigInt(i));
 
@@ -122,6 +126,17 @@ export class CelExecutor {
     contextData: Record<string, any>,
   ): { result: any; error?: string } {
     try {
+      // 1. Get or create parsed script from cache
+      let parsedScript = this.scriptCache.get(script);
+      if (!parsedScript) {
+        // Prevent unbounded memory growth
+        if (this.scriptCache.size >= this.MAX_CACHE_SIZE) {
+          this.scriptCache.clear();
+        }
+        parsedScript = this.env.parse(script);
+        this.scriptCache.set(script, parsedScript);
+      }
+
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'
       const safeContext: Record<string, any> = {};
 
@@ -180,7 +195,8 @@ export class CelExecutor {
         safeContext.trigger = contextData.trigger;
       }
 
-      const res = this.env.evaluate(script, safeContext);
+      // 2. Execute using cached script function
+      const res = parsedScript(safeContext);
 
       // Post-process result: Convert BigInt back to Number, List to Array
       return { result: this.convertResult(res) };

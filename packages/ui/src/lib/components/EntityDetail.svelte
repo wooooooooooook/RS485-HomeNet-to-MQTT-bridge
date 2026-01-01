@@ -50,6 +50,7 @@
   let renameEntityId = $state<string | null>(null);
   let effectiveRenameError = $state('');
   let idCopied = $state(false);
+  let copiedPacketId = $state<string | null>(null);
   let isExecutingAutomation = $state(false);
   let isExecutingScript = $state(false);
   let executeMessage = $state('');
@@ -446,6 +447,16 @@
       console.error('Failed to copy ID', err);
     }
   }
+
+  async function handleCopyPacket(text: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      copiedPacketId = id;
+      setTimeout(() => (copiedPacketId = null), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -717,14 +728,50 @@
                       {#if packet.type === 'rx'}
                         <span class="direction rx">RX</span>
                         <span class="entity">{packet.entityId}</span>
-                        <span class="payload">{packet.packet.toUpperCase()}</span>
+                        <button
+                          class="payload-btn"
+                          onclick={() =>
+                            handleCopyPacket(
+                              packet.packet,
+                              `${packet.type}-${packet.timestamp}-${index}`,
+                            )}
+                          title={$t('analysis.raw_log.copy_log') || 'Copy payload'}
+                          aria-label={$t('common.copy_payload_aria', {
+                            values: { payload: packet.packet },
+                          }) || `Copy payload ${packet.packet}`}
+                        >
+                          <span class="payload">{packet.packet.toUpperCase()}</span>
+                          {#if copiedPacketId === `${packet.type}-${packet.timestamp}-${index}`}
+                            <span class="copy-feedback-inline" transition:fade={{ duration: 200 }}>
+                              {$t('common.copied') || 'Copied!'}
+                            </span>
+                          {/if}
+                        </button>
                         {#if packet.state}
                           <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
                         {/if}
                       {:else}
                         <span class="direction tx">TX</span>
                         <span class="entity">{packet.entityId}</span>
-                        <span class="payload">{packet.packet.toUpperCase()}</span>
+                        <button
+                          class="payload-btn"
+                          onclick={() =>
+                            handleCopyPacket(
+                              packet.packet,
+                              `${packet.type}-${packet.timestamp}-${index}`,
+                            )}
+                          title={$t('analysis.raw_log.copy_log') || 'Copy payload'}
+                          aria-label={$t('common.copy_payload_aria', {
+                            values: { payload: packet.packet },
+                          }) || `Copy payload ${packet.packet}`}
+                        >
+                          <span class="payload">{packet.packet.toUpperCase()}</span>
+                          {#if copiedPacketId === `${packet.type}-${packet.timestamp}-${index}`}
+                            <span class="copy-feedback-inline" transition:fade={{ duration: 200 }}>
+                              {$t('common.copied') || 'Copied!'}
+                            </span>
+                          {/if}
+                        </button>
                         <span class="command-info">
                           {packet.command}
                           {#if packet.value !== undefined}<span class="value">({packet.value})</span
@@ -1250,6 +1297,41 @@
   .direction.tx {
     background: rgba(245, 158, 11, 0.2);
     color: #f59e0b;
+  }
+
+  .payload-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .payload-btn:hover .payload {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+  }
+
+  .copy-feedback-inline {
+    margin-left: 0.5rem;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #10b981;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
   }
 
   .payload {

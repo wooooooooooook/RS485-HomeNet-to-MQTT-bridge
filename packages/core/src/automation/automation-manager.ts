@@ -773,7 +773,11 @@ export class AutomationManager {
       return;
     }
 
-    const commandResult = this.packetProcessor.constructCommandPacket(entity, normalized, parsed.value);
+    const commandResult = this.packetProcessor.constructCommandPacket(
+      entity,
+      normalized,
+      parsed.value,
+    );
     if (!commandResult) {
       logger.warn({ target: action.target }, '[automation] Failed to construct command packet');
       return;

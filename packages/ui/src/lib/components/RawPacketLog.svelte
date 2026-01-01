@@ -364,7 +364,7 @@
   <div class="log-item" class:tx-packet={packet.direction === 'TX'}>
     <span class="time">[{new Date(packet.receivedAt).toLocaleTimeString()}]</span>
     <span class="direction" class:tx={packet.direction === 'TX'}>
-      {#each getHighlightedParts(packet.direction ?? 'RX', normalizedFilter) as part}
+      {#each getHighlightedParts(packet.direction ?? 'RX', normalizedFilter) as part, index (`${part}-${index}`)}
         {#if part.highlight}
           <mark>{part.text}</mark>
         {:else}
@@ -380,7 +380,7 @@
       >
     {/if}
     <code class="payload" class:tx-payload={packet.direction === 'TX'}>
-      {#each getHighlightedParts(toHexPairs(packet.payload).join(' '), normalizedFilter) as part}
+      {#each getHighlightedParts(toHexPairs(packet.payload).join(' '), normalizedFilter) as part, index (`${part}-${index}`)}
         {#if part.highlight}
           <mark>{part.text}</mark>
         {:else}

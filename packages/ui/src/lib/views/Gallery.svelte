@@ -175,7 +175,7 @@
         <label for="vendor-select">{$t('gallery.vendor')}</label>
         <select id="vendor-select" bind:value={selectedVendor}>
           <option value={null}>{$t('gallery.filter_all')}</option>
-          {#each galleryData.vendors as vendor}
+          {#each galleryData.vendors as vendor (vendor.id)}
             <option value={vendor.id}>{vendor.name}</option>
           {/each}
         </select>

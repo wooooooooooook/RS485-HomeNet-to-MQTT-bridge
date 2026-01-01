@@ -362,7 +362,7 @@
         disabled={isSaving || isLoading}
         aria-label={$t('common.language')}
       >
-        {#each $locales as l}
+        {#each $locales as l (l)}
           <option value={l}>
             {l === 'ko' ? $t('common.korean') : $t('common.english')}
           </option>
@@ -568,7 +568,7 @@
         <div class="setting files-section">
           <div class="setting-title">{$t('settings.log_retention.saved_files')}</div>
           <div class="files-list">
-            {#each cacheFiles as file}
+            {#each cacheFiles as file (file.filename)}
               <div class="file-row">
                 <span class="file-name">{file.filename}</span>
                 <span class="file-size">{formatBytes(file.size)}</span>
@@ -639,7 +639,7 @@
               <div class="bridge-info">
                 <span class="file-name">{bridge.configFile}</span>
                 <div class="bridge-details">
-                  {#each bridge.serials as serial}
+                  {#each bridge.serials as serial, index (`${serial.portId}-${index}`)}
                     <span class="badge sm">{serial.portId}: {serial.path}</span>
                   {/each}
                 </div>

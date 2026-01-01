@@ -794,7 +794,9 @@
                 <div class="section manage-card">
                   <div class="toggle-row">
                     <div class="toggle-info">
-                      <h3 id="force-active-title">{$t('entity_detail.manage.force_active.title')}</h3>
+                      <h3 id="force-active-title">
+                        {$t('entity_detail.manage.force_active.title')}
+                      </h3>
                       <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
                     </div>
                     <Toggle
@@ -1326,7 +1328,6 @@
   .toggle-info .subtle {
     margin-bottom: 0;
   }
-
 
   @media (max-width: 768px) {
     .overlay {

@@ -1,5 +1,11 @@
 import { matchesPacket } from '../utils/packet-matching.js';
-import { DeviceConfig, StateSchema, StateNumSchema, ProtocolConfig, CommandResult } from './types.js';
+import {
+  DeviceConfig,
+  StateSchema,
+  StateNumSchema,
+  ProtocolConfig,
+  CommandResult,
+} from './types.js';
 
 export abstract class Device {
   protected config: DeviceConfig;

@@ -137,7 +137,6 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
   }
 
   if (config.scripts && Array.isArray(config.scripts)) {
-
     config.scripts.forEach((script) => {
       // script.id가 존재할 때만 처리 (없으면 validateConfig에서 걸러짐)
       if (script && typeof script === 'object' && script.id) {
@@ -163,7 +162,6 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
   }
 
   if (config.automation && Array.isArray(config.automation)) {
-
     config.automation.forEach((auto) => {
       if (auto && typeof auto === 'object' && auto.id) {
         let currentId = auto.id;

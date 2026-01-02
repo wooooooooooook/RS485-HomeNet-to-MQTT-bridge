@@ -954,33 +954,30 @@
     if (!bridgeInfo?.bridges) return [] as PortMetadata[];
 
     // 1. Flatten all ports from all bridges
-    const allPorts = bridgeInfo.bridges.reduce<PortMetadata[]>(
-      (acc, bridge) => {
-        if (bridge.serials.length === 0 && (bridge.error || bridge.status === 'error')) {
-          // Serials가 없지만 에러가 있는 경우, placeholder 포트를 추가하여 UI 탭에 표시되도록 함
-          return acc.concat([
-            {
-              portId: bridge.configFile, // 파일명을 ID로 사용
-              path: '',
-              baudRate: 0,
-              topic: '',
-              configFile: bridge.configFile,
-              error: bridge.error,
-              status: bridge.status,
-            },
-          ]);
-        }
-        return acc.concat(
-          bridge.serials.map((serial) => ({
-            ...serial,
+    const allPorts = bridgeInfo.bridges.reduce<PortMetadata[]>((acc, bridge) => {
+      if (bridge.serials.length === 0 && (bridge.error || bridge.status === 'error')) {
+        // Serials가 없지만 에러가 있는 경우, placeholder 포트를 추가하여 UI 탭에 표시되도록 함
+        return acc.concat([
+          {
+            portId: bridge.configFile, // 파일명을 ID로 사용
+            path: '',
+            baudRate: 0,
+            topic: '',
             configFile: bridge.configFile,
             error: bridge.error,
             status: bridge.status,
-          })),
-        );
-      },
-      [],
-    );
+          },
+        ]);
+      }
+      return acc.concat(
+        bridge.serials.map((serial) => ({
+          ...serial,
+          configFile: bridge.configFile,
+          error: bridge.error,
+          status: bridge.status,
+        })),
+      );
+    }, []);
 
     // 2. Deduplicate by portId
     const uniquePorts: typeof allPorts = [];

@@ -95,6 +95,14 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 - [기기별 설정 예시](docs/ENTITY_EXAMPLES.md)
 - [CEL (Common Expression Language) 가이드](docs/CEL_GUIDE.md)
 
+## 🧪 성능 벤치마크
+
+PacketParser의 1바이트 청크 처리 성능을 측정하려면 아래 명령을 실행하세요.
+
+```bash
+node --loader ts-node/esm packages/core/test/perf_packet_processing.bench.ts
+```
+
 ## ❓ 문제 해결 (Troubleshooting)
 
 ### 1. 시리얼 포트 권한 오류 (`EACCES` or Permission denied)

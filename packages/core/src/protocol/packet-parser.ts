@@ -166,24 +166,104 @@ export class PacketParser {
           // 'len' starts at 'minLen', so start search at 'minLen - footerLen'.
           let searchIdx = this.readOffset + minLen - footerLen;
 
-          // Optimization: Use indexOf to find footer candidates instead of checking every byte
-          while (searchIdx <= this.writeOffset - footerLen) {
-            const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
-            if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
+          // Optimization: Check for standard 1-byte checksum to enable incremental calculation
+          // This avoids O(N^2) complexity when many false footers are present
+          const checksumType = this.defaults.rx_checksum;
+          const isStandard1Byte =
+            typeof checksumType === 'string' &&
+            ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
+              checksumType,
+            );
 
-            const len = foundIdx + footerLen - this.readOffset;
-            if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
-              const packet = Buffer.from(
-                this.buffer.subarray(this.readOffset, this.readOffset + len),
-              );
-              packets.push(packet);
-              this.consumeBytes(len);
-              matchFound = true;
-              break;
+          if (isStandard1Byte) {
+            // Incremental Checksum Strategy for Footer Delimited
+            let runningChecksum = 0;
+            const typeStr = checksumType as string;
+            const isSamsungRx = typeStr === 'samsung_rx';
+            const isSamsungTx = typeStr === 'samsung_tx';
+            const isAdd = typeStr.startsWith('add');
+            const isNoHeader = typeStr.includes('no_header') || isSamsungRx || isSamsungTx;
+
+            if (isSamsungRx) {
+              runningChecksum = 0xb0;
             }
 
-            // Footer found but checksum failed. Continue searching after this footer.
-            searchIdx = foundIdx + 1;
+            const baseOffset = this.readOffset;
+            const startIdx = baseOffset + (isNoHeader ? headerLen : 0);
+
+            // Track the index up to which we have already calculated the checksum
+            let processedIdx = startIdx;
+
+            // Optimization: Use indexOf to find footer candidates instead of checking every byte
+            while (searchIdx <= this.writeOffset - footerLen) {
+              const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
+              if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
+
+              const len = foundIdx + footerLen - this.readOffset;
+
+              // Verify checksum incrementally
+              // Packet: [Header ... Data ... Checksum ... Footer]
+              const currentDataEnd = baseOffset + len - 1 - footerLen;
+
+              // Update running checksum up to currentDataEnd
+              if (processedIdx < currentDataEnd) {
+                if (isAdd) {
+                  for (let i = processedIdx; i < currentDataEnd; i++) {
+                    runningChecksum += this.buffer[i];
+                  }
+                } else {
+                  for (let i = processedIdx; i < currentDataEnd; i++) {
+                    runningChecksum ^= this.buffer[i];
+                  }
+                }
+                processedIdx = currentDataEnd;
+              }
+
+              // Apply final modifiers for Samsung types
+              let finalChecksum = runningChecksum;
+              if (isSamsungTx) {
+                finalChecksum ^= 0x80;
+              } else if (isSamsungRx) {
+                // Check first byte of data (if it exists)
+                if (currentDataEnd > startIdx && this.buffer[startIdx] < 0x7c) {
+                  finalChecksum ^= 0x80;
+                }
+              }
+
+              const expected = this.buffer[baseOffset + len - 1 - footerLen];
+              if ((finalChecksum & 0xff) === expected) {
+                 const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
+              }
+
+              // Footer found but checksum failed. Continue searching after this footer.
+              searchIdx = foundIdx + 1;
+            }
+          } else {
+            // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
+            while (searchIdx <= this.writeOffset - footerLen) {
+              const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
+              if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
+
+              const len = foundIdx + footerLen - this.readOffset;
+              if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
+                const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
+              }
+
+              // Footer found but checksum failed. Continue searching after this footer.
+              searchIdx = foundIdx + 1;
+            }
           }
         }
       } else {

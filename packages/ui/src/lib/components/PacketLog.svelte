@@ -88,6 +88,7 @@
             type="text"
             bind:value={searchQuery}
             placeholder={$t('analysis.packet_log.search_placeholder')}
+            aria-label={$t('analysis.packet_log.search_placeholder')}
           />
         </div>
         <label>

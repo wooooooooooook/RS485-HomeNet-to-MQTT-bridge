@@ -5,3 +5,7 @@
 ## 2024-12-31 - Optimistic UI for Controlled Toggles
 **Learning:** When replacing native checkboxes with controlled `Toggle` components, users expect immediate visual feedback. Waiting for API round-trips makes the UI feel sluggish.
 **Action:** Implement optimistic state updates (update local state immediately, revert on error) when using controlled components for network actions.
+
+## 2024-05-24 - Accessibility of Placeholder-Only Inputs
+**Learning:** Inputs that rely solely on `placeholder` text (like search boxes) are inaccessible to screen reader users who cannot perceive the placeholder as a label.
+**Action:** Always add `aria-label` (using the same localized string as the placeholder if appropriate) to inputs that lack a visible `<label>` element.

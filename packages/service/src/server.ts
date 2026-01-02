@@ -66,6 +66,45 @@ const initializeBackupDir = async () => {
   logger.info(`[service] Using backup directory: ${BACKUP_DIR}`);
 };
 
+type BackupFileInfo = {
+  filename: string;
+  size: number;
+  createdAt: string;
+};
+
+const listBackupFiles = async (): Promise<BackupFileInfo[]> => {
+  try {
+    const entries = await fs.readdir(BACKUP_DIR);
+    const files = await Promise.all(
+      entries.map(async (filename) => {
+        const filePath = path.join(BACKUP_DIR, filename);
+        const stats = await fs.stat(filePath);
+        if (!stats.isFile()) return null;
+        return {
+          filename,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString(),
+        };
+      }),
+    );
+
+    return files
+      .filter((file): file is BackupFileInfo => Boolean(file))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') return [];
+    throw error;
+  }
+};
+
+const resolveBackupPath = (filename: string): string | null => {
+  const resolved = path.resolve(BACKUP_DIR, filename);
+  const prefix = path.resolve(BACKUP_DIR) + path.sep;
+  if (!resolved.startsWith(prefix)) return null;
+  return resolved;
+};
+
 const saveBackup = async (configPath: string, config: any, reason: string) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupFilename = `${path.basename(configPath)}.${timestamp}.${reason}.bak`;
@@ -961,6 +1000,102 @@ app.post('/api/logs/cache/save', async (req, res) => {
   } catch (error) {
     logger.error({ err: error }, '[service] Manual cache save failed');
     res.status(500).json({ error: 'Save failed' });
+  }
+});
+
+// --- Backup Management API Endpoints ---
+app.get('/api/backups', async (_req, res) => {
+  try {
+    const files = await listBackupFiles();
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    res.json({ files, totalSize });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to list backup files');
+    res.status(500).json({ error: 'Failed to list backup files' });
+  }
+});
+
+app.get('/api/backups/download/:filename', async (req, res) => {
+  const { filename } = req.params;
+  const filePath = resolveBackupPath(filename);
+
+  if (!filePath) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    if (await fileExists(filePath)) {
+      res.download(filePath, filename);
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Backup download failed');
+    res.status(500).json({ error: 'Download failed' });
+  }
+});
+
+app.delete('/api/backups/:filename', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const { filename } = req.params;
+  const filePath = resolveBackupPath(filename);
+
+  if (!filePath) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    if (await fileExists(filePath)) {
+      await fs.unlink(filePath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Backup delete failed');
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
+app.post('/api/backups/cleanup', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const mode = req.body?.mode;
+  const keepCountRaw = req.body?.keepCount;
+  const keepCount = Number.isFinite(keepCountRaw) ? Number(keepCountRaw) : 3;
+
+  if (!['all', 'keep_recent'].includes(mode)) {
+    return res.status(400).json({ error: 'Invalid cleanup mode' });
+  }
+
+  if (mode === 'keep_recent' && (!Number.isInteger(keepCount) || keepCount < 0)) {
+    return res.status(400).json({ error: 'Invalid keep count' });
+  }
+
+  try {
+    const files = await listBackupFiles();
+    const targets =
+      mode === 'all' ? files : files.slice(Math.max(keepCount, 0));
+
+    await Promise.all(
+      targets.map(async (file) => {
+        const filePath = resolveBackupPath(file.filename);
+        if (!filePath) return;
+        if (await fileExists(filePath)) {
+          await fs.unlink(filePath);
+        }
+      }),
+    );
+
+    res.json({ success: true, deletedCount: targets.length });
+  } catch (error) {
+    logger.error({ err: error }, '[service] Backup cleanup failed');
+    res.status(500).json({ error: 'Cleanup failed' });
   }
 });
 

@@ -6,7 +6,13 @@
   import Button from '../components/Button.svelte';
   import Dialog from '../components/Dialog.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
-  import type { FrontendSettings, LogRetentionStats, SavedLogFile, BridgeInfo } from '../types';
+  import type {
+    FrontendSettings,
+    LogRetentionStats,
+    SavedLogFile,
+    BridgeInfo,
+    BackupFile,
+  } from '../types';
 
   type ToastSettingKey = 'stateChange' | 'command';
 
@@ -108,6 +114,12 @@
   let deletingFile = $state<string | null>(null);
   let downloadError = $state<string | null>(null);
 
+  let backupFiles = $state<BackupFile[]>([]);
+  let backupTotalSize = $state(0);
+  let isBackupWorking = $state(false);
+  let deletingBackup = $state<string | null>(null);
+  let backupDownloadError = $state<string | null>(null);
+
   const fetchCacheSettings = async () => {
     try {
       const res = await fetch(`./api/logs/cache/settings?_=${Date.now()}`);
@@ -143,10 +155,24 @@
     }
   };
 
+  const fetchBackupFiles = async () => {
+    try {
+      const res = await fetch(`./api/backups?_=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        backupFiles = data.files || [];
+        backupTotalSize = data.totalSize || 0;
+      }
+    } catch (err) {
+      console.error('Failed to fetch backup files', err);
+    }
+  };
+
   $effect(() => {
     fetchCacheSettings();
     fetchCacheStats();
     fetchCacheFiles();
+    fetchBackupFiles();
 
     // Refresh stats every 30 seconds if caching is enabled
     const interval = setInterval(() => {
@@ -263,6 +289,74 @@
         deletingFile = null;
       },
     });
+  };
+
+  const downloadBackupFile = (filename: string) => {
+    backupDownloadError = null;
+    const isHAAppName = navigator.userAgent.includes('Home Assistant');
+    const link = document.createElement('a');
+    link.href = `./api/backups/download/${filename}`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    if (isHAAppName) {
+      setTimeout(() => {
+        backupDownloadError = $t('analysis.raw_log.ha_app_download_warning');
+      }, 500);
+    }
+  };
+
+  const deleteBackupFile = async (filename: string) => {
+    if (!confirm($t('settings.backup_management.delete_confirm', { values: { filename } }))) return;
+
+    deletingBackup = filename;
+    try {
+      const res = await fetch(`./api/backups/${filename}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchBackupFiles();
+      }
+    } catch (err) {
+      console.error('Failed to delete backup file', err);
+    } finally {
+      deletingBackup = null;
+    }
+  };
+
+  const cleanupBackups = async (mode: 'all' | 'keep_recent', keepCount = 3) => {
+    isBackupWorking = true;
+    try {
+      const res = await fetch('./api/backups/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, keepCount }),
+      });
+      if (res.ok) {
+        await fetchBackupFiles();
+      }
+    } catch (err) {
+      console.error('Failed to cleanup backups', err);
+    } finally {
+      isBackupWorking = false;
+    }
+  };
+
+  const handleDeleteAllBackups = async () => {
+    if (!confirm($t('settings.backup_management.delete_all_confirm'))) return;
+    await cleanupBackups('all');
+  };
+
+  const handleDeleteExceptRecent = async () => {
+    if (
+      !confirm(
+        $t('settings.backup_management.delete_except_recent_confirm', { values: { count: 3 } }),
+      )
+    )
+      return;
+    await cleanupBackups('keep_recent', 3);
   };
 
   const formatBytes = (bytes: number): string => {
@@ -745,6 +839,90 @@
     {/if}
   </div>
 
+  <!-- Backup Management Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>{$t('settings.backup_management.title')}</h2>
+        <p>{$t('settings.backup_management.desc')}</p>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div>
+        <div class="setting-title">{$t('settings.backup_management.total_usage')}</div>
+        <div class="setting-desc stats">
+          <span class="stat-value">{formatBytes(backupTotalSize)}</span>
+          <span class="stat-detail">
+            {$t('settings.backup_management.file_count', {
+              values: { count: backupFiles.length.toLocaleString() },
+            })}
+          </span>
+        </div>
+      </div>
+      <div class="setting-actions">
+        <Button
+          variant="secondary"
+          onclick={handleDeleteExceptRecent}
+          isLoading={isBackupWorking}
+          disabled={isBackupWorking || backupFiles.length <= 3}
+        >
+          {$t('settings.backup_management.delete_except_recent', { values: { count: 3 } })}
+        </Button>
+        <Button
+          variant="danger"
+          onclick={handleDeleteAllBackups}
+          isLoading={isBackupWorking}
+          disabled={isBackupWorking || backupFiles.length === 0}
+        >
+          {$t('settings.backup_management.delete_all')}
+        </Button>
+      </div>
+    </div>
+
+    {#if backupFiles.length > 0}
+      <div class="setting files-section">
+        <div class="setting-title">{$t('settings.backup_management.saved_files')}</div>
+        <div class="files-list">
+          {#each backupFiles as file (file.filename)}
+            <div class="file-row">
+              <span class="file-name">{file.filename}</span>
+              <span class="file-size">{formatBytes(file.size)}</span>
+              <div class="file-actions">
+                <Button
+                  variant="secondary"
+                  class="file-action-btn"
+                  onclick={() => downloadBackupFile(file.filename)}
+                  ariaLabel={$t('settings.backup_management.download')}
+                  title={$t('settings.backup_management.download')}
+                >
+                  ⬇
+                </Button>
+                <Button
+                  variant="danger"
+                  class="file-action-btn"
+                  onclick={() => deleteBackupFile(file.filename)}
+                  isLoading={deletingBackup === file.filename}
+                  ariaLabel={$t('settings.backup_management.delete')}
+                  title={$t('settings.backup_management.delete')}
+                >
+                  🗑
+                </Button>
+              </div>
+            </div>
+          {/each}
+        </div>
+        {#if backupDownloadError}
+          <div class="setting-desc warning">{backupDownloadError}</div>
+        {/if}
+      </div>
+    {:else}
+      <div class="setting sub-setting">
+        <div class="setting-desc muted">{$t('settings.backup_management.no_files')}</div>
+      </div>
+    {/if}
+  </div>
+
   <!-- Bridge Config Card -->
   <div class="card">
     <div class="card-header">
@@ -1045,6 +1223,13 @@
   .file-actions {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .setting-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
   }
 
   :global(.file-action-btn) {

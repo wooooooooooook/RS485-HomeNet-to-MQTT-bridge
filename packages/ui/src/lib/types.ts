@@ -53,6 +53,12 @@ export type SavedLogFile = {
   createdAt: string;
 };
 
+export type BackupFile = {
+  filename: string;
+  size: number;
+  createdAt: string;
+};
+
 export interface ActivityLog {
   timestamp: number;
   code: string;

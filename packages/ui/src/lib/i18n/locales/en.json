@@ -58,6 +58,21 @@
       "delete": "Delete log file",
       "delete_confirm": "Are you sure you want to delete this log file?"
     },
+    "backup_management": {
+      "title": "Backup Management",
+      "desc": "Manage configuration backup files created during edits.",
+      "total_usage": "Total backup usage",
+      "file_count": "Files: {count}",
+      "delete_all": "Delete all",
+      "delete_except_recent": "Delete all except recent {count}",
+      "delete_all_confirm": "Delete all backup files?",
+      "delete_except_recent_confirm": "Delete all backup files except the most recent {count}?",
+      "saved_files": "Backup files",
+      "download": "Download",
+      "delete": "Delete",
+      "delete_confirm": "Delete {filename}?",
+      "no_files": "No backup files."
+    },
     "app_control": {
       "title": "Application Control",
       "restart": "Restart",

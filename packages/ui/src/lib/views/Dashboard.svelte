@@ -11,7 +11,7 @@
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
   import SetupWizard from '../components/SetupWizard.svelte';
-  import WizardModal from '../components/WizardModal.svelte';
+
   import HintBubble from '$lib/components/HintBubble.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import PortToolbar from '$lib/components/PortToolbar.svelte';
@@ -223,7 +223,7 @@
   {/if}
 
   {#if showAddBridgeModal}
-    <WizardModal onclose={() => (showAddBridgeModal = false)} />
+    <SetupWizard mode="add" onclose={() => (showAddBridgeModal = false)} />
   {/if}
 </div>
 

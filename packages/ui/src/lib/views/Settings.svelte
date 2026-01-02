@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
-  import WizardModal from '../components/WizardModal.svelte';
+  import SetupWizard from '../components/SetupWizard.svelte';
   import BridgeConfigEditorModal from '../components/BridgeConfigEditorModal.svelte';
   import Button from '../components/Button.svelte';
   import Dialog from '../components/Dialog.svelte';
@@ -476,7 +476,7 @@
   />
 
   {#if showAddBridgeModal}
-    <WizardModal onclose={() => (showAddBridgeModal = false)} />
+    <SetupWizard mode="add" onclose={() => (showAddBridgeModal = false)} />
   {/if}
 
   {#if editingConfigFile}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
+  import Modal from './Modal.svelte';
 
   let { onclose } = $props<{ onclose: () => void }>();
 
@@ -23,14 +24,8 @@
   };
 </script>
 
-<div class="modal-backdrop">
-  <div
-    class="modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="consent-title"
-    aria-describedby="consent-desc"
-  >
+<Modal open={true} width="500px" {onclose}>
+  <div class="consent-content">
     <h2 id="consent-title">{$t('settings.log_sharing.consent_modal.title')}</h2>
     <p id="consent-desc">
       {$t('settings.log_sharing.consent_modal.desc')}
@@ -75,30 +70,12 @@
       </Button>
     </div>
   </div>
-</div>
+</Modal>
 
 <style>
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .modal {
-    background: #1e293b;
+  .consent-content {
     padding: 2rem;
-    border-radius: 1rem;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    border: 1px solid #334155;
+    color: #f8fafc;
   }
 
   h2 {

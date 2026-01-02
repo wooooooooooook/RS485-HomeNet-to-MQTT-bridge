@@ -5,6 +5,7 @@
   import Button from './Button.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import Dialog from './Dialog.svelte';
+  import Modal from './Modal.svelte';
   import ActivityLogList from './ActivityLogList.svelte';
   import type {
     UnifiedEntity,
@@ -526,10 +527,6 @@
     onClose?.();
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') close();
-  }
-
   function parsePayload(payload?: string) {
     if (!payload) return [];
     try {
@@ -554,461 +551,413 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-{#if isOpen}
-  <div
-    class="overlay"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) close();
-    }}
-    transition:fade={{ duration: 200 }}
-    role="button"
-    tabindex="0"
-    onkeydown={handleKeydown}
-    aria-label={$t('entity_detail.close_aria')}
-  >
-    <div
-      class="modal"
-      transition:scale={{ duration: 200, start: 0.95 }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-    >
-      <header class="modal-header">
-        <div class="header-info">
-          <h2 id="modal-title">{entity.displayName}</h2>
-          <button
-            class="entity-id-btn"
-            onclick={handleCopyId}
-            title={$t('entity_detail.copy_id') || 'Click to copy ID'}
-            aria-label={$t('entity_detail.copy_id_aria', { values: { id: entity.id } }) ||
-              `Copy ID ${entity.id}`}
-          >
-            <span class="entity-id">{entity.id}</span>
-            {#if idCopied}
-              <span class="copy-feedback" transition:fade={{ duration: 200 }}
-                >{$t('common.copied') || 'Copied!'}</span
-              >
-            {/if}
-          </button>
-        </div>
-        <button class="close-btn" onclick={close} aria-label={$t('entity_detail.close_aria')}
-          >&times;</button
-        >
-      </header>
-
-      <div class="modal-tabs" role="tablist">
-        {#if isDeviceEntity}
-          <button
-            role="tab"
-            id="tab-status"
-            aria-selected={activeTab === 'status'}
-            aria-controls="panel-status"
-            class:active={activeTab === 'status'}
-            onclick={() => (activeTab = 'status')}>{$t('entity_detail.tabs.status')}</button
-          >
-        {:else}
-          <button
-            role="tab"
-            id="tab-execute"
-            aria-selected={activeTab === 'execute'}
-            aria-controls="panel-execute"
-            class:active={activeTab === 'execute'}
-            onclick={() => (activeTab = 'execute')}>{$t('entity_detail.tabs.execute')}</button
-          >
-        {/if}
+<Modal open={isOpen} width="1400px" onclose={close} oncancel={close}>
+  <div class="modal-content-wrapper">
+    <header class="modal-header">
+      <div class="header-info">
+        <h2 id="modal-title">{entity.displayName}</h2>
         <button
-          role="tab"
-          id="tab-config"
-          aria-selected={activeTab === 'config'}
-          aria-controls="panel-config"
-          class:active={activeTab === 'config'}
-          onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
+          class="entity-id-btn"
+          onclick={handleCopyId}
+          title={$t('entity_detail.copy_id') || 'Click to copy ID'}
+          aria-label={$t('entity_detail.copy_id_aria', { values: { id: entity.id } }) ||
+            `Copy ID ${entity.id}`}
         >
-        {#if isAutomation || isScript}
-          <button
-            role="tab"
-            id="tab-logs"
-            aria-selected={activeTab === 'logs'}
-            aria-controls="panel-logs"
-            class:active={activeTab === 'logs'}
-            onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
-          >
-        {/if}
-        {#if isDeviceEntity}
-          <button
-            role="tab"
-            id="tab-packets"
-            aria-selected={activeTab === 'packets'}
-            aria-controls="panel-packets"
-            class:active={activeTab === 'packets'}
-            onclick={() => (activeTab = 'packets')}>{$t('entity_detail.tabs.packets')}</button
-          >
-        {/if}
-        <button
-          role="tab"
-          id="tab-manage"
-          aria-selected={activeTab === 'manage'}
-          aria-controls="panel-manage"
-          class:active={activeTab === 'manage'}
-          onclick={() => (activeTab = 'manage')}>{$t('entity_detail.tabs.manage')}</button
-        >
+          <span class="entity-id">{entity.id}</span>
+          {#if idCopied}
+            <span class="copy-feedback" transition:fade={{ duration: 200 }}
+              >{$t('common.copied') || 'Copied!'}</span
+            >
+          {/if}
+        </button>
       </div>
+      <button class="close-btn" onclick={close} aria-label={$t('entity_detail.close_aria')}
+        >&times;</button
+      >
+    </header>
 
-      <div class="modal-body">
-        {#if activeTab === 'status'}
-          <div role="tabpanel" id="panel-status" aria-labelledby="tab-status" tabindex="0">
-            <div class="section status-section">
-              <h3>{$t('entity_detail.status.title')}</h3>
-              <div class="payload-list">
-                {#each parsePayload(entity.statePayload) as item (item.key)}
-                  <div class="payload-item">
-                    <span class="payload-key">{item.key}</span>
-                    <span class="payload-value">{item.value}</span>
+    <div class="modal-tabs" role="tablist">
+      {#if isDeviceEntity}
+        <button
+          role="tab"
+          id="tab-status"
+          aria-selected={activeTab === 'status'}
+          aria-controls="panel-status"
+          class:active={activeTab === 'status'}
+          onclick={() => (activeTab = 'status')}>{$t('entity_detail.tabs.status')}</button
+        >
+      {:else}
+        <button
+          role="tab"
+          id="tab-execute"
+          aria-selected={activeTab === 'execute'}
+          aria-controls="panel-execute"
+          class:active={activeTab === 'execute'}
+          onclick={() => (activeTab = 'execute')}>{$t('entity_detail.tabs.execute')}</button
+        >
+      {/if}
+      <button
+        role="tab"
+        id="tab-config"
+        aria-selected={activeTab === 'config'}
+        aria-controls="panel-config"
+        class:active={activeTab === 'config'}
+        onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
+      >
+      {#if isAutomation || isScript}
+        <button
+          role="tab"
+          id="tab-logs"
+          aria-selected={activeTab === 'logs'}
+          aria-controls="panel-logs"
+          class:active={activeTab === 'logs'}
+          onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
+        >
+      {/if}
+      {#if isDeviceEntity}
+        <button
+          role="tab"
+          id="tab-packets"
+          aria-selected={activeTab === 'packets'}
+          aria-controls="panel-packets"
+          class:active={activeTab === 'packets'}
+          onclick={() => (activeTab = 'packets')}>{$t('entity_detail.tabs.packets')}</button
+        >
+      {/if}
+      <button
+        role="tab"
+        id="tab-manage"
+        aria-selected={activeTab === 'manage'}
+        aria-controls="panel-manage"
+        class:active={activeTab === 'manage'}
+        onclick={() => (activeTab = 'manage')}>{$t('entity_detail.tabs.manage')}</button
+      >
+    </div>
+
+    <div class="modal-body">
+      {#if activeTab === 'status'}
+        <div role="tabpanel" id="panel-status" aria-labelledby="tab-status" tabindex="0">
+          <div class="section status-section">
+            <h3>{$t('entity_detail.status.title')}</h3>
+            <div class="payload-list">
+              {#each parsePayload(entity.statePayload) as item (item.key)}
+                <div class="payload-item">
+                  <span class="payload-key">{item.key}</span>
+                  <span class="payload-value">{item.value}</span>
+                </div>
+              {/each}
+              {#if !entity.statePayload}
+                <div class="no-data">{$t('entity_detail.status.no_data')}</div>
+              {/if}
+            </div>
+          </div>
+
+          {#if entity.commands.length > 0}
+            <div class="section command-section">
+              <h3>{$t('entity_detail.status.command_title')}</h3>
+              <div class="command-grid">
+                {#each entity.commands as cmd (`${cmd.entityId}-${cmd.commandName}`)}
+                  <div class="command-item">
+                    {#if cmd.inputType === 'number'}
+                      <div class="input-group">
+                        <label for={`cmd-${cmd.entityId}-${cmd.commandName}`}
+                          >{cmd.commandName.replace('command_', '')}</label
+                        >
+                        <input
+                          id={`cmd-${cmd.entityId}-${cmd.commandName}`}
+                          type="number"
+                          min={cmd.min}
+                          max={cmd.max}
+                          step={cmd.step}
+                          bind:value={commandInputs[`${cmd.entityId}_${cmd.commandName}`]}
+                        />
+                        <Button
+                          variant="primary"
+                          onclick={() =>
+                            handleExecute(cmd, commandInputs[`${cmd.entityId}_${cmd.commandName}`])}
+                          isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
+                          ariaLabel={$t('entity_detail.status.send_aria', {
+                            values: { command: cmd.displayName },
+                          })}
+                        >
+                          {$t('entity_detail.status.send')}
+                        </Button>
+                      </div>
+                    {:else}
+                      <Button
+                        variant="secondary"
+                        fullWidth
+                        class="cmd-btn"
+                        onclick={() => handleExecute(cmd)}
+                        isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
+                      >
+                        {cmd.displayName}
+                      </Button>
+                    {/if}
                   </div>
                 {/each}
-                {#if !entity.statePayload}
-                  <div class="no-data">{$t('entity_detail.status.no_data')}</div>
-                {/if}
               </div>
             </div>
-
-            {#if entity.commands.length > 0}
-              <div class="section command-section">
-                <h3>{$t('entity_detail.status.command_title')}</h3>
-                <div class="command-grid">
-                  {#each entity.commands as cmd (`${cmd.entityId}-${cmd.commandName}`)}
-                    <div class="command-item">
-                      {#if cmd.inputType === 'number'}
-                        <div class="input-group">
-                          <label for={`cmd-${cmd.entityId}-${cmd.commandName}`}
-                            >{cmd.commandName.replace('command_', '')}</label
-                          >
-                          <input
-                            id={`cmd-${cmd.entityId}-${cmd.commandName}`}
-                            type="number"
-                            min={cmd.min}
-                            max={cmd.max}
-                            step={cmd.step}
-                            bind:value={commandInputs[`${cmd.entityId}_${cmd.commandName}`]}
-                          />
-                          <Button
-                            variant="primary"
-                            onclick={() =>
-                              handleExecute(
-                                cmd,
-                                commandInputs[`${cmd.entityId}_${cmd.commandName}`],
-                              )}
-                            isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
-                            ariaLabel={$t('entity_detail.status.send_aria', {
-                              values: { command: cmd.displayName },
-                            })}
-                          >
-                            {$t('entity_detail.status.send')}
-                          </Button>
-                        </div>
-                      {:else}
-                        <Button
-                          variant="secondary"
-                          fullWidth
-                          class="cmd-btn"
-                          onclick={() => handleExecute(cmd)}
-                          isLoading={executingCommands.has(`${cmd.entityId}-${cmd.commandName}`)}
-                        >
-                          {cmd.displayName}
-                        </Button>
-                      {/if}
-                    </div>
-                  {/each}
+          {/if}
+        </div>
+      {:else if activeTab === 'execute'}
+        <div role="tabpanel" id="panel-execute" aria-labelledby="tab-execute" tabindex="0">
+          <div class="section status-section">
+            {#if isAutomation}
+              <h3>{$t('entity_detail.automation.execute_title')}</h3>
+              <p class="subtle">{$t('entity_detail.automation.execute_desc')}</p>
+              <Button
+                variant="primary"
+                onclick={handleExecuteAutomation}
+                isLoading={isExecutingAutomation}
+              >
+                {$t('entity_detail.automation.execute_button')}
+              </Button>
+            {:else if isScript}
+              <h3>{$t('entity_detail.script.execute_title')}</h3>
+              <p class="subtle">{$t('entity_detail.script.execute_desc')}</p>
+              <Button variant="primary" onclick={handleExecuteScript} isLoading={isExecutingScript}>
+                {$t('entity_detail.script.execute_button')}
+              </Button>
+            {/if}
+            {#if executeMessage}
+              <div class="save-message success">{executeMessage}</div>
+            {/if}
+            {#if executeError}
+              <div class="save-message error">{executeError}</div>
+            {/if}
+          </div>
+        </div>
+      {:else if activeTab === 'config'}
+        <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
+          <div class="section config-section">
+            {#if configLoading}
+              <div class="loading">{$t('entity_detail.config.loading')}</div>
+            {:else}
+              <div class="config-editor-container">
+                <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
+                ></textarea>
+                <div class="config-actions">
+                  <Button
+                    variant="success"
+                    onclick={saveConfig}
+                    isLoading={isSaving}
+                    ariaLabel={isSaving
+                      ? $t('entity_detail.config.saving')
+                      : $t('entity_detail.config.save')}
+                  >
+                    {$t('entity_detail.config.save')}
+                  </Button>
+                  {#if saveMessage}
+                    <span class="save-message success">{saveMessage}</span>
+                  {/if}
+                  {#if configError}
+                    <span class="save-message error">{configError}</span>
+                  {/if}
                 </div>
               </div>
             {/if}
           </div>
-        {:else if activeTab === 'execute'}
-          <div role="tabpanel" id="panel-execute" aria-labelledby="tab-execute" tabindex="0">
-            <div class="section status-section">
-              {#if isAutomation}
-                <h3>{$t('entity_detail.automation.execute_title')}</h3>
-                <p class="subtle">{$t('entity_detail.automation.execute_desc')}</p>
-                <Button
-                  variant="primary"
-                  onclick={handleExecuteAutomation}
-                  isLoading={isExecutingAutomation}
-                >
-                  {$t('entity_detail.automation.execute_button')}
-                </Button>
-              {:else if isScript}
-                <h3>{$t('entity_detail.script.execute_title')}</h3>
-                <p class="subtle">{$t('entity_detail.script.execute_desc')}</p>
-                <Button
-                  variant="primary"
-                  onclick={handleExecuteScript}
-                  isLoading={isExecutingScript}
-                >
-                  {$t('entity_detail.script.execute_button')}
-                </Button>
-              {/if}
-              {#if executeMessage}
-                <div class="save-message success">{executeMessage}</div>
-              {/if}
-              {#if executeError}
-                <div class="save-message error">{executeError}</div>
-              {/if}
+        </div>
+      {:else if activeTab === 'packets'}
+        <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets" tabindex="0">
+          <div class="section packet-log-section">
+            <div class="log-header">
+              <div class="header-left">
+                <h4>{$t('entity_detail.packets.title')}</h4>
+                <div class="filters">
+                  <label>
+                    <input type="checkbox" bind:checked={showRx} />
+                    {$t('entity_detail.packets.rx_label')}
+                  </label>
+                  <label>
+                    <input type="checkbox" bind:checked={showTx} />
+                    {$t('entity_detail.packets.tx_label')}
+                  </label>
+                </div>
+              </div>
             </div>
-          </div>
-        {:else if activeTab === 'config'}
-          <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
-            <div class="section config-section">
-              {#if configLoading}
-                <div class="loading">{$t('entity_detail.config.loading')}</div>
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div
+              class="log-list unified-list"
+              role="log"
+              tabindex="0"
+              aria-label={$t('entity_detail.packets.title')}
+            >
+              {#if mergedPackets.length === 0}
+                <div class="no-data">{$t('entity_detail.packets.no_packets')}</div>
               {:else}
-                <div class="config-editor-container">
-                  <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
-                  ></textarea>
-                  <div class="config-actions">
-                    <Button
-                      variant="success"
-                      onclick={saveConfig}
-                      isLoading={isSaving}
-                      ariaLabel={isSaving
-                        ? $t('entity_detail.config.saving')
-                        : $t('entity_detail.config.save')}
-                    >
-                      {$t('entity_detail.config.save')}
-                    </Button>
-                    {#if saveMessage}
-                      <span class="save-message success">{saveMessage}</span>
-                    {/if}
-                    {#if configError}
-                      <span class="save-message error">{configError}</span>
-                    {/if}
-                  </div>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {:else if activeTab === 'packets'}
-          <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets" tabindex="0">
-            <div class="section packet-log-section">
-              <div class="log-header">
-                <div class="header-left">
-                  <h4>{$t('entity_detail.packets.title')}</h4>
-                  <div class="filters">
-                    <label>
-                      <input type="checkbox" bind:checked={showRx} />
-                      {$t('entity_detail.packets.rx_label')}
-                    </label>
-                    <label>
-                      <input type="checkbox" bind:checked={showTx} />
-                      {$t('entity_detail.packets.tx_label')}
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-              <div
-                class="log-list unified-list"
-                role="log"
-                tabindex="0"
-                aria-label={$t('entity_detail.packets.title')}
-              >
-                {#if mergedPackets.length === 0}
-                  <div class="no-data">{$t('entity_detail.packets.no_packets')}</div>
-                {:else}
-                  {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
-                    <div class="log-entry {packet.type}">
-                      <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
+                {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
+                  <div class="log-entry {packet.type}">
+                    <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
 
-                      {#if packet.type === 'rx'}
-                        <span class="direction rx">RX</span>
-                        <span class="entity">{packet.entityId}</span>
-                        <span class="payload">{packet.packet.toUpperCase()}</span>
-                        {#if packet.state}
-                          <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
-                        {/if}
-                      {:else}
-                        <span class="direction tx">TX</span>
-                        <span class="entity">{packet.entityId}</span>
-                        <span class="payload">{packet.packet.toUpperCase()}</span>
-                        <span class="command-info">
-                          {packet.command}
-                          {#if packet.value !== undefined}<span class="value">({packet.value})</span
-                            >{/if}
-                        </span>
+                    {#if packet.type === 'rx'}
+                      <span class="direction rx">RX</span>
+                      <span class="entity">{packet.entityId}</span>
+                      <span class="payload">{packet.packet.toUpperCase()}</span>
+                      {#if packet.state}
+                        <span class="state-preview">→ {JSON.stringify(packet.state)}</span>
                       {/if}
-                    </div>
-                  {/each}
-                {/if}
-              </div>
-            </div>
-          </div>
-        {:else if activeTab === 'logs'}
-          <div role="tabpanel" id="panel-logs" aria-labelledby="tab-logs" tabindex="0">
-            <div class="section">
-              <ActivityLogList
-                logs={activityLogs}
-                title={logTitle}
-                emptyMessage={logEmptyMessage}
-                height="260px"
-              />
-            </div>
-          </div>
-        {:else if activeTab === 'manage'}
-          <div role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" tabindex="0">
-            {#if isDeviceEntity}
-              <div class="section manage-card">
-                <h3>{$t('entity_detail.manage.rename.title')}</h3>
-                <p class="subtle">{$t('entity_detail.manage.rename.desc')}</p>
-                <div class="rename-form">
-                  <input
-                    type="text"
-                    bind:value={renameInput}
-                    placeholder={$t('entity_detail.manage.rename.placeholder')}
-                    aria-label={$t('entity_detail.manage.rename.placeholder')}
-                    oninput={() => (renameLocalError = null)}
-                  />
-                  <Button
-                    variant="success"
-                    onclick={handleRename}
-                    isLoading={isRenaming}
-                    ariaLabel={isRenaming
-                      ? $t('entity_detail.manage.rename.saving')
-                      : $t('entity_detail.manage.rename.save')}
-                  >
-                    {$t('entity_detail.manage.rename.save')}
-                  </Button>
-                </div>
-                {#if effectiveRenameError}
-                  <div class="rename-error">{effectiveRenameError}</div>
-                {/if}
-              </div>
-
-              {#if entity.isActive}
-                <div class="section manage-card">
-                  <h3>{$t('entity_detail.manage.revoke.title')}</h3>
-                  <p class="subtle">
-                    {@html $t('entity_detail.manage.revoke.desc')}
-                  </p>
-                  <Button variant="secondary" onclick={handleRevokeDiscovery}>
-                    {$t('entity_detail.manage.revoke.button')}
-                  </Button>
-                </div>
-              {/if}
-
-              {#if !entity.isActive || entity.discoveryAlways}
-                <div class="section manage-card">
-                  <div class="toggle-row">
-                    <div class="toggle-info">
-                      <h3 id="force-active-title">
-                        {$t('entity_detail.manage.force_active.title')}
-                      </h3>
-                      <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
-                    </div>
-                    <Toggle
-                      checked={entity.discoveryAlways ?? false}
-                      onchange={handleToggleDiscoveryAlways}
-                      disabled={isTogglingDiscoveryAlways}
-                      ariaLabelledBy="force-active-title"
-                    />
+                    {:else}
+                      <span class="direction tx">TX</span>
+                      <span class="entity">{packet.entityId}</span>
+                      <span class="payload">{packet.packet.toUpperCase()}</span>
+                      <span class="command-info">
+                        {packet.command}
+                        {#if packet.value !== undefined}<span class="value">({packet.value})</span
+                          >{/if}
+                      </span>
+                    {/if}
                   </div>
-                  {#if forceActiveError}
-                    <div class="rename-error">{forceActiveError}</div>
-                  {/if}
-                </div>
+                {/each}
               {/if}
-              <div class="section manage-card danger-zone">
-                <h3>{$t('entity_detail.manage.delete.title')}</h3>
-                <p class="subtle">
-                  {@html $t('entity_detail.manage.delete.desc')}
-                </p>
-                <Button variant="danger" onclick={handleDeleteEntity}>
-                  {$t('entity_detail.manage.delete.button')}
+            </div>
+          </div>
+        </div>
+      {:else if activeTab === 'logs'}
+        <div role="tabpanel" id="panel-logs" aria-labelledby="tab-logs" tabindex="0">
+          <div class="section">
+            <ActivityLogList
+              logs={activityLogs}
+              title={logTitle}
+              emptyMessage={logEmptyMessage}
+              height="260px"
+            />
+          </div>
+        </div>
+      {:else if activeTab === 'manage'}
+        <div role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" tabindex="0">
+          {#if isDeviceEntity}
+            <div class="section manage-card">
+              <h3>{$t('entity_detail.manage.rename.title')}</h3>
+              <p class="subtle">{$t('entity_detail.manage.rename.desc')}</p>
+              <div class="rename-form">
+                <input
+                  type="text"
+                  bind:value={renameInput}
+                  placeholder={$t('entity_detail.manage.rename.placeholder')}
+                  aria-label={$t('entity_detail.manage.rename.placeholder')}
+                  oninput={() => (renameLocalError = null)}
+                />
+                <Button
+                  variant="success"
+                  onclick={handleRename}
+                  isLoading={isRenaming}
+                  ariaLabel={isRenaming
+                    ? $t('entity_detail.manage.rename.saving')
+                    : $t('entity_detail.manage.rename.save')}
+                >
+                  {$t('entity_detail.manage.rename.save')}
                 </Button>
               </div>
-            {:else if isAutomation}
+              {#if effectiveRenameError}
+                <div class="rename-error">{effectiveRenameError}</div>
+              {/if}
+            </div>
+
+            {#if entity.isActive}
+              <div class="section manage-card">
+                <h3>{$t('entity_detail.manage.revoke.title')}</h3>
+                <p class="subtle">
+                  {@html $t('entity_detail.manage.revoke.desc')}
+                </p>
+                <Button variant="secondary" onclick={handleRevokeDiscovery}>
+                  {$t('entity_detail.manage.revoke.button')}
+                </Button>
+              </div>
+            {/if}
+
+            {#if !entity.isActive || entity.discoveryAlways}
               <div class="section manage-card">
                 <div class="toggle-row">
                   <div class="toggle-info">
-                    <h3 id="automation-toggle-title">
-                      {$t('entity_detail.automation.toggle_title')}
+                    <h3 id="force-active-title">
+                      {$t('entity_detail.manage.force_active.title')}
                     </h3>
-                    <p class="subtle">{$t('entity_detail.automation.toggle_desc')}</p>
+                    <p class="subtle">{$t('entity_detail.manage.force_active.desc')}</p>
                   </div>
                   <Toggle
-                    checked={entity.enabled ?? true}
-                    onchange={handleToggleAutomationEnabled}
-                    disabled={isTogglingAutomation}
-                    ariaLabelledBy="automation-toggle-title"
+                    checked={entity.discoveryAlways ?? false}
+                    onchange={handleToggleDiscoveryAlways}
+                    disabled={isTogglingDiscoveryAlways}
+                    ariaLabelledBy="force-active-title"
                   />
                 </div>
-                {#if automationToggleError}
-                  <div class="rename-error">{automationToggleError}</div>
+                {#if forceActiveError}
+                  <div class="rename-error">{forceActiveError}</div>
                 {/if}
               </div>
-              <div class="section manage-card danger-zone">
-                <h3>{$t('entity_detail.automation.delete_title')}</h3>
-                <p class="subtle">{$t('entity_detail.automation.delete_desc')}</p>
-                <Button variant="danger" onclick={handleDeleteAutomation}>
-                  {$t('entity_detail.automation.delete_button')}
-                </Button>
-              </div>
-            {:else if isScript}
-              <div class="section manage-card danger-zone">
-                <h3>{$t('entity_detail.script.delete_title')}</h3>
-                <p class="subtle">{$t('entity_detail.script.delete_desc')}</p>
-                <Button variant="danger" onclick={handleDeleteScript}>
-                  {$t('entity_detail.script.delete_button')}
-                </Button>
-              </div>
             {/if}
-          </div>
-        {/if}
-      </div>
+            <div class="section manage-card danger-zone">
+              <h3>{$t('entity_detail.manage.delete.title')}</h3>
+              <p class="subtle">
+                {@html $t('entity_detail.manage.delete.desc')}
+              </p>
+              <Button variant="danger" onclick={handleDeleteEntity}>
+                {$t('entity_detail.manage.delete.button')}
+              </Button>
+            </div>
+          {:else if isAutomation}
+            <div class="section manage-card">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <h3 id="automation-toggle-title">
+                    {$t('entity_detail.automation.toggle_title')}
+                  </h3>
+                  <p class="subtle">{$t('entity_detail.automation.toggle_desc')}</p>
+                </div>
+                <Toggle
+                  checked={entity.enabled ?? true}
+                  onchange={handleToggleAutomationEnabled}
+                  disabled={isTogglingAutomation}
+                  ariaLabelledBy="automation-toggle-title"
+                />
+              </div>
+              {#if automationToggleError}
+                <div class="rename-error">{automationToggleError}</div>
+              {/if}
+            </div>
+            <div class="section manage-card danger-zone">
+              <h3>{$t('entity_detail.automation.delete_title')}</h3>
+              <p class="subtle">{$t('entity_detail.automation.delete_desc')}</p>
+              <Button variant="danger" onclick={handleDeleteAutomation}>
+                {$t('entity_detail.automation.delete_button')}
+              </Button>
+            </div>
+          {:else if isScript}
+            <div class="section manage-card danger-zone">
+              <h3>{$t('entity_detail.script.delete_title')}</h3>
+              <p class="subtle">{$t('entity_detail.script.delete_desc')}</p>
+              <Button variant="danger" onclick={handleDeleteScript}>
+                {$t('entity_detail.script.delete_button')}
+              </Button>
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
   </div>
+</Modal>
 
-  <Dialog
-    open={dialog.open}
-    title={dialog.title}
-    message={dialog.message}
-    confirmText={dialog.confirmText}
-    variant={dialog.variant}
-    loading={dialog.loading}
-    loadingText={dialog.loadingText}
-    showCancel={dialog.showCancel}
-    onconfirm={dialog.onConfirm}
-    oncancel={closeDialog}
-  />
-{/if}
+<Dialog
+  open={dialog.open}
+  title={dialog.title}
+  message={dialog.message}
+  confirmText={dialog.confirmText}
+  variant={dialog.variant}
+  loading={dialog.loading}
+  loadingText={dialog.loadingText}
+  showCancel={dialog.showCancel}
+  onconfirm={dialog.onConfirm}
+  oncancel={closeDialog}
+/>
 
 <style>
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    box-sizing: border-box;
-  }
-
-  .modal {
+  .modal-content-wrapper {
     background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
-    width: 95%;
-    max-width: 1400px;
-    height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    height: 85vh;
     overflow: hidden;
   }
 
@@ -1449,18 +1398,9 @@
   }
 
   @media (max-width: 768px) {
-    .overlay {
-      padding: 0;
-      align-items: flex-end;
-    }
-
-    .modal {
-      width: 100%;
-      height: 100%;
-      max-width: none;
+    .modal-content-wrapper {
       border-radius: 0;
-      border: none;
-      border-top: 1px solid #334155; /* Optional: adds a slight separation if partial height was used, but for fullscreen it might not be needed. Keeping border: none as per plan */
+      height: 100%;
     }
 
     .modal-header {

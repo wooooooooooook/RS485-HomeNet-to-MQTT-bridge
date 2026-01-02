@@ -2,6 +2,7 @@
   import { t, locale } from 'svelte-i18n';
   import { onMount, untrack } from 'svelte';
   import Button from './Button.svelte';
+  import Modal from './Modal.svelte';
 
   interface ContentSummary {
     entities: Record<string, number>;
@@ -262,19 +263,10 @@
       applying = false;
     }
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="modal-backdrop">
-  <button class="backdrop-close" onclick={onClose} aria-label={$t('common.close')}></button>
-  <div class="modal" role="dialog" aria-modal="true">
+<Modal open={true} width="800px" onclose={onClose} oncancel={onClose}>
+  <div class="modal-content-wrapper">
     <header class="modal-header">
       <div class="header-content">
         <h2>{displayName}</h2>
@@ -411,189 +403,161 @@
       </footer>
     {/if}
   </div>
-</div>
+</Modal>
 
-{#if showConflictModal}
-  <div class="confirm-backdrop">
-    <div class="conflict-modal" role="dialog" aria-modal="true">
-      {#if compatibility && !compatibility.compatible}
-        <div class="compatibility-warning">
-          <h4>⚠️ {$t('gallery.preview.compatibility.incompatible')}</h4>
-          <p class="mismatch-label">{$t('gallery.preview.compatibility.mismatch_label')}:</p>
-          <ul class="mismatch-list">
-            {#each compatibility.mismatches as mismatch, index (`${mismatch.field}-${index}`)}
-              <li>
-                <code>{mismatch.field}</code>:
-                <span class="expected"
-                  >{$t('gallery.preview.compatibility.expected')}: {JSON.stringify(
-                    mismatch.expected,
-                  )}</span
-                >
-                <span class="actual"
-                  >{$t('gallery.preview.compatibility.actual')}: {JSON.stringify(
-                    mismatch.actual,
-                  )}</span
-                >
-              </li>
-            {/each}
-          </ul>
-          <label class="force-apply-checkbox">
-            <input type="checkbox" bind:checked={forceApply} />
-            {$t('gallery.preview.compatibility.force_apply')}
-          </label>
-          <p class="force-warning">{$t('gallery.preview.compatibility.force_apply_warning')}</p>
-        </div>
-      {:else if compatibility && compatibility.compatible}
-        <div class="compatibility-ok">
-          ✓ {$t('gallery.preview.compatibility.compatible')}
-        </div>
-      {/if}
-
-      {#if conflicts.length > 0}
-        <h3>{$t('gallery.preview.conflict_detected')}</h3>
-        <p class="conflict-desc">
-          {$t('gallery.preview.conflicts_found', { values: { count: conflicts.length } })}
-        </p>
-
-        <div class="conflict-list">
-          {#each conflicts as conflict, index (`${conflict.id}-${index}`)}
-            <div class="conflict-item">
-              <div class="conflict-header">
-                <span class="conflict-id">
-                  ID: <strong>{conflict.id}</strong>
-                </span>
-                <button class="toggle-diff-btn" onclick={() => toggleDiff(conflict.id)}>
-                  {expandedDiffs.has(conflict.id) ? '▲' : '▼'}
-                  {$t('gallery.preview.diff_title')}
-                </button>
-              </div>
-
-              {#if expandedDiffs.has(conflict.id)}
-                <div class="diff-container">
-                  <div class="diff-pane">
-                    <div class="diff-label">{$t('gallery.preview.existing')}</div>
-                    <pre class="diff-content">{conflict.existingYaml}</pre>
-                  </div>
-                  <div class="diff-pane">
-                    <div class="diff-label">{$t('gallery.preview.new')}</div>
-                    <pre class="diff-content">{conflict.newYaml}</pre>
-                  </div>
-                </div>
-              {/if}
-
-              <div class="resolution-options">
-                <label class="resolution-option">
-                  <input
-                    type="radio"
-                    name="resolution-{conflict.id}"
-                    value="overwrite"
-                    checked={resolutions[conflict.id] === 'overwrite'}
-                    onchange={() => (resolutions[conflict.id] = 'overwrite')}
-                  />
-                  {$t('gallery.preview.option_overwrite')}
-                </label>
-                <label class="resolution-option">
-                  <input
-                    type="radio"
-                    name="resolution-{conflict.id}"
-                    value="skip"
-                    checked={resolutions[conflict.id] === 'skip'}
-                    onchange={() => (resolutions[conflict.id] = 'skip')}
-                  />
-                  {$t('gallery.preview.option_skip')}
-                </label>
-                <label class="resolution-option">
-                  <input
-                    type="radio"
-                    name="resolution-{conflict.id}"
-                    value="rename"
-                    checked={resolutions[conflict.id] === 'rename'}
-                    onchange={() => (resolutions[conflict.id] = 'rename')}
-                  />
-                  {$t('gallery.preview.option_rename')}
-                </label>
-                {#if resolutions[conflict.id] === 'rename'}
-                  <input
-                    type="text"
-                    class="rename-input"
-                    placeholder={$t('gallery.preview.new_id_placeholder')}
-                    value={renames[conflict.id] || ''}
-                    oninput={(e) => (renames[conflict.id] = (e.target as HTMLInputElement).value)}
-                  />
-                {/if}
-              </div>
-            </div>
+<Modal
+  open={showConflictModal}
+  width="700px"
+  onclose={cancelConflictModal}
+  oncancel={cancelConflictModal}
+>
+  <div class="conflict-modal-wrapper">
+    {#if compatibility && !compatibility.compatible}
+      <div class="compatibility-warning">
+        <h4>⚠️ {$t('gallery.preview.compatibility.incompatible')}</h4>
+        <p class="mismatch-label">{$t('gallery.preview.compatibility.mismatch_label')}:</p>
+        <ul class="mismatch-list">
+          {#each compatibility.mismatches as mismatch, index (`${mismatch.field}-${index}`)}
+            <li>
+              <code>{mismatch.field}</code>:
+              <span class="expected"
+                >{$t('gallery.preview.compatibility.expected')}: {JSON.stringify(
+                  mismatch.expected,
+                )}</span
+              >
+              <span class="actual"
+                >{$t('gallery.preview.compatibility.actual')}: {JSON.stringify(
+                  mismatch.actual,
+                )}</span
+              >
+            </li>
           {/each}
-        </div>
-      {/if}
-      {#if newItems.length > 0}
-        <div class="new-items-section">
-          <h4>{$t('gallery.preview.new_items', { values: { count: newItems.length } })}</h4>
-          <ul class="new-items-list">
-            {#each newItems as newItem, index (`${newItem.id}-${index}`)}
-              <li>
-                • {newItem.id} ({newItem.type})
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
-
-      <div class="confirm-buttons">
-        <Button variant="secondary" onclick={cancelConflictModal}>
-          {$t('gallery.preview.cancel')}
-        </Button>
-        <Button
-          variant="primary"
-          onclick={applyWithResolutions}
-          disabled={!!(compatibility && !compatibility.compatible && !forceApply)}
-        >
-          {$t('gallery.preview.apply')}
-        </Button>
+        </ul>
+        <label class="force-apply-checkbox">
+          <input type="checkbox" bind:checked={forceApply} />
+          {$t('gallery.preview.compatibility.force_apply')}
+        </label>
+        <p class="force-warning">{$t('gallery.preview.compatibility.force_apply_warning')}</p>
       </div>
+    {:else if compatibility && compatibility.compatible}
+      <div class="compatibility-ok">
+        ✓ {$t('gallery.preview.compatibility.compatible')}
+      </div>
+    {/if}
+
+    {#if conflicts.length > 0}
+      <h3>{$t('gallery.preview.conflict_detected')}</h3>
+      <p class="conflict-desc">
+        {$t('gallery.preview.conflicts_found', { values: { count: conflicts.length } })}
+      </p>
+
+      <div class="conflict-list">
+        {#each conflicts as conflict, index (`${conflict.id}-${index}`)}
+          <div class="conflict-item">
+            <div class="conflict-header">
+              <span class="conflict-id">
+                ID: <strong>{conflict.id}</strong>
+              </span>
+              <button class="toggle-diff-btn" onclick={() => toggleDiff(conflict.id)}>
+                {expandedDiffs.has(conflict.id) ? '▲' : '▼'}
+                {$t('gallery.preview.diff_title')}
+              </button>
+            </div>
+
+            {#if expandedDiffs.has(conflict.id)}
+              <div class="diff-container">
+                <div class="diff-pane">
+                  <div class="diff-label">{$t('gallery.preview.existing')}</div>
+                  <pre class="diff-content">{conflict.existingYaml}</pre>
+                </div>
+                <div class="diff-pane">
+                  <div class="diff-label">{$t('gallery.preview.new')}</div>
+                  <pre class="diff-content">{conflict.newYaml}</pre>
+                </div>
+              </div>
+            {/if}
+
+            <div class="resolution-options">
+              <label class="resolution-option">
+                <input
+                  type="radio"
+                  name="resolution-{conflict.id}"
+                  value="overwrite"
+                  checked={resolutions[conflict.id] === 'overwrite'}
+                  onchange={() => (resolutions[conflict.id] = 'overwrite')}
+                />
+                {$t('gallery.preview.option_overwrite')}
+              </label>
+              <label class="resolution-option">
+                <input
+                  type="radio"
+                  name="resolution-{conflict.id}"
+                  value="skip"
+                  checked={resolutions[conflict.id] === 'skip'}
+                  onchange={() => (resolutions[conflict.id] = 'skip')}
+                />
+                {$t('gallery.preview.option_skip')}
+              </label>
+              <label class="resolution-option">
+                <input
+                  type="radio"
+                  name="resolution-{conflict.id}"
+                  value="rename"
+                  checked={resolutions[conflict.id] === 'rename'}
+                  onchange={() => (resolutions[conflict.id] = 'rename')}
+                />
+                {$t('gallery.preview.option_rename')}
+              </label>
+              {#if resolutions[conflict.id] === 'rename'}
+                <input
+                  type="text"
+                  class="rename-input"
+                  placeholder={$t('gallery.preview.new_id_placeholder')}
+                  value={renames[conflict.id] || ''}
+                  oninput={(e) => (renames[conflict.id] = (e.target as HTMLInputElement).value)}
+                />
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+    {#if newItems.length > 0}
+      <div class="new-items-section">
+        <h4>{$t('gallery.preview.new_items', { values: { count: newItems.length } })}</h4>
+        <ul class="new-items-list">
+          {#each newItems as newItem, index (`${newItem.id}-${index}`)}
+            <li>
+              • {newItem.id} ({newItem.type})
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
+    <div class="confirm-buttons">
+      <Button variant="secondary" onclick={cancelConflictModal}>
+        {$t('gallery.preview.cancel')}
+      </Button>
+      <Button
+        variant="primary"
+        onclick={applyWithResolutions}
+        disabled={!!(compatibility && !compatibility.compatible && !forceApply)}
+      >
+        {$t('gallery.preview.apply')}
+      </Button>
     </div>
   </div>
-{/if}
+</Modal>
 
 <style>
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-    backdrop-filter: blur(4px);
-  }
-
-  .backdrop-close {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: none;
-    border: none;
-    cursor: default;
-    z-index: 1;
-  }
-
-  .modal {
+  .modal-content-wrapper {
     background: #1e293b;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 12px;
-    max-width: 800px;
     width: 100%;
-    max-height: 90vh;
+    /* Fit inside Modal 90vh */
+    height: 85vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    z-index: 2;
   }
 
   .modal-header {
@@ -834,7 +798,7 @@
   }
 
   @media (max-width: 640px) {
-    .modal {
+    .modal-content-wrapper {
       max-height: 100vh;
       border-radius: 0;
     }
@@ -857,36 +821,16 @@
     }
   }
 
-  /* Confirm Modal Styles */
-  .confirm-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1100;
-    padding: 1rem;
-    backdrop-filter: blur(4px);
-  }
-
   /* Conflict Modal Styles */
-  .conflict-modal {
+  .conflict-modal-wrapper {
     background: #1e293b;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 12px;
     padding: 1.5rem;
-    max-width: 700px;
     width: 100%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 
-  .conflict-modal h3 {
+  .conflict-modal-wrapper h3 {
     font-size: 1.1rem;
     font-weight: 600;
     color: #f87171;
@@ -1030,7 +974,7 @@
   }
 
   @media (max-width: 640px) {
-    .conflict-modal {
+    .conflict-modal-wrapper {
       max-height: 95vh;
     }
 

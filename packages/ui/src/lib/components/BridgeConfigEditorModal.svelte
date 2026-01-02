@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
+  import Modal from './Modal.svelte';
 
   let {
     filename,
@@ -82,9 +83,7 @@
   });
 
   const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      onclose();
-    }
+    // Escape handled by Modal
     // Save with Ctrl/Cmd + S (Default: Save only)
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
       event.preventDefault();
@@ -95,22 +94,8 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div
-  class="modal-backdrop"
-  role="button"
-  tabindex="0"
-  onclick={(event) => {
-    if (event.currentTarget === event.target) {
-      onclose();
-    }
-  }}
-  onkeydown={(event) => {
-    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
-      onclose();
-    }
-  }}
->
-  <div class="modal-content" role="dialog" aria-modal="true">
+<Modal open={true} width="900px" {onclose} oncancel={onclose}>
+  <div class="modal-content-wrapper">
     <div class="modal-header">
       <h2>{$t('settings.bridge_config.edit_title')}</h2>
       <span class="filename">{filename}</span>
@@ -175,36 +160,16 @@
       </Button>
     </div>
   </div>
-</div>
+</Modal>
 
 <style>
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 1rem;
-    box-sizing: border-box;
-  }
-
-  .modal-content {
+  .modal-content-wrapper {
     position: relative;
     width: 100%;
-    max-width: 900px;
-    height: 90vh;
-    max-height: 90vh;
+    height: 85vh;
     background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 16px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   }
 
   .modal-header {
@@ -296,7 +261,6 @@
 
   .yaml-editor {
     flex: 1;
-    width: 100%;
     min-height: 300px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(148, 163, 184, 0.2);
@@ -335,14 +299,9 @@
   }
 
   @media (max-width: 640px) {
-    .modal-content {
+    .modal-content-wrapper {
       height: 100%;
-      max-height: 100%;
       border-radius: 0;
-    }
-
-    .modal-backdrop {
-      padding: 0;
     }
 
     .filename {

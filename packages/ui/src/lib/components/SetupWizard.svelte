@@ -2,14 +2,25 @@
   import { t, locale } from 'svelte-i18n';
   import Button from './Button.svelte';
   import Dialog from './Dialog.svelte';
+  import Modal from './Modal.svelte';
 
   let {
     configRoot = '',
     oncomplete,
+    onclose,
     mode = 'init',
-  }: { configRoot?: string; oncomplete?: () => void; mode?: 'init' | 'add' } = $props();
+  }: {
+    configRoot?: string;
+    oncomplete?: () => void;
+    onclose?: () => void;
+    mode?: 'init' | 'add';
+  } = $props();
 
   type WizardStep = 'config' | 'packet_defaults' | 'entity_selection' | 'consent' | 'complete';
+
+  // ... (rest of simple variable declarations unchanged)
+  // To avoid huge diff, I will target the script block first to add props and import.
+  // Then I will target the template to use snippet.
 
   const EMPTY_CONFIG_VALUE = '__empty__';
   const DEFAULT_PACKET_DEFAULTS = {
@@ -609,494 +620,521 @@
   }
 </script>
 
-<div class="setup-wizard">
-  <div class="wizard-card">
-    <div class="wizard-header">
-      <button class="lang-toggle" onclick={toggleLocale}>
-        {currentLocale === 'ko' ? 'EN' : '한국어'}
-      </button>
-      <h1>{mode === 'add' ? '브릿지 추가' : $t('setup_wizard.title')}</h1>
-      <p class="subtitle">{$t('setup_wizard.subtitle')}</p>
-    </div>
+{#snippet wizardContent()}
+  <div class="setup-wizard" class:modal-view={mode === 'add'}>
+    <div class="wizard-card" class:modal-view={mode === 'add'}>
+      <div class="wizard-header">
+        {#if mode === 'add'}
+          <button class="header-close-btn" onclick={onclose} aria-label="Close">×</button>
+        {:else}
+          <button class="lang-toggle" onclick={toggleLocale}>
+            {currentLocale === 'ko' ? 'EN' : '한국어'}
+          </button>
+        {/if}
+        <h1>{mode === 'add' ? '브릿지 추가' : $t('setup_wizard.title')}</h1>
+        <p class="subtitle">{$t('setup_wizard.subtitle')}</p>
+      </div>
 
-    <!-- Step indicator -->
-    <div class="step-indicator">
-      <div
-        class="step"
-        class:active={currentStep === 'config'}
-        class:done={currentStep !== 'config'}
-      >
-        <span class="step-number">1</span>
-        <span class="step-label">{$t('setup_wizard.step_config')}</span>
-      </div>
-      <div class="step-line"></div>
-      <div
-        class="step"
-        class:active={currentStep === 'packet_defaults'}
-        class:done={currentStep !== 'config' && currentStep !== 'packet_defaults'}
-      >
-        <span class="step-number">2</span>
-        <span class="step-label">{$t('setup_wizard.step_packet_defaults')}</span>
-      </div>
-      <div class="step-line"></div>
-      <div
-        class="step"
-        class:active={currentStep === 'entity_selection'}
-        class:done={currentStep === 'consent' || currentStep === 'complete'}
-      >
-        <span class="step-number">3</span>
-        <span class="step-label">{$t('setup_wizard.step_entities')}</span>
-      </div>
-      <div class="step-line"></div>
-      {#if mode !== 'add'}
+      <!-- Step indicator -->
+      <div class="step-indicator">
         <div
           class="step"
-          class:active={currentStep === 'consent'}
-          class:done={currentStep === 'complete'}
+          class:active={currentStep === 'config'}
+          class:done={currentStep !== 'config'}
         >
-          <span class="step-number">4</span>
-          <span class="step-label">{$t('setup_wizard.step_consent')}</span>
+          <span class="step-number">1</span>
+          <span class="step-label">{$t('setup_wizard.step_config')}</span>
         </div>
-      {/if}
-    </div>
-
-    {#if loading}
-      <div class="loading-state">
-        <p>{$t('setup_wizard.loading')}</p>
-      </div>
-    {:else if currentStep === 'config'}
-      <form
-        onsubmit={(e) => {
-          e.preventDefault();
-          handleConfigSubmit();
-        }}
-      >
-        <div class="form-group">
-          <label for="example-select">{$t('setup_wizard.example_label')}</label>
-          <select id="example-select" bind:value={selectedExample} disabled={submitting}>
-            <option value={EMPTY_CONFIG_VALUE}>{$t('setup_wizard.empty_option')}</option>
-            {#each examples as example (example)}
-              <option value={example}>{getExampleDisplayName(example)}</option>
-            {/each}
-          </select>
-          <p class="field-hint">{$t('setup_wizard.example_hint')}</p>
+        <div class="step-line"></div>
+        <div
+          class="step"
+          class:active={currentStep === 'packet_defaults'}
+          class:done={currentStep !== 'config' && currentStep !== 'packet_defaults'}
+        >
+          <span class="step-number">2</span>
+          <span class="step-label">{$t('setup_wizard.step_packet_defaults')}</span>
         </div>
-
-        <div class="form-group">
-          <label for="serial-path">{$t('setup_wizard.serial_path_label')}</label>
-          <input
-            type="text"
-            id="serial-path"
-            bind:value={serialPath}
-            placeholder={$t('setup_wizard.serial_path_placeholder')}
-            disabled={submitting}
-          />
-          <p class="field-hint">{$t('setup_wizard.serial_path_hint')}</p>
+        <div class="step-line"></div>
+        <div
+          class="step"
+          class:active={currentStep === 'entity_selection'}
+          class:done={currentStep === 'consent' || currentStep === 'complete'}
+        >
+          <span class="step-number">3</span>
+          <span class="step-label">{$t('setup_wizard.step_entities')}</span>
         </div>
-
-        <!-- Port ID field - shown for both empty config and examples -->
-        <div class="form-group">
-          <label for="serial-port-id">{$t('setup_wizard.serial_port_id_label')}</label>
-          <input
-            type="text"
-            id="serial-port-id"
-            bind:value={serialPortId}
-            placeholder={$t('setup_wizard.serial_port_id_placeholder')}
-            disabled={submitting}
-          />
-          <p class="field-hint">{$t('setup_wizard.serial_port_id_hint')}</p>
-        </div>
-
-        {#if selectedExample === EMPTY_CONFIG_VALUE}
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="serial-baud-rate">{$t('setup_wizard.serial_baud_rate_label')}</label>
-              <input
-                type="number"
-                id="serial-baud-rate"
-                bind:value={serialBaudRate}
-                min="1"
-                step="1"
-                disabled={submitting}
-              />
-              <p class="field-hint">{$t('setup_wizard.serial_baud_rate_hint')}</p>
-            </div>
-
-            <div class="form-group">
-              <label for="serial-data-bits">{$t('setup_wizard.serial_data_bits_label')}</label>
-              <select id="serial-data-bits" bind:value={serialDataBits} disabled={submitting}>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-              </select>
-              <p class="field-hint">{$t('setup_wizard.serial_data_bits_hint')}</p>
-            </div>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="serial-parity">{$t('setup_wizard.serial_parity_label')}</label>
-              <select id="serial-parity" bind:value={serialParity} disabled={submitting}>
-                <option value="none">none</option>
-                <option value="even">even</option>
-                <option value="mark">mark</option>
-                <option value="odd">odd</option>
-                <option value="space">space</option>
-              </select>
-              <p class="field-hint">{$t('setup_wizard.serial_parity_hint')}</p>
-            </div>
-
-            <div class="form-group">
-              <label for="serial-stop-bits">{$t('setup_wizard.serial_stop_bits_label')}</label>
-              <select id="serial-stop-bits" bind:value={serialStopBits} disabled={submitting}>
-                <option value="1">1</option>
-                <option value="1.5">1.5</option>
-                <option value="2">2</option>
-              </select>
-              <p class="field-hint">{$t('setup_wizard.serial_stop_bits_hint')}</p>
-            </div>
-          </div>
-          <p class="field-hint emphasis">{$t('setup_wizard.serial_manual_hint')}</p>
-        {:else}
-          <!-- Show example serial config info -->
-          <div class="example-serial-info">
-            <p class="info-label">{$t('setup_wizard.example_serial_info')}</p>
-            {#if exampleSerialLoading}
-              <p class="info-loading">{$t('setup_wizard.example_serial_loading')}</p>
-            {:else if exampleSerialInfo}
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-key">Baud Rate</span>
-                  <span class="info-value">{exampleSerialInfo.baud_rate ?? '-'}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-key">Data Bits</span>
-                  <span class="info-value">{exampleSerialInfo.data_bits ?? '-'}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-key">Parity</span>
-                  <span class="info-value">{exampleSerialInfo.parity ?? '-'}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-key">Stop Bits</span>
-                  <span class="info-value">{exampleSerialInfo.stop_bits ?? '-'}</span>
-                </div>
-              </div>
-            {/if}
+        <div class="step-line"></div>
+        {#if mode !== 'add'}
+          <div
+            class="step"
+            class:active={currentStep === 'consent'}
+            class:done={currentStep === 'complete'}
+          >
+            <span class="step-number">4</span>
+            <span class="step-label">{$t('setup_wizard.step_consent')}</span>
           </div>
         {/if}
+      </div>
 
-        <div class="form-group">
-          {#if hasTested && !error}
-            <div class="serial-test-result">
-              {#if testingSerial}
-                <p class="field-hint">{$t('setup_wizard.serial_test_wait')}</p>
-              {:else if testPackets.length > 0}
-                <div class="result-list">
-                  <div class="result-row">
-                    <code>
-                      {#each testPackets as packet, index (`${packet}-${index}`)}
-                        {packet}
-                      {/each}
-                    </code>
+      {#if loading}
+        <div class="loading-state">
+          <p>{$t('setup_wizard.loading')}</p>
+        </div>
+      {:else if currentStep === 'config'}
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handleConfigSubmit();
+          }}
+        >
+          <div class="form-group">
+            <label for="example-select">{$t('setup_wizard.example_label')}</label>
+            <select id="example-select" bind:value={selectedExample} disabled={submitting}>
+              <option value={EMPTY_CONFIG_VALUE}>{$t('setup_wizard.empty_option')}</option>
+              {#each examples as example (example)}
+                <option value={example}>{getExampleDisplayName(example)}</option>
+              {/each}
+            </select>
+            <p class="field-hint">{$t('setup_wizard.example_hint')}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="serial-path">{$t('setup_wizard.serial_path_label')}</label>
+            <input
+              type="text"
+              id="serial-path"
+              bind:value={serialPath}
+              placeholder={$t('setup_wizard.serial_path_placeholder')}
+              disabled={submitting}
+            />
+            <p class="field-hint">{$t('setup_wizard.serial_path_hint')}</p>
+          </div>
+
+          <!-- Port ID field - shown for both empty config and examples -->
+          <div class="form-group">
+            <label for="serial-port-id">{$t('setup_wizard.serial_port_id_label')}</label>
+            <input
+              type="text"
+              id="serial-port-id"
+              bind:value={serialPortId}
+              placeholder={$t('setup_wizard.serial_port_id_placeholder')}
+              disabled={submitting}
+            />
+            <p class="field-hint">{$t('setup_wizard.serial_port_id_hint')}</p>
+          </div>
+
+          {#if selectedExample === EMPTY_CONFIG_VALUE}
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="serial-baud-rate">{$t('setup_wizard.serial_baud_rate_label')}</label>
+                <input
+                  type="number"
+                  id="serial-baud-rate"
+                  bind:value={serialBaudRate}
+                  min="1"
+                  step="1"
+                  disabled={submitting}
+                />
+                <p class="field-hint">{$t('setup_wizard.serial_baud_rate_hint')}</p>
+              </div>
+
+              <div class="form-group">
+                <label for="serial-data-bits">{$t('setup_wizard.serial_data_bits_label')}</label>
+                <select id="serial-data-bits" bind:value={serialDataBits} disabled={submitting}>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                </select>
+                <p class="field-hint">{$t('setup_wizard.serial_data_bits_hint')}</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="serial-parity">{$t('setup_wizard.serial_parity_label')}</label>
+                <select id="serial-parity" bind:value={serialParity} disabled={submitting}>
+                  <option value="none">none</option>
+                  <option value="even">even</option>
+                  <option value="mark">mark</option>
+                  <option value="odd">odd</option>
+                  <option value="space">space</option>
+                </select>
+                <p class="field-hint">{$t('setup_wizard.serial_parity_hint')}</p>
+              </div>
+
+              <div class="form-group">
+                <label for="serial-stop-bits">{$t('setup_wizard.serial_stop_bits_label')}</label>
+                <select id="serial-stop-bits" bind:value={serialStopBits} disabled={submitting}>
+                  <option value="1">1</option>
+                  <option value="1.5">1.5</option>
+                  <option value="2">2</option>
+                </select>
+                <p class="field-hint">{$t('setup_wizard.serial_stop_bits_hint')}</p>
+              </div>
+            </div>
+            <p class="field-hint emphasis">{$t('setup_wizard.serial_manual_hint')}</p>
+          {:else}
+            <!-- Show example serial config info -->
+            <div class="example-serial-info">
+              <p class="info-label">{$t('setup_wizard.example_serial_info')}</p>
+              {#if exampleSerialLoading}
+                <p class="info-loading">{$t('setup_wizard.example_serial_loading')}</p>
+              {:else if exampleSerialInfo}
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-key">Baud Rate</span>
+                    <span class="info-value">{exampleSerialInfo.baud_rate ?? '-'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-key">Data Bits</span>
+                    <span class="info-value">{exampleSerialInfo.data_bits ?? '-'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-key">Parity</span>
+                    <span class="info-value">{exampleSerialInfo.parity ?? '-'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-key">Stop Bits</span>
+                    <span class="info-value">{exampleSerialInfo.stop_bits ?? '-'}</span>
                   </div>
                 </div>
               {/if}
             </div>
           {/if}
 
-          {#if testPackets.length > 0}
-            <p class="success-hint">{$t('setup_wizard.serial_test_success')}</p>
-          {/if}
+          <div class="form-group">
+            {#if hasTested && !error}
+              <div class="serial-test-result">
+                {#if testingSerial}
+                  <p class="field-hint">{$t('setup_wizard.serial_test_wait')}</p>
+                {:else if testPackets.length > 0}
+                  <div class="result-list">
+                    <div class="result-row">
+                      <code>
+                        {#each testPackets as packet, index (`${packet}-${index}`)}
+                          {packet}
+                        {/each}
+                      </code>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            {/if}
 
-          {#if error}
-            <div class="error-message">{error}</div>
-          {/if}
+            {#if testPackets.length > 0}
+              <p class="success-hint">{$t('setup_wizard.serial_test_success')}</p>
+            {/if}
 
-          <div class="button-group">
+            {#if error}
+              <div class="error-message">{error}</div>
+            {/if}
+
+            <div class="button-group">
+              <Button
+                type="button"
+                variant="secondary"
+                onclick={handleSerialTest}
+                disabled={submitting || testingSerial || !selectedExample || !isFormReady()}
+                class="wizard-test-btn"
+              >
+                {$t('setup_wizard.serial_test_button')}
+              </Button>
+
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={submitting || testingSerial}
+                disabled={!selectedExample || !isFormReady()}
+                class="wizard-submit-btn"
+              >
+                {#if !hasTested && testingSerial}
+                  {$t('setup_wizard.serial_test_running')}
+                {:else if hasTested && testPackets.length === 0 && error}
+                  {$t('setup_wizard.ignore_and_next')}
+                {:else}
+                  {$t('setup_wizard.next')}
+                {/if}
+              </Button>
+            </div>
+          </div>
+        </form>
+      {:else if currentStep === 'packet_defaults'}
+        <div class="wizard-step">
+          <h3>{$t('setup_wizard.pdf_title')}</h3>
+          <p class="step-desc">{$t('setup_wizard.pdf_desc')}</p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_timeout">{$t('setup_wizard.pdf_rx_timeout')}</label>
+              <input type="text" id="rx_timeout" bind:value={packetDefaults.rx_timeout} />
+              <p class="field-hint">{$t('setup_wizard.pdf_rx_timeout_hint')}</p>
+            </div>
+            <div class="form-group">
+              <label for="tx_delay">{$t('setup_wizard.pdf_tx_delay')}</label>
+              <input type="text" id="tx_delay" bind:value={packetDefaults.tx_delay} />
+              <p class="field-hint">{$t('setup_wizard.pdf_tx_delay_hint')}</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tx_timeout">{$t('setup_wizard.pdf_tx_timeout')}</label>
+              <input type="text" id="tx_timeout" bind:value={packetDefaults.tx_timeout} />
+              <p class="field-hint">{$t('setup_wizard.pdf_tx_timeout_hint')}</p>
+            </div>
+            <div class="form-group">
+              <label for="tx_retry_cnt">{$t('setup_wizard.pdf_tx_retry_cnt')}</label>
+              <input type="number" id="tx_retry_cnt" bind:value={packetDefaults.tx_retry_cnt} />
+              <p class="field-hint">{$t('setup_wizard.pdf_tx_retry_cnt_hint')}</p>
+            </div>
+          </div>
+
+          <hr class="params-divider" />
+
+          <h4>{$t('setup_wizard.pdf_header_footer_title')}</h4>
+          <p class="step-desc-sm">{$t('setup_wizard.pdf_header_footer_desc')}</p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_header">{$t('setup_wizard.pdf_rx_header')}</label>
+              <input
+                type="text"
+                id="rx_header"
+                value={typeof packetDefaults.rx_header !== 'string'
+                  ? JSON.stringify(packetDefaults.rx_header ?? [])
+                  : packetDefaults.rx_header}
+                oninput={(e) => (packetDefaults.rx_header = e.currentTarget.value)}
+              />
+            </div>
+            <div class="form-group">
+              <label for="rx_footer">{$t('setup_wizard.pdf_rx_footer')}</label>
+              <input
+                type="text"
+                id="rx_footer"
+                value={typeof packetDefaults.rx_footer !== 'string'
+                  ? JSON.stringify(packetDefaults.rx_footer ?? [])
+                  : packetDefaults.rx_footer}
+                oninput={(e) => (packetDefaults.rx_footer = e.currentTarget.value)}
+              />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tx_header">{$t('setup_wizard.pdf_tx_header')}</label>
+              <input
+                type="text"
+                id="tx_header"
+                value={typeof packetDefaults.tx_header !== 'string'
+                  ? JSON.stringify(packetDefaults.tx_header ?? [])
+                  : packetDefaults.tx_header}
+                oninput={(e) => (packetDefaults.tx_header = e.currentTarget.value)}
+              />
+            </div>
+            <div class="form-group">
+              <label for="tx_footer">{$t('setup_wizard.pdf_tx_footer')}</label>
+              <input
+                type="text"
+                id="tx_footer"
+                value={typeof packetDefaults.tx_footer !== 'string'
+                  ? JSON.stringify(packetDefaults.tx_footer ?? [])
+                  : packetDefaults.tx_footer}
+                oninput={(e) => (packetDefaults.tx_footer = e.currentTarget.value)}
+              />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_checksum">{$t('setup_wizard.pdf_rx_checksum')}</label>
+              <input type="text" id="rx_checksum" bind:value={packetDefaults.rx_checksum} />
+            </div>
+            <div class="form-group">
+              <label for="tx_checksum">{$t('setup_wizard.pdf_tx_checksum')}</label>
+              <input type="text" id="tx_checksum" bind:value={packetDefaults.tx_checksum} />
+            </div>
+          </div>
+
+          <div class="actions">
             <Button
               type="button"
               variant="secondary"
-              onclick={handleSerialTest}
-              disabled={submitting || testingSerial || !selectedExample || !isFormReady()}
-              class="wizard-test-btn"
+              onclick={handlePrevious}
+              disabled={submitting}
             >
-              {$t('setup_wizard.serial_test_button')}
+              {$t('setup_wizard.prev')}
             </Button>
-
             <Button
-              type="submit"
+              type="button"
               variant="primary"
-              isLoading={submitting || testingSerial}
-              disabled={!selectedExample || !isFormReady()}
-              class="wizard-submit-btn"
+              onclick={handleConfigSubmit}
+              isLoading={submitting}
+              disabled={submitting}
             >
-              {#if !hasTested && testingSerial}
-                {$t('setup_wizard.serial_test_running')}
-              {:else if hasTested && testPackets.length === 0 && error}
-                {$t('setup_wizard.ignore_and_next')}
-              {:else}
-                {$t('setup_wizard.next')}
-              {/if}
+              {$t('setup_wizard.next')}
             </Button>
           </div>
         </div>
-      </form>
-    {:else if currentStep === 'packet_defaults'}
-      <div class="wizard-step">
-        <h3>{$t('setup_wizard.pdf_title')}</h3>
-        <p class="step-desc">{$t('setup_wizard.pdf_desc')}</p>
+      {:else if currentStep === 'entity_selection'}
+        <div class="wizard-step">
+          <h3>{$t('setup_wizard.entities_title')}</h3>
+          <p class="step-desc">{$t('setup_wizard.entities_desc')}</p>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="rx_timeout">{$t('setup_wizard.pdf_rx_timeout')}</label>
-            <input type="text" id="rx_timeout" bind:value={packetDefaults.rx_timeout} />
-            <p class="field-hint">{$t('setup_wizard.pdf_rx_timeout_hint')}</p>
-          </div>
-          <div class="form-group">
-            <label for="tx_delay">{$t('setup_wizard.pdf_tx_delay')}</label>
-            <input type="text" id="tx_delay" bind:value={packetDefaults.tx_delay} />
-            <p class="field-hint">{$t('setup_wizard.pdf_tx_delay_hint')}</p>
-          </div>
-        </div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="tx_timeout">{$t('setup_wizard.pdf_tx_timeout')}</label>
-            <input type="text" id="tx_timeout" bind:value={packetDefaults.tx_timeout} />
-            <p class="field-hint">{$t('setup_wizard.pdf_tx_timeout_hint')}</p>
-          </div>
-          <div class="form-group">
-            <label for="tx_retry_cnt">{$t('setup_wizard.pdf_tx_retry_cnt')}</label>
-            <input type="number" id="tx_retry_cnt" bind:value={packetDefaults.tx_retry_cnt} />
-            <p class="field-hint">{$t('setup_wizard.pdf_tx_retry_cnt_hint')}</p>
-          </div>
-        </div>
-
-        <hr class="params-divider" />
-
-        <h4>{$t('setup_wizard.pdf_header_footer_title')}</h4>
-        <p class="step-desc-sm">{$t('setup_wizard.pdf_header_footer_desc')}</p>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="rx_header">{$t('setup_wizard.pdf_rx_header')}</label>
-            <input
-              type="text"
-              id="rx_header"
-              value={typeof packetDefaults.rx_header !== 'string'
-                ? JSON.stringify(packetDefaults.rx_header ?? [])
-                : packetDefaults.rx_header}
-              oninput={(e) => (packetDefaults.rx_header = e.currentTarget.value)}
-            />
-          </div>
-          <div class="form-group">
-            <label for="rx_footer">{$t('setup_wizard.pdf_rx_footer')}</label>
-            <input
-              type="text"
-              id="rx_footer"
-              value={typeof packetDefaults.rx_footer !== 'string'
-                ? JSON.stringify(packetDefaults.rx_footer ?? [])
-                : packetDefaults.rx_footer}
-              oninput={(e) => (packetDefaults.rx_footer = e.currentTarget.value)}
-            />
-          </div>
-        </div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="tx_header">{$t('setup_wizard.pdf_tx_header')}</label>
-            <input
-              type="text"
-              id="tx_header"
-              value={typeof packetDefaults.tx_header !== 'string'
-                ? JSON.stringify(packetDefaults.tx_header ?? [])
-                : packetDefaults.tx_header}
-              oninput={(e) => (packetDefaults.tx_header = e.currentTarget.value)}
-            />
-          </div>
-          <div class="form-group">
-            <label for="tx_footer">{$t('setup_wizard.pdf_tx_footer')}</label>
-            <input
-              type="text"
-              id="tx_footer"
-              value={typeof packetDefaults.tx_footer !== 'string'
-                ? JSON.stringify(packetDefaults.tx_footer ?? [])
-                : packetDefaults.tx_footer}
-              oninput={(e) => (packetDefaults.tx_footer = e.currentTarget.value)}
-            />
-          </div>
-        </div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="rx_checksum">{$t('setup_wizard.pdf_rx_checksum')}</label>
-            <input type="text" id="rx_checksum" bind:value={packetDefaults.rx_checksum} />
-          </div>
-          <div class="form-group">
-            <label for="tx_checksum">{$t('setup_wizard.pdf_tx_checksum')}</label>
-            <input type="text" id="tx_checksum" bind:value={packetDefaults.tx_checksum} />
-          </div>
-        </div>
-
-        <div class="actions">
-          <Button type="button" variant="secondary" onclick={handlePrevious} disabled={submitting}>
-            {$t('setup_wizard.prev')}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onclick={handleConfigSubmit}
-            isLoading={submitting}
-            disabled={submitting}
-          >
-            {$t('setup_wizard.next')}
-          </Button>
-        </div>
-      </div>
-    {:else if currentStep === 'entity_selection'}
-      <div class="wizard-step">
-        <h3>{$t('setup_wizard.entities_title')}</h3>
-        <p class="step-desc">{$t('setup_wizard.entities_desc')}</p>
-
-        {#if loadingEntities}
-          <div class="loading-state">
-            <p>{$t('setup_wizard.loading_entities')}</p>
-          </div>
-        {:else if Object.keys(entities).length === 0}
-          <div class="empty-state">
-            <p>{$t('setup_wizard.no_entities_found')}</p>
-          </div>
-        {:else}
-          <div class="entity-list-container">
-            {#each Object.entries(entities) as [type, items] (type)}
-              <div class="entity-group">
-                <div class="entity-type-header">
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedEntities[type]?.length === items.length}
-                      indeterminate={selectedEntities[type]?.length > 0 &&
-                        selectedEntities[type]?.length < items.length}
-                      onchange={(e) => toggleType(type, e.currentTarget.checked)}
-                    />
-                    <span class="type-name">{$t(`entity_types.${type}`, { default: type })}</span>
-                    <span class="type-count">({selectedEntities[type]?.length}/{items.length})</span
-                    >
-                  </label>
-                </div>
-                <div class="entity-items">
-                  {#each items as item (item.id)}
-                    <label class="checkbox-label entity-item">
+          {#if loadingEntities}
+            <div class="loading-state">
+              <p>{$t('setup_wizard.loading_entities')}</p>
+            </div>
+          {:else if Object.keys(entities).length === 0}
+            <div class="empty-state">
+              <p>{$t('setup_wizard.no_entities_found')}</p>
+            </div>
+          {:else}
+            <div class="entity-list-container">
+              {#each Object.entries(entities) as [type, items] (type)}
+                <div class="entity-group">
+                  <div class="entity-type-header">
+                    <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        checked={selectedEntities[type]?.includes(item.id)}
-                        onchange={(e) => toggleEntity(type, item.id, e.currentTarget.checked)}
+                        checked={selectedEntities[type]?.length === items.length}
+                        indeterminate={selectedEntities[type]?.length > 0 &&
+                          selectedEntities[type]?.length < items.length}
+                        onchange={(e) => toggleType(type, e.currentTarget.checked)}
                       />
-                      <span class="entity-name">{item.name}</span>
-                      <span class="entity-id">{item.id}</span>
+                      <span class="type-name">{$t(`entity_types.${type}`, { default: type })}</span>
+                      <span class="type-count"
+                        >({selectedEntities[type]?.length}/{items.length})</span
+                      >
                     </label>
-                  {/each}
+                  </div>
+                  <div class="entity-items">
+                    {#each items as item (item.id)}
+                      <label class="checkbox-label entity-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedEntities[type]?.includes(item.id)}
+                          onchange={(e) => toggleEntity(type, item.id, e.currentTarget.checked)}
+                        />
+                        <span class="entity-name">{item.name}</span>
+                        <span class="entity-id">{item.id}</span>
+                      </label>
+                    {/each}
+                  </div>
                 </div>
-              </div>
-            {/each}
-          </div>
-        {/if}
+              {/each}
+            </div>
+          {/if}
 
-        <div class="actions">
-          <Button type="button" variant="secondary" onclick={handlePrevious} disabled={submitting}>
-            {$t('setup_wizard.prev')}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onclick={handleConfigSubmit}
-            isLoading={submitting}
-            disabled={submitting}
-          >
-            {$t('setup_wizard.next')}
-          </Button>
-        </div>
-      </div>
-    {:else if currentStep === 'consent'}
-      <div class="consent-section">
-        <p class="consent-desc">{$t('settings.log_sharing.consent_modal.desc')}</p>
-
-        <div class="details">
-          <h3>{$t('settings.log_sharing.consent_modal.collection_items_title')}</h3>
-          <ul>
-            <li>{$t('settings.log_sharing.consent_modal.collection_item_1')}</li>
-            <li>{$t('settings.log_sharing.consent_modal.collection_item_2')}</li>
-            <li>{$t('settings.log_sharing.consent_modal.collection_item_3')}</li>
-            <li>{$t('settings.log_sharing.consent_modal.collection_item_4')}</li>
-            <li>{$t('settings.log_sharing.consent_modal.collection_item_5')}</li>
-          </ul>
-
-          <h3>{$t('settings.log_sharing.consent_modal.collection_timing_title')}</h3>
-          <p>{@html $t('settings.log_sharing.consent_modal.collection_timing')}</p>
-
-          <p class="privacy-note">{$t('settings.log_sharing.consent_modal.privacy_note')}</p>
-        </div>
-
-        <div class="consent-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onclick={handlePrevious}
-            disabled={consentSubmitting}
-            class="wizard-btn-flex"
-          >
-            {$t('setup_wizard.prev')}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onclick={() => handleConsent(false)}
-            disabled={consentSubmitting}
-            class="wizard-btn-flex"
-          >
-            {$t('settings.log_sharing.consent_modal.decline')}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onclick={() => handleConsent(true)}
-            disabled={consentSubmitting}
-            class="wizard-btn-flex"
-          >
-            {$t('settings.log_sharing.consent_modal.accept')}
-          </Button>
-        </div>
-      </div>
-    {:else if currentStep === 'complete'}
-      <div class="success-state">
-        {#if requiresManualUpdate}
-          <div class="warning-icon">!</div>
-          <p class="warning-message">
-            {$t('setup_wizard.manual_config_update_required', {
-              values: { filename: createdFilename },
-            })}
-          </p>
-        {:else}
-          <div class="success-icon">✓</div>
-          <p class="success-message">{$t('setup_wizard.success_message')}</p>
-          <p class="hint">{$t('setup_wizard.restarting')}</p>
-          <div class="restart-action">
+          <div class="actions">
             <Button
-              variant="primary"
-              onclick={handleRestart}
-              isLoading={isRestarting}
-              disabled={isRestarting}
+              type="button"
+              variant="secondary"
+              onclick={handlePrevious}
+              disabled={submitting}
             >
-              {$t('settings.app_control.restart')}
+              {$t('setup_wizard.prev')}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onclick={handleConfigSubmit}
+              isLoading={submitting}
+              disabled={submitting}
+            >
+              {$t('setup_wizard.next')}
             </Button>
           </div>
-        {/if}
-      </div>
-    {/if}
+        </div>
+      {:else if currentStep === 'consent'}
+        <div class="consent-section">
+          <p class="consent-desc">{$t('settings.log_sharing.consent_modal.desc')}</p>
+
+          <div class="details">
+            <h3>{$t('settings.log_sharing.consent_modal.collection_items_title')}</h3>
+            <ul>
+              <li>{$t('settings.log_sharing.consent_modal.collection_item_1')}</li>
+              <li>{$t('settings.log_sharing.consent_modal.collection_item_2')}</li>
+              <li>{$t('settings.log_sharing.consent_modal.collection_item_3')}</li>
+              <li>{$t('settings.log_sharing.consent_modal.collection_item_4')}</li>
+              <li>{$t('settings.log_sharing.consent_modal.collection_item_5')}</li>
+            </ul>
+
+            <h3>{$t('settings.log_sharing.consent_modal.collection_timing_title')}</h3>
+            <p>{@html $t('settings.log_sharing.consent_modal.collection_timing')}</p>
+
+            <p class="privacy-note">{$t('settings.log_sharing.consent_modal.privacy_note')}</p>
+          </div>
+
+          <div class="consent-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onclick={handlePrevious}
+              disabled={consentSubmitting}
+              class="wizard-btn-flex"
+            >
+              {$t('setup_wizard.prev')}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onclick={() => handleConsent(false)}
+              disabled={consentSubmitting}
+              class="wizard-btn-flex"
+            >
+              {$t('settings.log_sharing.consent_modal.decline')}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onclick={() => handleConsent(true)}
+              disabled={consentSubmitting}
+              class="wizard-btn-flex"
+            >
+              {$t('settings.log_sharing.consent_modal.accept')}
+            </Button>
+          </div>
+        </div>
+      {:else if currentStep === 'complete'}
+        <div class="success-state">
+          {#if requiresManualUpdate}
+            <div class="warning-icon">!</div>
+            <p class="warning-message">
+              {$t('setup_wizard.manual_config_update_required', {
+                values: { filename: createdFilename },
+              })}
+            </p>
+          {:else}
+            <div class="success-icon">✓</div>
+            <p class="success-message">{$t('setup_wizard.success_message')}</p>
+            <p class="hint">{$t('setup_wizard.restarting')}</p>
+            <div class="restart-action">
+              <Button
+                variant="primary"
+                onclick={handleRestart}
+                isLoading={isRestarting}
+                disabled={isRestarting}
+              >
+                {$t('settings.app_control.restart')}
+              </Button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
-</div>
+{/snippet}
+
+{#if mode === 'add'}
+  <Modal open={true} width="800px" {onclose} oncancel={onclose}>
+    <div class="modal-content-wrapper">
+      {@render wizardContent()}
+    </div>
+  </Modal>
+{:else}
+  {@render wizardContent()}
+{/if}
 
 <Dialog
   open={dialog.open}
@@ -1638,5 +1676,52 @@
     .consent-actions {
       flex-direction: column;
     }
+  }
+  /* Modal Styles for SetupWizard */
+  .modal-content-wrapper {
+    position: relative;
+    width: 100%;
+    height: 90vh;
+    overflow-y: auto;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .header-close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px; /* Match lang-toggle radius, or use circle? User asked to replace lang button spot */
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s;
+  }
+  .header-close-btn:hover {
+    background: rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+  }
+
+  /* Modal View overrides */
+  .setup-wizard.modal-view {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .wizard-card.modal-view {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 1.5rem 0.5rem; /* Reduce padding as modal wrapper has padding */
+    max-width: none;
   }
 </style>

@@ -1,0 +1,411 @@
+meta:
+  name: "스마트콘센트설정(10개)(F7 50으로 시작)"
+  name_en: "Smart Outlets (10 Outlets) F7 50"
+  description: "F7 50으로 시작하는 Ezville 스마트 콘센트 10개 (방5개, 방마다 2개 예시) 설정입니다. 전력 측정 센서 포함."
+  description_en: "F7 50 starting Ezville 10 smart outlets (5 rooms, 2 outlets per room example) with power consumption sensors."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["switch", "outlet", "power", "ezville"]
+
+entities:
+# 제어
+# F7 50 [Room:1x] 43 02 0[Plug#] [ON/OFF] 00 00 [XOR] [ADD]
+# 상태
+# F7 50 [Room:1x] 81 [Length] [Count] [Plug1: Auto,Power,W1,W2,00,00] [Plug2...] [XOR] [ADD]  
+# 플러그당 6바이트 차지
+
+  switch:
+    # Room 1 (0x11)
+    - id: 'outlet_1_1'
+      name: 'Outlet 1-1'
+      state:
+        data: [0x50, 0x11, 0x81]
+      state_on:
+        offset: 7 # Header 6 + Byte 2 (index 1)
+        data: [0x01] # >0
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x11, 0x43, 0x02, 0x01, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x11, 0x43, 0x02, 0x01, 0x00, 0x00, 0x00]
+
+    - id: 'outlet_1_2'
+      name: 'Outlet 1-2'
+      state:
+        data: [0x50, 0x11, 0x81]
+      state_on:
+        offset: 13 # Header 6 + Stride 6 + Byte 2 (index 1)
+        data: [0x01]
+      state_off:
+        offset: 13
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x11, 0x43, 0x02, 0x02, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x11, 0x43, 0x02, 0x02, 0x00, 0x00, 0x00]
+
+    # 3번째 콘센트가 필요한경우 참조하세요.
+    # - id: 'outlet_1_3'
+    #   name: 'Outlet 1-3'
+    #   state:
+    #     data: [0x50, 0x11, 0x81]
+    #   state_on:
+    #     offset: 19 # Header 6 + Stride 6*2 + Byte 2 (index 1)
+    #     data: [0x01]
+    #   state_off:
+    #     offset: 19
+    #     data: [0x00]
+    #   command_on:
+    #     data: [0x50, 0x11, 0x43, 0x02, 0x03, 0x01, 0x00, 0x00]
+    #   command_off:
+    #     data: [0x50, 0x11, 0x43, 0x02, 0x03, 0x00, 0x00, 0x00]
+
+    # Room 2 (0x12)
+    - id: 'outlet_2_1'
+      name: 'Outlet 2-1'
+      state:
+        data: [0x50, 0x12, 0x81]
+      state_on:
+        offset: 7
+        data: [0x01]
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x12, 0x43, 0x02, 0x01, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x12, 0x43, 0x02, 0x01, 0x00, 0x00, 0x00]
+
+    - id: 'outlet_2_2'
+      name: 'Outlet 2-2'
+      state:
+        data: [0x50, 0x12, 0x81]
+      state_on:
+        offset: 13
+        data: [0x01]
+      state_off:
+        offset: 13
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x12, 0x43, 0x02, 0x02, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x12, 0x43, 0x02, 0x02, 0x00, 0x00, 0x00]
+
+    # Room 3 (0x13)
+    - id: 'outlet_3_1'
+      name: 'Outlet 3-1'
+      state:
+        data: [0x50, 0x13, 0x81]
+      state_on:
+        offset: 7
+        data: [0x01]
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x13, 0x43, 0x02, 0x01, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x13, 0x43, 0x02, 0x01, 0x00, 0x00, 0x00]
+
+    - id: 'outlet_3_2'
+      name: 'Outlet 3-2'
+      state:
+        data: [0x50, 0x13, 0x81]
+      state_on:
+        offset: 13
+        data: [0x01]
+      state_off:
+        offset: 13
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x13, 0x43, 0x02, 0x02, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x13, 0x43, 0x02, 0x02, 0x00, 0x00, 0x00]
+
+    # Room 4 (0x14)
+    - id: 'outlet_4_1'
+      name: 'Outlet 4-1'
+      state:
+        data: [0x50, 0x14, 0x81]
+      state_on:
+        offset: 7
+        data: [0x01]
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x14, 0x43, 0x02, 0x01, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x14, 0x43, 0x02, 0x01, 0x00, 0x00, 0x00]
+
+    - id: 'outlet_4_2'
+      name: 'Outlet 4-2'
+      state:
+        data: [0x50, 0x14, 0x81]
+      state_on:
+        offset: 13
+        data: [0x01]
+      state_off:
+        offset: 13
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x14, 0x43, 0x02, 0x02, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x14, 0x43, 0x02, 0x02, 0x00, 0x00, 0x00]
+
+    # Room 5 (0x15)
+    - id: 'outlet_5_1'
+      name: 'Outlet 5-1'
+      state:
+        data: [0x50, 0x15, 0x81]
+      state_on:
+        offset: 7
+        data: [0x01]
+      state_off:
+        offset: 7
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x15, 0x43, 0x02, 0x01, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x15, 0x43, 0x02, 0x01, 0x00, 0x00, 0x00]
+
+    - id: 'outlet_5_2'
+      name: 'Outlet 5-2'
+      state:
+        data: [0x50, 0x15, 0x81]
+      state_on:
+        offset: 13
+        data: [0x01]
+      state_off:
+        offset: 13
+        data: [0x00]
+      command_on:
+        data: [0x50, 0x15, 0x43, 0x02, 0x02, 0x01, 0x00, 0x00]
+      command_off:
+        data: [0x50, 0x15, 0x43, 0x02, 0x02, 0x00, 0x00, 0x00]
+
+  sensor:
+    # Room 1 Power
+    - id: 'power_1_1'
+      name: 'Power Outlet 1-1'
+      state:
+        data: [0x50, 0x11, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        # Header 6 + Byte 3,4 (index 2,3)
+        offset: 8
+        length: 2
+        precision: 2
+
+    - id: 'power_1_2'
+      name: 'Power Outlet 1-2'
+      state:
+        data: [0x50, 0x11, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        # Header 6 + Stride 6 + Byte 3,4
+        offset: 14
+        length: 2
+        precision: 2
+
+    # Room 2 Power
+    - id: 'power_2_1'
+      name: 'Power Outlet 2-1'
+      state:
+        data: [0x50, 0x12, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 2
+        precision: 2
+
+    - id: 'power_2_2'
+      name: 'Power Outlet 2-2'
+      state:
+        data: [0x50, 0x12, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 14
+        length: 2
+        precision: 2
+
+    # Room 3 Power
+    - id: 'power_3_1'
+      name: 'Power Outlet 3-1'
+      state:
+        data: [0x50, 0x13, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 2
+        precision: 2
+
+    - id: 'power_3_2'
+      name: 'Power Outlet 3-2'
+      state:
+        data: [0x50, 0x13, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 14
+        length: 2
+        precision: 2
+
+    # Room 4 Power
+    - id: 'power_4_1'
+      name: 'Power Outlet 4-1'
+      state:
+        data: [0x50, 0x14, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 2
+        precision: 2
+
+    - id: 'power_4_2'
+      name: 'Power Outlet 4-2'
+      state:
+        data: [0x50, 0x14, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 14
+        length: 2
+        precision: 2
+
+    # Room 5 Power
+    - id: 'power_5_1'
+      name: 'Power Outlet 5-1'
+      state:
+        data: [0x50, 0x15, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 8
+        length: 2
+        precision: 2
+
+    - id: 'power_5_2'
+      name: 'Power Outlet 5-2'
+      state:
+        data: [0x50, 0x15, 0x81]
+      unit_of_measurement: 'W'
+      state_number:
+        offset: 14
+        length: 2
+        precision: 2
+
+  binary_sensor:
+    # Room 1 Auto Check
+    - id: 'auto_1_1'
+      name: 'Auto Mode Outlet 1-1'
+      state:
+        data: [0x50, 0x11, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+
+    - id: 'auto_1_2'
+      name: 'Auto Mode Outlet 1-2'
+      state:
+        data: [0x50, 0x11, 0x81]
+      state_on:
+        offset: 12
+        data: [0x01]
+      state_off:
+        offset: 12
+        data: [0x00]
+
+    # Room 2 Auto Check
+    - id: 'auto_2_1'
+      name: 'Auto Mode Outlet 2-1'
+      state:
+        data: [0x50, 0x12, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+
+    - id: 'auto_2_2'
+      name: 'Auto Mode Outlet 2-2'
+      state:
+        data: [0x50, 0x12, 0x81]
+      state_on:
+        offset: 12
+        data: [0x01]
+      state_off:
+        offset: 12
+        data: [0x00]
+
+    # Room 3 Auto Check
+    - id: 'auto_3_1'
+      name: 'Auto Mode Outlet 3-1'
+      state:
+        data: [0x50, 0x13, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+
+    - id: 'auto_3_2'
+      name: 'Auto Mode Outlet 3-2'
+      state:
+        data: [0x50, 0x13, 0x81]
+      state_on:
+        offset: 12
+        data: [0x01]
+      state_off:
+        offset: 12
+        data: [0x00]
+
+    # Room 4 Auto Check
+    - id: 'auto_4_1'
+      name: 'Auto Mode Outlet 4-1'
+      state:
+        data: [0x50, 0x14, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+
+    - id: 'auto_4_2'
+      name: 'Auto Mode Outlet 4-2'
+      state:
+        data: [0x50, 0x14, 0x81]
+      state_on:
+        offset: 12
+        data: [0x01]
+      state_off:
+        offset: 12
+        data: [0x00]
+
+    # Room 5 Auto Check
+    - id: 'auto_5_1'
+      name: 'Auto Mode Outlet 5-1'
+      state:
+        data: [0x50, 0x15, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+
+    - id: 'auto_5_2'
+      name: 'Auto Mode Outlet 5-2'
+      state:
+        data: [0x50, 0x15, 0x81]
+      state_on:
+        offset: 12
+        data: [0x01]
+      state_off:
+        offset: 12
+        data: [0x00]

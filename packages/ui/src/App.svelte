@@ -39,6 +39,96 @@
 
   const MAX_PACKETS = 500000; // ~24 hours at 5 packets/sec
   const DASHBOARD_INACTIVE_KEY = 'dashboard.showInactiveEntities';
+  const LOG_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  };
+  let cachedLogLocale = '';
+  let logTimeFormatter = new Intl.DateTimeFormat('en-US', LOG_TIME_FORMAT_OPTIONS);
+
+  const getLogTimeFormatter = () => {
+    const currentLocale = get(locale) === 'ko' ? 'ko-KR' : 'en-US';
+    if (currentLocale !== cachedLogLocale) {
+      cachedLogLocale = currentLocale;
+      logTimeFormatter = new Intl.DateTimeFormat(currentLocale, LOG_TIME_FORMAT_OPTIONS);
+    }
+    return logTimeFormatter;
+  };
+
+  const formatLogTime = (timestamp: string) => getLogTimeFormatter().format(new Date(timestamp));
+
+  const safeStringify = (value: unknown) => {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'string') return value;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  };
+
+  const normalizeSearchText = (...parts: Array<string | undefined>) =>
+    parts.filter(Boolean).join(' ').toLowerCase();
+
+  const buildCommandSearchText = (
+    entry: { entityId: string; command: string; value?: unknown },
+    packet: string,
+  ) =>
+    normalizeSearchText(
+      entry.entityId,
+      packet,
+      entry.command,
+      entry.value !== undefined ? safeStringify(entry.value) : '',
+    );
+
+  const buildParsedSearchText = (entry: { entityId: string; state: unknown }, packet: string) =>
+    normalizeSearchText(entry.entityId, packet, entry.state ? safeStringify(entry.state) : '');
+
+  const parseTimestampMs = (timestamp: string) => {
+    const parsed = Date.parse(timestamp);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const enrichCommandLogEntry = (entry: CommandLogEntry, packet: string): CommandLogEntry => {
+    const timestampMs = entry.timestampMs ?? parseTimestampMs(entry.timestamp);
+    const timeLabel = entry.timeLabel ?? formatLogTime(entry.timestamp);
+    const searchText = entry.searchText ?? buildCommandSearchText(entry, packet);
+    return { ...entry, timestampMs, timeLabel, searchText };
+  };
+
+  const enrichParsedLogEntry = (entry: PacketLogEntry, packet: string): PacketLogEntry => {
+    const timestampMs = entry.timestampMs ?? parseTimestampMs(entry.timestamp);
+    const timeLabel = entry.timeLabel ?? formatLogTime(entry.timestamp);
+    const searchText = entry.searchText ?? buildParsedSearchText(entry, packet);
+    return { ...entry, timestampMs, timeLabel, searchText };
+  };
+
+  const insertSortedLogEntry = <T extends { timestamp: string; timestampMs?: number }>(
+    logs: T[],
+    entry: T,
+  ) => {
+    const entryTimestamp = entry.timestampMs ?? parseTimestampMs(entry.timestamp);
+    const nextLogs = [...logs];
+    let left = 0;
+    let right = nextLogs.length;
+
+    while (left < right) {
+      const mid = (left + right) >> 1;
+      const midTimestamp = nextLogs[mid].timestampMs ?? parseTimestampMs(nextLogs[mid].timestamp);
+      if (midTimestamp >= entryTimestamp) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    }
+
+    nextLogs.splice(left, 0, entry);
+    if (nextLogs.length > MAX_PACKETS) {
+      nextLogs.length = MAX_PACKETS;
+    }
+    return nextLogs;
+  };
 
   // -- State --
   let activeView = $state<'dashboard' | 'analysis' | 'gallery' | 'settings'>('dashboard');
@@ -97,6 +187,9 @@
       packet: packetDictionary[log.packetId] || '',
       timestamp: log.timestamp,
       portId: log.portId,
+      timestampMs: log.timestampMs,
+      timeLabel: log.timeLabel,
+      searchText: log.searchText,
     })),
   );
   const parsedPackets = $derived.by<ParsedPacket[]>(() =>
@@ -106,6 +199,9 @@
       state: log.state,
       timestamp: log.timestamp,
       portId: log.portId,
+      timestampMs: log.timestampMs,
+      timeLabel: log.timeLabel,
+      searchText: log.searchText,
     })),
   );
 
@@ -478,8 +574,14 @@
       };
 
       // Store raw logs with packetId (optimized)
-      commandPacketLogs = cmdsResponse.logs.slice(-MAX_PACKETS);
-      parsedPacketLogs = parsedResponse.logs.slice(-MAX_PACKETS);
+      const enrichedCommandLogs = cmdsResponse.logs
+        .map((entry) => enrichCommandLogEntry(entry, packetDictionary[entry.packetId] || ''))
+        .sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0));
+      const enrichedParsedLogs = parsedResponse.logs
+        .map((entry) => enrichParsedLogEntry(entry, packetDictionary[entry.packetId] || ''))
+        .sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0));
+      commandPacketLogs = enrichedCommandLogs.slice(0, MAX_PACKETS);
+      parsedPacketLogs = enrichedParsedLogs.slice(0, MAX_PACKETS);
     } catch (err) {
       console.error('Failed to load packet history:', err);
     }
@@ -688,16 +790,19 @@
     const handleCommandPacket = (data: CommandPacket) => {
       // Convert to log entry and store
       const packetId = getOrCreatePacketId(data.packet);
-      const logEntry: CommandLogEntry = {
-        packetId,
-        entity: data.entity,
-        entityId: data.entityId,
-        command: data.command,
-        value: data.value,
-        timestamp: data.timestamp,
-        portId: data.portId,
-      };
-      commandPacketLogs = [...commandPacketLogs, logEntry].slice(-MAX_PACKETS);
+      const logEntry: CommandLogEntry = enrichCommandLogEntry(
+        {
+          packetId,
+          entity: data.entity,
+          entityId: data.entityId,
+          command: data.command,
+          value: data.value,
+          timestamp: data.timestamp,
+          portId: data.portId,
+        },
+        data.packet,
+      );
+      commandPacketLogs = insertSortedLogEntry(commandPacketLogs, logEntry);
 
       if (!isToastEnabled('command')) return;
 
@@ -719,14 +824,17 @@
     const handleParsedPacket = (data: ParsedPacket) => {
       // Convert to log entry and store
       const packetId = getOrCreatePacketId(data.packet);
-      const logEntry: PacketLogEntry = {
-        packetId,
-        entityId: data.entityId,
-        state: data.state,
-        timestamp: data.timestamp,
-        portId: data.portId,
-      };
-      parsedPacketLogs = [...parsedPacketLogs, logEntry].slice(-MAX_PACKETS);
+      const logEntry: PacketLogEntry = enrichParsedLogEntry(
+        {
+          packetId,
+          entityId: data.entityId,
+          state: data.state,
+          timestamp: data.timestamp,
+          portId: data.portId,
+        },
+        data.packet,
+      );
+      parsedPacketLogs = insertSortedLogEntry(parsedPacketLogs, logEntry);
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
@@ -1264,7 +1372,7 @@
               p.entityId === selectedEntity.id &&
               (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
           )
-          .slice(-20)
+          .slice(0, 20)
       : [],
   );
 
@@ -1277,7 +1385,7 @@
               p.entityId === selectedEntity.id &&
               (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
           )
-          .slice(-20)
+          .slice(0, 20)
       : [],
   );
 

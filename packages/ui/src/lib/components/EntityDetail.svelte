@@ -170,23 +170,37 @@
 
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
+  const getTimestampMs = (packet: ParsedPacket | CommandPacket) =>
+    packet.timestampMs ?? new Date(packet.timestamp).getTime();
+
+  const mergePackets = (rxPackets: ParsedPacket[], txPackets: CommandPacket[]) => {
+    const merged: MergedPacket[] = [];
+    let rxIndex = 0;
+    let txIndex = 0;
+
+    while (rxIndex < rxPackets.length || txIndex < txPackets.length) {
+      const rxPacket = rxPackets[rxIndex];
+      const txPacket = txPackets[txIndex];
+      const rxTimestamp = rxPacket ? getTimestampMs(rxPacket) : -Infinity;
+      const txTimestamp = txPacket ? getTimestampMs(txPacket) : -Infinity;
+
+      if (txPacket === undefined || (rxPacket && rxTimestamp >= txTimestamp)) {
+        merged.push({ ...rxPacket, type: 'rx' } as const);
+        rxIndex += 1;
+      } else if (txPacket) {
+        merged.push({ ...txPacket, type: 'tx' } as const);
+        txIndex += 1;
+      }
+    }
+
+    return merged;
+  };
+
   const mergedPackets = $derived.by(() => {
-    let packets: MergedPacket[] = [];
+    const rxPackets = showRx ? parsedPackets : [];
+    const txPackets = showTx ? commandPackets : [];
 
-    if (showRx) {
-      packets = packets.concat(
-        parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const),
-      );
-    }
-    if (showTx) {
-      packets = packets.concat(
-        commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const),
-      );
-    }
-
-    return packets.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    return mergePackets(rxPackets, txPackets);
   });
 
   // Use a variable to track the entity ID for which config was last loaded into the editor
@@ -789,7 +803,9 @@
               {:else}
                 {#each mergedPackets as packet, index (`${packet.type}-${packet.timestamp}-${index}`)}
                   <div class="log-entry {packet.type}">
-                    <span class="time">{new Date(packet.timestamp).toLocaleTimeString()}</span>
+                    <span class="time">
+                      {packet.timeLabel ?? new Date(packet.timestamp).toLocaleTimeString()}
+                    </span>
 
                     {#if packet.type === 'rx'}
                       <span class="direction rx">RX</span>

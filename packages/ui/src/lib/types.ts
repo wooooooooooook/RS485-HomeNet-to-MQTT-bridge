@@ -12,6 +12,9 @@ export type CommandPacket = {
   packet: string;
   timestamp: string;
   portId?: string;
+  timestampMs?: number;
+  timeLabel?: string;
+  searchText?: string;
 };
 
 export type StateChangeEvent = {
@@ -190,6 +193,9 @@ export type ParsedPacket = {
   state: any;
   timestamp: string;
   portId?: string;
+  timestampMs?: number;
+  timeLabel?: string;
+  searchText?: string;
 };
 
 export type ToastMessage = {
@@ -212,6 +218,9 @@ export type PacketLogEntry = {
   state: unknown;
   timestamp: string;
   portId?: string;
+  timestampMs?: number;
+  timeLabel?: string;
+  searchText?: string;
 };
 
 export type CommandLogEntry = {
@@ -222,6 +231,9 @@ export type CommandLogEntry = {
   value?: unknown;
   timestamp: string;
   portId?: string;
+  timestampMs?: number;
+  timeLabel?: string;
+  searchText?: string;
 };
 
 export type PacketHistoryResponse<T> = {

@@ -11,52 +11,73 @@
   let showRx = $state(true);
   let showTx = $state(true);
   let searchQuery = $state('');
+  let debouncedQuery = $state('');
+  const SEARCH_DEBOUNCE_MS = 200;
+  let searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
+  const getTimestampMs = (packet: ParsedPacket | CommandPacket) =>
+    packet.timestampMs ?? new Date(packet.timestamp).getTime();
+
+  const mergePackets = (rxPackets: ParsedPacket[], txPackets: CommandPacket[]) => {
+    const merged: MergedPacket[] = [];
+    let rxIndex = 0;
+    let txIndex = 0;
+
+    while (rxIndex < rxPackets.length || txIndex < txPackets.length) {
+      const rxPacket = rxPackets[rxIndex];
+      const txPacket = txPackets[txIndex];
+      const rxTimestamp = rxPacket ? getTimestampMs(rxPacket) : -Infinity;
+      const txTimestamp = txPacket ? getTimestampMs(txPacket) : -Infinity;
+
+      if (txPacket === undefined || (rxPacket && rxTimestamp >= txTimestamp)) {
+        merged.push({ ...rxPacket, type: 'rx' } as const);
+        rxIndex += 1;
+      } else if (txPacket) {
+        merged.push({ ...txPacket, type: 'tx' } as const);
+        txIndex += 1;
+      }
+    }
+
+    return merged;
+  };
+
+  $effect(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (searchDebounceHandle) {
+      clearTimeout(searchDebounceHandle);
+    }
+
+    searchDebounceHandle = setTimeout(() => {
+      debouncedQuery = normalizedQuery;
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (searchDebounceHandle) {
+        clearTimeout(searchDebounceHandle);
+      }
+    };
+  });
+
   const mergedPackets = $derived.by(() => {
-    let packets: MergedPacket[] = [];
+    const query = debouncedQuery;
+    const rxPackets = showRx ? parsedPackets : [];
+    const txPackets = showTx ? commandPackets : [];
+    const filteredRx = query
+      ? rxPackets.filter((packet) => packet.searchText?.includes(query))
+      : rxPackets;
+    const filteredTx = query
+      ? txPackets.filter((packet) => packet.searchText?.includes(query))
+      : txPackets;
 
-    if (showRx) {
-      packets = packets.concat(
-        parsedPackets.map((p: ParsedPacket) => ({ ...p, type: 'rx' }) as const),
-      );
-    }
-    if (showTx) {
-      packets = packets.concat(
-        commandPackets.map((p: CommandPacket) => ({ ...p, type: 'tx' }) as const),
-      );
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      packets = packets.filter((p) => {
-        // Search Entity ID
-        if (p.entityId?.toLowerCase().includes(query)) return true;
-        // Search Packet Hex
-        if (p.packet?.toLowerCase().includes(query)) return true;
-
-        // Search Payload / Command info
-        if (p.type === 'rx' && p.state) {
-          if (JSON.stringify(p.state).toLowerCase().includes(query)) return true;
-        } else if (p.type === 'tx') {
-          if (p.command?.toLowerCase().includes(query)) return true;
-          if (p.value !== undefined && String(p.value).toLowerCase().includes(query)) return true;
-        }
-
-        return false;
-      });
-    }
-
-    return packets.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    return mergePackets(filteredRx, filteredTx);
   });
 </script>
 
 {#snippet renderPacketItem(packet: MergedPacket, _index: number)}
   <div class="log-item {packet.type}">
-    <span class="time">[{new Date(packet.timestamp).toLocaleTimeString()}]</span>
+    <span class="time">[{packet.timeLabel ?? new Date(packet.timestamp).toLocaleTimeString()}]</span>
 
     {#if packet.type === 'rx'}
       <span class="direction rx">RX</span>
@@ -117,6 +138,7 @@
         items={mergedPackets}
         renderItem={renderPacketItem}
         defaultEstimatedItemHeight={32}
+        bufferSize={10}
       />
     {/if}
   </div>

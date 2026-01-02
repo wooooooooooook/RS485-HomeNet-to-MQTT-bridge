@@ -282,6 +282,7 @@ button:
   command_custom_preset: 'xstr == "Away" ? [0x01] : [0x02]'
   ```
 - `automation` 트리거/액션에서 패킷 매칭은 `StateSchema` 규칙을, 명령 실행은 `CommandSchema` 규칙을 그대로 따릅니다. 자세한 예제는 [AUTOMATION.md](../AUTOMATION.md)를 참고하세요.
+- `automation` 액션에 `update_state`를 사용할 수 있습니다. 패킷 트리거와 조합해 엔티티 상태를 직접 갱신하며, 값은 상수 또는 `StateSchema/StateNumSchema`로 정의합니다.
 
 ## Scripts 블록
 자동화 액션 배열을 재사용하기 위한 `scripts` 블록을 설정 파일에 추가할 수 있습니다. 정의 방법과 활용 예시는

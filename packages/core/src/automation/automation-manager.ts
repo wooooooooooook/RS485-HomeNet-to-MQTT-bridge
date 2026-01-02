@@ -13,6 +13,9 @@ import type {
   AutomationActionScript,
   AutomationActionSendPacket,
   AutomationActionStop,
+  AutomationActionUpdateState,
+  AutomationActionUpdateStateMatch,
+  AutomationActionUpdateStateValue,
   AutomationActionWaitUntil,
   AutomationConfig,
   AutomationGuard,
@@ -23,11 +26,13 @@ import type {
   HomenetBridgeConfig,
   ScriptConfig,
 } from '../config/types.js';
-import type { StateSchema } from '../protocol/types.js';
+import type { StateNumSchema, StateSchema } from '../protocol/types.js';
+import { extractFromSchema } from '../protocol/schema-utils.js';
 import { PacketProcessor } from '../protocol/packet-processor.js';
 import { CelExecutor } from '../protocol/cel-executor.js';
 import { CommandManager } from '../service/command.manager.js';
 import { eventBus } from '../service/event-bus.js';
+import { StateManager } from '../state/state-manager.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { parseDuration } from '../utils/duration.js';
 import { findEntityById } from '../utils/entities.js';
@@ -88,6 +93,7 @@ export class AutomationManager {
     mqttPublisher: MqttPublisher,
     private readonly contextPortId?: string,
     private readonly commandSender?: CommandSender,
+    private readonly stateManager?: StateManager,
   ) {
     this.automationList = (config.automation || []).filter(
       (automation) => automation.enabled !== false,
@@ -122,6 +128,9 @@ export class AutomationManager {
     }
     if (actionType === 'send_packet') {
       return 'send_packet';
+    }
+    if (actionType === 'update_state') {
+      return `update_state:${(action as AutomationActionUpdateState).target_id}`;
     }
     if (actionType === 'if') {
       return 'if';
@@ -609,6 +618,8 @@ export class AutomationManager {
         scriptStack,
         automationId,
       );
+    if (action.action === 'update_state')
+      return this.executeUpdateStateAction(action as AutomationActionUpdateState, context);
     if (action.action === 'if')
       return this.executeIfAction(
         action as AutomationActionIf,
@@ -636,6 +647,120 @@ export class AutomationManager {
         signal,
       );
     if (action.action === 'stop') return this.executeStopAction(action as AutomationActionStop);
+  }
+
+  private isSchemaValue(value: unknown): value is StateSchema | StateNumSchema {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const schemaKeys = [
+      'data',
+      'mask',
+      'offset',
+      'inverted',
+      'guard',
+      'except',
+      'length',
+      'precision',
+      'signed',
+      'endian',
+      'decode',
+      'mapping',
+    ];
+    return schemaKeys.some((key) => key in (value as Record<string, unknown>));
+  }
+
+  private isMatchValue(value: unknown): value is AutomationActionUpdateStateMatch {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    return 'match' in (value as Record<string, unknown>) && 'value' in (value as Record<string, unknown>);
+  }
+
+  private resolveUpdateStateValue(
+    rawValue: AutomationActionUpdateStateValue,
+    payload: Buffer | null,
+    context: TriggerContext,
+  ): { matched: boolean; value?: any } {
+    if (Array.isArray(rawValue) && rawValue.every((item) => this.isMatchValue(item))) {
+      for (const entry of rawValue) {
+        if (!payload) return { matched: false };
+        if (
+          matchesPacket(entry.match, payload, {
+            allowEmptyData: true,
+            context: this.buildContext(context),
+          })
+        ) {
+          const resolved = this.resolveUpdateStateValue(entry.value, payload, context);
+          return resolved.matched ? resolved : { matched: true, value: entry.value };
+        }
+      }
+      return { matched: false };
+    }
+
+    if (this.isMatchValue(rawValue)) {
+      if (!payload) return { matched: false };
+      if (
+        matchesPacket(rawValue.match, payload, {
+          allowEmptyData: true,
+          context: this.buildContext(context),
+        })
+      ) {
+        const resolved = this.resolveUpdateStateValue(rawValue.value, payload, context);
+        return resolved.matched ? resolved : { matched: true, value: rawValue.value };
+      }
+      return { matched: false };
+    }
+
+    if (this.isSchemaValue(rawValue)) {
+      if (!payload) return { matched: false };
+      const shouldMatch = matchesPacket(rawValue, payload, {
+        allowEmptyData: true,
+        context: this.buildContext(context),
+      });
+      if (!shouldMatch) return { matched: false };
+      const extracted = extractFromSchema(payload, rawValue);
+      if (extracted === null || extracted === undefined) {
+        return { matched: false };
+      }
+      return { matched: true, value: extracted };
+    }
+
+    return { matched: true, value: rawValue };
+  }
+
+  private async executeUpdateStateAction(
+    action: AutomationActionUpdateState,
+    context: TriggerContext,
+  ) {
+    if (!this.stateManager) {
+      logger.warn('[automation] update_state action requires StateManager');
+      return;
+    }
+
+    const headerLength = this.config.packet_defaults?.rx_header?.length || 0;
+    const payload = context.packet ? Buffer.from(context.packet).slice(headerLength) : null;
+    const requiresPacket = Object.values(action.state).some((value) => {
+      if (this.isSchemaValue(value) || this.isMatchValue(value)) return true;
+      return Array.isArray(value) && value.every((item) => this.isMatchValue(item));
+    });
+    if (!payload && requiresPacket) {
+      logger.warn({ action }, '[automation] update_state requires packet context');
+    }
+    const updates: Record<string, any> = {};
+
+    for (const [key, rawValue] of Object.entries(action.state)) {
+      const resolved = this.resolveUpdateStateValue(rawValue, payload, context);
+      if (resolved.matched) {
+        updates[key] = resolved.value;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      logger.debug(
+        { action },
+        '[automation] update_state action skipped: no matched updates',
+      );
+      return;
+    }
+
+    this.stateManager.updateEntityState(action.target_id, updates);
   }
 
   private async executeSendPacketAction(

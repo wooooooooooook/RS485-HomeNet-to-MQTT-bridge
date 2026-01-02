@@ -4,6 +4,7 @@
   import { t } from 'svelte-i18n';
   import Button from './Button.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
+  import Dialog from './Dialog.svelte';
   import ActivityLogList from './ActivityLogList.svelte';
   import type {
     UnifiedEntity,
@@ -25,6 +26,7 @@
     onClose,
     onExecute,
     onRename,
+    onUpdate,
   }: {
     entity: UnifiedEntity;
     parsedPackets?: ParsedPacket[];
@@ -36,6 +38,7 @@
     onClose?: () => void;
     onExecute?: (cmd: CommandInfo, value?: any) => void;
     onRename?: (newName: string) => void;
+    onUpdate?: (updates: Partial<UnifiedEntity>) => void;
   } = $props();
 
   let activeTab = $state<'status' | 'config' | 'packets' | 'manage' | 'execute' | 'logs'>('status');
@@ -65,6 +68,89 @@
 
   let showRx = $state(true);
   let showTx = $state(true);
+
+  // Dialog State
+  let dialog = $state({
+    open: false,
+    title: '',
+    message: '',
+    confirmText: undefined as string | undefined,
+    variant: 'primary' as 'primary' | 'danger' | 'success',
+    loading: false,
+    loadingText: undefined as string | undefined,
+    showCancel: true,
+    onConfirm: async () => {},
+  });
+
+  const closeDialog = () => {
+    dialog.open = false;
+  };
+
+  const showAlertDialog = (
+    title: string,
+    message: string,
+    variant: 'danger' | 'success' = 'danger',
+  ) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.variant = variant;
+    dialog.showCancel = false;
+    dialog.confirmText = $t('common.confirm');
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      closeDialog();
+    };
+    dialog.open = true;
+  };
+
+  const showConfirmDialog = ({
+    title,
+    message,
+    confirmText,
+    variant = 'primary',
+    loadingText,
+    action,
+    onSuccess,
+  }: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'primary' | 'danger' | 'success';
+    loadingText?: string;
+    action: () => Promise<void>;
+    onSuccess?: () => void;
+  }) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.confirmText = confirmText;
+    dialog.variant = variant;
+    dialog.loadingText = loadingText;
+    dialog.showCancel = true;
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      dialog.loading = true;
+      try {
+        await action();
+        closeDialog();
+        // Wait for close animation
+        if (onSuccess) {
+          setTimeout(onSuccess, 300);
+        }
+      } catch (err: any) {
+        closeDialog();
+        setTimeout(() => {
+          showAlertDialog(
+            $t('common.error') || 'Error',
+            err.message || 'An error occurred',
+            'danger',
+          );
+        }, 300);
+      } finally {
+        dialog.loading = false;
+      }
+    };
+    dialog.open = true;
+  };
 
   const entityCategory = $derived.by<EntityCategory>(() => entity.category ?? 'entity');
   const isDeviceEntity = $derived.by(() => entityCategory === 'entity');
@@ -239,39 +325,51 @@
     }
   }
 
-  async function handleRevokeDiscovery() {
-    if (!confirm($t('entity_detail.manage.revoke.confirm'))) return;
-
-    try {
-      const res = await fetch(`./api/entities/${entity.id}/revoke-discovery`, { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || $t('entity_detail.manage.revoke.error'));
-      }
-      alert($t('entity_detail.manage.revoke.success'));
-    } catch (e) {
-      alert(e instanceof Error ? e.message : $t('entity_detail.manage.revoke.error'));
-    }
+  function handleRevokeDiscovery() {
+    showConfirmDialog({
+      title: $t('entity_detail.manage.revoke.title'),
+      message: $t('entity_detail.manage.revoke.confirm'),
+      confirmText: $t('entity_detail.manage.revoke.button'),
+      variant: 'danger',
+      action: async () => {
+        const res = await fetch(`./api/entities/${entity.id}/revoke-discovery`, { method: 'POST' });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || $t('entity_detail.manage.revoke.error'));
+        }
+      },
+      onSuccess: () => {
+        showAlertDialog(
+          $t('common.success') || 'Success',
+          $t('entity_detail.manage.revoke.success'),
+          'success',
+        );
+      },
+    });
   }
 
-  async function handleDeleteEntity() {
-    if (!confirm($t('entity_detail.manage.delete.confirm'))) return;
-
-    try {
-      const deleteUrl = entity.portId
-        ? `./api/entities/${entity.id}?portId=${encodeURIComponent(entity.portId)}`
-        : `./api/entities/${entity.id}`;
-      const res = await fetch(deleteUrl, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || $t('entity_detail.manage.delete.error'));
-      }
-      alert($t('entity_detail.manage.delete.success'));
-      close();
-      window.location.reload(); // Reload to refresh entity list since it's a major change
-    } catch (e) {
-      alert(e instanceof Error ? e.message : $t('entity_detail.manage.delete.error'));
-    }
+  function handleDeleteEntity() {
+    showConfirmDialog({
+      title: $t('entity_detail.manage.delete.title'),
+      message: $t('entity_detail.manage.delete.confirm'),
+      confirmText: $t('entity_detail.manage.delete.button'),
+      variant: 'danger',
+      action: async () => {
+        const deleteUrl = entity.portId
+          ? `./api/entities/${entity.id}?portId=${encodeURIComponent(entity.portId)}`
+          : `./api/entities/${entity.id}`;
+        const res = await fetch(deleteUrl, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || $t('entity_detail.manage.delete.error'));
+        }
+      },
+      onSuccess: () => {
+        // Reload page after success (maybe show a toast? but reload is requested by original code)
+        close();
+        window.location.reload();
+      },
+    });
   }
 
   async function handleExecuteAutomation() {
@@ -350,38 +448,44 @@
     }
   }
 
-  async function handleDeleteAutomation() {
-    if (!confirm($t('entity_detail.automation.delete_confirm'))) return;
-
-    try {
-      const res = await fetch(`./api/automations/${entity.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || $t('entity_detail.automation.delete_error'));
-      }
-      alert($t('entity_detail.automation.delete_success'));
-      close();
-      window.location.reload();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : $t('entity_detail.automation.delete_error'));
-    }
+  function handleDeleteAutomation() {
+    showConfirmDialog({
+      title: $t('entity_detail.automation.delete_title'),
+      message: $t('entity_detail.automation.delete_confirm'),
+      confirmText: $t('entity_detail.automation.delete_button'),
+      variant: 'danger',
+      action: async () => {
+        const res = await fetch(`./api/automations/${entity.id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || $t('entity_detail.automation.delete_error'));
+        }
+      },
+      onSuccess: () => {
+        close();
+        window.location.reload();
+      },
+    });
   }
 
-  async function handleDeleteScript() {
-    if (!confirm($t('entity_detail.script.delete_confirm'))) return;
-
-    try {
-      const res = await fetch(`./api/scripts/${entity.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || $t('entity_detail.script.delete_error'));
-      }
-      alert($t('entity_detail.script.delete_success'));
-      close();
-      window.location.reload();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : $t('entity_detail.script.delete_error'));
-    }
+  function handleDeleteScript() {
+    showConfirmDialog({
+      title: $t('entity_detail.script.delete_title'),
+      message: $t('entity_detail.script.delete_confirm'),
+      confirmText: $t('entity_detail.script.delete_button'),
+      variant: 'danger',
+      action: async () => {
+        const res = await fetch(`./api/scripts/${entity.id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || $t('entity_detail.script.delete_error'));
+        }
+      },
+      onSuccess: () => {
+        close();
+        window.location.reload();
+      },
+    });
   }
 
   async function handleToggleDiscoveryAlways(newValue: boolean) {
@@ -406,6 +510,8 @@
         const data = await res.json();
         throw new Error(data.error || $t('entity_detail.manage.force_active.error'));
       }
+
+      onUpdate?.({ discoveryAlways: newValue });
     } catch (err) {
       forceActiveError =
         err instanceof Error ? err.message : $t('entity_detail.manage.force_active.error');
@@ -861,6 +967,19 @@
       </div>
     </div>
   </div>
+
+  <Dialog
+    open={dialog.open}
+    title={dialog.title}
+    message={dialog.message}
+    confirmText={dialog.confirmText}
+    variant={dialog.variant}
+    loading={dialog.loading}
+    loadingText={dialog.loadingText}
+    showCancel={dialog.showCancel}
+    onconfirm={dialog.onConfirm}
+    oncancel={closeDialog}
+  />
 {/if}
 
 <style>

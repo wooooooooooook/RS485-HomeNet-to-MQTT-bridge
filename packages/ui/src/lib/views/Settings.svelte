@@ -4,6 +4,7 @@
   import WizardModal from '../components/WizardModal.svelte';
   import BridgeConfigEditorModal from '../components/BridgeConfigEditorModal.svelte';
   import Button from '../components/Button.svelte';
+  import Dialog from '../components/Dialog.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import type { FrontendSettings, LogRetentionStats, SavedLogFile, BridgeInfo } from '../types';
 
@@ -242,21 +243,26 @@
   };
 
   const deleteCacheFile = async (filename: string) => {
-    if (!confirm($t('settings.log_retention.delete_confirm'))) return;
-
-    deletingFile = filename;
-    try {
-      const res = await fetch(`./api/logs/cache/${filename}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        await fetchCacheFiles();
-      }
-    } catch (err) {
-      console.error('Failed to delete cache file', err);
-    } finally {
-      deletingFile = null;
-    }
+    showConfirmDialog({
+      title: $t('settings.log_retention.delete_confirm_title_placeholder') || $t('common.delete'), // Need a title?
+      message: $t('settings.log_retention.delete_confirm'),
+      confirmText: $t('common.delete'),
+      variant: 'danger',
+      action: async () => {
+        deletingFile = filename;
+        const res = await fetch(`./api/logs/cache/${filename}`, {
+          method: 'DELETE',
+        });
+        if (res.ok) {
+          await fetchCacheFiles();
+        } else {
+          throw new Error('Failed to delete file');
+        }
+      },
+      onSuccess: () => {
+        deletingFile = null;
+      },
+    });
   };
 
   const formatBytes = (bytes: number): string => {
@@ -267,47 +273,144 @@
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Dialog State
+  let dialog = $state({
+    open: false,
+    title: '',
+    message: '',
+    confirmText: undefined as string | undefined,
+    variant: 'primary' as 'primary' | 'danger' | 'success',
+    loading: false,
+    loadingText: undefined as string | undefined,
+    showCancel: true,
+    onConfirm: async () => {},
+  });
+
+  const closeDialog = () => {
+    dialog.open = false;
+  };
+
+  const showAlertDialog = (
+    title: string,
+    message: string,
+    variant: 'danger' | 'success' = 'danger',
+  ) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.variant = variant;
+    dialog.showCancel = false;
+    dialog.confirmText = $t('common.confirm');
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      closeDialog();
+    };
+    dialog.open = true;
+  };
+
+  const showConfirmDialog = ({
+    title,
+    message,
+    confirmText,
+    variant = 'primary',
+    loadingText,
+    action,
+    onSuccess,
+  }: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'primary' | 'danger' | 'success';
+    loadingText?: string;
+    action: () => Promise<void>;
+    onSuccess?: () => void;
+  }) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.confirmText = confirmText;
+    dialog.variant = variant;
+    dialog.loadingText = loadingText;
+    dialog.showCancel = true;
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      dialog.loading = true;
+      try {
+        await action();
+        // If onSuccess handles closing or reloading, let it do so.
+        // Otherwise close.
+        if (onSuccess) {
+          // If onSuccess is async (e.g. reload), keeps loading?
+          // Simple version:
+          closeDialog();
+          onSuccess();
+        } else {
+          closeDialog();
+        }
+      } catch (err: any) {
+        closeDialog();
+        // Show error dialog
+        setTimeout(() => {
+          showAlertDialog(
+            $t('common.error') || 'Error',
+            err.message || 'An error occurred',
+            'danger',
+          );
+        }, 300);
+      } finally {
+        if (!onSuccess) dialog.loading = false;
+      }
+    };
+    dialog.open = true;
+  };
+
   // Application Control
   let isRestarting = $state(false);
 
   async function triggerSystemRestart() {
     isRestarting = true;
-    try {
-      // 1. Get One-time Token
-      const tokenRes = await fetch('./api/system/restart/token');
-      if (!tokenRes.ok) throw new Error('Failed to get restart token');
-      const { token } = await tokenRes.json();
+    // 1. Get One-time Token
+    const tokenRes = await fetch('./api/system/restart/token');
+    if (!tokenRes.ok) throw new Error('Failed to get restart token');
+    const { token } = await tokenRes.json();
 
-      // 2. Send Restart Request with Token
-      const res = await fetch('./api/system/restart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
+    // 2. Send Restart Request with Token
+    const res = await fetch('./api/system/restart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Restart failed');
-      }
-
-      alert($t('settings.app_control.restarting'));
-
-      // Auto-reload after 5 seconds
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-    } catch (e: any) {
-      console.error('Restart failed', e);
-      alert(e.message || 'Failed to restart');
-      isRestarting = false;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Restart failed');
     }
+
+    // Auto-reload after 5 seconds
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
   }
 
-  async function handleRestart() {
-    if (!confirm($t('settings.app_control.restart_confirm'))) return;
-    await triggerSystemRestart();
+  function handleRestart() {
+    showConfirmDialog({
+      title: $t('settings.app_control.restart'),
+      message: $t('settings.app_control.restart_confirm'),
+      confirmText: $t('settings.app_control.restart'),
+      variant: 'danger',
+      loadingText: $t('settings.app_control.restarting'),
+      action: triggerSystemRestart,
+      onSuccess: () => {
+        // Keep things spinning or just reload?
+        // triggerSystemRestart sets isRestarting=true and does reload itself.
+        // But here we are inside dialog callback.
+        // We want the dialog to stay open with "Restarting..." until reload?
+        // Yes.
+        isRestarting = true; // ensure state
+        dialog.loading = true;
+        dialog.open = true; // Keep it open
+      },
+    });
   }
 
   let deletingConfig = $state<string | null>(null);
@@ -315,29 +418,37 @@
 
   const handleDeleteConfig = async (filename: string) => {
     if (!canDeleteBridge) {
-      alert($t('settings.bridge_config.delete_last_warning'));
+      showAlertDialog(
+        $t('settings.bridge_config.title'),
+        $t('settings.bridge_config.delete_last_warning'),
+      );
       return;
     }
-    if (!confirm($t('settings.bridge_config.delete_confirm', { values: { filename } }))) return;
 
-    deletingConfig = filename;
-    try {
-      const res = await fetch(`./api/config/files/${filename}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        alert($t('settings.bridge_config.delete_success'));
-        await triggerSystemRestart();
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Delete failed');
-      }
-    } catch (err) {
-      console.error('Failed to delete config file', err);
-      alert('Failed to delete config');
-    } finally {
-      deletingConfig = null;
-    }
+    showConfirmDialog({
+      title: $t('common.delete'),
+      message: $t('settings.bridge_config.delete_confirm', { values: { filename } }),
+      confirmText: $t('common.delete'),
+      variant: 'danger',
+      loadingText: $t('settings.bridge_config.restarting'),
+      action: async () => {
+        deletingConfig = filename;
+        const res = await fetch(`./api/config/files/${filename}`, {
+          method: 'DELETE',
+        });
+        if (res.ok) {
+          await triggerSystemRestart();
+        } else {
+          const err = await res.json();
+          throw new Error(err.error || 'Delete failed');
+        }
+      },
+      onSuccess: () => {
+        // Restart is triggered, just keep it open
+        dialog.loading = true;
+        dialog.open = true;
+      },
+    });
   };
 </script>
 
@@ -350,6 +461,19 @@
       }}
     />
   {/if}
+
+  <Dialog
+    open={dialog.open}
+    title={dialog.title}
+    message={dialog.message}
+    confirmText={dialog.confirmText}
+    variant={dialog.variant}
+    loading={dialog.loading}
+    loadingText={dialog.loadingText}
+    showCancel={dialog.showCancel}
+    onconfirm={dialog.onConfirm}
+    oncancel={closeDialog}
+  />
 
   {#if showAddBridgeModal}
     <WizardModal onclose={() => (showAddBridgeModal = false)} />

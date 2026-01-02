@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t, locale } from 'svelte-i18n';
   import Button from './Button.svelte';
+  import Dialog from './Dialog.svelte';
 
   let {
     configRoot = '',
@@ -486,42 +487,125 @@
     return Boolean(buildSerialConfigPayload());
   }
 
+  // Dialog State
+  let dialog = $state({
+    open: false,
+    title: '',
+    message: '',
+    confirmText: undefined as string | undefined,
+    variant: 'primary' as 'primary' | 'danger' | 'success',
+    loading: false,
+    loadingText: undefined as string | undefined,
+    showCancel: true,
+    onConfirm: async () => {},
+  });
+
+  const closeDialog = () => {
+    dialog.open = false;
+  };
+
+  const showConfirmDialog = ({
+    title,
+    message,
+    confirmText,
+    variant = 'primary',
+    loadingText,
+    action,
+    onSuccess,
+  }: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'primary' | 'danger' | 'success';
+    loadingText?: string;
+    action: () => Promise<void>;
+    onSuccess?: () => void;
+  }) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.confirmText = confirmText;
+    dialog.variant = variant;
+    dialog.loadingText = loadingText;
+    dialog.showCancel = true;
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      dialog.loading = true;
+      try {
+        await action();
+        // Don't close immediately if we want to show success or just wait for reload
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          closeDialog();
+        }
+      } catch (err: any) {
+        closeDialog();
+        setTimeout(() => {
+          dialog.title = $t('common.error') || 'Error';
+          dialog.message = err.message || 'An error occurred';
+          dialog.variant = 'danger';
+          dialog.showCancel = false;
+          dialog.confirmText = $t('common.confirm');
+          dialog.loading = false;
+          dialog.onConfirm = async () => closeDialog();
+          dialog.open = true;
+        }, 300);
+      } finally {
+        if (!onSuccess) dialog.loading = false;
+      }
+    };
+    dialog.open = true;
+  };
+
   // Restart Logic
   let isRestarting = $state(false);
 
-  async function handleRestart() {
-    isRestarting = true;
-    try {
-      // 1. Get One-time Token
-      const tokenRes = await fetch('./api/system/restart/token');
-      if (!tokenRes.ok) throw new Error('Failed to get restart token');
-      const { token } = await tokenRes.json();
+  function handleRestart() {
+    showConfirmDialog({
+      title: $t('settings.app_control.title'), // "Application Control" or just "Restart"?
+      // The original alert was just "Restarting..." AFTER action.
+      // But usually we want to confirm before restart.
+      // However, handleRestart in SetupWizard is called from a button that might already say "Restart".
+      // Let's check the button calling it: onclick={handleRestart}
+      // Usually it's better to confirm.
+      message: $t('settings.app_control.restart_confirm'),
+      confirmText: $t('settings.app_control.restart'),
+      variant: 'danger',
+      loadingText: $t('settings.app_control.restarting'),
+      action: async () => {
+        isRestarting = true;
+        // 1. Get One-time Token
+        const tokenRes = await fetch('./api/system/restart/token');
+        if (!tokenRes.ok) throw new Error('Failed to get restart token');
+        const { token } = await tokenRes.json();
 
-      // 2. Send Restart Request with Token
-      const res = await fetch('./api/system/restart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
+        // 2. Send Restart Request with Token
+        const res = await fetch('./api/system/restart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Restart failed');
-      }
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Restart failed');
+        }
+      },
+      onSuccess: () => {
+        // Keep dialog open with "Restarting..." spinner?
+        // My showConfirmDialog will keep loading true if onSuccess is provided?
+        // Wait, I said "if (!onSuccess) dialog.loading = false".
+        // So if onSuccess is present, loading stays true?
+        // Yes, which is what we want (button stays spinning).
 
-      alert($t('settings.app_control.restarting'));
-
-      // Auto-reload after 5 seconds
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-    } catch (e: any) {
-      console.error('Restart failed', e);
-      alert(e.message || 'Failed to restart');
-      isRestarting = false;
-    }
+        // Reload after 5 sec
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      },
+    });
   }
 </script>
 
@@ -1013,6 +1097,19 @@
     {/if}
   </div>
 </div>
+
+<Dialog
+  open={dialog.open}
+  title={dialog.title}
+  message={dialog.message}
+  confirmText={dialog.confirmText}
+  variant={dialog.variant}
+  loading={dialog.loading}
+  loadingText={dialog.loadingText}
+  showCancel={dialog.showCancel}
+  onconfirm={dialog.onConfirm}
+  oncancel={closeDialog}
+/>
 
 <style>
   /* ... existing styles ... */

@@ -957,6 +957,26 @@
     }
   }
 
+  function handleEntityUpdate(
+    entityId: string,
+    portId: string | undefined,
+    updates: Partial<UnifiedEntity>,
+  ) {
+    const { discoveryAlways } = updates;
+
+    if (discoveryAlways !== undefined) {
+      configuredEntities = configuredEntities.map((e) =>
+        e.entityId === entityId ? { ...e, discoveryAlways } : e,
+      );
+
+      availableCommands = availableCommands.map((cmd) =>
+        cmd.entityId === entityId && (!portId || cmd.portId === portId)
+          ? { ...cmd, discoveryAlways }
+          : cmd,
+      );
+    }
+  }
+
   type PortMetadata = BridgeSerialInfo & {
     configFile: string;
     error?: string;
@@ -1446,6 +1466,8 @@
         {renameError}
         onRename={(newName) =>
           selectedEntity && renameEntityRequest(selectedEntity.id, newName, selectedEntity.portId)}
+        onUpdate={(updates) =>
+          selectedEntity && handleEntityUpdate(selectedEntity.id, selectedEntity.portId, updates)}
       />
     {/if}
   </main>

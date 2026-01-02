@@ -3,6 +3,7 @@
   import type { RawPacketWithInterval, PacketStats as PacketStatsType } from '../types';
   import { fade } from 'svelte/transition';
   import Button from './Button.svelte';
+  import Dialog from './Dialog.svelte';
   import VirtualList from '@humanspeak/svelte-virtual-list';
 
   let {
@@ -39,6 +40,88 @@
   let filterText = $state('');
   let debouncedFilterText = $state('');
   let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Dialog State
+  let dialog = $state({
+    open: false,
+    title: '',
+    message: '',
+    confirmText: undefined as string | undefined,
+    variant: 'primary' as 'primary' | 'danger' | 'success',
+    loading: false,
+    loadingText: undefined as string | undefined,
+    showCancel: true,
+    onConfirm: async () => {},
+  });
+
+  const closeConfirmDialog = () => {
+    dialog.open = false;
+  };
+
+  const showAlertDialog = (
+    title: string,
+    message: string,
+    variant: 'danger' | 'success' = 'danger',
+  ) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.variant = variant;
+    dialog.showCancel = false;
+    dialog.confirmText = $t('common.confirm');
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      closeConfirmDialog();
+    };
+    dialog.open = true;
+  };
+
+  const showConfirmDialog = ({
+    title,
+    message,
+    confirmText,
+    variant = 'primary',
+    loadingText,
+    action,
+    onSuccess,
+  }: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'primary' | 'danger' | 'success';
+    loadingText?: string;
+    action: () => Promise<void>;
+    onSuccess?: () => void;
+  }) => {
+    dialog.title = title;
+    dialog.message = message;
+    dialog.confirmText = confirmText;
+    dialog.variant = variant;
+    dialog.loadingText = loadingText;
+    dialog.showCancel = true;
+    dialog.loading = false;
+    dialog.onConfirm = async () => {
+      dialog.loading = true;
+      try {
+        await action();
+        closeConfirmDialog();
+        if (onSuccess) {
+          setTimeout(onSuccess, 300);
+        }
+      } catch (err: any) {
+        closeConfirmDialog();
+        setTimeout(() => {
+          showAlertDialog(
+            $t('common.error') || 'Error',
+            err.message || 'An error occurred',
+            'danger',
+          );
+        }, 300);
+      } finally {
+        dialog.loading = false;
+      }
+    };
+    dialog.open = true;
+  };
 
   import PacketSender from './PacketSender.svelte';
 
@@ -217,7 +300,11 @@
           onStop?.();
         }
         if (autoStopped) {
-          alert($t('analysis.raw_log.auto_stopped_limit'));
+          showAlertDialog(
+            $t('analysis.raw_log.title'),
+            $t('analysis.raw_log.auto_stopped_limit'),
+            'danger',
+          );
         }
       }
     } else {
@@ -256,11 +343,19 @@
         } else {
           // If server returns error (e.g. 500), try to show it
           const errData = await response.json();
-          alert(`Failed to start recording: ${errData.error || response.statusText}`);
+          showAlertDialog(
+            'Error',
+            `Failed to start recording: ${errData.error || response.statusText}`,
+            'danger',
+          );
         }
       } catch (e) {
         console.error('API Error:', e);
-        alert('Failed to start recording. Please check console for details.');
+        showAlertDialog(
+          'Error',
+          'Failed to start recording. Please check console for details.',
+          'danger',
+        );
       }
     }
   }
@@ -300,25 +395,31 @@
     }
   }
 
-  async function deleteLog() {
+  function deleteLog() {
     if (!recordedFile) return;
-    if (!confirm($t('analysis.raw_log.delete_confirm'))) return;
 
-    try {
-      const response = await fetch(`./api/logs/packet/${recordedFile.filename}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        // Clear file and close dialog
-        recordedFile = null;
-        showSaveDialog = false;
-        alert($t('analysis.raw_log.deleted'));
-      } else {
-        console.error('Failed to delete log');
-      }
-    } catch (e) {
-      console.error('Delete API Error:', e);
-    }
+    showConfirmDialog({
+      title: $t('analysis.raw_log.delete'),
+      message: $t('analysis.raw_log.delete_confirm'),
+      confirmText: $t('analysis.raw_log.delete'),
+      variant: 'danger',
+      action: async () => {
+        const response = await fetch(`./api/logs/packet/${recordedFile!.filename}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          // Clear file and close dialog
+          recordedFile = null;
+          showSaveDialog = false;
+        } else {
+          console.error('Failed to delete log');
+          throw new Error('Failed to delete log');
+        }
+      },
+      onSuccess: () => {
+        showAlertDialog($t('common.success'), $t('analysis.raw_log.deleted'), 'success');
+      },
+    });
   }
 
   function closeDialog() {
@@ -522,6 +623,19 @@
     </div>
   {/if}
 </div>
+
+<Dialog
+  open={dialog.open}
+  title={dialog.title}
+  message={dialog.message}
+  confirmText={dialog.confirmText}
+  variant={dialog.variant}
+  loading={dialog.loading}
+  loadingText={dialog.loadingText}
+  showCancel={dialog.showCancel}
+  onconfirm={dialog.onConfirm}
+  oncancel={closeConfirmDialog}
+/>
 
 <style>
   .log-section {

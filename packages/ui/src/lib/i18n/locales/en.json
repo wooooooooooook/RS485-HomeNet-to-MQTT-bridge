@@ -185,10 +185,10 @@
     },
     "stats": {
       "title": "Packet Interval Analysis",
-      "packet_interval": "Packet Interval (Avg ± StdDev)",
-      "idle_interval": "Idle Interval (Avg ± StdDev)",
-      "idle_occurrence": "Idle Occurrence Interval (Avg ± StdDev)",
-      "sample_size": "Sample Size",
+      "packet_interval": "Packet interval",
+      "idle_interval": "Idle duration",
+      "idle_occurrence": "Idle occurrence interval",
+      "sample_size": "Sample size",
       "analyzing": "Analyzing..."
     }
   },

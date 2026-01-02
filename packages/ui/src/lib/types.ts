@@ -142,7 +142,7 @@ export type RawPacketWithInterval = {
   direction?: 'RX' | 'TX';
 };
 
-export type PacketStats = {
+export type PacketStatsData = {
   packetAvg: number;
   packetStdDev: number;
   idleAvg: number;
@@ -151,6 +151,10 @@ export type PacketStats = {
   idleOccurrenceStdDev: number;
   sampleSize: number;
   portId?: string;
+};
+
+export type PacketStats = PacketStatsData & {
+  valid?: PacketStatsData;
 };
 
 export type UnifiedEntity = {

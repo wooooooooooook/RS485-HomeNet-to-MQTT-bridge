@@ -488,6 +488,39 @@
       />
     {/if}
   </div>
+
+  <!-- Inline Packet Interval Analysis -->
+  {#if stats}
+    <div class="stats-inline" transition:fade>
+      <div class="stats-header">
+        <span class="stats-title">{$t('analysis.stats.title')}</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-label">{$t('analysis.stats.packet_interval')}</span>
+          <span class="stat-value">{stats.packetAvg} ± {stats.packetStdDev} ms</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">{$t('analysis.stats.idle_interval')}</span>
+          <span class="stat-value"
+            >{stats.idleAvg > 0 ? `${stats.idleAvg} ± ${stats.idleStdDev} ms` : 'N/A'}</span
+          >
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">{$t('analysis.stats.idle_occurrence')}</span>
+          <span class="stat-value"
+            >{stats.idleOccurrenceAvg > 0
+              ? `${stats.idleOccurrenceAvg} ± ${stats.idleOccurrenceStdDev} ms`
+              : 'N/A'}</span
+          >
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">{$t('analysis.stats.sample_size')}</span>
+          <span class="stat-value">{stats.sampleSize}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -802,5 +835,62 @@
     border-radius: 6px;
     margin-bottom: 1rem;
     font-size: 0.9rem;
+  }
+
+  /* Inline Packet Interval Stats */
+  .stats-inline {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 8px;
+  }
+
+  .stats-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .stats-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .stats-inline .stat-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #10b981;
+    font-family: monospace;
+  }
+
+  @media (max-width: 640px) {
+    .stats-row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .stats-inline .stat-item {
+      justify-content: space-between;
+      width: 100%;
+    }
   }
 </style>

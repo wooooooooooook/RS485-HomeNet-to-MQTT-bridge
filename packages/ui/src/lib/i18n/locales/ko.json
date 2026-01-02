@@ -185,9 +185,9 @@
     },
     "stats": {
       "title": "패킷 간격 분석",
-      "packet_interval": "패킷 간격 (평균 ± 표준편차)",
-      "idle_interval": "유휴 간격 (평균 ± 표준편차)",
-      "idle_occurrence": "유휴 발생 간격 (평균 ± 표준편차)",
+      "packet_interval": "패킷 간격",
+      "idle_interval": "유휴 시간",
+      "idle_occurrence": "유휴 발생 간격",
       "sample_size": "표본 크기",
       "analyzing": "분석중입니다..."
     }

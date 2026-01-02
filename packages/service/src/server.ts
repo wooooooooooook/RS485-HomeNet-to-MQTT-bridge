@@ -115,7 +115,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -325,7 +325,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
         typeof value?.logRetention?.retentionCount === 'number' &&
-        value.logRetention.retentionCount > 0
+          value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
     },
@@ -3013,10 +3013,11 @@ app.post('/api/commands/execute', async (req, res) => {
     return res.status(429).json({ error: 'Too many requests' });
   }
 
-  const { entityId, commandName, value } = req.body as {
+  const { entityId, commandName, value, portId } = req.body as {
     entityId?: string;
     commandName?: string;
     value?: number | string;
+    portId?: string;
   };
 
   if (!entityId || !commandName) {
@@ -3030,13 +3031,37 @@ app.post('/api/commands/execute', async (req, res) => {
   // Convert command_on -> on, command_off -> off, etc.
   const cmdName = commandName.replace('command_', '');
 
-  const targetBridge = findBridgeForEntity(entityId);
+  // Find the target bridge: prefer portId lookup, fallback to entityId lookup
+  let targetBridge: BridgeInstance | undefined;
+
+  if (portId) {
+    const configIndex = findConfigIndexByPortId(portId);
+    if (configIndex !== -1) {
+      targetBridge = bridges.find(
+        (instance) => instance.configFile === currentConfigFiles[configIndex],
+      );
+    }
+  }
+
+  // Fallback to entity-based lookup if portId not provided or not found
+  if (!targetBridge) {
+    targetBridge = findBridgeForEntity(entityId);
+  }
 
   if (!targetBridge) {
+    // Check if the entity exists in config but bridge is not active
+    const configIndex = portId
+      ? findConfigIndexByPortId(portId)
+      : findConfigIndexForEntity(entityId);
+    if (configIndex !== -1 && currentConfigStatuses[configIndex] === 'error') {
+      return res.status(503).json({
+        error: `Bridge for this entity is not active: ${currentConfigErrors[configIndex] || 'Connection failed'}`,
+      });
+    }
     return res.status(404).json({ error: 'Entity not found in loaded configs' });
   }
 
-  const result = await targetBridge.bridge.executeCommand(entityId, cmdName, value);
+  const result = await targetBridge.bridge.executeCommand(entityId, cmdName, value, portId);
 
   if (result.success) {
     res.json({
@@ -3225,7 +3250,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {});
+    await bridgeStartPromise.catch(() => { });
   }
 
   bridgeStartPromise = (async () => {
@@ -3403,6 +3428,16 @@ async function loadAndStartBridges(filenames: string[]) {
             currentConfigErrors[originalIndex] =
               err instanceof Error ? err.message : 'Unknown error during bridge start';
           }
+          // Remove failed bridge from the bridges array to prevent
+          // "Bridge not initialized" errors when executing commands on other bridges
+          const failedIndex = bridges.indexOf(instance);
+          if (failedIndex !== -1) {
+            bridges.splice(failedIndex, 1);
+            logger.info(
+              { configFile: instance.configFile },
+              '[service] Removed failed bridge instance from active bridges',
+            );
+          }
         }
       }),
     ).catch((err) => {
@@ -3490,7 +3525,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
       logger.info('[service] Cleared .restart-required flag');
     }
 

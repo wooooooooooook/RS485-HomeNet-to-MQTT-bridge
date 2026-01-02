@@ -911,6 +911,7 @@
           entityId: cmd.entityId,
           commandName: cmd.commandName,
           value: value,
+          portId: cmd.portId,
         }),
       });
     } catch (err) {

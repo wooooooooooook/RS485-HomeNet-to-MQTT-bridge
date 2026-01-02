@@ -51,20 +51,24 @@ export function calculateChecksumFromBuffer(
   type: ChecksumType,
   headerLength: number,
   dataEnd: number,
+  baseOffset: number = 0,
 ): number {
+  const dataStart = baseOffset;
+  const headerStart = baseOffset + headerLength;
+  const dataStop = baseOffset + dataEnd;
   switch (type) {
     case 'add':
-      return addRange(buffer, 0, dataEnd);
+      return addRange(buffer, dataStart, dataStop);
     case 'add_no_header':
-      return addRange(buffer, headerLength, dataEnd);
+      return addRange(buffer, headerStart, dataStop);
     case 'xor':
-      return xorRange(buffer, 0, dataEnd);
+      return xorRange(buffer, dataStart, dataStop);
     case 'xor_no_header':
-      return xorRange(buffer, headerLength, dataEnd);
+      return xorRange(buffer, headerStart, dataStop);
     case 'samsung_rx':
-      return samsungRxFromBuffer(buffer, headerLength, dataEnd);
+      return samsungRxFromBuffer(buffer, headerStart, dataStop);
     case 'samsung_tx':
-      return samsungTxFromBuffer(buffer, headerLength, dataEnd);
+      return samsungTxFromBuffer(buffer, headerStart, dataStop);
     case 'none':
       throw new Error("Checksum type 'none' should not be calculated");
     default:
@@ -194,11 +198,14 @@ export function calculateChecksum2FromBuffer(
   type: Checksum2Type,
   headerLength: number,
   dataEnd: number,
+  baseOffset: number = 0,
 ): number[] {
+  const dataStart = baseOffset;
+  const dataStop = baseOffset + dataEnd;
   switch (type) {
     case 'xor_add':
       // xorAdd processes header then data linearly, so we can process range 0..dataEnd
-      return xorAddRange(buffer, 0, dataEnd);
+      return xorAddRange(buffer, dataStart, dataStop);
     default:
       throw new Error(`Unknown 2-byte checksum type: ${type}`);
   }

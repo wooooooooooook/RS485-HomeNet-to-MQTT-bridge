@@ -17,10 +17,12 @@ import { Buffer } from 'buffer';
  * 3. Variable Length / Checksum Sweep: Only `rx_header` is known, scans for valid checksums.
  */
 export class PacketParser {
-  private buffer: Buffer = Buffer.alloc(0);
+  private readonly MAX_BUFFER_SIZE = 16384; // 16KB limit
+  private buffer: Buffer = Buffer.alloc(this.MAX_BUFFER_SIZE);
+  private readOffset = 0;
+  private writeOffset = 0;
   private lastRxTime: number = 0;
   private lastScannedLength: number = 0;
-  private readonly MAX_BUFFER_SIZE = 16384; // 16KB limit
   private defaults: PacketDefaults;
   private headerBuffer: Buffer | null = null;
   private footerBuffer: Buffer | null = null;
@@ -84,20 +86,11 @@ export class PacketParser {
     const now = Date.now();
     // Reset buffer on timeout to avoid stale partial packets corrupting new data
     if (this.defaults.rx_timeout && now - this.lastRxTime > this.defaults.rx_timeout) {
-      this.buffer = Buffer.alloc(0);
-      this.lastScannedLength = 0;
+      this.resetBuffer();
     }
     this.lastRxTime = now;
 
-    this.buffer = Buffer.concat([this.buffer, chunk]);
-
-    // Security: Prevent memory exhaustion from large garbage data
-    if (this.buffer.length > this.MAX_BUFFER_SIZE) {
-      // Drop oldest data to keep buffer size within limit
-      this.buffer = this.buffer.subarray(this.buffer.length - this.MAX_BUFFER_SIZE);
-      // Reset scanning state as buffer window has shifted
-      this.lastScannedLength = 0;
-    }
+    this.appendChunk(chunk);
 
     const packets: Buffer[] = [];
     const header = this.defaults.rx_header || [];
@@ -105,39 +98,42 @@ export class PacketParser {
 
     // Safety guard to prevent infinite loops if the buffer isn't consumed
     let iterations = 0;
-    const maxIterations = this.buffer.length + 100;
+    const maxIterations = this.bufferLength() + 100;
 
-    while (this.buffer.length > 0) {
+    while (this.bufferLength() > 0) {
       iterations++;
       if (iterations > maxIterations) {
         // Force consumption of one byte to break strict loops
-        this.buffer = this.buffer.subarray(1);
+        this.consumeBytes(1);
         continue;
       }
+
+      let bufferLength = this.bufferLength();
 
       // 1. Enforce Header (Sliding Window)
       // If a header is defined, we guarantee the buffer starts with it before proceeding.
       if (this.headerBuffer && headerLen > 0) {
-        if (this.buffer.length < headerLen) break; // Wait for more data
+        if (bufferLength < headerLen) break; // Wait for more data
 
-        const idx = this.buffer.indexOf(this.headerBuffer);
+        const idx = this.findPatternIndex(this.headerBuffer, this.readOffset);
 
         if (idx === -1) {
           // Header not found.
           // IMPORTANT: Keep the last few bytes (headerLen - 1) in case a header
           // is split between the end of this chunk and the start of the next.
           const keepLen = headerLen - 1;
-          if (this.buffer.length > keepLen) {
-            this.buffer = this.buffer.subarray(this.buffer.length - keepLen);
-          }
+          this.readOffset = Math.max(this.writeOffset - keepLen, 0);
+          this.lastScannedLength = 0;
           break; // Stop processing this chunk
-        } else if (idx > 0) {
+        } else if (idx > this.readOffset) {
           // Header found, but not at index 0. Discard garbage data before it.
-          this.buffer = this.buffer.subarray(idx);
+          this.readOffset = idx;
           this.lastScannedLength = 0;
         }
-        // If idx === 0, the buffer starts with the header. Proceed to extraction.
+        // If idx === readOffset, the buffer starts with the header. Proceed to extraction.
       }
+
+      bufferLength = this.bufferLength();
 
       // 2. Find Packet Length and Extract
       let matchFound = false;
@@ -145,12 +141,14 @@ export class PacketParser {
 
       if (this.defaults.rx_length && this.defaults.rx_length > 0) {
         // Strategy A: Fixed Length
-        if (this.buffer.length >= this.defaults.rx_length) {
+        if (this.bufferLength() >= this.defaults.rx_length) {
           // Check Checksum
-          if (this.verifyChecksum(this.buffer, this.defaults.rx_length)) {
-            const packet = this.buffer.subarray(0, this.defaults.rx_length);
-            packets.push(packet); // Push Buffer directly
-            this.buffer = this.buffer.subarray(this.defaults.rx_length);
+          if (this.verifyChecksum(this.buffer, this.readOffset, this.defaults.rx_length)) {
+            const packet = Buffer.from(
+              this.buffer.subarray(this.readOffset, this.readOffset + this.defaults.rx_length),
+            );
+            packets.push(packet);
+            this.consumeBytes(this.defaults.rx_length);
             matchFound = true;
           } else {
             shift = true; // Invalid checksum for fixed length -> discard byte and try again
@@ -162,22 +160,24 @@ export class PacketParser {
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + 1 + checksumLen + this.defaults.rx_footer.length;
 
-        if (this.buffer.length >= minLen && this.footerBuffer) {
+        if (bufferLength >= minLen && this.footerBuffer) {
           const footerLen = this.footerBuffer.length;
           // Footer ends at 'len', so it starts at 'len - footerLen'.
           // 'len' starts at 'minLen', so start search at 'minLen - footerLen'.
-          let searchIdx = minLen - footerLen;
+          let searchIdx = this.readOffset + minLen - footerLen;
 
           // Optimization: Use indexOf to find footer candidates instead of checking every byte
-          while (searchIdx <= this.buffer.length - footerLen) {
+          while (searchIdx <= this.writeOffset - footerLen) {
             const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
-            if (foundIdx === -1) break;
+            if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
 
-            const len = foundIdx + footerLen;
-            if (this.verifyChecksum(this.buffer, len)) {
-              const packet = this.buffer.subarray(0, len);
-              packets.push(packet); // Push Buffer directly
-              this.buffer = this.buffer.subarray(len);
+            const len = foundIdx + footerLen - this.readOffset;
+            if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
+              const packet = Buffer.from(
+                this.buffer.subarray(this.readOffset, this.readOffset + len),
+              );
+              packets.push(packet);
+              this.consumeBytes(len);
               matchFound = true;
               break;
             }
@@ -192,7 +192,7 @@ export class PacketParser {
         // Assume valid packet if checksum matches. This is the most expensive strategy.
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + checksumLen;
-        if (checksumLen > 0 && this.buffer.length >= minLen) {
+        if (checksumLen > 0 && bufferLength >= minLen) {
           const checksumType = this.defaults.rx_checksum;
           const isStandard1Byte =
             typeof checksumType === 'string' &&
@@ -220,8 +220,9 @@ export class PacketParser {
               runningChecksum = 0xb0;
             }
 
-            const startIdx = isNoHeader ? headerLen : 0;
-            const initialDataEnd = startLen - checksumLen;
+            const baseOffset = this.readOffset;
+            const startIdx = baseOffset + (isNoHeader ? headerLen : 0);
+            const initialDataEnd = baseOffset + startLen - checksumLen;
 
             // Calculate initial checksum for the starting packet length
             if (isAdd) {
@@ -234,14 +235,14 @@ export class PacketParser {
               }
             }
 
-            for (let len = startLen; len <= this.buffer.length; len++) {
+            for (let len = startLen; len <= bufferLength; len++) {
               // Update checksum with the new byte added to the data section
               if (len > startLen) {
                 // The byte that was previously the checksum (or part of future data)
                 // is now part of the data being checksummed.
                 // Packet length increased by 1, so data section extended by 1.
                 // The new data byte is at `len - 1 - checksumLen`.
-                const newByte = this.buffer[len - 1 - checksumLen];
+                const newByte = this.buffer[baseOffset + len - 1 - checksumLen];
                 if (isAdd) {
                   runningChecksum += newByte;
                 } else {
@@ -256,17 +257,19 @@ export class PacketParser {
               } else if (isSamsungRx) {
                 // Check first byte of data (if it exists)
                 // Data region is [startIdx, len - checksumLen)
-                const currentDataEnd = len - checksumLen;
+                const currentDataEnd = baseOffset + len - checksumLen;
                 if (currentDataEnd > startIdx && this.buffer[startIdx] < 0x7c) {
                   finalChecksum ^= 0x80;
                 }
               }
 
-              const expected = this.buffer[len - 1];
+              const expected = this.buffer[baseOffset + len - 1];
               if ((finalChecksum & 0xff) === expected) {
-                const packet = this.buffer.subarray(0, len);
-                packets.push(packet); // Push Buffer directly
-                this.buffer = this.buffer.subarray(len);
+                const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
                 this.lastScannedLength = 0;
                 matchFound = true;
                 break;
@@ -274,11 +277,13 @@ export class PacketParser {
             }
           } else {
             // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
-            for (let len = startLen; len <= this.buffer.length; len++) {
-              if (this.verifyChecksum(this.buffer, len)) {
-                const packet = this.buffer.subarray(0, len);
-                packets.push(packet); // Push Buffer directly
-                this.buffer = this.buffer.subarray(len);
+            for (let len = startLen; len <= bufferLength; len++) {
+              if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
+                const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
                 this.lastScannedLength = 0;
                 matchFound = true;
                 break;
@@ -296,7 +301,7 @@ export class PacketParser {
       if (this.defaults.rx_length && this.defaults.rx_length > 0) {
         if (shift) {
           // If we had a fixed length but checksum failed, shift 1 byte to realign
-          this.buffer = this.buffer.subarray(1);
+          this.consumeBytes(1);
           this.lastScannedLength = 0;
           continue;
         }
@@ -304,12 +309,74 @@ export class PacketParser {
         break;
       } else {
         // Variable length: waiting for more data to find a footer or valid checksum
-        this.lastScannedLength = this.buffer.length;
+        this.lastScannedLength = this.bufferLength();
         break;
       }
     }
 
     return packets;
+  }
+
+  private bufferLength(): number {
+    return this.writeOffset - this.readOffset;
+  }
+
+  private resetBuffer(): void {
+    this.readOffset = 0;
+    this.writeOffset = 0;
+    this.lastScannedLength = 0;
+  }
+
+  private compactBuffer(): void {
+    if (this.readOffset === 0) return;
+    if (this.readOffset >= this.writeOffset) {
+      this.resetBuffer();
+      return;
+    }
+    this.buffer.copy(this.buffer, 0, this.readOffset, this.writeOffset);
+    this.writeOffset -= this.readOffset;
+    this.readOffset = 0;
+  }
+
+  private appendChunk(chunk: Buffer): void {
+    if (chunk.length === 0) return;
+
+    if (chunk.length >= this.MAX_BUFFER_SIZE) {
+      chunk = chunk.subarray(chunk.length - this.MAX_BUFFER_SIZE);
+      this.resetBuffer();
+    }
+
+    if (this.writeOffset + chunk.length > this.MAX_BUFFER_SIZE) {
+      this.compactBuffer();
+    }
+
+    if (this.writeOffset + chunk.length > this.MAX_BUFFER_SIZE) {
+      const overflow = this.writeOffset + chunk.length - this.MAX_BUFFER_SIZE;
+      this.readOffset = Math.min(this.readOffset + overflow, this.writeOffset);
+      this.lastScannedLength = 0;
+      if (this.readOffset === this.writeOffset) {
+        this.resetBuffer();
+      }
+      if (this.writeOffset + chunk.length > this.MAX_BUFFER_SIZE) {
+        this.compactBuffer();
+      }
+    }
+
+    chunk.copy(this.buffer, this.writeOffset);
+    this.writeOffset += chunk.length;
+  }
+
+  private consumeBytes(length: number): void {
+    this.readOffset += length;
+    if (this.readOffset >= this.writeOffset) {
+      this.resetBuffer();
+    }
+  }
+
+  private findPatternIndex(pattern: Buffer, startOffset: number): number {
+    const idx = this.buffer.indexOf(pattern, startOffset);
+    if (idx === -1 || idx + pattern.length > this.writeOffset) return -1;
+    return idx;
   }
 
   private getChecksumLength(): number {
@@ -323,21 +390,22 @@ export class PacketParser {
   /**
    * Verifies the checksum of a potential packet candidate.
    *
-   * @param buffer - The buffer containing the candidate packet at the start
+   * @param buffer - The buffer containing the candidate packet
+   * @param offset - The offset where the candidate packet starts
    * @param length - The length of the candidate packet to verify
    */
-  private verifyChecksum(buffer: Buffer, length: number): boolean {
+  private verifyChecksum(buffer: Buffer, offset: number, length: number): boolean {
     if (this.defaults.rx_checksum === 'none') return true;
 
     // 1-byte Checksum
     if (this.defaults.rx_checksum) {
-      let checksumByte = buffer[length - 1];
-      let dataEnd = length - 1;
+      let checksumByte = buffer[offset + length - 1];
+      let dataEnd = offset + length - 1;
 
       if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
         // If there is a footer, the checksum is usually immediately BEFORE the footer
-        checksumByte = buffer[length - 1 - this.defaults.rx_footer.length];
-        dataEnd = length - 1 - this.defaults.rx_footer.length;
+        checksumByte = buffer[offset + length - 1 - this.defaults.rx_footer.length];
+        dataEnd = offset + length - 1 - this.defaults.rx_footer.length;
       }
 
       if (typeof this.defaults.rx_checksum === 'string') {
@@ -350,14 +418,15 @@ export class PacketParser {
             buffer,
             checksumOrScript as ChecksumType,
             headerLength,
-            dataEnd,
+            dataEnd - offset,
+            offset,
           );
           return calculated === checksumByte;
         } else {
           // CEL Expression
           const result = this.getExecutor().execute(checksumOrScript, {
-            data: buffer.subarray(0, dataEnd), // Pass Buffer directly to avoid array spread
-            len: dataEnd,
+            data: buffer.subarray(offset, dataEnd), // Pass Buffer directly to avoid array spread
+            len: dataEnd - offset,
           });
           return result === checksumByte;
         }
@@ -371,8 +440,8 @@ export class PacketParser {
       const headerLength = this.defaults.rx_header?.length || 0;
 
       // Ensure packet is long enough to contain checksum
-      const checksumStart = length - 2 - footerLength;
-      if (checksumStart < headerLength) return false;
+      const checksumStart = offset + length - 2 - footerLength;
+      if (checksumStart < offset + headerLength) return false;
 
       if (typeof this.defaults.rx_checksum2 === 'string') {
         const checksumOrScript = this.defaults.rx_checksum2 as string;
@@ -382,7 +451,8 @@ export class PacketParser {
             buffer,
             checksumOrScript as Checksum2Type,
             headerLength,
-            checksumStart,
+            checksumStart - offset,
+            offset,
           );
           return (
             calculated[0] === buffer[checksumStart] && calculated[1] === buffer[checksumStart + 1]
@@ -390,8 +460,8 @@ export class PacketParser {
         } else {
           // CEL Expression for 2-byte checksum
           const result = this.getExecutor().execute(checksumOrScript, {
-            data: buffer.subarray(0, checksumStart), // Pass Buffer directly to avoid array spread
-            len: checksumStart,
+            data: buffer.subarray(offset, checksumStart), // Pass Buffer directly to avoid array spread
+            len: checksumStart - offset,
           });
           if (Array.isArray(result) && result.length === 2) {
             return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];

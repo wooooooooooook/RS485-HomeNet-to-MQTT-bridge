@@ -1,9 +1,54 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
-  let { onDismiss, children } = $props();
+
+  let {
+    onDismiss,
+    children,
+    variant = 'default',
+  }: { onDismiss?: () => void; children: any; variant?: 'default' | 'error' } = $props();
+
+  let bubbleEl: HTMLDivElement;
+  let position = $state<'top' | 'bottom'>('top');
+  let horizontalAlign = $state<'left' | 'right'>('left');
+
+  onMount(async () => {
+    await tick();
+    adjustPosition();
+  });
+
+  function adjustPosition() {
+    if (!bubbleEl) return;
+
+    const rect = bubbleEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // 수직 위치 조정: 위에 공간이 부족하면 아래에 표시
+    if (rect.top < 0) {
+      position = 'bottom';
+    } else {
+      position = 'top';
+    }
+
+    // 수평 위치 조정: 왼쪽으로 잘리면 왼쪽 정렬로 변경
+    if (rect.left < 0) {
+      horizontalAlign = 'left';
+    } else if (rect.right > viewportWidth) {
+      horizontalAlign = 'right';
+    }
+  }
 </script>
 
-<div class="hint-bubble" transition:fade>
+<div
+  class="hint-bubble"
+  class:error={variant === 'error'}
+  class:position-bottom={position === 'bottom'}
+  class:align-left={horizontalAlign === 'left'}
+  class:align-right={horizontalAlign === 'right'}
+  bind:this={bubbleEl}
+  transition:fade
+>
   <div class="content">
     {@render children()}
   </div>
@@ -30,27 +75,65 @@
   .hint-bubble {
     position: absolute;
     bottom: 100%;
-    right: 0;
+    left: 0;
     margin-bottom: 12px;
     background: #3b82f6;
     color: white;
     padding: 0.5rem 2rem 0.5rem 1rem;
     border-radius: 6px;
     font-size: 0.85rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     white-space: nowrap;
-    z-index: 20;
+    z-index: 1000;
     pointer-events: auto;
+  }
+
+  /* 수평 정렬 */
+  .hint-bubble.align-left {
+    left: 0;
+    right: auto;
+  }
+
+  .hint-bubble.align-right {
+    left: auto;
+    right: 0;
+  }
+
+  /* 아래쪽에 표시 */
+  .hint-bubble.position-bottom {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 12px;
+  }
+
+  .hint-bubble.error {
+    background: #dc2626;
+  }
+
+  .hint-bubble.error .arrow {
+    background: #dc2626;
   }
 
   .arrow {
     position: absolute;
     bottom: -4px;
-    right: 20px;
+    left: 20px;
     transform: rotate(45deg);
     width: 8px;
     height: 8px;
     background: #3b82f6;
+  }
+
+  .hint-bubble.align-right .arrow {
+    left: auto;
+    right: 20px;
+  }
+
+  /* 아래쪽에 표시될 때 화살표는 위로 */
+  .hint-bubble.position-bottom .arrow {
+    bottom: auto;
+    top: -4px;
   }
 
   .close-btn {

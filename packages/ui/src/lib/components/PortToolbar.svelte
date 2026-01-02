@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { BridgeStatus } from '../types';
   import { t } from 'svelte-i18n';
+  import HintBubble from './HintBubble.svelte';
 
   let {
     portIds,
@@ -18,12 +19,41 @@
     onAddBridge?: () => void;
   } = $props();
 
+  let errorBubblePortId = $state<string | null>(null);
+
   function getPortStatus(portId: string): BridgeStatus | 'unknown' {
     const portStatus = portStatuses.find(
       (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
         p.portId === portId,
     );
     return portStatus?.status ?? 'unknown';
+  }
+
+  function getPortErrorMessage(portId: string): string | undefined {
+    const portStatus = portStatuses.find(
+      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
+        p.portId === portId,
+    );
+    return portStatus?.message;
+  }
+
+  function handlePortClick(portId: string) {
+    const status = getPortStatus(portId);
+    const errorMessage = getPortErrorMessage(portId);
+
+    // 에러 상태이고 에러 메시지가 있으면 버블 토글
+    if (status === 'error' && errorMessage) {
+      if (errorBubblePortId === portId) {
+        errorBubblePortId = null;
+      } else {
+        errorBubblePortId = portId;
+      }
+    } else {
+      errorBubblePortId = null;
+    }
+
+    // 항상 포트 변경 콜백 호출
+    onPortChange?.(portId);
   }
 </script>
 
@@ -33,18 +63,25 @@
       <span class="hint">{$t('dashboard.no_configured_ports')}</span>
     {:else}
       {#each portIds as portId (portId)}
-        <button
-          class:active={activePortId === portId}
-          type="button"
-          onclick={() => onPortChange?.(portId)}
-          data-state={getPortStatus(portId)}
-          aria-current={activePortId === portId ? 'true' : undefined}
-        >
-          {#if portStatuses.length > 0}
-            <span class="port-status-dot"></span>
+        <div class="port-button-wrapper">
+          <button
+            class:active={activePortId === portId}
+            type="button"
+            onclick={() => handlePortClick(portId)}
+            data-state={getPortStatus(portId)}
+            aria-current={activePortId === portId ? 'true' : undefined}
+          >
+            {#if portStatuses.length > 0}
+              <span class="port-status-dot"></span>
+            {/if}
+            {portId}
+          </button>
+          {#if errorBubblePortId === portId && getPortErrorMessage(portId)}
+            <HintBubble variant="error" onDismiss={() => (errorBubblePortId = null)}>
+              <span class="error-message">{getPortErrorMessage(portId)}</span>
+            </HintBubble>
           {/if}
-          {portId}
-        </button>
+        </div>
       {/each}
     {/if}
     {#if showAddButton}
@@ -74,6 +111,15 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+  }
+
+  .port-button-wrapper {
+    position: relative;
+  }
+
+  .error-message {
+    color: #fca5a5;
+    font-weight: 500;
   }
 
   .port-tabs button {

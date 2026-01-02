@@ -205,7 +205,7 @@
           <p class="empty full-width">{$t('dashboard.no_devices_found')}</p>
         </div>
       {:else}
-        {#each visibleEntities as entity (entity.id)}
+        {#each visibleEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
           <EntityCard
             {entity}
             onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}

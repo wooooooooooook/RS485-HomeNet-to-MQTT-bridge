@@ -137,7 +137,7 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
   }
 
   if (config.scripts && Array.isArray(config.scripts)) {
-    const scriptIds = new Set<string>();
+
     config.scripts.forEach((script) => {
       // script.id가 존재할 때만 처리 (없으면 validateConfig에서 걸러짐)
       if (script && typeof script === 'object' && script.id) {
@@ -145,7 +145,7 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
         const originalId = currentId;
         let suffix = 2;
 
-        while (scriptIds.has(currentId)) {
+        while (usedIds.has(currentId)) {
           currentId = `${originalId}_${suffix}`;
           suffix += 1;
         }
@@ -157,20 +157,20 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
             '[config] Detected duplicate script ID, renamed to avoid conflict',
           );
         }
-        scriptIds.add(currentId);
+        usedIds.add(currentId);
       }
     });
   }
 
   if (config.automation && Array.isArray(config.automation)) {
-    const automationIds = new Set<string>();
+
     config.automation.forEach((auto) => {
       if (auto && typeof auto === 'object' && auto.id) {
         let currentId = auto.id;
         const originalId = currentId;
         let suffix = 2;
 
-        while (automationIds.has(currentId)) {
+        while (usedIds.has(currentId)) {
           currentId = `${originalId}_${suffix}`;
           suffix += 1;
         }
@@ -182,7 +182,7 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
             '[config] Detected duplicate automation ID, renamed to avoid conflict',
           );
         }
-        automationIds.add(currentId);
+        usedIds.add(currentId);
       }
 
       if (!auto.trigger) return;

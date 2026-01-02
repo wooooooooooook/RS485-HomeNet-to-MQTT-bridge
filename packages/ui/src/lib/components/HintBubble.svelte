@@ -16,7 +16,7 @@
 
   let bubbleEl: HTMLDivElement;
   let position = $state<'top' | 'bottom'>('top');
-  let horizontalAlign = $state<'left' | 'right'>('left');
+  let horizontalAlign = $state<'left' | 'right'>('right');
   let autoCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(async () => {
@@ -54,9 +54,9 @@
     }
 
     // 수평 위치 조정: 왼쪽으로 잘리면 왼쪽 정렬로 변경
-    if (rect.left < 0) {
+    if (rect.right > viewportWidth) {
       horizontalAlign = 'left';
-    } else if (rect.right > viewportWidth) {
+    } else if (rect.left < 0) {
       horizontalAlign = 'right';
     }
   }

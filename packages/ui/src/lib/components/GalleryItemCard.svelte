@@ -115,6 +115,7 @@
     flex-direction: column;
     gap: 0.75rem;
     transition: all 0.2s;
+    min-width: 0;
   }
 
   .card:hover {
@@ -135,6 +136,7 @@
     color: #f1f5f9;
     margin: 0;
     line-height: 1.3;
+    overflow-wrap: anywhere;
   }
 
   .version {
@@ -151,6 +153,7 @@
     color: #94a3b8;
     margin: 0;
     line-height: 1.5;
+    overflow-wrap: anywhere;
     display: -webkit-box;
     line-clamp: 2;
     -webkit-line-clamp: 2;
@@ -168,6 +171,7 @@
   .meta-row {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .label {
@@ -176,6 +180,7 @@
 
   .value {
     color: #94a3b8;
+    overflow-wrap: anywhere;
   }
 
   .content-summary {

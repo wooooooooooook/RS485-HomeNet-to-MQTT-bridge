@@ -71,6 +71,13 @@
       "add_desc": "Add a new RS485 bridge configuration.",
       "add_button": "Add Bridge",
       "current_configs": "Current Bridge Configurations",
+      "edit_button": "Edit Config",
+      "edit_title": "Edit Bridge Configuration",
+      "edit_hint": "Ctrl+S: Save. Restart required to apply changes.",
+      "edit_success": "Configuration saved.",
+      "save_only": "Save",
+      "save_and_restart": "Save & Restart",
+      "restarting": "Restarting...",
       "delete_confirm": "Are you sure you want to delete {filename}? (A backup will be created)",
       "delete_success": "Configuration file deleted.",
       "delete_last_warning": "The last bridge cannot be deleted."

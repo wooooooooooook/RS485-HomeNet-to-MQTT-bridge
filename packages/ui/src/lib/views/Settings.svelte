@@ -2,6 +2,7 @@
   import { t, locale, locales } from 'svelte-i18n';
   import LogConsentModal from '../components/LogConsentModal.svelte';
   import WizardModal from '../components/WizardModal.svelte';
+  import BridgeConfigEditorModal from '../components/BridgeConfigEditorModal.svelte';
   import Button from '../components/Button.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import type { FrontendSettings, LogRetentionStats, SavedLogFile, BridgeInfo } from '../types';
@@ -46,6 +47,7 @@
   );
   let showConsentModal = $state(false);
   let showAddBridgeModal = $state(false);
+  let editingConfigFile = $state<string | null>(null);
 
   const fetchLogSharingStatus = () => {
     fetch(`./api/log-sharing/status?_=${Date.now()}`)
@@ -353,6 +355,17 @@
     <WizardModal onclose={() => (showAddBridgeModal = false)} />
   {/if}
 
+  {#if editingConfigFile}
+    <BridgeConfigEditorModal
+      filename={editingConfigFile}
+      onclose={() => (editingConfigFile = null)}
+      onrestart={triggerSystemRestart}
+      onsave={() => {
+        // Config saved, user should restart
+      }}
+    />
+  {/if}
+
   <div class="view-header">
     <h1>{$t('settings.title')}</h1>
     <div class="lang-switcher">
@@ -646,6 +659,15 @@
               </div>
 
               <div class="file-actions">
+                <Button
+                  variant="secondary"
+                  class="file-action-btn"
+                  onclick={() => (editingConfigFile = bridge.configFile)}
+                  ariaLabel={$t('settings.bridge_config.edit_button')}
+                  title={$t('settings.bridge_config.edit_button')}
+                >
+                  ✏️
+                </Button>
                 <Button
                   variant="danger"
                   class="file-action-btn"

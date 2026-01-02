@@ -1,0 +1,360 @@
+<script lang="ts">
+  import { t } from 'svelte-i18n';
+  import Button from './Button.svelte';
+
+  let {
+    filename,
+    onclose,
+    onsave,
+    onrestart,
+  }: {
+    filename: string;
+    onclose: () => void;
+    onsave?: () => void;
+    onrestart?: () => void;
+  } = $props();
+
+  let content = $state('');
+  let isLoading = $state(true);
+  let isSaving = $state(false);
+  let isRestarting = $state(false);
+  let error = $state<string | null>(null);
+  let saveSuccess = $state(false);
+
+  const fetchContent = async () => {
+    isLoading = true;
+    error = null;
+    try {
+      const res = await fetch(`./api/config/files/${encodeURIComponent(filename)}?_=${Date.now()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      content = data.content || '';
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Failed to load config';
+    } finally {
+      isLoading = false;
+    }
+  };
+
+  const handleSave = async (shouldRestart = false) => {
+    if (isSaving || isRestarting) return;
+    isSaving = true;
+    error = null;
+    saveSuccess = false;
+
+    try {
+      const res = await fetch(`./api/config/files/${encodeURIComponent(filename)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, scheduleRestart: shouldRestart }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        let errorMsg = data.error || `HTTP ${res.status}`;
+        if (data.details) {
+          errorMsg += `: ${data.details}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      saveSuccess = true;
+      onsave?.();
+
+      if (shouldRestart && onrestart) {
+        isRestarting = true;
+        await onrestart();
+      }
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Save failed';
+      isRestarting = false;
+    } finally {
+      isSaving = false;
+    }
+  };
+
+  $effect(() => {
+    fetchContent();
+  });
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onclose();
+    }
+    // Save with Ctrl/Cmd + S (Default: Save only)
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault();
+      handleSave(false);
+    }
+  };
+</script>
+
+<svelte:window on:keydown={handleKeydown} />
+
+<div
+  class="modal-backdrop"
+  role="button"
+  tabindex="0"
+  onclick={(event) => {
+    if (event.currentTarget === event.target) {
+      onclose();
+    }
+  }}
+  onkeydown={(event) => {
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      onclose();
+    }
+  }}
+>
+  <div class="modal-content" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h2>{$t('settings.bridge_config.edit_title')}</h2>
+      <span class="filename">{filename}</span>
+      <button class="close-btn" onclick={onclose} aria-label={$t('common.close')}>×</button>
+    </div>
+
+    <div class="modal-body">
+      {#if isLoading}
+        <div class="loading">{$t('entity_detail.config.loading')}</div>
+      {:else if error}
+        <div class="error-banner">
+          <span>{error}</span>
+          {#if !saveSuccess}
+            <Button variant="secondary" onclick={fetchContent}>
+              {$t('gallery.retry')}
+            </Button>
+          {/if}
+        </div>
+      {/if}
+
+      {#if saveSuccess}
+        <div class="success-banner">
+          {$t('settings.bridge_config.edit_success')}
+        </div>
+      {/if}
+
+      <textarea
+        class="yaml-editor"
+        bind:value={content}
+        spellcheck="false"
+        disabled={isLoading}
+        placeholder="homenet_bridge:
+  serial:
+    ..."
+      ></textarea>
+
+      <div class="editor-hint">
+        {$t('settings.bridge_config.edit_hint')}
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <Button variant="secondary" onclick={onclose} disabled={isSaving || isRestarting}>
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        onclick={() => handleSave(false)}
+        isLoading={isSaving}
+        disabled={isLoading || isSaving || isRestarting}
+      >
+        {$t('settings.bridge_config.save_only')}
+      </Button>
+      <Button
+        variant="danger"
+        onclick={() => handleSave(true)}
+        isLoading={isRestarting}
+        disabled={isLoading || isSaving || isRestarting}
+      >
+        {isRestarting
+          ? $t('settings.bridge_config.restarting')
+          : $t('settings.bridge_config.save_and_restart')}
+      </Button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 90vh;
+    max-height: 90vh;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .filename {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+  }
+
+  .close-btn {
+    margin-left: auto;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .close-btn:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #94a3b8;
+  }
+
+  .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+    overflow: hidden;
+    gap: 0.75rem;
+  }
+
+  .loading {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .error-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .error-banner span {
+    flex: 1;
+    font-size: 0.9rem;
+  }
+
+  .success-banner {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #86efac;
+    font-size: 0.9rem;
+  }
+
+  .yaml-editor {
+    flex: 1;
+    width: 100%;
+    min-height: 300px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    padding: 1rem;
+    resize: none;
+    tab-size: 2;
+  }
+
+  .yaml-editor:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .yaml-editor:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .editor-hint {
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  @media (max-width: 640px) {
+    .modal-content {
+      height: 100%;
+      max-height: 100%;
+      border-radius: 0;
+    }
+
+    .modal-backdrop {
+      padding: 0;
+    }
+
+    .filename {
+      display: none;
+    }
+
+    .modal-header h2 {
+      font-size: 1.1rem;
+    }
+
+    .yaml-editor {
+      font-size: 0.8rem;
+    }
+  }
+</style>

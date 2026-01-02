@@ -31,6 +31,7 @@ import { RawPacketLoggerService } from './raw-packet-logger.service.js';
 import { LogRetentionService, type LogRetentionSettings } from './log-retention.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
 import { createSetupWizardService } from './setup-wizard.js';
+import { createConfigEditorService } from './config-editor.js';
 
 dotenv.config();
 
@@ -243,6 +244,18 @@ const setupWizardService = createSetupWizardService({
   getLoadedConfigs: () => currentConfigs,
 });
 
+const configEditorService = createConfigEditorService({
+  configDir: CONFIG_DIR,
+  defaultConfigFilename: DEFAULT_CONFIG_FILENAME,
+  configRestartFlag: CONFIG_RESTART_FLAG,
+  fileExists,
+  dumpConfigToYaml,
+  saveBackup,
+  triggerRestart,
+  configRateLimiter,
+  logger,
+});
+
 type BridgeInstance = {
   bridge: HomeNetBridge;
   configFile: string;
@@ -381,6 +394,7 @@ app.use((req, res, next) => {
 });
 
 setupWizardService.registerRoutes(app);
+configEditorService.registerRoutes(app);
 
 // --- API Endpoints ---
 // 패킷 사전 조회 API
@@ -1621,34 +1635,6 @@ app.get('/api/config/raw/:type/:entityId', (req, res) => {
     }
   } else {
     return res.status(400).json({ error: 'Unknown config type' });
-  }
-
-  if (foundEntity) {
-    res.json({
-      yaml: dumpConfigToYaml(foundEntity),
-    });
-  } else {
-    res.status(404).json({ error: 'Entity not found in config' });
-  }
-});
-
-app.get('/api/config/raw/:entityId', (req, res) => {
-  if (currentRawConfigs.length === 0) {
-    return res.status(400).json({ error: 'Config not loaded' });
-  }
-
-  const { entityId } = req.params;
-  let foundEntity: any = null;
-
-  for (const rawConfig of currentRawConfigs) {
-    for (const type of ENTITY_TYPE_KEYS) {
-      const entities = rawConfig[type] as Array<any> | undefined;
-      if (Array.isArray(entities)) {
-        foundEntity = entities.find((e) => e.id === entityId);
-        if (foundEntity) break;
-      }
-    }
-    if (foundEntity) break;
   }
 
   if (foundEntity) {

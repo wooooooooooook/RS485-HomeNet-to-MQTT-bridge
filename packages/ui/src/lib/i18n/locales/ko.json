@@ -71,6 +71,13 @@
       "add_desc": "새로운 RS485 브릿지 설정을 추가합니다.",
       "add_button": "브릿지 추가",
       "current_configs": "현재 브릿지 설정 목록",
+      "edit_button": "설정 수정",
+      "edit_title": "브릿지 설정 편집",
+      "edit_hint": "Ctrl+S: 저장, 설정 변경 후 재시작이 필요합니다.",
+      "edit_success": "설정이 저장되었습니다.",
+      "save_only": "저장",
+      "save_and_restart": "저장 후 재시작",
+      "restarting": "재시작 중...",
       "delete_confirm": "{filename} 파일을 삭제하시겠습니까? (삭제 전 백업됩니다)",
       "delete_success": "설정 파일이 삭제되었습니다.",
       "delete_last_warning": "마지막 브릿지는 삭제할 수 없습니다."

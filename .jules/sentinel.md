@@ -27,3 +27,10 @@
 **Prevention:**
 1.  **Rate Limiting:** Apply rate limiting to all public endpoints, especially those that trigger resource allocation.
 2.  **Resource Limits:** Set hard limits on the size of collections (e.g., max 1000 active tokens) even if they have TTL cleanup.
+
+## 2026-01-01 - [Credential Leakage in Configuration API]
+**Vulnerability:** The `/api/bridge/info` endpoint was exposing the raw `MQTT_URL` environment variable directly to the frontend. Since standard MQTT connection strings can include credentials (e.g., `mqtt://user:password@host`), this configuration pattern would leak the password to any user with access to the dashboard.
+**Learning:** Configuration variables that *can* contain secrets (even if they don't *always* contain secrets) must be treated as sensitive. Assuming a specific usage pattern (e.g., "users will use separate user/pass env vars") is dangerous because valid standard formats often violate that assumption.
+**Prevention:**
+1.  **Mask by Default:** Identify any configuration value that accepts a URL or connection string and apply masking logic to the password component before exposing it via API.
+2.  **Defense in Depth:** Even if separate `MQTT_USER`/`MQTT_PASS` variables exist, sanitize the primary connection string to handle all valid input formats securely.

@@ -197,6 +197,22 @@ const triggerRestart = async () => {
 
 const normalizeTopicParts = (topic: string) => topic.split('/').filter(Boolean);
 
+// Helper to mask MQTT password in logs/API responses
+function maskMqttPassword(url: string | undefined): string {
+  if (!url) return '';
+  try {
+    if (!url.includes('://')) return url;
+    const parsed = new URL(url);
+    if (parsed.password) {
+      parsed.password = '******';
+      return parsed.toString();
+    }
+    return url;
+  } catch (e) {
+    return url.replace(/:([^:@]+)@/, ':******@');
+  }
+}
+
 // --- Application State ---
 const app = express();
 const server = createServer(app);
@@ -575,7 +591,7 @@ app.get('/api/bridge/info', async (_req, res) => {
     return res.json({
       configFiles: [],
       bridges: [],
-      mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
+      mqttUrl: maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883'),
       status: 'error',
       error: bridgeError || 'BRIDGE_NOT_CONFIGURED',
       topic: `${BASE_MQTT_PREFIX}/homedevice1/raw`,
@@ -628,7 +644,7 @@ app.get('/api/bridge/info', async (_req, res) => {
   res.json({
     configFiles: currentConfigFiles,
     bridges: bridgesInfo,
-    mqttUrl: process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
+    mqttUrl: maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883'),
     status: bridgeStatus,
     error: bridgeError,
     topic: firstTopic,
@@ -1178,10 +1194,13 @@ const logRetentionService = new LogRetentionService(CONFIG_DIR);
 const registerPacketStream = () => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
     const requestUrl = getRequestUrl(req);
-    const streamMqttUrl = resolveMqttUrl(
-      requestUrl?.searchParams.get('mqttUrl') ?? '',
-      process.env.MQTT_URL?.trim() || 'mqtt://mq:1883',
-    );
+    // Prefer the one from query param if provided (which might be already masked from UI)
+    // But if we fallback to env, we must mask it.
+    let streamMqttUrl = requestUrl?.searchParams.get('mqttUrl') ?? '';
+    if (!streamMqttUrl) {
+      streamMqttUrl = maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883');
+    }
+
     sendStreamEvent(socket, 'status', {
       state: 'connected',
       mqttUrl: streamMqttUrl,
@@ -3401,11 +3420,6 @@ async function loadAndStartBridges(filenames: string[]) {
   // To make it non-blocking for API check `if (bridgeStartPromise)`, we set `bridgeStartPromise = null` inside the IIFE.
   // This is already done in step 3.
   return Promise.resolve();
-}
-
-function resolveMqttUrl(queryValue: unknown, defaultValue?: string) {
-  const url = queryValue || defaultValue || 'mqtt://mq:1883';
-  return url.toString().trim();
 }
 
 // --- Server Initialization ---

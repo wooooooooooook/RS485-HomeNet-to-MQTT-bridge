@@ -7,3 +7,7 @@
 ## 2024-05-24 - Checksum Algorithm Documentation Gaps
 **Learning:** The 'xor_add' checksum algorithm implies a simple combination of XOR and ADD checksums, but the implementation actually adds the XOR result to the arithmetic sum. Similarly, 'samsung_rx' has a conditional magic byte modification.
 **Action:** Explicitly document the mathematical operations for custom/complex algorithms in config-schema docs to aid debugging and 3rd party implementation.
+
+## 2024-05-24 - Troubleshooting Guide Necessity
+**Learning:** Users often encounter environment-specific setup hurdles (Docker permissions, MQTT auth) that are not code bugs but significantly hinder adoption.
+**Action:** Always include a dedicated 'Troubleshooting' section in the main README covering common environmental and configuration pitfalls.

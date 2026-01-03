@@ -65,10 +65,10 @@
     const rxPackets = showRx ? parsedPackets : [];
     const txPackets = showTx ? commandPackets : [];
     const filteredRx = query
-      ? rxPackets.filter((packet) => packet.searchText?.includes(query))
+      ? rxPackets.filter((packet: ParsedPacket) => packet.searchText?.includes(query))
       : rxPackets;
     const filteredTx = query
-      ? txPackets.filter((packet) => packet.searchText?.includes(query))
+      ? txPackets.filter((packet: CommandPacket) => packet.searchText?.includes(query))
       : txPackets;
 
     return mergePackets(filteredRx, filteredTx);
@@ -77,7 +77,8 @@
 
 {#snippet renderPacketItem(packet: MergedPacket, _index: number)}
   <div class="log-item {packet.type}">
-    <span class="time">[{packet.timeLabel ?? new Date(packet.timestamp).toLocaleTimeString()}]</span>
+    <span class="time">[{packet.timeLabel ?? new Date(packet.timestamp).toLocaleTimeString()}]</span
+    >
 
     {#if packet.type === 'rx'}
       <span class="direction rx">RX</span>

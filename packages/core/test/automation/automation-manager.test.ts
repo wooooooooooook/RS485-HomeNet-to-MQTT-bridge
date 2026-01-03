@@ -2,8 +2,10 @@ import { EventEmitter } from 'events';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { AutomationManager } from '../../src/automation/automation-manager.js';
+import { StateManager } from '../../src/state/state-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
+import { logger } from '../../src/utils/logger.js';
 
 const serial = {
   portId: 'main',
@@ -216,6 +218,292 @@ describe('AutomationManager', () => {
     packetProcessor.emit('packet', Buffer.from([0xaa, 0x00, 0xcc]));
     await vi.runAllTimersAsync();
     expect(mqttPublisher.publish).toHaveBeenCalledTimes(1); // 호출 횟수 증가 없음
+  });
+
+  it('update_state 액션이 패킷에서 상태를 추출해 엔티티 상태를 갱신해야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      light: [
+        {
+          id: 'light_1',
+          name: 'Light 1',
+          type: 'light',
+          state: { data: [0x01] },
+          state_on: { offset: 3, data: [0x01] },
+          state_off: { offset: 3, data: [0x00] },
+          state_brightness: { offset: 5, length: 1, decode: 'bcd' },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_test',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x10, 0x01], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'light_1',
+              state: {
+                state_on: { offset: 3, data: [0x01] },
+                state_off: { offset: 3, data: [0x00] },
+                brightness: { offset: 5, length: 1, decode: 'bcd' },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateChangedSpy = vi.fn();
+    eventBus.on('state:changed', stateChangedSpy);
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x01, 0x00, 0x89]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('light_1')).toEqual({
+      state: 'ON',
+      brightness: 89,
+    });
+    const firstPublish = mqttPublisherStub.publish.mock.calls.find(
+      (call) => call[0] === 'homenet2mqtt/light_1/state',
+    );
+    expect(firstPublish?.[2]).toEqual({ retain: true });
+    expect(JSON.parse(firstPublish?.[1] ?? '{}')).toEqual({
+      state: 'ON',
+      brightness: 89,
+    });
+    expect(stateChangedSpy).toHaveBeenCalled();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x00, 0x00, 0x00]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('light_1')).toEqual({
+      state: 'OFF',
+      brightness: 0,
+    });
+    const secondPublish = mqttPublisherStub.publish.mock.calls
+      .filter((call) => call[0] === 'homenet2mqtt/light_1/state')
+      .at(-1);
+    expect(secondPublish?.[2]).toEqual({ retain: true });
+    expect(JSON.parse(secondPublish?.[1] ?? '{}')).toEqual({
+      state: 'OFF',
+      brightness: 0,
+    });
+  });
+
+  it('update_state에서 정의되지 않은 속성을 업데이트하려 하면 오류를 반환해야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      automation: [
+        {
+          id: 'update_state_invalid_key',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x10, 0x01], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'light_1',
+              state: {
+                invalid_prop: { offset: 3, data: [0x01] },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger as any);
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x01, 0x00, 0x00]));
+    await vi.runAllTimersAsync();
+
+    const errorCall = errorSpy.mock.calls.find(
+      (call) => call[1] === '[automation] Action failed',
+    );
+    expect(errorCall?.[0]?.error?.message).toContain('update_state');
+    expect(stateManager.getEntityState('light_1')).toBeUndefined();
+
+    errorSpy.mockRestore();
+  });
+
+  it('update_state가 팬 속도를 갱신하면 speed 속성이 업데이트되어야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      fan: [
+        {
+          id: 'fan_1',
+          name: 'Fan 1',
+          type: 'fan',
+          state: { data: [0x02] },
+          state_speed: { offset: 3, length: 1 },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_fan_speed',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x20, 0x02], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'fan_1',
+              state: {
+                state_speed: { offset: 3, length: 1 },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x20, 0x02, 0x03]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('fan_1')).toEqual({
+      speed: 3,
+    });
+    const publishCall = mqttPublisherStub.publish.mock.calls.find(
+      (call) => call[0] === 'homenet2mqtt/fan_1/state',
+    );
+    expect(publishCall?.[2]).toEqual({ retain: true });
+    expect(JSON.parse(publishCall?.[1] ?? '{}')).toEqual({
+      speed: 3,
+    });
+  });
+
+  it('update_state가 climate target_temperature를 갱신하면 상태가 반영되어야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      climate: [
+        {
+          id: 'climate_1',
+          name: 'Climate 1',
+          type: 'climate',
+          state: { data: [0x03] },
+          state_temperature_target: { offset: 3, length: 1 },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_climate_target',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x30, 0x03], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'climate_1',
+              state: {
+                state_temperature_target: { offset: 3, length: 1 },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x30, 0x03, 0x19]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('climate_1')).toEqual({
+      target_temperature: 25,
+    });
+    const publishCall = mqttPublisherStub.publish.mock.calls.find(
+      (call) => call[0] === 'homenet2mqtt/climate_1/state',
+    );
+    expect(publishCall?.[2]).toEqual({ retain: true });
+    expect(JSON.parse(publishCall?.[1] ?? '{}')).toEqual({
+      target_temperature: 25,
+    });
   });
 
   it('숫자 비교(gt, lt 등)가 포함된 상태 트리거를 처리해야 한다', async () => {

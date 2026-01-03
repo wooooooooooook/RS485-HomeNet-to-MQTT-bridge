@@ -87,9 +87,16 @@ export class StateManager {
     return this.deviceStates.get(entityId);
   }
 
+  public updateEntityState(entityId: string, state: Record<string, any>) {
+    this.applyStateUpdate(entityId, state);
+  }
+
   private handleStateUpdate(event: { deviceId: string; state: any }) {
     const { deviceId, state } = event;
+    this.applyStateUpdate(deviceId, state);
+  }
 
+  private applyStateUpdate(deviceId: string, state: Record<string, any>) {
     if (this.ignoredEntityId && deviceId === this.ignoredEntityId) {
       return;
     }

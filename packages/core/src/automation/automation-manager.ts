@@ -13,6 +13,8 @@ import type {
   AutomationActionScript,
   AutomationActionSendPacket,
   AutomationActionStop,
+  AutomationActionUpdateState,
+  AutomationActionUpdateStateValue,
   AutomationActionWaitUntil,
   AutomationConfig,
   AutomationGuard,
@@ -23,11 +25,13 @@ import type {
   HomenetBridgeConfig,
   ScriptConfig,
 } from '../config/types.js';
-import type { StateSchema } from '../protocol/types.js';
+import type { StateNumSchema, StateSchema } from '../protocol/types.js';
+import { extractFromSchema } from '../protocol/schema-utils.js';
 import { PacketProcessor } from '../protocol/packet-processor.js';
 import { CelExecutor } from '../protocol/cel-executor.js';
 import { CommandManager } from '../service/command.manager.js';
 import { eventBus } from '../service/event-bus.js';
+import { StateManager } from '../state/state-manager.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { parseDuration } from '../utils/duration.js';
 import { findEntityById } from '../utils/entities.js';
@@ -88,6 +92,7 @@ export class AutomationManager {
     mqttPublisher: MqttPublisher,
     private readonly contextPortId?: string,
     private readonly commandSender?: CommandSender,
+    private readonly stateManager?: StateManager,
   ) {
     this.automationList = (config.automation || []).filter(
       (automation) => automation.enabled !== false,
@@ -122,6 +127,9 @@ export class AutomationManager {
     }
     if (actionType === 'send_packet') {
       return 'send_packet';
+    }
+    if (actionType === 'update_state') {
+      return `update_state:${(action as AutomationActionUpdateState).target_id}`;
     }
     if (actionType === 'if') {
       return 'if';
@@ -609,6 +617,8 @@ export class AutomationManager {
         scriptStack,
         automationId,
       );
+    if (action.action === 'update_state')
+      return this.executeUpdateStateAction(action as AutomationActionUpdateState, context);
     if (action.action === 'if')
       return this.executeIfAction(
         action as AutomationActionIf,
@@ -636,6 +646,155 @@ export class AutomationManager {
         signal,
       );
     if (action.action === 'stop') return this.executeStopAction(action as AutomationActionStop);
+  }
+
+  private isSchemaValue(value: unknown): value is StateSchema | StateNumSchema {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const schemaKeys = [
+      'data',
+      'mask',
+      'offset',
+      'inverted',
+      'guard',
+      'except',
+      'length',
+      'precision',
+      'signed',
+      'endian',
+      'decode',
+      'mapping',
+    ];
+    return schemaKeys.some((key) => key in (value as Record<string, unknown>));
+  }
+
+  private mapStateKey(key: string): string {
+    const mapping: Record<string, string> = {
+      temperature_target: 'target_temperature',
+      temperature_current: 'current_temperature',
+      humidity_target: 'target_humidity',
+      humidity_current: 'current_humidity',
+    };
+    const normalized = key.startsWith('state_') ? key.replace('state_', '') : key;
+    return mapping[normalized] ?? normalized;
+  }
+
+  private getAllowedUpdateStateKeys(entity: Record<string, any>) {
+    const allowedKeys = new Set<string>();
+
+    if (entity.state) {
+      allowedKeys.add('state');
+    }
+
+    for (const key of Object.keys(entity)) {
+      if (!key.startsWith('state_')) continue;
+      allowedKeys.add(key);
+      allowedKeys.add(this.mapStateKey(key));
+    }
+
+    if (entity.state_on || entity.state_off) {
+      allowedKeys.add('on');
+      allowedKeys.add('off');
+      allowedKeys.add('state');
+    }
+
+    return allowedKeys;
+  }
+
+  private isDataMatchSchema(schema: StateSchema | StateNumSchema) {
+    const hasNumericFields =
+      'length' in schema ||
+      'decode' in schema ||
+      'precision' in schema ||
+      'signed' in schema ||
+      'mapping' in schema ||
+      'endian' in schema;
+    return (
+      Array.isArray(schema.data) &&
+      schema.data.length > 0 &&
+      !hasNumericFields
+    );
+  }
+
+  private async executeUpdateStateAction(
+    action: AutomationActionUpdateState,
+    context: TriggerContext,
+  ) {
+    if (!this.stateManager) {
+      logger.warn('[automation] update_state action requires StateManager');
+      return;
+    }
+
+    const entity = findEntityById(this.config, action.target_id);
+    if (!entity) {
+      throw new Error(`[automation] update_state 대상 엔티티를 찾을 수 없습니다: ${action.target_id}`);
+    }
+
+    const allowedKeys = this.getAllowedUpdateStateKeys(entity as Record<string, any>);
+    for (const key of Object.keys(action.state)) {
+      if (!allowedKeys.has(key)) {
+        throw new Error(
+          `[automation] update_state 대상 엔티티에 정의되지 않은 속성입니다: ${action.target_id}.${key}`,
+        );
+      }
+    }
+
+    const headerLength = this.config.packet_defaults?.rx_header?.length || 0;
+    const payload = context.packet ? Buffer.from(context.packet).slice(headerLength) : null;
+    const requiresPacket = Object.values(action.state).some((value) => {
+      return this.isSchemaValue(value);
+    });
+    if (!payload && requiresPacket) {
+      logger.warn({ action }, '[automation] update_state requires packet context');
+    }
+    const updates: Record<string, any> = {};
+
+    for (const [key, rawValue] of Object.entries(action.state)) {
+      const mappedKey = this.mapStateKey(key);
+      if (this.isSchemaValue(rawValue)) {
+        if (!payload) continue;
+        if (this.isDataMatchSchema(rawValue)) {
+          const matched = matchesPacket(rawValue, payload, {
+            allowEmptyData: true,
+            context: this.buildContext(context),
+          });
+          updates[mappedKey] = matched;
+          continue;
+        }
+        const extracted = extractFromSchema(payload, rawValue);
+        if (extracted === null || extracted === undefined) {
+          continue;
+        }
+        updates[mappedKey] = extracted;
+      } else {
+        updates[mappedKey] = rawValue as AutomationActionUpdateStateValue;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      logger.debug(
+        { action },
+        '[automation] update_state action skipped: no matched updates',
+      );
+      return;
+    }
+
+    const stateFlags: Array<{ key: string; value: 'ON' | 'OFF' }> = [
+      { key: 'state_on', value: 'ON' },
+      { key: 'state_off', value: 'OFF' },
+      { key: 'on', value: 'ON' },
+      { key: 'off', value: 'OFF' },
+    ];
+
+    for (const { key, value } of stateFlags) {
+      if (typeof updates[key] === 'boolean') {
+        if (updates[key]) {
+          updates.state = value;
+        }
+        delete updates[key];
+      }
+    }
+
+    this.stateManager.updateEntityState(action.target_id, updates);
   }
 
   private async executeSendPacketAction(

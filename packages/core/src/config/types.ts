@@ -11,7 +11,7 @@ import { SelectEntity } from '../domain/entities/select.entity.js';
 import { TextSensorEntity } from '../domain/entities/text-sensor.entity.js';
 import { TextEntity } from '../domain/entities/text.entity.js';
 import { BinarySensorEntity } from '../domain/entities/binary-sensor.entity.js';
-import { PacketDefaults, StateSchema } from '../protocol/types.js';
+import { PacketDefaults, StateNumSchema, StateSchema } from '../protocol/types.js';
 
 export interface DeviceConfig {
   id: string;
@@ -88,6 +88,14 @@ export interface AutomationActionScript {
   code?: string;
 }
 
+export type AutomationActionUpdateStateValue = StateSchema | StateNumSchema | any;
+
+export interface AutomationActionUpdateState {
+  action: 'update_state';
+  target_id: string;
+  state: Record<string, AutomationActionUpdateStateValue>;
+}
+
 export interface AutomationActionSendPacket {
   action: 'send_packet';
   data: number[] | string;
@@ -142,6 +150,7 @@ export type AutomationAction =
   | AutomationActionLog
   | AutomationActionDelay
   | AutomationActionScript
+  | AutomationActionUpdateState
   | AutomationActionSendPacket
   | AutomationActionIf
   | AutomationActionRepeat

@@ -844,6 +844,7 @@ export class HomeNetBridge {
           }
           return context.commandManager.sendRaw(packet, options);
         },
+        stateManager,
       );
       automationManager.start();
 

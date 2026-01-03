@@ -667,6 +667,21 @@ export class AutomationManager {
     return schemaKeys.some((key) => key in (value as Record<string, unknown>));
   }
 
+  private isDataMatchSchema(schema: StateSchema | StateNumSchema) {
+    const hasNumericFields =
+      'length' in schema ||
+      'decode' in schema ||
+      'precision' in schema ||
+      'signed' in schema ||
+      'mapping' in schema ||
+      'endian' in schema;
+    return (
+      Array.isArray(schema.data) &&
+      schema.data.length > 0 &&
+      !hasNumericFields
+    );
+  }
+
   private async executeUpdateStateAction(
     action: AutomationActionUpdateState,
     context: TriggerContext,
@@ -689,6 +704,14 @@ export class AutomationManager {
     for (const [key, rawValue] of Object.entries(action.state)) {
       if (this.isSchemaValue(rawValue)) {
         if (!payload) continue;
+        if (this.isDataMatchSchema(rawValue)) {
+          const matched = matchesPacket(rawValue, payload, {
+            allowEmptyData: true,
+            context: this.buildContext(context),
+          });
+          updates[key] = matched;
+          continue;
+        }
         const extracted = extractFromSchema(payload, rawValue);
         if (extracted === null || extracted === undefined) {
           continue;

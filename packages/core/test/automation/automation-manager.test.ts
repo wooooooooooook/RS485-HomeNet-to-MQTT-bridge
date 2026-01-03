@@ -228,7 +228,7 @@ describe('AutomationManager', () => {
           trigger: [
             {
               type: 'packet',
-              match: { data: [0x10, 0x01], offset: 0 },
+              match: { data: [0xf7, 0x10, 0x01], offset: 0 },
             },
           ],
           then: [
@@ -236,9 +236,9 @@ describe('AutomationManager', () => {
               action: 'update_state',
               target_id: 'light_1',
               state: {
-                on: { offset: 0, data: [0x10, 0x01] },
-                off: { offset: 0, data: [0x10, 0x00] },
-                brightness: { offset: 2, length: 1 },
+                on: { offset: 3, data: [0x01] },
+                off: { offset: 3, data: [0x00] },
+                brightness: { offset: 5, length: 1, decode: 'bcd' },
               },
             },
           ],
@@ -265,12 +265,22 @@ describe('AutomationManager', () => {
     );
     automationManager.start();
 
-    packetProcessor.emit('packet', Buffer.from([0x10, 0x01, 0x33]));
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x01, 0x00, 0x89]));
     await vi.runAllTimersAsync();
 
     expect(stateManager.getEntityState('light_1')).toEqual({
-      on: 0x1001,
-      brightness: 0x33,
+      on: true,
+      off: false,
+      brightness: 89,
+    });
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x00, 0x00, 0x00]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('light_1')).toEqual({
+      on: false,
+      off: true,
+      brightness: 0,
     });
   });
 

@@ -1,3 +1,10 @@
+v1.8.0
+- feat: 자동화 액션에 state_update를 추가.
+  - [state_update](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#%EC%83%81%ED%83%9C-%EA%B0%B1%EC%8B%A0-update-state)
+- feat: packet log 검색기능추가 및 성능최적화
+- 로그보관으로 로그가쌓이는경우 성능저하가 심하여 기간을 24->6시간으로 줄였습니다.
+- 각종 성능개선 및 ui수정
+
 v1.7.0
 - feat: commandSchema에 ack를 추가하였습니다. [schema 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/schemas.md#CommandSchema)
   - 기존: 명령패킷 전송 후 해당 엔티티의 상태변화가 있으면 전송 성공으로판단.

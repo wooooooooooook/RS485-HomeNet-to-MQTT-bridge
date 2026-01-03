@@ -133,7 +133,6 @@ export type AutomationSummary = {
   name: string;
   description?: string;
   enabled: boolean;
-  portId?: string;
   configFile?: string;
 };
 

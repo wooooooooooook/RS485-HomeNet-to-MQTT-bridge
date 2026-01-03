@@ -228,10 +228,10 @@ export class AutomationManager {
     eventBus.emit('automation:triggered', {
       automationId: automation.id,
       triggerType: context.type,
-      portId: automation.portId ?? this.contextPortId,
+      portId: this.contextPortId,
       timestamp: Date.now(),
     });
-    await this.runActions(automation.then, context, automation.portId, automation.id);
+    await this.runActions(automation.then, context, this.contextPortId, automation.id);
   }
 
   public async runActions(
@@ -454,7 +454,7 @@ export class AutomationManager {
     eventBus.emit('automation:triggered', {
       automationId,
       triggerType: trigger.type,
-      portId: automation.portId ?? this.contextPortId,
+      portId: this.contextPortId,
       timestamp: Date.now(),
     });
 
@@ -515,7 +515,7 @@ export class AutomationManager {
         automationId,
         triggerType: trigger.type,
         result: guardResult,
-        portId: automation.portId ?? this.contextPortId,
+        portId: this.contextPortId,
         timestamp: Date.now(),
       });
       const actions = guardResult ? automation.then : automation.else;
@@ -530,7 +530,7 @@ export class AutomationManager {
           automationId,
           triggerType: trigger.type,
           action: this.summarizeAction(action),
-          portId: automation.portId ?? this.contextPortId,
+          portId: this.contextPortId,
           timestamp: Date.now(),
         });
         // Check if aborted
@@ -543,7 +543,7 @@ export class AutomationManager {
           await this.executeAction(
             action,
             context,
-            automation.portId,
+            this.contextPortId,
             [],
             abortController.signal,
             automationId,

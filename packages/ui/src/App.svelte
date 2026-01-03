@@ -1241,9 +1241,7 @@
 
     for (const automation of automationItems) {
       const portId =
-        automation.portId ??
-        (automation.configFile ? configPortMap.get(automation.configFile) : null) ??
-        undefined;
+        (automation.configFile ? configPortMap.get(automation.configFile) : null) ?? undefined;
       const key = makeKey(portId, automation.id, 'automation');
       if (!entities.has(key)) {
         entities.set(key, {

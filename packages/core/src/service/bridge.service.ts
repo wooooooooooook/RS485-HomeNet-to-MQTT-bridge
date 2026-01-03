@@ -287,7 +287,7 @@ export class HomeNetBridge {
   async runAutomationThen(
     automation: AutomationConfig,
   ): Promise<{ success: boolean; error?: string }> {
-    const context = this.getDefaultContext(automation.portId);
+    const context = this.getDefaultContext();
     if (!context) {
       return { success: false, error: 'Bridge not initialized' };
     }

@@ -165,7 +165,6 @@ export interface AutomationConfig {
   name?: string;
   description?: string;
   mode?: AutomationMode;
-  portId?: string;
   trigger: AutomationTrigger[];
   guard?: AutomationGuard;
   then: AutomationAction[];

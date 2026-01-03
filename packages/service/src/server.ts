@@ -1707,7 +1707,6 @@ app.get('/api/automations', (_req, res) => {
       name: automation.name ?? automation.id,
       description: automation.description,
       enabled: automation.enabled !== false,
-      portId: automation.portId,
       configFile: currentConfigFiles[index],
     }));
   });

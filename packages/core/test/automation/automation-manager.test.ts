@@ -258,6 +258,8 @@ describe('AutomationManager', () => {
       ],
     };
     const mqttPublisherStub = { publish: vi.fn() };
+    const stateChangedSpy = vi.fn();
+    eventBus.on('state:changed', stateChangedSpy);
     const stateManager = new StateManager(
       'main',
       config,
@@ -284,6 +286,7 @@ describe('AutomationManager', () => {
       state: 'ON',
       brightness: 89,
     });
+    expect(stateChangedSpy).toHaveBeenCalled();
 
     packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x00, 0x00, 0x00]));
     await vi.runAllTimersAsync();

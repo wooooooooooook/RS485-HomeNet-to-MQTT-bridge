@@ -108,6 +108,7 @@ state:
 - 패킷 트리거가 아닌 경우에는 상수 값만 안전하게 사용하세요.
 - `state_on`/`state_off` 또는 `on`/`off` 키가 불리언으로 갱신되면 `state: 'ON' | 'OFF'` 형태로 변환되어 저장됩니다.
 - `update_state`는 대상 엔티티에 정의된 `state_*` 항목과 해당 속성명(예: `brightness`, `target_temperature`)만 허용하며, 정의되지 않은 속성은 오류로 처리됩니다.
+- `update_state`로 상태가 변경되면 `state:changed` 이벤트가 발행됩니다.
 
 ### 지연 (Delay)
 일정 시간 동안 대기합니다.

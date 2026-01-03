@@ -354,6 +354,128 @@ describe('AutomationManager', () => {
     errorSpy.mockRestore();
   });
 
+  it('update_state가 팬 속도를 갱신하면 speed 속성이 업데이트되어야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      fan: [
+        {
+          id: 'fan_1',
+          name: 'Fan 1',
+          type: 'fan',
+          state: { data: [0x02] },
+          state_speed: { offset: 3, length: 1 },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_fan_speed',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x20, 0x02], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'fan_1',
+              state: {
+                state_speed: { offset: 3, length: 1 },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x20, 0x02, 0x03]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('fan_1')).toEqual({
+      speed: 3,
+    });
+  });
+
+  it('update_state가 climate target_temperature를 갱신하면 상태가 반영되어야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      climate: [
+        {
+          id: 'climate_1',
+          name: 'Climate 1',
+          type: 'climate',
+          state: { data: [0x03] },
+          state_temperature_target: { offset: 3, length: 1 },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_climate_target',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xf7, 0x30, 0x03], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'climate_1',
+              state: {
+                state_temperature_target: { offset: 3, length: 1 },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0xf7, 0x30, 0x03, 0x19]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('climate_1')).toEqual({
+      target_temperature: 25,
+    });
+  });
+
   it('숫자 비교(gt, lt 등)가 포함된 상태 트리거를 처리해야 한다', async () => {
     const config: HomenetBridgeConfig = {
       ...baseConfig,

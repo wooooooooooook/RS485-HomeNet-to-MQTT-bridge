@@ -730,6 +730,22 @@ export class AutomationManager {
       return;
     }
 
+    const stateFlags: Array<{ key: string; value: 'ON' | 'OFF' }> = [
+      { key: 'state_on', value: 'ON' },
+      { key: 'state_off', value: 'OFF' },
+      { key: 'on', value: 'ON' },
+      { key: 'off', value: 'OFF' },
+    ];
+
+    for (const { key, value } of stateFlags) {
+      if (typeof updates[key] === 'boolean') {
+        if (updates[key]) {
+          updates.state = value;
+        }
+        delete updates[key];
+      }
+    }
+
     this.stateManager.updateEntityState(action.target_id, updates);
   }
 

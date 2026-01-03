@@ -93,10 +93,10 @@ ack: [0x06]
 action: update_state
 target_id: light_1
 state:
-  on:
+  state_on:
     offset: 5
     data: [0x10, 0x01]
-  off:
+  state_off:
     offset: 5
     data: [0x10, 0x00]
   brightness:
@@ -106,6 +106,7 @@ state:
 
 - `state` 값이 `StateSchema/StateNumSchema`인 경우, 패킷에서 값을 추출하여 상태로 기록합니다.
 - 패킷 트리거가 아닌 경우에는 상수 값만 안전하게 사용하세요.
+- `state_on`/`state_off` 또는 `on`/`off` 키가 불리언으로 갱신되면 `state: 'ON' | 'OFF'` 형태로 변환되어 저장됩니다.
 
 ### 지연 (Delay)
 일정 시간 동안 대기합니다.

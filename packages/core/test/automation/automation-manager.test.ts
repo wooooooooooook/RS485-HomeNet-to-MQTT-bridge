@@ -236,8 +236,8 @@ describe('AutomationManager', () => {
               action: 'update_state',
               target_id: 'light_1',
               state: {
-                on: { offset: 3, data: [0x01] },
-                off: { offset: 3, data: [0x00] },
+                state_on: { offset: 3, data: [0x01] },
+                state_off: { offset: 3, data: [0x00] },
                 brightness: { offset: 5, length: 1, decode: 'bcd' },
               },
             },
@@ -269,8 +269,7 @@ describe('AutomationManager', () => {
     await vi.runAllTimersAsync();
 
     expect(stateManager.getEntityState('light_1')).toEqual({
-      on: true,
-      off: false,
+      state: 'ON',
       brightness: 89,
     });
 
@@ -278,8 +277,7 @@ describe('AutomationManager', () => {
     await vi.runAllTimersAsync();
 
     expect(stateManager.getEntityState('light_1')).toEqual({
-      on: false,
-      off: true,
+      state: 'OFF',
       brightness: 0,
     });
   });

@@ -161,8 +161,13 @@
     {/if}
 
     <div class="action-row">
-      <Button variant="primary" onclick={sendPacket} disabled={isSending || !senderHex.trim()}>
-        {isSending ? $t('analysis.raw_log.sender.sending') : $t('analysis.raw_log.sender.send_btn')}
+      <Button
+        variant="primary"
+        onclick={sendPacket}
+        disabled={!senderHex.trim()}
+        isLoading={isSending}
+      >
+        {$t('analysis.raw_log.sender.send_btn')}
       </Button>
 
       {#if sendError}

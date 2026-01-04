@@ -716,6 +716,10 @@ app.get('/api/frontend-settings', async (_req, res) => {
 });
 
 app.put('/api/frontend-settings', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   try {
     const payload = normalizeFrontendSettings(req.body?.settings ?? req.body);
     await saveFrontendSettings(payload);
@@ -2144,7 +2148,11 @@ app.patch('/api/entities/:entityId/discovery-always', async (req, res) => {
 
 // --- Gallery API ---
 
-app.get('/api/gallery/list', async (_req, res) => {
+app.get('/api/gallery/list', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
     const response = await fetch(GALLERY_LIST_URL);
@@ -2167,6 +2175,10 @@ app.get('/api/gallery/list', async (_req, res) => {
 });
 
 app.get('/api/gallery/file', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   try {
     const filePath = req.query.path;
     if (typeof filePath !== 'string' || filePath.length === 0) {
@@ -2206,6 +2218,10 @@ app.get('/api/gallery/file', async (req, res) => {
 
 // Check for conflicts before applying gallery snippet
 app.post('/api/gallery/check-conflicts', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   try {
     const { portId, yamlContent } = req.body;
 

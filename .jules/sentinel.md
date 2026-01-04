@@ -34,3 +34,10 @@
 **Prevention:**
 1.  **Mask by Default:** Identify any configuration value that accepts a URL or connection string and apply masking logic to the password component before exposing it via API.
 2.  **Defense in Depth:** Even if separate `MQTT_USER`/`MQTT_PASS` variables exist, sanitize the primary connection string to handle all valid input formats securely.
+
+## 2026-01-04 - [Missing Granular Rate Limiting]
+**Vulnerability:** The `/api/frontend-settings` (disk write), `/api/gallery/check-conflicts` (YAML parsing), and `/api/gallery/*` (external fetch) endpoints were only protected by the global rate limiter (300 req/min), allowing potential Resource Exhaustion (disk I/O, CPU, network bandwidth).
+**Learning:** Global rate limits are often too loose for specific, resource-intensive operations. Different operations have different costs (e.g., in-memory read vs disk write vs external network call) and require granular limits to prevent targeted exhaustion attacks that stay within global limits.
+**Prevention:**
+1.  **Granular Rate Limiting:** Apply specific, tighter rate limits (e.g., 20/min) to endpoints that consume significant resources (Disk I/O, CPU, External APIs).
+2.  **Audit Write Endpoints:** Systematically review all `POST`, `PUT`, `DELETE` endpoints to ensuring they have stricter limits than read endpoints.

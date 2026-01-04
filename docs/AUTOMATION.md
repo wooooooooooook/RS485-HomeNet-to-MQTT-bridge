@@ -102,6 +102,17 @@ low_priority: true # 선택사항. 기본값: false (단, 스케줄 트리거가
 # true로 설정 시, 일반 큐가 비어있을 때만 명령이 전송됩니다. (Polling 등 중요도가 낮은 명령에 사용)
 ```
 
+**고급 입력 (Complex Input)**
+인자가 복잡하거나 YAML 문자열 이스케이프가 어려운 경우 `input` 속성을 사용할 수 있습니다.
+
+```yaml
+action: command
+target: id(climate_1).command_set_schedule()
+input:
+  days: [1, 2, 3]
+  time: "12:00"
+```
+
 ### 발행 (Publish - MQTT)
 MQTT 토픽으로 메시지를 발행합니다.
 ```yaml
@@ -117,7 +128,7 @@ retain: true # 선택사항. 기본값: false
 action: send_packet
 data: [0x02, 0x01, 0xFF]
 # 또는 CEL 사용
-data: "[0x02, x, 0xFF]" # x 변수 사용 가능 (문맥에 따라)
+data: "[0x02, 0x03, 0xFF]" # 주의: 자동화에서는 x 변수를 사용할 수 없습니다.
 header: true # 선택사항. true: config의 tx_header 사용, [0xAA]: 직접 지정, false(기본값): 사용 안 함
 footer: true # 선택사항. true: config의 tx_footer 사용, [0xEE]: 직접 지정, false(기본값): 사용 안 함
 checksum: false # 선택사항. 기본값: true (설정된 체크섬 알고리즘 자동 적용)
@@ -336,3 +347,28 @@ automation:
 
 > [!TIP]
 > `restart` 모드는 딜레이가 있는 자동화에서 유용합니다. 새 트리거가 발동되면 이전 딜레이가 취소되고 처음부터 다시 시작합니다.
+
+## 문제 해결 (Troubleshooting)
+
+자동화가 예상대로 작동하지 않을 때 다음 방법을 시도해보세요.
+
+### 1. 로그 액션 활용
+`log` 액션을 추가하여 실행 흐름과 변수 값을 확인할 수 있습니다.
+
+```yaml
+- action: log
+  level: info
+  message: "자동화 시작: 조도 값 확인"
+- action: if
+  condition: "states['sensor_lux']['illuminance'] < 100"
+  then:
+    - action: log
+      message: "조건 충족: 조명 켜기 실행"
+    - action: command
+      target: id(light_1).command_on()
+```
+
+### 2. UI 분석 도구
+웹 대시보드의 **분석(Analysis)** 탭에서:
+- **활동 로그(Activity Log)**: 자동화 실행, 트리거, 액션 수행 내역이 실시간으로 표시됩니다.
+- **CEL 분석기**: `guard`나 조건식이 올바르게 평가되는지 테스트해볼 수 있습니다. `states` 변수에 현재 상태값을 넣고 표현식을 실행해보세요.

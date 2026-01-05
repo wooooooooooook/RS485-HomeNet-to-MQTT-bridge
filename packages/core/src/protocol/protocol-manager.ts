@@ -49,7 +49,12 @@ export class ProtocolManager extends EventEmitter {
           const packets = msg.payload as Buffer[];
           for (const pkt of packets) {
             // Buffer received from worker needs to be wrapped properly
-            this.processPacket(Buffer.from(pkt));
+            // Optimization: Create a view if possible to avoid redundant copy
+            const buffer =
+              pkt instanceof Uint8Array
+                ? Buffer.from(pkt.buffer, pkt.byteOffset, pkt.byteLength)
+                : Buffer.from(pkt);
+            this.processPacket(buffer);
           }
         } else if (msg.type === 'ready') {
           this.workerReady = true;

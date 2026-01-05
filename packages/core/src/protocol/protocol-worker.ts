@@ -16,8 +16,17 @@ if (parentPort) {
         if (!parser) return;
 
         // workerData로 넘어온 buffer는 Uint8Array일 수 있음
+        // Optimization: Create a view if it's a Uint8Array to avoid copy
         const chunk =
-          message.payload instanceof Buffer ? message.payload : Buffer.from(message.payload);
+          message.payload instanceof Buffer
+            ? message.payload
+            : message.payload instanceof Uint8Array
+              ? Buffer.from(
+                  message.payload.buffer,
+                  message.payload.byteOffset,
+                  message.payload.byteLength,
+                )
+              : Buffer.from(message.payload);
 
         const packets = parser.parseChunk(chunk);
 

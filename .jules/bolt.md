@@ -1,7 +1,3 @@
-## 2026-01-04 - PacketParser Strategy C Optimization
-**Learning:** Packet parsing with unknown length (Strategy C) is O(N^2) by default because it re-calculates the checksum for every possible length. For standard checksums (like `xor_add`), commutative properties allow O(N) incremental updates.
-**Action:** Always look for incremental calculation opportunities in sliding window or variable-length scanning algorithms.
-
-## 2026-01-04 - PacketParser Optimization Regression
-**Learning:** When optimizing a specific path (e.g., 2-byte checksums), ensure the optimization doesn't inadvertently bypass other required checks (e.g., a simultaneous 1-byte checksum) that were handled by the generic fallback logic.
-**Action:** Always check for compound configurations (e.g., both checksums active) when creating "fast paths".
+## 2024-05-23 - Node.js Worker Buffer serialization
+**Learning:** Data passed between threads via `worker_threads` `postMessage` undergoes structured cloning. If a `Buffer` is sent, it arrives as a `Uint8Array` in the receiver (not a `Buffer` instance). Calling `Buffer.from(uint8Array)` creates a deep copy (O(n)), whereas `Buffer.from(uint8Array.buffer, ...)` creates a zero-copy view (O(1)).
+**Action:** When receiving binary data from workers, always check for `Uint8Array` and create a Buffer view instead of using `Buffer.from()` directly to avoid massive GC pressure and latency on high-throughput streams.

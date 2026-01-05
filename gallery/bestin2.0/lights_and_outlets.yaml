@@ -1,16 +1,16 @@
 meta:
   name: "Bestin2.0 조명 및 아웃렛 (방2개 조명2개씩, 아웃렛 2개씩)"
   name_en: "Bestin2.0 Light and Outlet (2 rooms, 2 lights and 2 outlets each)"
-  description: "Bestin2.0 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요."
+  description: "v1.8.0이상이 필요합니다. Bestin2.0 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요."
   description_en: "Bestin2.0 light and outlet."
   version: "1.0.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin2.0"]
 
 entities:
-  script:
+  scripts:
     - id: "update_sequence_number"
-      name: "시퀀스번호업데이트"
+      name: "update sequence number"
       actions:
         - action: update_state
           target_id: "sequence_number"
@@ -30,16 +30,16 @@ entities:
       actions:
         - action: send_packet
           data: >- 
-            [bitOr(0x30, room_number),
+            [bitOr(0x30, args.room_number),
             0x0E, 0x21, 
-            has(states.sequence_number.number) ? states.sequence_number.number : 0, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
             0x01, 0x00, 
-            position, ONOFF?ONOFF:1, 
-            BRIGHTNESS?BRIGHTNESS:0xFF, 
-            COLOR_TEMP?COLOR_TEMP:0xFF, 
+            int(args.position), int(has(args.ONOFF)?args.ONOFF:1), 
+            int(has(args.BRIGHTNESS)?args.BRIGHTNESS:0xFF), 
+            int(has(args.COLOR_TEMP)?args.COLOR_TEMP:0xFF), 
             0x00, 0xFF]
           ack: >- 
-            [bitOr(0x30, room_number), 0x0A, 0x81]
+            [bitOr(0x30, args.room_number), 0x0A, 0x81]
           header: true
           checksum: true
         - action: script
@@ -56,13 +56,13 @@ entities:
       actions:
         - action: send_packet
           data: >- 
-            [bitOr(0x30, room_number), 0x09, 0x22, 
-            has(states.sequence_number.number) ? states.sequence_number.number : 0, 
+            [bitOr(0x30, args.room_number), 0x09, 0x22, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
             0x01, 
-            position, 
-            ONOFF]
+            int(args.position), 
+            int(args.ONOFF)]
           ack: >- 
-            [bitOr(0x30, room_number), 0x0A, 0x81]
+            [bitOr(0x30, args.room_number), 0x0A, 0x81]
           header: true
           checksum: true
         - action: script
@@ -90,7 +90,7 @@ entities:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: "data[18] == 1"
-      state_off: "data[18] == 0"
+      state_off: "data[18] == 2"
       state_brightness: "data[18+1]"
       state_color_temp: "370 - (data[18+2] * (370 - 153) / 100)"
       command_on:
@@ -124,7 +124,7 @@ entities:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: "data[18+13] == 1"
-      state_off: "data[18+13] == 0"
+      state_off: "data[18+13] == 2"
       state_brightness: "data[18+13+1]"
       state_color_temp: "370 - (data[18+13+2] * (370 - 153) / 100)"
       command_on:
@@ -159,7 +159,7 @@ entities:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: "data[18] == 1"
-      state_off: "data[18] == 0"
+      state_off: "data[18] == 2"
       state_brightness: "data[18+1]"
       state_color_temp: "370 - (data[18+2] * (370 - 153) / 100)"
       command_on:
@@ -193,7 +193,7 @@ entities:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: "data[18+13] == 1"
-      state_off: "data[18+13] == 0"
+      state_off: "data[18+13] == 2"
       state_brightness: "data[18+13+1]"
       state_color_temp: "370 - (data[18+13+2] * (370 - 153) / 100)"
       command_on:
@@ -233,7 +233,7 @@ entities:
       # 각 조명당 13바이트 
       # outlet 데이터는 콘센트당 14바이트
       state_on: 'data[18+data[10]*13] == 1'
-      state_off: 'data[18+data[10]*13] == 0'
+      state_off: 'data[18+data[10]*13] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -254,7 +254,7 @@ entities:
       #data[10]: LIGHT_COUNT 각 조명당 13바이트 
       # outlet index 6번이 standby여부
       state_on: 'data[18+data[10]*13+6] == 1'
-      state_off: 'data[18+data[10]*13+6] == 0'
+      state_off: 'data[18+data[10]*13+6] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -273,7 +273,7 @@ entities:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14] == 1'
-      state_off: 'data[18+data[10]*13+14] == 0'
+      state_off: 'data[18+data[10]*13+14] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -292,7 +292,7 @@ entities:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14+6] == 1'
-      state_off: 'data[18+data[10]*13+14+6] == 0'
+      state_off: 'data[18+data[10]*13+14+6] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -315,7 +315,7 @@ entities:
       # 각 조명당 13바이트 
       # outlet 데이터는 콘센트당 14바이트
       state_on: 'data[18+data[10]*13] == 1'
-      state_off: 'data[18+data[10]*13] == 0'
+      state_off: 'data[18+data[10]*13] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -336,7 +336,7 @@ entities:
       #data[10]: LIGHT_COUNT 각 조명당 13바이트 
       # outlet index 6번이 standby여부
       state_on: 'data[18+data[10]*13+6] == 1'
-      state_off: 'data[18+data[10]*13+6] == 0'
+      state_off: 'data[18+data[10]*13+6] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -355,7 +355,7 @@ entities:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14] == 1'
-      state_off: 'data[18+data[10]*13+14] == 0'
+      state_off: 'data[18+data[10]*13+14] == 2'
       command_on:
         script: "make_outlet_packet"
         args:
@@ -374,7 +374,7 @@ entities:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14+6] == 1'
-      state_off: 'data[18+data[10]*13+14+6] == 0'
+      state_off: 'data[18+data[10]*13+14+6] == 2'
       command_on:
         script: "make_outlet_packet"
         args:

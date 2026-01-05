@@ -19,7 +19,7 @@ homenet_bridge:
 
   scripts:
     - id: "update_sequence_number"
-      name: "시퀀스번호업데이트"
+      name: "update sequence number"
       actions:
         - action: update_state
           target_id: "sequence_number"

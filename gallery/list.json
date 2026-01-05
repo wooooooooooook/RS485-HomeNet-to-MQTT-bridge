@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-05T05:53:53.113Z",
+  "generated_at": "2026-01-05T06:16:13.987Z",
   "vendors": [
     {
       "id": "bestin2.0",
@@ -29,7 +29,7 @@
           "file": "bestin2.0/lights_and_outlets.yaml",
           "name": "Bestin2.0 조명 및 아웃렛 (방2개 조명2개씩, 아웃렛 2개씩)",
           "name_en": "Bestin2.0 Light and Outlet (2 rooms, 2 lights and 2 outlets each)",
-          "description": "Bestin2.0 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요.",
+          "description": "v1.8.0이상이 필요합니다. Bestin2.0 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요.",
           "description_en": "Bestin2.0 light and outlet.",
           "version": "1.0.0",
           "author": "wooooooooooook",
@@ -40,7 +40,7 @@
           ],
           "content_summary": {
             "entities": {
-              "script": 3,
+              "scripts": 3,
               "number": 1,
               "light": 4,
               "switch": 8,

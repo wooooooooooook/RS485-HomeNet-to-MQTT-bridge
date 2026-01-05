@@ -279,6 +279,13 @@ export class PacketParser {
             ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
               checksumType,
             );
+          const checksum2Type = this.defaults.rx_checksum2;
+          // Ensure we don't skip the 1-byte checksum if it's configured.
+          // The fast path is only safe if rx_checksum is undefined or 'none'.
+          const isStandard2Byte =
+            typeof checksum2Type === 'string' &&
+            ['xor_add'].includes(checksum2Type) &&
+            (!this.defaults.rx_checksum || this.defaults.rx_checksum === 'none');
 
           const startLen = Math.max(minLen, this.lastScannedLength + 1);
 
@@ -345,6 +352,60 @@ export class PacketParser {
 
               const expected = this.buffer[baseOffset + len - 1];
               if ((finalChecksum & 0xff) === expected) {
+                const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
+                this.lastScannedLength = 0;
+                matchFound = true;
+                break;
+              }
+            }
+          } else if (isStandard2Byte) {
+            // Incremental Checksum Strategy for 2-byte Checksums (xor_add)
+            // xor_add maintains two running values: crc (sum) and temp (xor).
+            // Updates are commutative, so we can incrementally update them.
+            // Checksum location: last 2 bytes [high, low] = [temp, crc]
+
+            let runningCrc = 0;
+            let runningTemp = 0;
+            const baseOffset = this.readOffset;
+
+            // Calculate initial checksum for the starting packet length
+            // xor_add processes header + data linearly.
+            // Data ends at `len - 2`.
+            const initialDataEnd = baseOffset + startLen - 2;
+
+            for (let i = baseOffset; i < initialDataEnd; i++) {
+              const byte = this.buffer[i];
+              runningCrc += byte;
+              runningTemp ^= byte;
+            }
+
+            for (let len = startLen; len <= bufferLength; len++) {
+              // Update checksum with the new byte added to the data section
+              if (len > startLen) {
+                // The byte that was previously the checksum high byte (or part of future data)
+                // is now part of the data being checksummed.
+                // The new data byte is at `len - 1 - 2` = `len - 3` relative to start of packet.
+                // Wait, previous length was `len - 1`. Data ended at `len - 1 - 2`.
+                // New length is `len`. Data ends at `len - 2`.
+                // So we need to add the byte at `len - 3` (relative to readOffset) to the running checksum.
+                const newByte = this.buffer[baseOffset + len - 3];
+                runningCrc += newByte;
+                runningTemp ^= newByte;
+              }
+
+              // Finalize checksum: crc += temp
+              const finalCrc = (runningCrc + runningTemp) & 0xff;
+              const finalTemp = runningTemp & 0xff;
+
+              // Expected bytes at the end of the packet
+              const expectedHigh = this.buffer[baseOffset + len - 2];
+              const expectedLow = this.buffer[baseOffset + len - 1];
+
+              if (finalTemp === expectedHigh && finalCrc === expectedLow) {
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );

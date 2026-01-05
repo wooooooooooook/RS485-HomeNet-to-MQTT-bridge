@@ -70,3 +70,43 @@ light:
 - `scripts`는 배열이어야 하며, 각 항목은 객체여야 합니다.
 - 각 스크립트에는 비어 있지 않은 `id` 문자열과 하나 이상의 `actions`가 필요합니다.
 - 동일한 `id`를 가진 스크립트가 중복될 경우 설정 검증 단계에서 오류가 발생합니다.
+
+## 변수 전달 (Arguments)
+
+스크립트를 호출할 때 `args` 필드를 통해 변수를 전달할 수 있으며, 스크립트 내에서는 CEL(`args.변수명`)을 통해 값을 참조할 수 있습니다.
+`command` 액션의 인자, `if`, `wait_until` 등의 조건식에서 `args`를 사용할 수 있습니다.
+
+### 호출 방법
+
+`automation` 또는 다른 `script`에서 호출할 때 `args`를 지정합니다. `args`의 값으로는 고정된 값뿐만 아니라 CEL 표현식도 사용할 수 있어, 현재 상태(`states`)나 트리거 정보(`trigger`)를 기반으로 동적인 값을 전달할 수 있습니다.
+
+```yaml
+automation:
+  - id: set_temperature_dynamic
+    trigger:
+      - type: startup
+    then:
+      - action: script
+        script: apply_temp
+        args:
+          target_temp: 24
+          mode: heating
+          # CEL을 사용하여 동적 값 전달 가능
+          is_active: "has(states.climate_main.state) && states.climate_main.state == 'ON'"
+```
+
+### 스크립트 정의에서 사용
+
+```yaml
+scripts:
+  - id: apply_temp
+    description: "가변 온도를 설정하는 스크립트"
+    actions:
+      - action: command
+        target: id(climate_livingroom).command_temperature(args.target_temp)
+      - action: if
+        condition: args.mode == 'heating'
+        then:
+          - action: command
+            target: id(climate_livingroom).command_heat()
+```

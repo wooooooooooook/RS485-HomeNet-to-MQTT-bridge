@@ -51,6 +51,7 @@ interface TriggerContext {
   state?: Record<string, any>;
   packet?: number[];
   timestamp: number;
+  args?: Record<string, any>;
 }
 
 // Updated PacketSender signature to match CommandManager.sendRaw capabilities
@@ -158,6 +159,7 @@ export class AutomationManager {
   public async runScript(
     scriptId: string,
     context: TriggerContext,
+    args: Record<string, any> = {},
     stack: string[] = [],
   ): Promise<void> {
     const script = this.scripts.get(scriptId);
@@ -172,10 +174,36 @@ export class AutomationManager {
       return;
     }
 
-    const nextStack = [...stack, scriptId];
-    const scriptContext: TriggerContext = { ...context, type: 'script', timestamp: Date.now() };
+    const evaluatedArgs: Record<string, any> = {};
+    for (const [key, value] of Object.entries(args)) {
+      if (
+        typeof value === 'string' &&
+        (value.includes('(') || value.includes('.') || value.includes('['))
+      ) {
+        try {
+          // Use the *current* context to evaluate the argument
+          // This allows using 'states', 'trigger', etc. in the argument expression
+          const result = this.celExecutor.execute(value, this.buildContext(context));
+          evaluatedArgs[key] = result !== undefined ? result : value;
+        } catch (e) {
+          // Fallback to original value if evaluation fails
+          evaluatedArgs[key] = value;
+        }
+      } else {
+        evaluatedArgs[key] = value;
+      }
+    }
 
-    logger.info({ script: scriptId }, '[automation] Script 실행 시작');
+    const nextStack = [...stack, scriptId];
+
+    const scriptContext: TriggerContext = {
+      ...context,
+      type: 'script',
+      timestamp: Date.now(),
+      args: { ...context.args, ...evaluatedArgs },
+    };
+
+    logger.info({ script: scriptId, args: evaluatedArgs }, '[automation] Script 실행 시작');
     for (const action of script.actions) {
       eventBus.emit('script:action', {
         scriptId,
@@ -918,6 +946,28 @@ export class AutomationManager {
     const parsed = this.parseCommandTarget(action.target, action.input);
     if (!parsed) return;
 
+    // Try to evaluate command value as CEL if it looks like a dynamic expression
+    let commandValue = parsed.value;
+    if (
+      typeof commandValue === 'string' &&
+      (commandValue.includes('args.') ||
+        commandValue.includes('state.') ||
+        commandValue.includes('trigger.'))
+    ) {
+      try {
+        const result = this.celExecutor.execute(commandValue, this.buildContext(context));
+        if (result !== undefined) {
+          commandValue = result;
+        }
+      } catch (err) {
+        // If evaluation fails, fall back to original string value
+        logger.debug(
+          { error: err, expression: commandValue },
+          '[automation] Failed to evaluate command argument as CEL',
+        );
+      }
+    }
+
     const entity = findEntityById(this.config, parsed.entityId);
     if (!entity) {
       logger.warn({ target: action.target }, '[automation] Entity not found for command');
@@ -927,14 +977,14 @@ export class AutomationManager {
     const { normalized, schema } = this.getCommandSchema(entity, parsed.command);
 
     if (schema && typeof schema === 'object' && (schema as any).script) {
-      await this.runScript((schema as any).script, context, scriptStack);
+      await this.runScript((schema as any).script, context, {}, scriptStack);
       return;
     }
 
     const commandResult = this.packetProcessor.constructCommandPacket(
       entity,
       normalized,
-      parsed.value,
+      commandValue,
     );
     if (!commandResult) {
       logger.warn({ target: action.target }, '[automation] Failed to construct command packet');
@@ -976,9 +1026,19 @@ export class AutomationManager {
   }
 
   private async executePublishAction(action: AutomationActionPublish, context: TriggerContext) {
-    const payload =
-      typeof action.payload === 'string' ? action.payload : JSON.stringify(action.payload);
-    this.mqttPublisher.publish(action.topic, payload, action.retain ? { retain: true } : undefined);
+    let payload = action.payload;
+    // Simple CEL evaluation for payload if string
+    // (Optional extension, but good for consistency)
+    if (typeof payload === 'string' && (payload.includes('args.') || payload.includes('state.'))) {
+      try {
+        const res = this.celExecutor.execute(payload, this.buildContext(context));
+        if (res !== undefined) payload = res;
+      } catch { }
+    }
+
+    const finalPayload =
+      typeof payload === 'string' ? payload : JSON.stringify(payload);
+    this.mqttPublisher.publish(action.topic, finalPayload, action.retain ? { retain: true } : undefined);
   }
 
   private async executeLogAction(action: AutomationActionLog, context: TriggerContext) {
@@ -1018,7 +1078,7 @@ export class AutomationManager {
     scriptStack: string[],
   ) {
     if (action.script) {
-      await this.runScript(action.script, context, scriptStack);
+      await this.runScript(action.script, context, action.args, scriptStack);
       return;
     }
 
@@ -1257,6 +1317,7 @@ export class AutomationManager {
       states: stateSnapshot, // access as states['entity_id']['property']
       trigger: context,
       timestamp: Date.now(),
+      args: context.args || {},
       // 'id' and 'command' helpers removed as they are functions
     };
   }

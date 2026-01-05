@@ -86,6 +86,7 @@ export interface AutomationActionScript {
   action: 'script';
   script?: string;
   code?: string;
+  args?: Record<string, any>;
 }
 
 export type AutomationActionUpdateStateValue = StateSchema | StateNumSchema | any;

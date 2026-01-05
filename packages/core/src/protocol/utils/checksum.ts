@@ -5,6 +5,7 @@ export type ChecksumType =
   | 'xor_no_header'
   | 'samsung_rx'
   | 'samsung_tx'
+  | 'bestin_sum'
   | 'none';
 
 export type Checksum2Type = 'xor_add';
@@ -32,6 +33,8 @@ export function calculateChecksum(header: ByteArray, data: ByteArray, type: Chec
       return samsungRx(data);
     case 'samsung_tx':
       return samsungTx(data);
+    case 'bestin_sum':
+      return bestinSum(header, data);
     case 'none':
       throw new Error("Checksum type 'none' should not be calculated");
     default:
@@ -69,6 +72,8 @@ export function calculateChecksumFromBuffer(
       return samsungRxFromBuffer(buffer, headerStart, dataStop);
     case 'samsung_tx':
       return samsungTxFromBuffer(buffer, headerStart, dataStop);
+    case 'bestin_sum':
+      return bestinSumFromBuffer(buffer, dataStart, dataStop);
     case 'none':
       throw new Error("Checksum type 'none' should not be calculated");
     default:
@@ -170,6 +175,25 @@ function samsungTxFromBuffer(buffer: ByteArray, start: number, end: number): num
   return crc;
 }
 
+function bestinSum(header: ByteArray, data: ByteArray): number {
+  let sum = 3;
+  for (const byte of header) {
+    sum = ((byte ^ sum) + 1) & 0xff;
+  }
+  for (const byte of data) {
+    sum = ((byte ^ sum) + 1) & 0xff;
+  }
+  return sum;
+}
+
+function bestinSumFromBuffer(buffer: ByteArray, start: number, end: number): number {
+  let sum = 3;
+  for (let i = start; i < end; i++) {
+    sum = ((buffer[i] ^ sum) + 1) & 0xff;
+  }
+  return sum;
+}
+
 /**
  * Calculate 2-byte checksum
  * @param header Header bytes
@@ -261,3 +285,4 @@ function xorAddRange(buffer: ByteArray, start: number, end: number): number[] {
 
   return [high, low];
 }
+

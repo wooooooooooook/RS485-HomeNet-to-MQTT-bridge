@@ -4,11 +4,11 @@
 
 ## 필수 필드
 - `state`: 이 숫자 값이 포함된 패킷을 식별하는 서명(생략 시 명령만 존재하는 가상 입력으로 사용 가능).
+- 현재 값: `state_number` — [`StateNumSchema`](./schemas.md#statenumschema)로 실제 수치를 읽음.
 
 ## 옵션 필드 (상태)
 - 범위: `max_value`, `min_value`, `step` — UI 슬라이더/스핀박스 범위를 정의.
 - 증감 상태: `state_increment`, `state_decrement`, `state_to_min`, `state_to_max` — 증감 버튼이 있는 장치의 이벤트 패킷을 감지.
-- 현재 값: `state_number` — [`StateNumSchema`](./schemas.md#statenumschema)로 실제 수치를 읽음.
 
 ## 옵션 필드 (명령)
 - 값 설정: `command_number` — 입력값을 패킷에 삽입하거나 CEL 표현식으로 조합.

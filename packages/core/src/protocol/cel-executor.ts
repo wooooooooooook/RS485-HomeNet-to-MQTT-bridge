@@ -54,6 +54,7 @@ export class CelExecutor {
     this.env.registerVariable('state', 'map');
     this.env.registerVariable('states', 'map');
     this.env.registerVariable('trigger', 'map');
+    this.env.registerVariable('args', 'map');
 
     // Helper: BCD to Int
     this.env.registerFunction('bcd_to_int(int): int', (bcd: bigint) => {
@@ -193,6 +194,12 @@ export class CelExecutor {
 
       if (contextData.trigger) {
         safeContext.trigger = contextData.trigger;
+      }
+
+      if (contextData.args) {
+        safeContext.args = contextData.args;
+      } else {
+        safeContext.args = {};
       }
 
       // 2. Execute using cached script function

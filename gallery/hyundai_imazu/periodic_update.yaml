@@ -1,0 +1,63 @@
+meta:
+  name: "주기적 조명 상태요청 자동화 (1번방)"
+  name_en: "Periodic light state request automation (Room 1)"
+  description: "상태 갱신을 위한 주기적 조명 상태요청 자동화입니다. 다른 방도 필요한 경우 복사하여 수정하시면 됩니다."
+  description_en: "Periodic light state request automation for Hyundai Telecom wallpads."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["hyundai", "imazu"]
+
+entities:
+  automation:
+    # 1분마다 상태요청패킷 전송 (1번방)
+    - id: 'update_state_1'
+      trigger:
+        - type: schedule
+          every: 1m
+      then:
+        - action: send_packet
+          data: [0x0B, 0x01, 0x19, 0x01, 0x40, 0x10, 0x00, 0x00]
+          # 2번방
+          # data: [0x0B, 0x01, 0x19, 0x01, 0x40, 0x20, 0x00, 0x00]
+          header: true 
+          footer: true 
+          checksum: true
+
+    # 수신한 상태로 조명 상태 업데이트 (1번방)
+    - id: 'update_lights_1'
+      trigger:
+        - type: packet
+          match:
+            data: [0xf7, 0x00, 0x01, 0x19, 0x04, 0x40, 0x10]
+            mask: [0xff, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+            #2번방
+            # data: [0xf7, 0x00, 0x01, 0x19, 0x04, 0x40, 0x20]
+            # mask: [0xff, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+      then:
+        - action: update_state
+          target_id: room_1_light_1
+          state:
+            state_on:
+              offset: 8
+              data: [0x01]
+            state_off:
+              offset: 8
+              data: [0x02]
+        - action: update_state
+          target_id: room_1_light_2
+          state:
+            state_on:
+              offset: 9
+              data: [0x01]
+            state_off:
+              offset: 9
+              data: [0x02]
+        - action: update_state
+          target_id: room_1_light_3
+          state:
+            state_on:
+              offset: 10
+              data: [0x01]
+            state_off:
+              offset: 10
+              data: [0x02]

@@ -1,6 +1,57 @@
 {
-  "generated_at": "2026-01-02T01:19:27.928Z",
+  "generated_at": "2026-01-05T05:53:53.113Z",
   "vendors": [
+    {
+      "id": "bestin2.0",
+      "name": "BESTIN 2.0",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "bestin_sum",
+          "tx_checksum": "bestin_sum",
+          "rx_header": [
+            2
+          ],
+          "tx_header": [
+            2
+          ],
+          "rx_footer": [],
+          "tx_footer": []
+        }
+      },
+      "items": [
+        {
+          "file": "bestin2.0/lights_and_outlets.yaml",
+          "name": "Bestin2.0 조명 및 아웃렛 (방2개 조명2개씩, 아웃렛 2개씩)",
+          "name_en": "Bestin2.0 Light and Outlet (2 rooms, 2 lights and 2 outlets each)",
+          "description": "Bestin2.0 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요.",
+          "description_en": "Bestin2.0 light and outlet.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "outlet",
+            "bestin2.0"
+          ],
+          "content_summary": {
+            "entities": {
+              "script": 3,
+              "number": 1,
+              "light": 4,
+              "switch": 8,
+              "sensor": 8
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        }
+      ]
+    },
     {
       "id": "commax",
       "name": "코맥스",

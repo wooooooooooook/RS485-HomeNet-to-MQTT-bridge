@@ -334,6 +334,8 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
   },
 };
 
+const SUPPORTED_LOCALES = ['en', 'ko'];
+
 const ENTITY_TYPE_KEYS: (keyof HomenetBridgeConfig)[] = [
   'light',
   'climate',
@@ -365,7 +367,10 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           ? value.toast.command
           : DEFAULT_FRONTEND_SETTINGS.toast.command,
     },
-    locale: typeof value?.locale === 'string' ? value.locale : undefined,
+    locale:
+      typeof value?.locale === 'string' && SUPPORTED_LOCALES.includes(value.locale)
+        ? value.locale
+        : undefined,
     logRetention: {
       enabled:
         typeof value?.logRetention?.enabled === 'boolean'

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-05T06:16:13.987Z",
+  "generated_at": "2026-01-05T23:38:19.215Z",
   "vendors": [
     {
       "id": "bestin2.0",
@@ -747,6 +747,26 @@
           "content_summary": {
             "entities": {
               "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
+          "file": "hyundai_imazu/periodic_update.yaml",
+          "name": "주기적 조명 상태요청 자동화 (1번방)",
+          "name_en": "Periodic light state request automation (Room 1)",
+          "description": "상태 갱신을 위한 주기적 조명 상태요청 자동화입니다. 다른 방도 필요한 경우 복사하여 수정하시면 됩니다.",
+          "description_en": "Periodic light state request automation for Hyundai Telecom wallpads.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {
+              "automation": 2
             },
             "automations": 0,
             "scripts": 0

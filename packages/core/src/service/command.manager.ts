@@ -103,8 +103,8 @@ export class CommandManager {
       const defaults = this.config.packet_defaults || {};
       const retryConfig = {
         attempts: options?.retry ?? defaults.tx_retry_cnt ?? 5,
-        timeout: options?.timeout ?? defaults.tx_timeout ?? 2000,
-        interval: options?.interval ?? defaults.tx_delay ?? 125,
+        timeout: options?.timeout ?? defaults.tx_timeout ?? 100,
+        interval: options?.interval ?? defaults.tx_delay ?? 50,
       };
 
       const job: CommandJob = {
@@ -132,16 +132,16 @@ export class CommandManager {
     if (!entity) {
       return {
         attempts: defaults.tx_retry_cnt ?? 5,
-        timeout: defaults.tx_timeout ?? 2000,
-        interval: defaults.tx_delay ?? 125,
+        timeout: defaults.tx_timeout ?? 100,
+        interval: defaults.tx_delay ?? 50,
       };
     }
     const overrides = entity.packet_parameters || {};
 
     return {
       attempts: overrides.tx_retry_cnt ?? defaults.tx_retry_cnt ?? 5,
-      timeout: overrides.tx_timeout ?? defaults.tx_timeout ?? 2000,
-      interval: overrides.tx_delay ?? defaults.tx_delay ?? 125,
+      timeout: overrides.tx_timeout ?? defaults.tx_timeout ?? 100,
+      interval: overrides.tx_delay ?? defaults.tx_delay ?? 50,
     };
   }
 

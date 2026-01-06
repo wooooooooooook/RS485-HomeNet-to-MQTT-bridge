@@ -25,7 +25,7 @@
   const EMPTY_CONFIG_VALUE = '__empty__';
   const DEFAULT_PACKET_DEFAULTS = {
     rx_timeout: '10ms',
-    tx_timeout: '500ms',
+    tx_timeout: '100ms',
     tx_delay: '50ms',
     tx_retry_cnt: 3,
   };

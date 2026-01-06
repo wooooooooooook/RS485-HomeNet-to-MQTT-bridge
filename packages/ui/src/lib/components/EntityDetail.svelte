@@ -973,6 +973,7 @@
     background: #1e293b;
     display: flex;
     flex-direction: column;
+    height: 85vh;
     height: 85dvh;
     overflow: hidden;
   }
@@ -1416,7 +1417,8 @@
   @media (max-width: 768px) {
     .modal-content-wrapper {
       border-radius: 0;
-      height: 100%;
+      height: 85vh;
+      height: 85dvh;
     }
 
     .modal-header {

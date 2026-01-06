@@ -764,8 +764,7 @@ export class AutomationManager {
       }
     }
 
-    const headerLength = this.config.packet_defaults?.rx_header?.length || 0;
-    const payload = context.packet ? Buffer.from(context.packet).slice(headerLength) : null;
+    const payload = context.packet ? Buffer.from(context.packet) : null;
     const requiresPacket = Object.values(action.state).some((value) => {
       return this.isSchemaValue(value);
     });

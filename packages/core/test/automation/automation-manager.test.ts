@@ -313,6 +313,72 @@ describe('AutomationManager', () => {
     });
   });
 
+  it('update_state가 rx_header를 포함한 전체 패킷 기준으로 offset을 계산해야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      packet_defaults: {
+        rx_header: [0x02],
+      },
+      light: [
+        {
+          id: 'light_1',
+          name: 'Light 1',
+          type: 'light',
+          state: { data: [0x01] },
+          state_on: { offset: 2, data: [0x01] },
+          state_off: { offset: 2, data: [0x00] },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_with_header',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0x02, 0x10], offset: 0 },
+            },
+          ],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'light_1',
+              state: {
+                state_on: { offset: 2, data: [0x01] },
+                state_off: { offset: 2, data: [0x00] },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    packetProcessor.emit('packet', Buffer.from([0x02, 0x10, 0x01]));
+    await vi.runAllTimersAsync();
+
+    expect(stateManager.getEntityState('light_1')).toEqual({
+      state: 'ON',
+    });
+  });
+
   it('update_state에서 정의되지 않은 속성을 업데이트하려 하면 오류를 반환해야 한다', async () => {
     const config: HomenetBridgeConfig = {
       ...baseConfig,

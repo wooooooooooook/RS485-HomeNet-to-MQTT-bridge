@@ -178,6 +178,7 @@ state:
 ```
 
 - `state` 값이 `StateSchema/StateNumSchema`인 경우, 패킷에서 값을 추출하여 상태로 기록합니다.
+- `offset`은 수신된 **원본 패킷 전체(rx_header 포함)** 기준입니다.
 - 패킷 트리거인 경우에만 사용하세요.
 - `update_state`는 대상 엔티티에 정의된 `state_*` 항목과 해당 속성명(예: `brightness`, `target_temperature`)만 허용하며, 정의되지 않은 속성은 오류로 처리됩니다.
 

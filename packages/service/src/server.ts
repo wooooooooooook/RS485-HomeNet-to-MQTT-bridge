@@ -587,6 +587,11 @@ const findBridgeInstanceByPortId = (portId: string): BridgeInstance | undefined 
 };
 
 app.post('/api/tools/packet/preview', async (req, res) => {
+  if (!commandRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Packet preview rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { hex, header, footer, checksum, portId } = req.body;
 
   if (!hex) return res.status(400).json({ error: 'hex is required' });
@@ -601,6 +606,11 @@ app.post('/api/tools/packet/preview', async (req, res) => {
 });
 
 app.post('/api/tools/packet/send', async (req, res) => {
+  if (!commandRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Packet send rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { hex, header, footer, checksum, portId, interval = 100, count = 1 } = req.body;
 
   if (!hex) return res.status(400).json({ error: 'hex is required' });
@@ -798,6 +808,11 @@ app.get('/api/logs/packet/status', (_req, res) => {
 });
 
 app.post('/api/logs/packet/start', (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Packet log start rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   try {
     // Gather Metadata
     const serials = currentConfigs
@@ -834,7 +849,12 @@ app.post('/api/logs/packet/start', (req, res) => {
   }
 });
 
-app.post('/api/logs/packet/stop', (_req, res) => {
+app.post('/api/logs/packet/stop', (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Packet log stop rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   try {
     const result = rawPacketLogger.stop();
     // note: we do NOT stop raw listeners here as UI might be streaming
@@ -872,6 +892,11 @@ app.get('/api/logs/packet/download/:filename', async (req, res) => {
 });
 
 app.delete('/api/logs/packet/:filename', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Packet log delete rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { filename } = req.params;
   const filePath = rawPacketLogger.getFilePath(filename);
 
@@ -972,6 +997,11 @@ app.get('/api/logs/cache/download/:filename', async (req, res) => {
 });
 
 app.delete('/api/logs/cache/:filename', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    logger.warn({ ip: req.ip }, '[service] Log cache delete rate limit exceeded');
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
   const { filename } = req.params;
   const filePath = logRetentionService.getFilePath(filename);
 

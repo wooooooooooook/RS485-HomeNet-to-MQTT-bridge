@@ -90,7 +90,7 @@
     padding: 0;
     color: #f8fafc;
     margin: auto;
-    max-height: 90vh;
+    max-height: 90dvh;
     overflow: auto;
     box-shadow:
       0 20px 25px -5px rgba(0, 0, 0, 0.1),

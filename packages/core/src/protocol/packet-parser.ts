@@ -26,6 +26,8 @@ export class PacketParser {
   private defaults: PacketDefaults;
   private headerBuffer: Buffer | null = null;
   private footerBuffer: Buffer | null = null;
+  private isStandard1Byte: boolean = false;
+  private isStandard2Byte: boolean = false;
 
   private readonly checksumTypes = new Set([
     'add',
@@ -49,6 +51,20 @@ export class PacketParser {
     if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
       this.footerBuffer = Buffer.from(this.defaults.rx_footer);
     }
+
+    // Pre-calculate optimization flags for incremental checksums
+    const checksumType = this.defaults.rx_checksum;
+    this.isStandard1Byte =
+      typeof checksumType === 'string' &&
+      ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
+        checksumType,
+      );
+
+    const checksum2Type = this.defaults.rx_checksum2;
+    this.isStandard2Byte =
+      typeof checksum2Type === 'string' &&
+      ['xor_add'].includes(checksum2Type) &&
+      (!this.defaults.rx_checksum || this.defaults.rx_checksum === 'none');
   }
 
   private getExecutor(): CelExecutor {
@@ -168,17 +184,10 @@ export class PacketParser {
 
           // Optimization: Check for standard 1-byte checksum to enable incremental calculation
           // This avoids O(N^2) complexity when many false footers are present
-          const checksumType = this.defaults.rx_checksum;
-          const isStandard1Byte =
-            typeof checksumType === 'string' &&
-            ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
-              checksumType,
-            );
-
-          if (isStandard1Byte) {
+          if (this.isStandard1Byte) {
             // Incremental Checksum Strategy for Footer Delimited
             let runningChecksum = 0;
-            const typeStr = checksumType as string;
+            const typeStr = this.defaults.rx_checksum as string;
             const isSamsungRx = typeStr === 'samsung_rx';
             const isSamsungTx = typeStr === 'samsung_tx';
             const isAdd = typeStr.startsWith('add');
@@ -273,24 +282,10 @@ export class PacketParser {
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + checksumLen;
         if (checksumLen > 0 && bufferLength >= minLen) {
-          const checksumType = this.defaults.rx_checksum;
-          const isStandard1Byte =
-            typeof checksumType === 'string' &&
-            ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx'].includes(
-              checksumType,
-            );
-          const checksum2Type = this.defaults.rx_checksum2;
-          // Ensure we don't skip the 1-byte checksum if it's configured.
-          // The fast path is only safe if rx_checksum is undefined or 'none'.
-          const isStandard2Byte =
-            typeof checksum2Type === 'string' &&
-            ['xor_add'].includes(checksum2Type) &&
-            (!this.defaults.rx_checksum || this.defaults.rx_checksum === 'none');
-
           const startLen = Math.max(minLen, this.lastScannedLength + 1);
 
-          if (isStandard1Byte) {
-            const typeStr = checksumType as string;
+          if (this.isStandard1Byte) {
+            const typeStr = this.defaults.rx_checksum as string;
             const isSamsungRx = typeStr === 'samsung_rx';
             const isSamsungTx = typeStr === 'samsung_tx';
             const isAdd = typeStr.startsWith('add');
@@ -362,7 +357,7 @@ export class PacketParser {
                 break;
               }
             }
-          } else if (isStandard2Byte) {
+          } else if (this.isStandard2Byte) {
             // Incremental Checksum Strategy for 2-byte Checksums (xor_add)
             // xor_add maintains two running values: crc (sum) and temp (xor).
             // Updates are commutative, so we can incrementally update them.

@@ -1,8 +1,12 @@
 meta:
   name: "Bestin2.0 디밍 조명 및 아웃렛 (방2개 조명2개씩, 아웃렛 2개씩)"
   name_en: "Bestin2.0 Dimming Light and Outlet (2 rooms, 2 lights and 2 outlets each)"
-  description: "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요."
-  description_en: "Bestin2.0 dimming light and outlet."
+  description: >-
+    Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 더 필요한 방, 조명 등은 추가하여 사용하세요.
+    디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.
+  description_en: >- 
+    Bestin2.0 dimming light and outlet configuration. Add more rooms or lights as needed.
+    If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.
   version: "1.0.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin2.0"]

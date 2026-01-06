@@ -1,8 +1,10 @@
 meta:
   name: "Bestin general 조명 및 아웃렛 (energy485)"
   name_en: "Bestin general Light and Outlet (energy485)"
-  description: "Bestin general gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다."
-  description_en: "Bestin general gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets."
+  description: >-
+    Bestin general gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다.
+  description_en: >- 
+    Bestin general gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets.
   version: "2.0.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin"]
@@ -39,7 +41,7 @@ entities:
             0x00, 0x00, 0x00, 0x00,
             int(args.ONOFF ? 0x04 : 0x00)]
           ack: >- 
-            [0x31, 0x81]
+            [0x02, 0x31, 0x81]
           header: true
           checksum: true
         - action: script
@@ -71,7 +73,7 @@ entities:
             0x00, 0x00, 0x00,
             int(args.ONOFF ? bitShiftLeft(0x09, args.position) : 0x00)]
           ack: >- 
-            [0x31, 0x81]
+            [0x02, 0x31, 0x81]
           header: true
           checksum: true
         - action: script
@@ -101,7 +103,7 @@ entities:
             int(args.ONOFF ? 0x83 : 0x03),
             0x00, 0x00, 0x00]
           ack: >- 
-            [0x31, 0x81]
+            [0x02, 0x31, 0x81]
           header: true
           checksum: true
         - action: script

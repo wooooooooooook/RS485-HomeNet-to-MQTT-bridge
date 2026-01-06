@@ -1,0 +1,67 @@
+meta:
+  name: "Bestin 가스밸브"
+  name_en: "Bestin Gas Valve"
+  description: "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다."
+  description_en: "Bestin gas valve. bestin1.0 bestin2.0 common."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["valve", "gas", "bestin"]
+
+entities:
+  scripts:
+    - id: "update_sequence_number"
+      name: "update sequence number"
+      actions:
+        - action: update_state
+          target_id: "sequence_number"
+          state:
+            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+
+    - id: "make_gas_packet"
+      name: "Gas Valve Packet Make"
+      description: >-
+        가스밸브 차단 패킷 생성 (닫기 전용)
+        명령패킷 구조: 02 31 02 XX 00 00 00 00 00 XX
+      actions:
+        - action: send_packet
+          data: >-
+            [0x31, 0x02,
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: >-
+            [0x31, 0x82]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+  number:
+    - id: sequence_number
+      name: "내부관리용시퀀스번호"
+      internal: true
+      min_value: 0
+      max_value: 255
+      step: 1
+      state: 
+        # 언제나 매칭
+        data: [0x00]
+        mask: [0x00]
+      state_number: 'data[2]==10?data[3]:data[4]'
+
+  valve:
+    - id: 'gas_valve'
+      name: 'Gas Valve'
+      device_class: 'gas'
+      state:
+        # 상태패킷: [0x02, 0x31, 0x02, timestamp, timestamp, 상태, 0x00, 0x00, 0x00, checksum]
+        data: [0x31, 0x02]
+      # 가스밸브 상태: packet[5] (0=닫힘/OFF, 1=열림/ON)
+      state_open: 
+        data: [0x01]
+        offset: 5
+      state_closed: 
+        data: [0x00]
+        offset: 5
+      # 가스밸브는 안전상 원격으로 열 수 없음 (닫기만 가능)
+      command_close:
+        script: "make_gas_packet"

@@ -1,0 +1,400 @@
+meta:
+  name: "Bestin aio 조명 및 아웃렛 (energy485)"
+  name_en: "Bestin aio Light and Outlet (energy485)"
+  description: >-
+    Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다.
+  description_en: >- 
+    Bestin aio gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets.
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "outlet", "bestin"]
+
+entities:
+  scripts:
+    - id: "update_sequence_number"
+      name: "update sequence number"
+      actions:
+        - action: update_state
+          target_id: "sequence_number"
+          state:
+            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+
+    - id: "make_light_packet"
+      name: "Light Packet Make"
+      description: >- 
+        조명 제어 패킷 생성 (20바이트)
+          args: 
+            room_number: (1-5) - 방 ID
+            position: 조명번호 0-based (pos_id, 0-3)
+            ONOFF: true(on), false(off)
+          패킷 구조:
+            [0]: 0x02 - 패킷 시작
+            [1]: 0x50 + room_id - 방 ID (0x51-0x55)
+            [2]: 0x0A - 패킷 길이
+            [3]: 0x12 - 명령 타입
+            [4]: 시퀀스 번호
+            [5]: 0x01(ON) / 0x00(OFF)
+            [6]: 1 << pos_id - 조명 위치 비트
+            [7-18]: 0x00 - 예약
+            [19]: 체크섬
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x02, 
+            int(0x50 + args.room_number),
+            0x0A, 0x12,
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(args.ONOFF ? 0x01 : 0x00),
+            int(args.position == 4 ? 0x10 : bitShiftLeft(0x01, args.position)),
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: >- 
+            [0x02, int(0x50 + args.room_number), 0x0A, 0x82]
+          header: false
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+    - id: "make_outlet_packet"
+      name: "Outlet Packet Make"
+      description: >- 
+        콘센트 제어 패킷 생성 (20바이트)
+          args: 
+            room_number: (1-5) - 방 ID
+            position: 콘센트번호 0-based (pos_id, 0-1)
+            ONOFF: true(on), false(off)
+          패킷 구조:
+            02 5X 0C 12 XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX
+            [0]: 0x02 - 패킷 시작
+            [1]: 0x50 + room_id - 방 ID (0x51-0x55)
+            [2]: 0x0C - 패킷 길이
+            [3]: 0x12 - 명령 타입
+            [4]: 시퀀스 번호
+            [8]: 0x01 - 고정값
+            [9]: pos_id + 1 - 콘센트 위치 (1-based)
+            [10]: 0x01(ON) / 0x02(OFF)
+            [19]: 체크섬
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x02, 
+            int(0x50 + args.room_number),
+            0x0C, 0x12,
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            0x00, 0x00, 0x00,
+            0x01,
+            int(args.position + 1),
+            int(args.ONOFF ? 0x01 : 0x02),
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: >- 
+            [0x02, int(0x50 + args.room_number), 0x0A, 0x82]
+          header: false
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+  number:
+    - id: sequence_number
+      name: "내부관리용시퀀스번호"
+      internal: true
+      min_value: 0
+      max_value: 255
+      step: 1
+      state: 
+        # 02 5X로 시작하는 패킷에서 시퀀스 추출
+        data: [0x02, 0x50]
+        mask: [0xFF, 0xF0]
+      state_number: 'data[4]'
+
+  light:
+    # Room 1 Lights (4개)
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x51 for room 1)
+    # 조명 상태: data[6] 비트맵 (비트0=조명0, 비트1=조명1, ...)
+    - id: 'room1_light1'
+      name: 'Room1 Light 1'
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x01) == 0x01"
+      state_off: "bitAnd(data[6], 0x01) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 0
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 0
+          ONOFF: false
+
+    - id: 'room1_light2'
+      name: 'Room1 Light 2'
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x02) == 0x02"
+      state_off: "bitAnd(data[6], 0x02) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 1
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 1
+          ONOFF: false
+
+    - id: 'room1_light3'
+      name: 'Room1 Light 3'
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x04) == 0x04"
+      state_off: "bitAnd(data[6], 0x04) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 2
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 2
+          ONOFF: false
+
+    - id: 'room1_light4'
+      name: 'Room1 Light 4'
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x08) == 0x08"
+      state_off: "bitAnd(data[6], 0x08) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 3
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 1
+          position: 3
+          ONOFF: false
+
+    # Room 2 Lights (2개)
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x52 for room 2)
+    - id: 'room2_light1'
+      name: 'Room2 Light 1'
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x01) == 0x01"
+      state_off: "bitAnd(data[6], 0x01) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 2
+          position: 0
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 2
+          position: 0
+          ONOFF: false
+
+    - id: 'room2_light2'
+      name: 'Room2 Light 2'
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: "bitAnd(data[6], 0x02) == 0x02"
+      state_off: "bitAnd(data[6], 0x02) == 0"
+      command_on:
+        script: "make_light_packet"
+        args:
+          room_number: 2
+          position: 1
+          ONOFF: true
+      command_off:
+        script: "make_light_packet"
+        args:
+          room_number: 2
+          position: 1
+          ONOFF: false
+
+  switch:
+    # Room 1 Outlets (2개) - AIO는 방당 2개 콘센트 지원
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x51 for room 1)
+    # 콘센트 상태: data[9 + 5*i] - 0x21/0x11=ON, 기타=OFF
+    # 대기전력 차단: data[9 + 5*i]가 0x11/0x13/0x12이면 차단 활성
+    - id: "room1_outlet1"
+      name: "Room1 Outlet 1"
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[9] == 0x21 || data[9] == 0x11'
+      state_off: 'data[9] != 0x21 && data[9] != 0x11'
+      command_on:
+        script: "make_outlet_packet"
+        args:
+          room_number: 1
+          position: 0
+          ONOFF: true
+      command_off:
+        script: "make_outlet_packet"
+        args:
+          room_number: 1
+          position: 0
+          ONOFF: false
+
+    - id: "room1_outlet2"
+      name: "Room1 Outlet 2"
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[14] == 0x21 || data[14] == 0x11'
+      state_off: 'data[14] != 0x21 && data[14] != 0x11'
+      command_on:
+        script: "make_outlet_packet"
+        args:
+          room_number: 1
+          position: 1
+          ONOFF: true
+      command_off:
+        script: "make_outlet_packet"
+        args:
+          room_number: 1
+          position: 1
+          ONOFF: false
+
+    # Room 2 Outlets (2개)
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x52 for room 2)
+    - id: "room2_outlet1"
+      name: "Room2 Outlet 1"
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[9] == 0x21 || data[9] == 0x11'
+      state_off: 'data[9] != 0x21 && data[9] != 0x11'
+      command_on:
+        script: "make_outlet_packet"
+        args:
+          room_number: 2
+          position: 0
+          ONOFF: true
+      command_off:
+        script: "make_outlet_packet"
+        args:
+          room_number: 2
+          position: 0
+          ONOFF: false
+
+    - id: "room2_outlet2"
+      name: "Room2 Outlet 2"
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[14] == 0x21 || data[14] == 0x11'
+      state_off: 'data[14] != 0x21 && data[14] != 0x11'
+      command_on:
+        script: "make_outlet_packet"
+        args:
+          room_number: 2
+          position: 1
+          ONOFF: true
+      command_off:
+        script: "make_outlet_packet"
+        args:
+          room_number: 2
+          position: 1
+          ONOFF: false
+
+  binary_sensor:
+    # Room 1 Standby Power Cutoff (콘센트별, 상태만 표시)
+    - id: "room1_outlet1_standbycut"
+      name: "Room1 Outlet 1 Standby Cutoff"
+      device_class: power
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[9] == 0x11 || data[9] == 0x13 || data[9] == 0x12'
+      state_off: 'data[9] != 0x11 && data[9] != 0x13 && data[9] != 0x12'
+
+    - id: "room1_outlet2_standbycut"
+      name: "Room1 Outlet 2 Standby Cutoff"
+      device_class: power
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[14] == 0x11 || data[14] == 0x13 || data[14] == 0x12'
+      state_off: 'data[14] != 0x11 && data[14] != 0x13 && data[14] != 0x12'
+
+    # Room 2 Standby Power Cutoff (콘센트별, 상태만 표시)
+    - id: "room2_outlet1_standbycut"
+      name: "Room2 Outlet 1 Standby Cutoff"
+      device_class: power
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[9] == 0x11 || data[9] == 0x13 || data[9] == 0x12'
+      state_off: 'data[9] != 0x11 && data[9] != 0x13 && data[9] != 0x12'
+
+    - id: "room2_outlet2_standbycut"
+      name: "Room2 Outlet 2 Standby Cutoff"
+      device_class: power
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_on: 'data[14] == 0x11 || data[14] == 0x13 || data[14] == 0x12'
+      state_off: 'data[14] != 0x11 && data[14] != 0x13 && data[14] != 0x12'
+
+  sensor:
+    # Room 1 Outlet Power Consumption
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x51 for room 1)
+    # 전력 소비량: data[10 + 5*i] ~ data[11 + 5*i], big endian, /10
+    - id: "room1_outlet1_power"
+      name: "Room1 Outlet 1 Power"
+      device_class: power
+      unit_of_measurement: W
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_number: "bitOr(bitShiftLeft(data[10], 8), data[11]) / 10.0"
+
+    - id: "room1_outlet2_power"
+      name: "Room1 Outlet 2 Power"
+      device_class: power
+      unit_of_measurement: W
+      state:
+        data: [0x02, 0x51, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_number: "bitOr(bitShiftLeft(data[15], 8), data[16]) / 10.0"
+
+    # Room 2 Outlet Power Consumption
+    # 상태 패킷: 02 5X 0C 91 ... (5X = 0x52 for room 2)
+    - id: "room2_outlet1_power"
+      name: "Room2 Outlet 1 Power"
+      device_class: power
+      unit_of_measurement: W
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_number: "bitOr(bitShiftLeft(data[10], 8), data[11]) / 10.0"
+
+    - id: "room2_outlet2_power"
+      name: "Room2 Outlet 2 Power"
+      device_class: power
+      unit_of_measurement: W
+      state:
+        data: [0x02, 0x52, 0x0C, 0x91]
+        mask: [0xFF, 0xFF, 0x00, 0xFF]
+      state_number: "bitOr(bitShiftLeft(data[15], 8), data[16]) / 10.0"

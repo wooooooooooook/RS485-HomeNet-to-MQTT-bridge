@@ -1,0 +1,63 @@
+meta:
+  name: "Bestin 도어락"
+  name_en: "Bestin Doorlock"
+  description: "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다."
+  description_en: "Bestin doorlock. bestin1.0 bestin2.0 common."
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["lock", "doorlock", "bestin"]
+
+entities:
+  scripts:
+    - id: "update_sequence_number"
+      name: "update sequence number"
+      actions:
+        - action: update_state
+          target_id: "sequence_number"
+          state:
+            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+
+    - id: "make_doorlock_packet"
+      name: "Doorlock Packet Make"
+      description: >-
+        도어락 잠금해제 패킷 생성
+        명령패킷 구조: 02 41 02 XX 01 00 00 00 00 XX
+      actions:
+        - action: send_packet
+          data: >-
+            [0x41, 0x02,
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            0x01, 0x00, 0x00, 0x00, 0x00]
+          ack: >-
+            [0x41, 0x82]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+  number:
+    - id: sequence_number
+      name: "내부관리용시퀀스번호"
+      internal: true
+      min_value: 0
+      max_value: 255
+      step: 1
+      state: 
+        # 언제나 매칭
+        data: [0x00]
+        mask: [0x00]
+      state_number: 'data[2]==10?data[3]:data[4]'
+
+  lock:
+    - id: 'doorlock'
+      name: 'Doorlock'
+      state:
+        # 상태패킷: [0x02, 0x41, 0x02, timestamp, 상태, 0x00, 0x00, 0x00, 0x00, checksum]
+        data: [0x41, 0x02]
+      # 도어락 상태: packet[4] & 0xAE 비트 연산으로 확인
+      # 0xAE = 10101110, 비트가 설정되어 있으면 잠금 상태
+      state_locked: 'bitAnd(data[4], 0xAE) != 0'
+      state_unlocked: 'bitAnd(data[4], 0xAE) == 0'
+      # 도어락 잠금해제 명령 (토글 방식으로 동작)
+      command_unlock:
+        script: "make_doorlock_packet"

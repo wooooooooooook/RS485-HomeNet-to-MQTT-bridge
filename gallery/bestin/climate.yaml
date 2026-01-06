@@ -1,11 +1,11 @@
 meta:
-  name: "Bestin2.0 난방"
-  name_en: "Bestin2.0 Climate"
-  description: "v1.8.0이상이 필요합니다. Bestin2.0 난방 설정입니다. 추가 방, 조명 등은 추가하여 사용하세요."
-  description_en: "Bestin2.0 climate."
+  name: "Bestin 난방"
+  name_en: "Bestin Climate"
+  description: "Bestin 난방 설정입니다. bestin1.0 bestin2.0 공통입니다."
+  description_en: "Bestin climate. bestin1.0 bestin2.0 common."
   version: "1.0.0"
   author: "wooooooooooook"
-  tags: ["climate", "bestin2.0"]
+  tags: ["climate", "bestin"]
 
 entities:
   scripts:
@@ -35,7 +35,7 @@ entities:
             has(args.temp)?(int(args.temp) + (int(args.temp * 10) % 10 >= 5 ? 0x40 : 0)):0,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
           ack: >- 
-            [0x28, 0x81]
+            [0x02, 0x28, 0x81]
           header: true
           checksum: true
         - action: script

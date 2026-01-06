@@ -1,0 +1,124 @@
+meta:
+  name: "Bestin AIO 에너지 센서"
+  name_en: "Bestin AIO Energy Sensors"
+  description: >-
+    Bestin AIO 게이트웨이용 에너지 센서 설정입니다. 
+    전기, 수도, 가스 3개 요소의 총 사용량과 실시간 사용량을 제공합니다.
+  description_en: >- 
+    Bestin AIO gateway energy sensors configuration.
+    Provides total and realtime usage for 3 elements: electric, water, gas.
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["energy", "sensor", "bestin", "aio"]
+
+# 에너지 상태패킷 구조 (AIO, 34바이트):
+# 02 D1 20 91 A8 00 00 00 00 XX XX XX XX [realtime 데이터...] [checksum]
+#
+# 바이트 범위 (AIO용 - element_offset = 1):
+#   electric total: data[8:12]  - 4바이트
+#   water total:    data[17:20] - 3바이트
+#   gas total:      data[25:29] - 4바이트
+#
+# 실시간 값 (2바이트씩, 8바이트 간격):
+#   electric realtime: data[13:15]
+#   water realtime:    data[21:23]  (13 + 8)
+#   gas realtime:      data[29:31]  (13 + 16)
+#
+# 값 변환 규칙:
+#   전기 총 사용량: ÷ 100 (kWh)
+#   가스 총 사용량: ÷ 1000 (m³)
+#   가스 실시간: ÷ 10 (m³/h)
+#   수도 총 사용량: ÷ 1000 (m³)
+#   수도 실시간 (AIO): ÷ 1000 (m³/h)
+
+entities:
+  sensor:
+    # ========================================
+    # Electric (전기) 센서
+    # ========================================
+    # 총 사용량: data[8:12] - 4바이트 BCD, ÷ 100
+    - id: "energy_electric_total"
+      name: "전기 총 사용량"
+      device_class: energy
+      unit_of_measurement: kWh
+      state_class: total_increasing
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 8
+        length: 4
+        decode: bcd
+        precision: 2
+
+    # 실시간 사용량: data[13:15] - 2바이트 BCD
+    - id: "energy_electric_realtime"
+      name: "전기 실시간 사용량"
+      device_class: power
+      unit_of_measurement: W
+      state_class: measurement
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 13
+        length: 2
+        decode: bcd
+
+    # ========================================
+    # Water (수도) 센서
+    # ========================================
+    # 총 사용량: data[17:20] - 3바이트 BCD, ÷ 1000
+    - id: "energy_water_total"
+      name: "수도 총 사용량"
+      device_class: water
+      unit_of_measurement: "m³"
+      state_class: total_increasing
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 17
+        length: 3
+        decode: bcd
+        precision: 3
+
+    # 실시간 사용량: data[21:23] - 2바이트 BCD, AIO는 ÷ 1000
+    - id: "energy_water_realtime"
+      name: "수도 실시간 사용량"
+      unit_of_measurement: "m³/h"
+      state_class: measurement
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 21
+        length: 2
+        decode: bcd
+        precision: 3
+
+    # ========================================
+    # Gas (가스) 센서 - AIO는 slice(25, 29) 사용
+    # ========================================
+    # 총 사용량: data[25:29] - 4바이트 BCD, ÷ 1000
+    - id: "energy_gas_total"
+      name: "가스 총 사용량"
+      device_class: gas
+      unit_of_measurement: "m³"
+      state_class: total_increasing
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 25
+        length: 4
+        decode: bcd
+        precision: 3
+
+    # 실시간 사용량: data[29:31] - 2바이트 BCD, ÷ 10
+    - id: "energy_gas_realtime"
+      name: "가스 실시간 사용량"
+      unit_of_measurement: "m³/h"
+      state_class: measurement
+      state:
+        data: [0x02, 0xD1, 0x20]
+      state_number:
+        offset: 29
+        length: 2
+        decode: bcd
+        precision: 1

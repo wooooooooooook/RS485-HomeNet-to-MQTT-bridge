@@ -1,34 +1,34 @@
 homenet_bridge:
-  serial:  
-    baud_rate: 9600  
-    data_bits: 8  
-    parity: NONE  
-    stop_bits: 1  
+  serial:
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
     path: /dev/ttyS0
-    
-  packet_defaults:  
-    rx_timeout: 10ms  
-    tx_delay: 220ms  # Gen2 게이트웨이는 0.22초 간격 사용  
-    tx_timeout: 500ms  
-    tx_retry_cnt: 3  
-    
-    rx_header: [0x02]  # 모든 패킷은 0x02로 시작  
-    tx_header: [0x02]  
+
+  packet_defaults:
+    rx_timeout: 10ms
+    tx_delay: 220ms # Gen2 게이트웨이는 0.22초 간격 사용
+    tx_timeout: 500ms
+    tx_retry_cnt: 3
+
+    rx_header: [0x02] # 모든 패킷은 0x02로 시작
+    tx_header: [0x02]
     rx_checksum: bestin_sum
     tx_checksum: bestin_sum
 
   scripts:
-    - id: "update_sequence_number"
-      name: "update sequence number"
+    - id: 'update_sequence_number'
+      name: 'update sequence number'
       actions:
         - action: update_state
-          target_id: "sequence_number"
+          target_id: 'sequence_number'
           state:
             state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
 
-    - id: "make_light_packet"
-      name: "Light Packet Make"
-      description: >- 
+    - id: 'make_light_packet'
+      name: 'Light Packet Make'
+      description: >-
         조명 공통 패킷 생성 
           args: 
             room_number: (1-8)
@@ -38,7 +38,7 @@ homenet_bridge:
             COLOR_TEMP: 0-100 (0xFF: 변경없음, 생략시 0xFF)
       actions:
         - action: send_packet
-          data: >- 
+          data: >-
             [bitOr(0x30, args.room_number),
             0x0E, 0x21, 
             int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
@@ -47,16 +47,16 @@ homenet_bridge:
             int(has(args.BRIGHTNESS)?args.BRIGHTNESS:0xFF), 
             int(has(args.COLOR_TEMP)?args.COLOR_TEMP:0xFF), 
             0x00, 0xFF]
-          ack: >- 
+          ack: >-
             [bitOr(0x30, args.room_number), 0x0A, 0x81]
           header: true
           checksum: true
         - action: script
           script: update_sequence_number
 
-    - id: "make_outlet_packet"
-      name: "Outlet Packet Make"
-      description: >- 
+    - id: 'make_outlet_packet'
+      name: 'Outlet Packet Make'
+      description: >-
         아웃렛 공통 패킷 생성 
           args: 
             room_number: (1-8)
@@ -64,13 +64,13 @@ homenet_bridge:
             ONOFF: 1(on), 2(off) 16(대기전력차단on) 17(대기전력차단off)
       actions:
         - action: send_packet
-          data: >- 
+          data: >-
             [bitOr(0x30, args.room_number), 0x09, 0x22, 
             int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
             0x01, 
             int(args.position), 
             int(args.ONOFF)]
-          ack: >- 
+          ack: >-
             [bitOr(0x30, args.room_number), 0x0A, 0x81]
           header: true
           checksum: true
@@ -79,87 +79,87 @@ homenet_bridge:
 
   number:
     - id: sequence_number
-      name: "내부관리용시퀀스번호"
+      name: '내부관리용시퀀스번호'
       internal: true
       min_value: 0
       max_value: 255
       step: 1
-      state: 
+      state:
         # 언제나 매칭
         data: [0x00]
         mask: [0x00]
       state_number: 'data[2]==10?data[3]:data[4]'
 
   light:
-  # 18번부터 조명 상태 시작. 각 조명당 13바이트  
+    # 18번부터 조명 상태 시작. 각 조명당 13바이트
     - id: 'room1_light1'
       name: 'Room1 Light 1'
       state:
         # [3n : room_number, packet_length, 91: 조명응답패킷]
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_on: "data[18] == 1"
-      state_off: "data[18] == 2"
-      state_brightness: "data[18+1]"
-      state_color_temp: "370 - (data[18+2] * (370 - 153) / 100)"
+      state_on: 'data[18] == 1'
+      state_off: 'data[18] == 2'
+      state_brightness: 'data[18+1]'
+      state_color_temp: '370 - (data[18+2] * (370 - 153) / 100)'
       command_on:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 1
       command_off:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 2 #off가 2
       command_brightness:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 1
-          BRIGHTNESS: "x"
+          BRIGHTNESS: 'x'
       command_color_temp:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 1
-          COLOR_TEMP: "int((370 - x) * 100 / (370 - 153)):0"
+          COLOR_TEMP: 'int((370 - x) * 100 / (370 - 153)):0'
 
     - id: 'room1_light2'
       name: 'Room1 Light 2'
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_on: "data[18+13] == 1"
-      state_off: "data[18+13] == 2"
-      state_brightness: "data[18+13+1]"
-      state_color_temp: "370 - (data[18+13+2] * (370 - 153) / 100)"
+      state_on: 'data[18+13] == 1'
+      state_off: 'data[18+13] == 2'
+      state_brightness: 'data[18+13+1]'
+      state_color_temp: '370 - (data[18+13+2] * (370 - 153) / 100)'
       command_on:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 1
       command_off:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 2
       command_brightness:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 2
-          BRIGHTNESS: "x"
+          BRIGHTNESS: 'x'
       command_color_temp:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 1
           position: 2
-          COLOR_TEMP: "int((370 - x) * 100 / (370 - 153)):0"
+          COLOR_TEMP: 'int((370 - x) * 100 / (370 - 153)):0'
 
     - id: 'room2_light1'
       name: 'Room2 Light 1'
@@ -167,303 +167,302 @@ homenet_bridge:
         # [3n : room_number, packet_length, 91: 조명응답패킷]
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_on: "data[18] == 1"
-      state_off: "data[18] == 2"
-      state_brightness: "data[18+1]"
-      state_color_temp: "370 - (data[18+2] * (370 - 153) / 100)"
+      state_on: 'data[18] == 1'
+      state_off: 'data[18] == 2'
+      state_brightness: 'data[18+1]'
+      state_color_temp: '370 - (data[18+2] * (370 - 153) / 100)'
       command_on:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 1
       command_off:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 2 #off가 2
       command_brightness:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 1
-          BRIGHTNESS: "x"
+          BRIGHTNESS: 'x'
       command_color_temp:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 1
-          COLOR_TEMP: "int((370 - x) * 100 / (370 - 153)):0"
+          COLOR_TEMP: 'int((370 - x) * 100 / (370 - 153)):0'
 
     - id: 'room2_light2'
       name: 'Room2 Light 2'
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_on: "data[18+13] == 1"
-      state_off: "data[18+13] == 2"
-      state_brightness: "data[18+13+1]"
-      state_color_temp: "370 - (data[18+13+2] * (370 - 153) / 100)"
+      state_on: 'data[18+13] == 1'
+      state_off: 'data[18+13] == 2'
+      state_brightness: 'data[18+13+1]'
+      state_color_temp: '370 - (data[18+13+2] * (370 - 153) / 100)'
       command_on:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 1
       command_off:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 2
       command_brightness:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 2
-          BRIGHTNESS: "x"
+          BRIGHTNESS: 'x'
       command_color_temp:
-        script: "make_light_packet"
+        script: 'make_light_packet'
         args:
           room_number: 2
           position: 2
-          COLOR_TEMP: "int((370 - x) * 100 / (370 - 153)):0"
-          
-  
+          COLOR_TEMP: 'int((370 - x) * 100 / (370 - 153)):0'
+
   switch:
-    - id: "room1_outlet1"
-      name: "Room1 Outlet 1"
+    - id: 'room1_outlet1'
+      name: 'Room1 Outlet 1'
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       # 헤더영역 0-17
-      # data[10]: LIGHT_COUNT 
-      # 각 조명당 13바이트 
+      # data[10]: LIGHT_COUNT
+      # 각 조명당 13바이트
       # outlet 데이터는 콘센트당 14바이트
       state_on: 'data[18+data[10]*13] == 1'
       state_off: 'data[18+data[10]*13] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 1
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 2
-    - id: "room1_outlet1_standby"
-      name: "Room1 Outlet 1 Standby"
+    - id: 'room1_outlet1_standby'
+      name: 'Room1 Outlet 1 Standby'
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      #data[10]: LIGHT_COUNT 각 조명당 13바이트 
+      #data[10]: LIGHT_COUNT 각 조명당 13바이트
       # outlet index 6번이 standby여부
       state_on: 'data[18+data[10]*13+6] == 1'
       state_off: 'data[18+data[10]*13+6] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 16 #0x10이 standby on
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 1
           ONOFF: 17 #0x11이 standby off
-    - id: "room1_outlet2"
-      name: "Room1 Outlet 2"
+    - id: 'room1_outlet2'
+      name: 'Room1 Outlet 2'
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14] == 1'
       state_off: 'data[18+data[10]*13+14] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 1
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 2
-    - id: "room1_outlet2_standby"
-      name: "Room1 Outlet 2 Standby"
+    - id: 'room1_outlet2_standby'
+      name: 'Room1 Outlet 2 Standby'
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14+6] == 1'
       state_off: 'data[18+data[10]*13+14+6] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 16 #0x10이 standby on
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 1
           position: 2
           ONOFF: 17 #0x11이 standby off
-    - id: "room2_outlet1"
-      name: "Room2 Outlet 1"
+    - id: 'room2_outlet1'
+      name: 'Room2 Outlet 1'
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       # 헤더영역 0-17
-      # data[10]: LIGHT_COUNT 
-      # 각 조명당 13바이트 
+      # data[10]: LIGHT_COUNT
+      # 각 조명당 13바이트
       # outlet 데이터는 콘센트당 14바이트
       state_on: 'data[18+data[10]*13] == 1'
       state_off: 'data[18+data[10]*13] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 1
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 2
-    - id: "room2_outlet1_standby"
-      name: "Room2 Outlet 1 Standby"
+    - id: 'room2_outlet1_standby'
+      name: 'Room2 Outlet 1 Standby'
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      #data[10]: LIGHT_COUNT 각 조명당 13바이트 
+      #data[10]: LIGHT_COUNT 각 조명당 13바이트
       # outlet index 6번이 standby여부
       state_on: 'data[18+data[10]*13+6] == 1'
       state_off: 'data[18+data[10]*13+6] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 16 #0x10이 standby on
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 1
           ONOFF: 17 #0x11이 standby off
-    - id: "room2_outlet2"
-      name: "Room2 Outlet 2"
+    - id: 'room2_outlet2'
+      name: 'Room2 Outlet 2'
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14] == 1'
       state_off: 'data[18+data[10]*13+14] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 1
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 2
-    - id: "room2_outlet2_standby"
-      name: "Room2 Outlet 2 Standby"
+    - id: 'room2_outlet2_standby'
+      name: 'Room2 Outlet 2 Standby'
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       state_on: 'data[18+data[10]*13+14+6] == 1'
       state_off: 'data[18+data[10]*13+14+6] == 2'
       command_on:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 16 #0x10이 standby on
       command_off:
-        script: "make_outlet_packet"
+        script: 'make_outlet_packet'
         args:
           room_number: 2
           position: 2
           ONOFF: 17 #0x11이 standby off
-  
+
   sensor:
-    - id: "room1_outlet1_power"
-      name: "Room1 Outlet 1 Power"
+    - id: 'room1_outlet1_power'
+      name: 'Room1 Outlet 1 Power'
       device_class: power
       unit_of_measurement: W
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       # outlet index 9-10번이 전력사용량 (bigendian /10)
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+9], 8), data[18+data[10]*13+10]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+9], 8), data[18+data[10]*13+10]) / 10'
 
-    - id: "room1_outlet1_standby_cutoff_value"
-      name: "Room1 Outlet 1 Standby Cutoff Value"
+    - id: 'room1_outlet1_standby_cutoff_value'
+      name: 'Room1 Outlet 1 Standby Cutoff Value'
       unit_of_measurement: W
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
       # outlet index 7-8번이 전력차단값 (bigendian /10)
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+7], 8), data[18+data[10]*13+8]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+7], 8), data[18+data[10]*13+8]) / 10'
 
-    - id: "room1_outlet2_power"
-      name: "Room1 Outlet 2 Power"
+    - id: 'room1_outlet2_power'
+      name: 'Room1 Outlet 2 Power'
       device_class: power
       unit_of_measurement: W
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+14+9], 8), data[18+data[10]*13+14+10]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+14+9], 8), data[18+data[10]*13+14+10]) / 10'
 
-    - id: "room1_outlet2_standby_cutoff_value"
-      name: "Room1 Outlet 2 Standby Cutoff Value"
+    - id: 'room1_outlet2_standby_cutoff_value'
+      name: 'Room1 Outlet 2 Standby Cutoff Value'
       unit_of_measurement: W
       state:
         data: [0x31, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+14+7], 8), data[18+data[10]*13+14+8]) / 10"
-      
-    - id: "room2_outlet1_power"
-      name: "Room2 Outlet 1 Power"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+14+7], 8), data[18+data[10]*13+14+8]) / 10'
+
+    - id: 'room2_outlet1_power'
+      name: 'Room2 Outlet 1 Power'
       device_class: power
       unit_of_measurement: W
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+9], 8), data[18+data[10]*13+10]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+9], 8), data[18+data[10]*13+10]) / 10'
 
-    - id: "room2_outlet1_standby_cutoff_value"
-      name: "Room2 Outlet 1 Standby Cutoff Value"
+    - id: 'room2_outlet1_standby_cutoff_value'
+      name: 'Room2 Outlet 1 Standby Cutoff Value'
       unit_of_measurement: W
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+7], 8), data[18+data[10]*13+8]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+7], 8), data[18+data[10]*13+8]) / 10'
 
-    - id: "room2_outlet2_power"
-      name: "Room2 Outlet 2 Power"
+    - id: 'room2_outlet2_power'
+      name: 'Room2 Outlet 2 Power'
       device_class: power
       unit_of_measurement: W
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+14+9], 8), data[18+data[10]*13+14+10]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+14+9], 8), data[18+data[10]*13+14+10]) / 10'
 
-    - id: "room2_outlet2_standby_cutoff_value"
-      name: "Room2 Outlet 2 Standby Cutoff Value"
+    - id: 'room2_outlet2_standby_cutoff_value'
+      name: 'Room2 Outlet 2 Standby Cutoff Value'
       unit_of_measurement: W
       state:
         data: [0x32, 0x00, 0x91]
         mask: [0xFF, 0x00, 0xFF]
-      state_number: "bitOr(bitShiftLeft(data[18+data[10]*13+14+7], 8), data[18+data[10]*13+14+8]) / 10"
+      state_number: 'bitOr(bitShiftLeft(data[18+data[10]*13+14+7], 8), data[18+data[10]*13+14+8]) / 10'

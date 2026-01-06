@@ -85,5 +85,34 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 
 - [Config 작성법 (상세 스키마)](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/tree/main/docs/config-schema)
 
+## ❓ 문제 해결 (Troubleshooting)
+
+설치 또는 실행 중 자주 발생하는 문제와 해결 방법입니다.
+
+### 1. 시리얼 포트 접근 오류 (Permission Denied)
+- **증상**: Docker 로그에 `/dev/ttyUSB0` 접근 거부 오류 발생.
+- **해결**:
+  - **HA 애드온**: 하드웨어 설정에서 올바른 장치 경로가 입력되었는지 확인하세요.
+  - **Docker Compose**: `devices` 섹션에 매핑이 올바른지 확인하고, 필요한 경우 `privileged: true`를 추가해 보세요.
+
+### 2. MQTT 연결 실패
+- **증상**: `Connection refused` 또는 `Not authorized` 오류.
+- **해결**:
+  - 브로커 주소(`MQTT_URL`)가 올바른지 확인하세요. (Docker 컨테이너 내부에서 `localhost`는 컨테이너 자신을 가리키므로, 호스트 IP를 사용해야 합니다.)
+  - HA 애드온 사용 시 별도의 설정 없이 자동으로 연결되지만, 문제가 지속되면 명시적으로 ID/PW를 입력해 보세요.
+
+### 3. 패킷 수신 불가 (No Data)
+- **증상**: 로그에 패킷이 전혀 찍히지 않음.
+- **해결**:
+  - RS485 선의 `TRX+`와 `TRX-`가 반대로 연결되지 않았는지 확인하세요. (서로 바꿔서 연결해 보세요.)
+  - 월패드 제조사에 맞는 `baud_rate`(보통 9600)가 설정되었는지 확인하세요.
+  - EW11 등 TCP 변환기를 사용하는 경우, 해당 장치의 시리얼 설정(Data bit, Parity, Stop bit)이 `8N1`인지 확인하세요.
+
+### 4. 설정 파일 관련
+- **증상**: 수정한 설정이 적용되지 않거나 파일이 초기화됨.
+- **해결**:
+  - 설정 파일의 문법 오류(들여쓰기 등)가 있으면 기본값으로 로드될 수 있습니다. [YAML 검사기](http://www.yamllint.com/)를 통해 문법을 확인하세요.
+  - Docker 볼륨 마운트 경로가 정확한지 확인하세요.
+
 ## ⚖️ 라이선스
 이 프로젝트는 MIT License를 따릅니다.

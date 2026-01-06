@@ -285,4 +285,3 @@ function xorAddRange(buffer: ByteArray, start: number, end: number): number[] {
 
   return [high, low];
 }
-

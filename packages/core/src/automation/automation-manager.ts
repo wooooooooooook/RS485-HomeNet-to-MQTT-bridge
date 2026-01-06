@@ -1064,12 +1064,15 @@ export class AutomationManager {
       try {
         const res = this.celExecutor.execute(payload, this.buildContext(context));
         if (res !== undefined) payload = res;
-      } catch { }
+      } catch {}
     }
 
-    const finalPayload =
-      typeof payload === 'string' ? payload : JSON.stringify(payload);
-    this.mqttPublisher.publish(action.topic, finalPayload, action.retain ? { retain: true } : undefined);
+    const finalPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    this.mqttPublisher.publish(
+      action.topic,
+      finalPayload,
+      action.retain ? { retain: true } : undefined,
+    );
   }
 
   private async executeLogAction(action: AutomationActionLog, context: TriggerContext) {

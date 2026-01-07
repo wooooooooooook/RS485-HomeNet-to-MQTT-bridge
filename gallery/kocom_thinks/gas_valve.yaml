@@ -3,7 +3,7 @@ meta:
   name_en: "Gas Valve"
   description: "코콤 Thinks 가스밸브 설정입니다."
   description_en: "Kocom Thinks gas valve configuration."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["valve", "gas", "kocom", "thinks"]
 
@@ -33,6 +33,6 @@ automation:
     trigger:
       - type: schedule
         every: 2h
-    actions:
+    then:
       - action: command
         target: id(gas_valve).command_update()

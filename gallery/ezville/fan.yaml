@@ -3,7 +3,7 @@ meta:
   name_en: "heat exchanger fan"
   description: "Ezville 전열교환기 설정입니다."
   description_en: "Ezville heat exchanger fan configuration."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "gunfos"
   tags: ["heat exchanger fan", "ezville"]
 
@@ -53,6 +53,6 @@ automation:
     trigger:
       - type: schedule
         every: 1m
-    actions:
+    then:
       - action: command
         target: id(heat_exchanger_fan).command_update()

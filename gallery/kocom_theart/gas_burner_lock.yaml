@@ -3,7 +3,7 @@ meta:
   name_en: "Gas Burner Lock"
   description: "코콤 Theart 가스버너 잠금 설정입니다."
   description_en: "Kocom Theart gas burner lock configuration."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["lock", "gas", "kocom", "theart"]
 
@@ -33,6 +33,6 @@ automation:
     trigger:
       - type: schedule
         every: 2h
-    actions:
+    then:
       - action: command
         target: id(gas_burner_lock).command_update()

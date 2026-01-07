@@ -3,7 +3,7 @@ meta:
   name_en: "Heaters (6 Thermostats)"
   description: "코콤 Thinks 난방 온도조절기 6개 설정입니다. (거실, Room 1-5)"
   description_en: "Kocom Thinks 6 heating thermostats with away preset mode."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["climate", "heater", "thermostat", "kocom", "thinks"]
 
@@ -250,7 +250,7 @@ automation:
     trigger:
       - type: schedule
         every: 2h
-    actions:
+    then:
       - action: command
         target: id(livingroom_heater).command_update()
       - action: command

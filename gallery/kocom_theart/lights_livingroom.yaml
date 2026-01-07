@@ -3,7 +3,7 @@ meta:
   name_en: "Living Room Lights (3 Lights)"
   description: "코콤 Theart 거실 조명 3개 설정입니다."
   description_en: "Kocom Theart living room with 3 lights."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["light", "kocom", "theart", "livingroom"]
 
@@ -65,6 +65,6 @@ automation:
     trigger:
       - type: schedule
         every: 2h
-    actions:
+    then:
       - action: command
         target: id(livingroom_light_1).command_update()

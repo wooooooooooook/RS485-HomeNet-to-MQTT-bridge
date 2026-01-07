@@ -3,7 +3,7 @@ meta:
   name_en: "Heaters (5 Thermostats)"
   description: "코콤 Theart 난방 온도조절기 5개 설정입니다. (거실, 침실, Room 1-2, 거실2)"
   description_en: "Kocom Theart 5 heating thermostats with away preset mode."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["climate", "heater", "thermostat", "kocom", "theart"]
 
@@ -219,7 +219,7 @@ automation:
     trigger:
       - type: schedule
         every: 2h
-    actions:
+    then:
       - action: command
         target: id(livingroom_heater).command_update()
       - action: command

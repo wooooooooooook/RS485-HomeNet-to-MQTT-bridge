@@ -7,6 +7,7 @@
 export class RateLimiter {
   private hits = new Map<string, { count: number; resetTime: number }>();
   private cleanupInterval: NodeJS.Timeout;
+  private readonly MAX_TRACKED_IPS = 10000;
 
   /**
    * @param windowMs Time window in milliseconds
@@ -32,6 +33,20 @@ export class RateLimiter {
 
     // If no record or window expired, reset
     if (!record || now > record.resetTime) {
+      // Security: Prevent memory exhaustion from unlimited IP tracking (DoS)
+      if (!record && this.hits.size >= this.MAX_TRACKED_IPS) {
+        // Try to free up space by removing expired entries first
+        this.cleanup();
+
+        // If still full, evict the oldest entry (LRU-like behavior via Map insertion order)
+        if (this.hits.size >= this.MAX_TRACKED_IPS) {
+          const oldestKey = this.hits.keys().next().value;
+          if (oldestKey) {
+            this.hits.delete(oldestKey);
+          }
+        }
+      }
+
       this.hits.set(ip, { count: 1, resetTime: now + this.windowMs });
       return true;
     }
@@ -63,5 +78,12 @@ export class RateLimiter {
    */
   public destroy() {
     clearInterval(this.cleanupInterval);
+  }
+
+  /**
+   * Get current number of tracked IPs (for testing)
+   */
+  public get size(): number {
+    return this.hits.size;
   }
 }

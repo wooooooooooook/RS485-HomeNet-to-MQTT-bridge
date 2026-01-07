@@ -91,4 +91,22 @@ describe('Config Normalization', () => {
     ]);
     expect((normalized.automation![0] as any).actions).toBeUndefined();
   });
+
+  it('should accept automations alias', () => {
+    const config: any = {
+      serial: { portId: 'test', path: '/dev/tty', baud_rate: 9600 },
+      light: [{ id: 'light1', name: 'Light 1' }],
+      automations: [
+        {
+          id: 'auto1',
+          trigger: [{ type: 'state', entity_id: 'light1' }],
+          then: [{ action: 'command', target: 'id(light1).command_on()' }],
+        },
+      ],
+    };
+
+    const normalized = normalizeConfig(config);
+    expect(normalized.automation).toHaveLength(1);
+    expect(normalized.automation?.[0].id).toBe('auto1');
+  });
 });

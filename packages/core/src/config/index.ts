@@ -38,6 +38,17 @@ function normalizeSerialConfig(serial: SerialConfig): SerialConfig {
 }
 
 export function normalizeConfig(config: HomenetBridgeConfig) {
+  const automationAlias = (config as any).automations;
+  if (Array.isArray(automationAlias)) {
+    if (Array.isArray(config.automation)) {
+      config.automation = [...config.automation, ...automationAlias];
+      logger.warn('[config] "automations" 키를 "automation" 배열에 병합했습니다.');
+    } else {
+      config.automation = automationAlias;
+      logger.info('[config] "automations" 키를 "automation"으로 처리했습니다.');
+    }
+  }
+
   const normalizedSerial = config.serial ? normalizeSerialConfig(config.serial) : undefined;
   if (normalizedSerial) {
     config.serial = normalizedSerial;
@@ -372,9 +383,18 @@ export function validateConfig(
     }
   }
 
-  if (rawConfig && (rawConfig as any).automation !== undefined) {
-    const rawAutomations = (rawConfig as any).automation as Array<Record<string, unknown>> | null;
-    if (Array.isArray(rawAutomations)) {
+  if (rawConfig) {
+    const rawAutomationList = (rawConfig as any).automation as
+      | Array<Record<string, unknown>>
+      | null;
+    const rawAutomationsAlias = (rawConfig as any).automations as
+      | Array<Record<string, unknown>>
+      | null;
+    const candidates = [rawAutomationList, rawAutomationsAlias].filter((value) =>
+      Array.isArray(value),
+    ) as Array<Array<Record<string, unknown>>>;
+
+    candidates.forEach((rawAutomations) => {
       rawAutomations.forEach((automation, index) => {
         if (!automation || typeof automation !== 'object') {
           return;
@@ -383,7 +403,7 @@ export function validateConfig(
           errors.push(`automation[${index}]에서는 then과 actions를 동시에 정의할 수 없습니다.`);
         }
       });
-    }
+    });
   }
 
   if (errors.length > 0) {

@@ -35,4 +35,42 @@ describe('설정 검증 - automation actions/then 중복', () => {
 
     expect(() => validateConfig(config, config)).toThrow('then과 actions');
   });
+
+  it('automations 별칭에서도 then과 actions 중복을 검증한다', () => {
+    const rawConfig = {
+      serial: {
+        portId: 'a',
+        path: '/dev/ttyUSB0',
+        baud_rate: 9600,
+        data_bits: 8,
+        parity: 'none',
+        stop_bits: 1,
+      },
+      serials: [
+        {
+          portId: 'a',
+          path: '/dev/ttyUSB0',
+          baud_rate: 9600,
+          data_bits: 8,
+          parity: 'none',
+          stop_bits: 1,
+        },
+      ],
+      automations: [
+        {
+          id: 'auto1',
+          trigger: [{ type: 'startup' }],
+          then: [{ action: 'log', message: 'then' }],
+          actions: [{ action: 'log', message: 'actions' }],
+        },
+      ],
+    } as unknown as HomenetBridgeConfig;
+
+    const normalizedConfig = {
+      ...rawConfig,
+      automation: rawConfig.automations,
+    } as unknown as HomenetBridgeConfig;
+
+    expect(() => validateConfig(normalizedConfig, rawConfig)).toThrow('then과 actions');
+  });
 });

@@ -214,5 +214,7 @@ export interface HomenetBridgeConfig {
   text?: TextEntity[];
   binary_sensor?: BinarySensorEntity[];
   automation?: AutomationConfig[];
+  /** @deprecated automation의 별칭이며 입력 호환성만 제공합니다. */
+  automations?: AutomationConfig[];
   scripts?: ScriptConfig[];
 }

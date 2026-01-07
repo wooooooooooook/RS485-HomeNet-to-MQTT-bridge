@@ -13,6 +13,7 @@ export interface ReconnectingTcpSocketOptions {
 const DEFAULT_INITIAL_DELAY_MS = 1000;
 const DEFAULT_MAX_DELAY_MS = 30000;
 const DEFAULT_CONNECTION_TIMEOUT_MS = 5000;
+const DEFAULT_KEEPALIVE_DELAY_MS = 60000;
 
 /**
  * A TCP socket wrapper that automatically reconnects on disconnection.
@@ -71,6 +72,7 @@ export class ReconnectingTcpSocket extends Duplex {
       const onConnect = () => {
         clearTimeout(connectionTimeout);
         this.socket!.removeListener('error', onError);
+        this.socket!.setKeepAlive(true, DEFAULT_KEEPALIVE_DELAY_MS);
         this.setupSocketListeners();
         this.currentDelay = this.initialDelayMs; // Reset delay on successful connection
 
@@ -167,6 +169,24 @@ export class ReconnectingTcpSocket extends Duplex {
         this.scheduleReconnect();
       }
     }, this.currentDelay);
+  }
+
+  requestReconnect(reason?: string): void {
+    if (this._isDestroyed) {
+      return;
+    }
+
+    logger.warn(
+      { host: this.host, port: this.port, reason },
+      '[tcp] Forcing reconnect due to idle detection',
+    );
+
+    if (this.socket && !this.socket.destroyed) {
+      this.socket.destroy();
+      return;
+    }
+
+    this.scheduleReconnect();
   }
 
   private flushWriteBuffer(): void {

@@ -28,6 +28,12 @@ function normalizeSerialConfig(serial: SerialConfig): SerialConfig {
     normalized.parity = normalized.parity.toString().toLowerCase() as SerialConfig['parity'];
   }
 
+  if (normalized.serial_idle === undefined) {
+    normalized.serial_idle = parseDuration('10m');
+  } else {
+    normalized.serial_idle = parseDuration(normalized.serial_idle as any);
+  }
+
   return normalized;
 }
 
@@ -288,6 +294,14 @@ export function validateConfig(
     }
     if (!allowedStopBits.includes(serial.stop_bits)) {
       errors.push(`serial.stop_bits는 ${allowedStopBits.join(', ')} 중 하나여야 합니다.`);
+    }
+    if (
+      serial.serial_idle !== undefined &&
+      (typeof serial.serial_idle !== 'number' || Number.isNaN(serial.serial_idle))
+    ) {
+      errors.push('serial.serial_idle은 숫자(ms) 또는 duration 문자열이어야 합니다.');
+    } else if (typeof serial.serial_idle === 'number' && serial.serial_idle < 0) {
+      errors.push('serial.serial_idle은 0 이상이어야 합니다.');
     }
   }
 

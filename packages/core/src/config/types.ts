@@ -187,6 +187,7 @@ export interface SerialConfig {
   data_bits: 5 | 6 | 7 | 8;
   parity: 'none' | 'even' | 'mark' | 'odd' | 'space';
   stop_bits: 1 | 1.5 | 2;
+  serial_idle?: number | string;
 }
 
 export interface HomenetBridgeConfig {

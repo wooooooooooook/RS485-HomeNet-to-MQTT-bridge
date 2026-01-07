@@ -22,6 +22,7 @@ import {
 } from '../protocol/utils/checksum.js';
 import { StateSchema } from '../protocol/types.js';
 import { createSerialPortConnection } from '../transports/serial/serial.factory.js';
+import { ReconnectingTcpSocket } from '../transports/serial/tcp-socket.js';
 import { MqttClient } from '../transports/mqtt/mqtt.client.js';
 import { MqttSubscriber } from '../transports/mqtt/subscriber.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
@@ -50,8 +51,10 @@ interface PortContext {
   rawPacketListener: ((data: Buffer) => void) | null;
   lastPacketTimestamp: number | null;
   lastValidPacketTimestamp: number | null;
+  lastDataTimestamp: number | null;
   packetIntervals: number[];
   validPacketIntervals: number[];
+  serialIdleTimer: NodeJS.Timeout | null;
 }
 
 export type SerialFactory = (serialPath: string, serialConfig: SerialConfig) => Promise<Duplex>;
@@ -101,6 +104,41 @@ export class HomeNetBridge {
     return Number((hrNow - this.hrtimeBase) / 1000000n);
   }
 
+  private startSerialIdleWatchdog(context: PortContext): void {
+    const idleTimeoutMs = context.serialConfig.serial_idle;
+    if (typeof idleTimeoutMs !== 'number' || idleTimeoutMs <= 0) {
+      return;
+    }
+
+    const checkInterval = Math.min(Math.max(Math.floor(idleTimeoutMs / 4), 10000), 60000);
+    context.serialIdleTimer = setInterval(() => {
+      if (context.port.destroyed) {
+        return;
+      }
+
+      const now = this.getMonotonicMs();
+      const lastData = context.lastDataTimestamp ?? now;
+      const idleDuration = now - lastData;
+
+      if (idleDuration < idleTimeoutMs) {
+        return;
+      }
+
+      context.lastDataTimestamp = now;
+
+      if (context.port instanceof ReconnectingTcpSocket) {
+        context.port.requestReconnect(`idle ${idleDuration}ms`);
+        return;
+      }
+
+      logger.warn(
+        { portId: context.portId, idleDuration },
+        '[core] Serial port idle timeout exceeded, closing port',
+      );
+      context.port.destroy();
+    }, checkInterval);
+  }
+
   async start() {
     if (!this.startPromise) {
       this.startPromise = this.initialize();
@@ -115,6 +153,10 @@ export class HomeNetBridge {
 
     for (const context of this.portContexts.values()) {
       context.automationManager.stop();
+      if (context.serialIdleTimer) {
+        clearInterval(context.serialIdleTimer);
+        context.serialIdleTimer = null;
+      }
       if (context.rawPacketListener) {
         context.port.off('data', context.rawPacketListener);
       }
@@ -900,8 +942,10 @@ export class HomeNetBridge {
         rawPacketListener: null,
         lastPacketTimestamp: null,
         lastValidPacketTimestamp: null,
+        lastDataTimestamp: this.getMonotonicMs(),
         packetIntervals: [],
         validPacketIntervals: [],
+        serialIdleTimer: null,
       };
 
       packetProcessor.on('packet', (packet) => {
@@ -930,6 +974,7 @@ export class HomeNetBridge {
       });
 
       port.on('data', (data) => {
+        context.lastDataTimestamp = this.getMonotonicMs();
         if (!context.rawPacketListener) {
           context.stateManager.processIncomingData(data);
         }
@@ -938,6 +983,8 @@ export class HomeNetBridge {
       port.on('error', (err) => {
         logger.error({ err, serialPath, portId: normalizedPortId }, '[core] 시리얼 포트 오류');
       });
+
+      this.startSerialIdleWatchdog(context);
 
       this.portContexts.set(normalizedPortId, context);
     }

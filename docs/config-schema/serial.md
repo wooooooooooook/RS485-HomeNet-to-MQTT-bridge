@@ -10,6 +10,9 @@
 - `parity`: 패리티 검사 방식. `none` | `even` | `mark` | `odd` | `space`.
 - `stop_bits`: 스톱 비트 개수. `1 | 1.5 | 2` 중 선택.
 
+## 선택 필드
+- `serial_idle`: 지정 시간 동안 패킷이 수신되지 않으면 연결을 재시도합니다. 기본값은 `10m`이며, `0`으로 설정하면 비활성화됩니다.
+
 ## 기본 예제 (8N1)
 `commax.homenet_bridge.yaml`처럼 9600bps, 패리티 없는 8N1 조합입니다.
 

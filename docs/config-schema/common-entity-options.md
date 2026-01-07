@@ -80,6 +80,7 @@ light:
 - **기본값**: `false`
 - **설명**: `true`로 설정하면 명령 전송 즉시 UI 상태가 업데이트됩니다.
     - 실제 장치의 응답 속도가 느릴 때 UI 반응성을 높이는 데 유용합니다.
+    - `switch`, `light`, `fan`처럼 `on`/`off` 명령이 있는 엔티티는 `optimistic` 모드에서 즉시 `ON`/`OFF` 상태를 반영합니다.
     - `command_on`/`command_off` 등이 정의되지 않은 경우, 패킷을 전송하지 않고 상태만 유지하는 **가상 스위치(Virtual Switch)** 또는 플래그로 활용할 수 있습니다.
 
 ```yaml

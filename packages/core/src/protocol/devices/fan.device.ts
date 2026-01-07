@@ -147,4 +147,14 @@ export class FanDevice extends GenericDevice {
 
     return null;
   }
+
+  public getOptimisticState(commandName: string, value?: any): Record<string, any> | null {
+    if (commandName === 'on') {
+      return { state: 'ON' };
+    }
+    if (commandName === 'off') {
+      return { state: 'OFF' };
+    }
+    return null;
+  }
 }

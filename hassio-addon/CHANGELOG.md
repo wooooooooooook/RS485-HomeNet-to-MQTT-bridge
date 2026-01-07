@@ -1,6 +1,12 @@
-v1.9.3
-- 아이폰 모바일에서 엔티티상세모달 등 일부모달이 나타나지 않는 문제 수정
-- 표준프리셋이 디스커버리에서 누락되는 문제 수정
+v1.10.0
+- feat: 일정시간 패킷이 수신되지 않으면 시리얼에 재연결을 시도하는 로직 추가.
+  - config파일에 serial에 `serial_idle`를 옵션으로 추가할수 있습니다. 기본값은 10분이며, `0`으로 설정하면 비활성화됩니다.
+  - [serial 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/serial.md)
+- feat: light, fan에도 optimistic 옵션을 사용할 수 있습니다.
+- fix:
+  - 아이폰 모바일에서 엔티티상세모달 등 일부모달이 나타나지 않는 문제 수정
+  - climate에서 `preset modes[]` 설정없이 `state_preset_*`으로 설정한 프리셋도 디스커버리에서 포함, 상태해석 되도록 수정
+  - UI 레이아웃 수정
 
 v1.9.2
 - state_update 액션에서 offset이 헤더를 제외하고 계산되던 오류 수정

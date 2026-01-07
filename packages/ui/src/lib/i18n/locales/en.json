@@ -225,7 +225,15 @@
     "success": "Success",
     "delete": "Delete",
     "delete_confirm": "Are you sure?",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "status": {
+      "idle": "Idle",
+      "starting": "Starting",
+      "started": "Running",
+      "stopped": "Stopped",
+      "error": "Error",
+      "unknown": "Unknown"
+    }
   },
   "header": {
     "toggle_menu": "Open navigation menu",

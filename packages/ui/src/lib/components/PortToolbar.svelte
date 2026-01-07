@@ -72,7 +72,8 @@
             aria-current={activePortId === portId ? 'true' : undefined}
           >
             {#if portStatuses.length > 0}
-              <span class="port-status-dot"></span>
+              <span class="port-status-dot" aria-hidden="true"></span>
+              <span class="sr-only">{$t(`common.status.${getPortStatus(portId)}`)}</span>
             {/if}
             {portId}
           </button>
@@ -200,6 +201,18 @@
   .hint {
     color: #94a3b8;
     font-style: italic;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   @keyframes pulse {

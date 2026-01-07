@@ -9,3 +9,7 @@
 ## 2024-05-24 - Accessibility of Placeholder-Only Inputs
 **Learning:** Inputs that rely solely on `placeholder` text (like search boxes) are inaccessible to screen reader users who cannot perceive the placeholder as a label.
 **Action:** Always add `aria-label` (using the same localized string as the placeholder if appropriate) to inputs that lack a visible `<label>` element.
+
+## 2025-01-20 - Status Indicators for Screen Readers
+**Learning:** Visual status indicators (like colored dots) are invisible to screen readers. Relying on `data-state` or color alone excludes blind users from knowing the system status.
+**Action:** Always pair visual indicators with `aria-hidden="true"` and a complementary `.sr-only` span containing text that explicitly describes the status (e.g., "Running", "Error").

@@ -168,6 +168,7 @@ export interface AutomationConfig {
   mode?: AutomationMode;
   trigger: AutomationTrigger[];
   guard?: AutomationGuard;
+  actions?: AutomationAction[];
   then: AutomationAction[];
   else?: AutomationAction[];
   enabled?: boolean;

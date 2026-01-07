@@ -189,6 +189,13 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
         usedIds.add(currentId);
       }
 
+      const hasThen = Array.isArray((auto as any).then);
+      const hasActions = Array.isArray((auto as any).actions);
+      if (!hasThen && hasActions) {
+        (auto as any).then = (auto as any).actions;
+        delete (auto as any).actions;
+      }
+
       if (!auto.trigger) return;
       const hasSchedule = auto.trigger.some((t) => t.type === 'schedule');
       if (hasSchedule) {
@@ -346,6 +353,20 @@ export function validateConfig(
               );
             }
           });
+        }
+      });
+    }
+  }
+
+  if (rawConfig && (rawConfig as any).automation !== undefined) {
+    const rawAutomations = (rawConfig as any).automation as Array<Record<string, unknown>> | null;
+    if (Array.isArray(rawAutomations)) {
+      rawAutomations.forEach((automation, index) => {
+        if (!automation || typeof automation !== 'object') {
+          return;
+        }
+        if ('then' in automation && 'actions' in automation) {
+          errors.push(`automation[${index}]에서는 then과 actions를 동시에 정의할 수 없습니다.`);
         }
       });
     }

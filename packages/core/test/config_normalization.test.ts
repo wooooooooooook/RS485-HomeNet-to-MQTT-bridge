@@ -71,4 +71,24 @@ describe('Config Normalization', () => {
     const action = normalized.automation![0].then[0] as any;
     expect(action.low_priority).toBeUndefined();
   });
+
+  it('should map automation actions to then when then is missing', () => {
+    const config: any = {
+      serial: { portId: 'test', path: '/dev/tty', baud_rate: 9600 },
+      light: [{ id: 'light1', name: 'Light 1' }],
+      automation: [
+        {
+          id: 'auto1',
+          trigger: [{ type: 'state', entity_id: 'light1' }],
+          actions: [{ action: 'command', target: 'id(light1).command_on()' }],
+        },
+      ],
+    };
+
+    const normalized = normalizeConfig(config);
+    expect(normalized.automation![0].then).toEqual([
+      { action: 'command', target: 'id(light1).command_on()' },
+    ]);
+    expect((normalized.automation![0] as any).actions).toBeUndefined();
+  });
 });

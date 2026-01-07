@@ -165,16 +165,43 @@ export class MqttSubscriber {
         commandName = String(commandValue).toLowerCase();
       }
 
-      // Climate Fan Mode: fan_mode -> custom_fan (with string value)
+      // Climate Fan Mode: prefer standard fan_* commands if present, fallback to custom_fan
       if (targetEntity.type === 'climate' && commandName === 'fan_mode') {
-        commandName = 'custom_fan';
-        // commandValue is already the mode string (e.g., "Turbo")
+        const fanModeValue = String(commandValue);
+        const normalizedFanMode = fanModeValue.toLowerCase();
+        const fanCommandKey = `command_fan_${normalizedFanMode}`;
+
+        if (fanCommandKey in (targetEntity as any)) {
+          commandName = `fan_${normalizedFanMode}`;
+          commandValue = undefined;
+        } else if ((targetEntity as any).command_custom_fan || (targetEntity as any).custom_fan_mode) {
+          commandName = 'custom_fan';
+          commandValue = fanModeValue;
+        } else {
+          commandName = `fan_${normalizedFanMode}`;
+          commandValue = undefined;
+        }
       }
 
-      // Climate Preset Mode: preset_mode -> custom_preset (with string value)
+      // Climate Preset Mode: prefer standard preset_* commands if present, fallback to custom_preset
       if (targetEntity.type === 'climate' && commandName === 'preset_mode') {
-        commandName = 'custom_preset';
-        // commandValue is already the preset string (e.g., "Eco")
+        const presetValue = String(commandValue);
+        const normalizedPreset = presetValue.toLowerCase();
+        const presetCommandKey = `command_preset_${normalizedPreset}`;
+
+        if (presetCommandKey in (targetEntity as any)) {
+          commandName = `preset_${normalizedPreset}`;
+          commandValue = undefined;
+        } else if (
+          (targetEntity as any).command_custom_preset ||
+          (targetEntity as any).custom_preset
+        ) {
+          commandName = 'custom_preset';
+          commandValue = presetValue;
+        } else {
+          commandName = `preset_${normalizedPreset}`;
+          commandValue = undefined;
+        }
       }
 
       // Fan Percentage -> speed

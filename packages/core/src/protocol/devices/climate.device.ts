@@ -55,6 +55,56 @@ export class ClimateDevice extends GenericDevice {
       }
     }
 
+    if (!updates.fan_mode) {
+      const fanModeMappings: Array<[keyof typeof entityConfig, string]> = [
+        ['state_fan_on', 'on'],
+        ['state_fan_off', 'off'],
+        ['state_fan_auto', 'auto'],
+        ['state_fan_low', 'low'],
+        ['state_fan_medium', 'medium'],
+        ['state_fan_high', 'high'],
+        ['state_fan_middle', 'middle'],
+        ['state_fan_focus', 'focus'],
+        ['state_fan_diffuse', 'diffuse'],
+        ['state_fan_quiet', 'quiet'],
+      ];
+
+      for (const [key, mode] of fanModeMappings) {
+        if (this.matchState(payload, entityConfig[key])) {
+          updates.fan_mode = mode;
+          break;
+        }
+      }
+    }
+
+    if (!updates.preset_mode) {
+      const presetModeMappings: Array<[keyof typeof entityConfig, string]> = [
+        ['state_preset_none', 'none'],
+        ['state_preset_home', 'home'],
+        ['state_preset_away', 'away'],
+        ['state_preset_boost', 'boost'],
+        ['state_preset_comfort', 'comfort'],
+        ['state_preset_eco', 'eco'],
+        ['state_preset_sleep', 'sleep'],
+        ['state_preset_activity', 'activity'],
+      ];
+
+      for (const [key, mode] of presetModeMappings) {
+        if (this.matchState(payload, entityConfig[key])) {
+          updates.preset_mode = mode;
+          break;
+        }
+      }
+    }
+
+    if (!updates.fan_mode && updates.custom_fan) {
+      updates.fan_mode = updates.custom_fan;
+    }
+
+    if (!updates.preset_mode && updates.custom_preset) {
+      updates.preset_mode = updates.custom_preset;
+    }
+
     return Object.keys(updates).length > 0 ? updates : null;
   }
 

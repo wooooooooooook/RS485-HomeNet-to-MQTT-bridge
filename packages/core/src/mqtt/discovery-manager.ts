@@ -587,28 +587,68 @@ export class DiscoveryManager {
         }
         payload.modes = availableModes;
 
-        // Fan modes support (custom_fan_mode)
-        if (
-          entity.custom_fan_mode &&
-          Array.isArray(entity.custom_fan_mode) &&
-          entity.custom_fan_mode.length > 0
-        ) {
-          payload.fan_modes = entity.custom_fan_mode;
-          payload.fan_mode_command_topic = `${this.mqttTopicPrefix}/${id}/fan_mode/set`;
-          payload.fan_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
-          payload.fan_mode_state_template = '{{ value_json.custom_fan }}';
+        const fanModes = new Set<string>();
+        const fanModeMappings: Array<[string, string]> = [
+          ['fan_on', 'on'],
+          ['fan_off', 'off'],
+          ['fan_auto', 'auto'],
+          ['fan_low', 'low'],
+          ['fan_medium', 'medium'],
+          ['fan_high', 'high'],
+          ['fan_middle', 'middle'],
+          ['fan_focus', 'focus'],
+          ['fan_diffuse', 'diffuse'],
+          ['fan_quiet', 'quiet'],
+        ];
+
+        for (const [suffix, mode] of fanModeMappings) {
+          if ((entity as any)[`state_${suffix}`] || (entity as any)[`command_${suffix}`]) {
+            fanModes.add(mode);
+          }
         }
 
-        // Preset modes support (custom_preset)
-        if (
-          entity.custom_preset &&
-          Array.isArray(entity.custom_preset) &&
-          entity.custom_preset.length > 0
-        ) {
-          payload.preset_modes = entity.custom_preset;
+        if (Array.isArray(entity.custom_fan_mode)) {
+          for (const mode of entity.custom_fan_mode) {
+            fanModes.add(mode);
+          }
+        }
+
+        if (fanModes.size > 0) {
+          payload.fan_modes = Array.from(fanModes);
+          payload.fan_mode_command_topic = `${this.mqttTopicPrefix}/${id}/fan_mode/set`;
+          payload.fan_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
+          payload.fan_mode_state_template = '{{ value_json.fan_mode }}';
+        }
+
+        const presetModes = new Set<string>();
+        const presetModeMappings: Array<[string, string]> = [
+          ['preset_none', 'none'],
+          ['preset_home', 'home'],
+          ['preset_away', 'away'],
+          ['preset_boost', 'boost'],
+          ['preset_comfort', 'comfort'],
+          ['preset_eco', 'eco'],
+          ['preset_sleep', 'sleep'],
+          ['preset_activity', 'activity'],
+        ];
+
+        for (const [suffix, mode] of presetModeMappings) {
+          if ((entity as any)[`state_${suffix}`] || (entity as any)[`command_${suffix}`]) {
+            presetModes.add(mode);
+          }
+        }
+
+        if (Array.isArray(entity.custom_preset)) {
+          for (const mode of entity.custom_preset) {
+            presetModes.add(mode);
+          }
+        }
+
+        if (presetModes.size > 0) {
+          payload.preset_modes = Array.from(presetModes);
           payload.preset_mode_command_topic = `${this.mqttTopicPrefix}/${id}/preset_mode/set`;
           payload.preset_mode_state_topic = `${this.mqttTopicPrefix}/${id}/state`;
-          payload.preset_mode_state_template = '{{ value_json.custom_preset }}';
+          payload.preset_mode_state_template = '{{ value_json.preset_mode }}';
         }
 
         payload.temperature_unit = 'C';

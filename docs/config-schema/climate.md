@@ -41,12 +41,12 @@
   - `custom_fan_mode`: UI에 표시될 커스텀 팬 모드 이름 목록 (문자열 배열).
   - `custom_preset`: UI에 표시될 커스텀 프리셋 이름 목록 (문자열 배열).
 
-### 커스텀 모드(CEL) 작동 원리
+### 팬/프리셋 모드(CEL 포함) 작동 원리
 
 **커스텀 모드는 표준 모드(`off`, `heat`, `cool` 등)와 별개로 동작합니다.** 
 - **표준 모드 (`modes`)**: `state_off`, `state_heat`, `state_cool` 등이 정의되어 있으면 자동으로 Home Assistant의 모드 선택기에 추가됩니다.
-- **커스텀 팬 모드 (`fan_modes`)**: `custom_fan_mode` 배열이 정의되어 있으면 Home Assistant의 팬 모드 선택기에 추가됩니다.
-- **커스텀 프리셋 모드 (`preset_modes`)**: `custom_preset` 배열이 정의되어 있으면 Home Assistant의 프리셋 선택기에 추가됩니다.
+- **팬 모드 (`fan_modes`)**: `state_fan_*`/`command_fan_*`가 정의된 표준 모드와 `custom_fan_mode` 목록이 함께 Home Assistant의 팬 모드 선택기에 추가됩니다.
+- **프리셋 모드 (`preset_modes`)**: `state_preset_*`/`command_preset_*`가 정의된 표준 모드와 `custom_preset` 목록이 함께 Home Assistant의 프리셋 선택기에 추가됩니다.
 
 즉, 장치가 `off`/`heat` 모드와 함께 `Turbo`/`Nature`/`Sleep` 같은 팬 모드를 지원한다면, 두 가지를 모두 설정할 수 있습니다.
 
@@ -75,15 +75,15 @@
   - 선택: `action_topic` + `action_template` (설정에 `state_action`이 있을 때)
 - 가용 모드
   - `modes`: `state_off/state_heat/state_cool/state_fan_only/state_dry/state_auto` 존재 여부로 목록 생성
-- 커스텀 팬/프리셋 모드
-  - `fan_modes`: `custom_fan_mode` 값 그대로 노출
+- 팬/프리셋 모드
+  - `fan_modes`: `state_fan_*`/`command_fan_*` 및 `custom_fan_mode` 목록을 합쳐 노출
   - `fan_mode_command_topic`: `${MQTT_TOPIC_PREFIX}/${id}/fan_mode/set`
   - `fan_mode_state_topic`: `${MQTT_TOPIC_PREFIX}/${id}/state`
-  - `fan_mode_state_template`: `{{ value_json.custom_fan }}`
-  - `preset_modes`: `custom_preset` 값 그대로 노출
+  - `fan_mode_state_template`: `{{ value_json.fan_mode }}`
+  - `preset_modes`: `state_preset_*`/`command_preset_*` 및 `custom_preset` 목록을 합쳐 노출
   - `preset_mode_command_topic`: `${MQTT_TOPIC_PREFIX}/${id}/preset_mode/set`
   - `preset_mode_state_topic`: `${MQTT_TOPIC_PREFIX}/${id}/state`
-  - `preset_mode_state_template`: `{{ value_json.custom_preset }}`
+  - `preset_mode_state_template`: `{{ value_json.preset_mode }}`
 - 고정 값
   - `temperature_unit`: `C`
   - `min_temp`: `15`, `max_temp`: `30`, `temp_step`: `1`

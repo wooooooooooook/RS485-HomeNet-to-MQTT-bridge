@@ -8,24 +8,25 @@ meta:
   tags: ["door auto open", "ezville"]
 
 automation:
-    - id: 'door_auto'
-      trigger:
-        - type: packet
+  - id: 'door_auto'
+    trigger:
+      - type: packet
+        match:
           data: [0xf7, 0x40, 0x02, 0x93]
-      actions:
-        # 통화 시작
-        - action: send_packet
-          data: [0xF7,0x40,0x02,0x12,0x00,0xA7,0xF2]
-          checksum: false
-        - action: delay
-          milliseconds: 1000
-        # 문열기
-        - action: send_packet
-          data:  [0xF7,0x40,0x02,0x22,0x00,0x97,0xF2]
-          checksum: false
-        - action: delay
-          milliseconds: 1000
-        # 통화 종료
-        - action: send_packet
-          data:  [0xF7,0x40,0x02,0x11,0x00,0xA4,0xEE]
-          checksum: false
+    then:
+      # 통화 시작
+      - action: send_packet
+        data: [0xF7,0x40,0x02,0x12,0x00,0xA7,0xF2]
+        checksum: false
+      - action: delay
+        milliseconds: 1000
+      # 문열기
+      - action: send_packet
+        data:  [0xF7,0x40,0x02,0x22,0x00,0x97,0xF2]
+        checksum: false
+      - action: delay
+        milliseconds: 1000
+      # 통화 종료
+      - action: send_packet
+        data:  [0xF7,0x40,0x02,0x11,0x00,0xA4,0xEE]
+        checksum: false

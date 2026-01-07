@@ -70,7 +70,7 @@ automation:
     trigger:
       - type: schedule
         every: 1m
-    actions:
+    then:
       - action: command
         target: id(total_water_usage).command_update()
       - action: command

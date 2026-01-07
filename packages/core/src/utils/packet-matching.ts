@@ -8,10 +8,13 @@ interface PacketMatchOptions {
 }
 
 export function matchesPacket(
-  match: StateSchema,
+  match: StateSchema | null | undefined,
   packet: Uint8Array,
   options: PacketMatchOptions = {},
 ): boolean {
+  if (!match) {
+    return false;
+  }
   const baseOffset = options.baseOffset ?? 0;
   const offset = (match.offset ?? 0) + baseOffset;
   const hasData = Array.isArray(match.data) && match.data.length > 0;

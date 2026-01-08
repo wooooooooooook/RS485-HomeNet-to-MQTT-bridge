@@ -25,7 +25,7 @@
     "simulate": "node packages/simulator/scripts/convert_trace.js",
     "lint": "pnpm -r --filter '!@rs485-homenet/simulator' lint",
     "lint:simulator": "pnpm --filter @rs485-homenet/simulator lint",
-    "build": "pnpm -r --filter '!@rs485-homenet/simulator' build",
+    "build": "sudo bash ./scripts/clean.sh && pnpm -r --filter '!@rs485-homenet/simulator' build",
     "build:simulator": "pnpm --filter @rs485-homenet/simulator build",
     "format": "pnpm -r --if-present format",
     "test": "vitest run",

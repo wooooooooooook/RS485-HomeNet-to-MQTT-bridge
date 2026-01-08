@@ -202,7 +202,22 @@ export const createConfigEditorService = ({
           }
         }
 
-        // Trigger restart
+        // 4. If this was the last config file, remove .initialized marker
+        try {
+          const files = await fs.readdir(configDir);
+          const remainingConfigs = files.filter(
+            (f) => /\.homenet_bridge\.ya?ml$/.test(f) || f === defaultConfigFilename,
+          );
+          if (remainingConfigs.length === 0) {
+            const initMarker = path.join(configDir, '.initialized');
+            await fs.unlink(initMarker).catch(() => { });
+            logger.info('[config-editor] Last bridge deleted, .initialized marker removed');
+          }
+        } catch (err) {
+          logger.warn({ err }, '[config-editor] Failed to check/remove .initialized marker');
+        }
+
+        // 5. Trigger restart
         await fs.writeFile(configRestartFlag, 'restart', 'utf-8');
         await triggerRestart();
 

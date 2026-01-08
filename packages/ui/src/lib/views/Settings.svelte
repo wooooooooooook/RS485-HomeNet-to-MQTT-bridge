@@ -508,20 +508,17 @@
   }
 
   let deletingConfig = $state<string | null>(null);
-  let canDeleteBridge = $derived((bridgeInfo?.bridges?.length ?? 0) > 1);
+  let isLastBridge = $derived((bridgeInfo?.bridges?.length ?? 0) === 1);
 
   const handleDeleteConfig = async (filename: string) => {
-    if (!canDeleteBridge) {
-      showAlertDialog(
-        $t('settings.bridge_config.title'),
-        $t('settings.bridge_config.delete_last_warning'),
-      );
-      return;
-    }
+    // 마지막 브릿지 삭제 시 특별 경고 메시지 표시
+    const message = isLastBridge
+      ? $t('settings.bridge_config.delete_last_confirm', { values: { filename } })
+      : $t('settings.bridge_config.delete_confirm', { values: { filename } });
 
     showConfirmDialog({
       title: $t('common.delete'),
-      message: $t('settings.bridge_config.delete_confirm', { values: { filename } }),
+      message,
       confirmText: $t('common.delete'),
       variant: 'danger',
       loadingText: $t('settings.bridge_config.restarting'),
@@ -975,11 +972,10 @@
                   class="file-action-btn"
                   onclick={() => handleDeleteConfig(bridge.configFile)}
                   isLoading={deletingConfig === bridge.configFile}
-                  disabled={!canDeleteBridge}
                   ariaLabel={$t('common.delete')}
-                  title={canDeleteBridge
-                    ? $t('common.delete')
-                    : $t('settings.bridge_config.delete_last_warning')}
+                  title={isLastBridge
+                    ? $t('settings.bridge_config.delete_last_warning')
+                    : $t('common.delete')}
                 >
                   🗑
                 </Button>

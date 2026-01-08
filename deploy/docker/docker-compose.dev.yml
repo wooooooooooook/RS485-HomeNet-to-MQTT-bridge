@@ -57,7 +57,7 @@ services:
       SIMULATOR_PROTOCOL: 'serial'
       SIMULATOR_PORT_PATH: '/tmp/ttyRS485'
       SIMULATOR_DEVICE: samsung_sds
-      SIMULATOR_SLOW: '100'
+      SIMULATOR_SLOW: '20'
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm

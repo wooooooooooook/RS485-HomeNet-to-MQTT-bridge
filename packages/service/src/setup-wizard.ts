@@ -650,9 +650,12 @@ export const createSetupWizardService = ({
           mode,
         } = req.body || {};
 
-        if (mode !== 'add' && !state.requiresInitialization) {
-          return res.status(400).json({ error: 'INITIALIZATION_NOT_ALLOWED' });
-        }
+        // Note: We no longer block initialization based on state.
+        // The UI handles the flow and determines when to show the wizard.
+        // Removing this check allows for edge cases like:
+        // - Re-initialization after config deletion while .initialized remains
+        // - Recovery scenarios where the wizard is intentionally shown
+        // The 'mode' parameter still determines whether to create a new config file or overwrite.
         if (typeof filename !== 'string' || filename.includes('/') || filename.includes('\\')) {
           return res.status(400).json({ error: 'INVALID_FILENAME' });
         }

@@ -155,7 +155,7 @@ const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -382,7 +382,7 @@ const normalizeFrontendSettings = (value: Partial<FrontendSettings> | null | und
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
         typeof value?.logRetention?.retentionCount === 'number' &&
-        value.logRetention.retentionCount > 0
+          value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
     },
@@ -3420,7 +3420,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => {});
+    await bridgeStartPromise.catch(() => { });
   }
 
   bridgeStartPromise = (async () => {
@@ -3680,7 +3680,12 @@ server.listen(port, async () => {
     const uniqueConfigFiles = [...new Set(availableConfigFiles)];
 
     if (uniqueConfigFiles.length === 0) {
-      throw new Error('No homenet_bridge configuration files found in config directory.');
+      // 설정 파일이 없으면 초기 설정 마법사 표시
+      bridgeStatus = 'error';
+      bridgeError = 'CONFIG_INITIALIZATION_REQUIRED';
+      currentConfigFiles = [];
+      logger.warn('[service] No configuration files found. Showing setup wizard.');
+      return;
     }
 
     logger.info(
@@ -3695,7 +3700,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
       logger.info('[service] Cleared .restart-required flag');
     }
 

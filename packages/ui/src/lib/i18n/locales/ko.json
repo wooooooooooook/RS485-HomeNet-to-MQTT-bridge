@@ -95,7 +95,8 @@
       "restarting": "재시작 중...",
       "delete_confirm": "{filename} 파일을 삭제하시겠습니까? (삭제 전 백업됩니다)",
       "delete_success": "설정 파일이 삭제되었습니다.",
-      "delete_last_warning": "마지막 브릿지는 삭제할 수 없습니다."
+      "delete_last_warning": "마지막 브릿지입니다. 삭제하면 초기 설정 마법사가 다시 시작됩니다.",
+      "delete_last_confirm": "{filename} 파일을 삭제하시겠습니까?\n\n⚠️ 마지막 브릿지입니다. 삭제하면 초기 설정 마법사가 다시 시작됩니다."
     }
   },
   "analysis": {

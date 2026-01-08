@@ -402,7 +402,11 @@
       "save": "저장",
       "save_success": "저장 완료 (백업: {backup})",
       "load_error": "설정 정보를 불러올 수 없습니다.",
-      "save_error": "저장에 실패했습니다."
+      "save_error": "저장에 실패했습니다.",
+      "restart_title": "재시작 필요",
+      "restart_confirm": "설정을 적용하려면 브릿지를 재시작해야 합니다. 지금 재시작하시겠습니까?",
+      "restart_button": "재시작",
+      "restart_initiated": "재시작이 요청되었습니다. 잠시 후 페이지가 새로고침됩니다."
     },
     "packets": {
       "title": "패킷 로그 (RX/TX)",

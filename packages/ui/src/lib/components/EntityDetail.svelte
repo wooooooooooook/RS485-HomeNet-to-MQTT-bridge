@@ -81,9 +81,13 @@
     loadingText: undefined as string | undefined,
     showCancel: true,
     onConfirm: async () => {},
+    onCancel: undefined as (() => void) | undefined,
   });
 
   const closeDialog = () => {
+    if (dialog.onCancel) {
+      dialog.onCancel();
+    }
     dialog.open = false;
   };
 
@@ -101,6 +105,7 @@
     dialog.onConfirm = async () => {
       closeDialog();
     };
+    dialog.onCancel = undefined;
     dialog.open = true;
   };
 
@@ -112,6 +117,7 @@
     loadingText,
     action,
     onSuccess,
+    onCancel,
   }: {
     title: string;
     message: string;
@@ -120,6 +126,7 @@
     loadingText?: string;
     action: () => Promise<void>;
     onSuccess?: () => void;
+    onCancel?: () => void;
   }) => {
     dialog.title = title;
     dialog.message = message;
@@ -128,16 +135,21 @@
     dialog.loadingText = loadingText;
     dialog.showCancel = true;
     dialog.loading = false;
+    dialog.onCancel = onCancel;
     dialog.onConfirm = async () => {
       dialog.loading = true;
       try {
         await action();
+        // Reset onCancel so it's not called when closing on success
+        dialog.onCancel = undefined;
         closeDialog();
         // Wait for close animation
         if (onSuccess) {
           setTimeout(onSuccess, 300);
         }
       } catch (err: any) {
+        // Reset onCancel so it's not called when closing on error
+        dialog.onCancel = undefined;
         closeDialog();
         setTimeout(() => {
           showAlertDialog(
@@ -308,6 +320,63 @@
     }
   }
 
+  async function handleRestart() {
+    try {
+      // 1. Get restart token
+      const tokenRes = await fetch('./api/system/restart/token');
+      if (!tokenRes.ok) {
+        throw new Error('Failed to get restart token');
+      }
+      const { token } = await tokenRes.json();
+
+      // 2. Trigger restart
+      const restartRes = await fetch('./api/system/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!restartRes.ok) {
+        const data = await restartRes.json();
+        throw new Error(data.error || 'Restart failed');
+      }
+
+      // 3. Show success and reload (although the server might have already killed the process)
+      showAlertDialog(
+        $t('common.success') || 'Success',
+        $t('entity_detail.config.restart_initiated') ||
+          'Restart initiated. The page will reload shortly.',
+        'success',
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+      showAlertDialog(
+        $t('common.error') || 'Error',
+        err instanceof Error ? err.message : 'Failed to restart',
+        'danger',
+      );
+    }
+  }
+
+  function promptForRestart(onCancel?: () => void) {
+    showConfirmDialog({
+      title: $t('entity_detail.config.restart_title') || 'Restart Required',
+      message:
+        $t('entity_detail.config.restart_confirm') ||
+        'Do you want to restart the bridge to apply changes?',
+      confirmText: $t('entity_detail.config.restart_button') || 'Restart',
+      variant: 'primary',
+      action: async () => {
+        await handleRestart();
+      },
+      onCancel,
+    });
+  }
+
   async function saveConfig() {
     if (!editingConfig) return;
 
@@ -333,6 +402,8 @@
       }
 
       saveMessage = $t('entity_detail.config.save_success', { values: { backup: data.backup } });
+
+      promptForRestart();
     } catch (err) {
       configError = err instanceof Error ? err.message : $t('entity_detail.config.save_error');
     } finally {
@@ -380,9 +451,10 @@
         }
       },
       onSuccess: () => {
-        // Reload page after success (maybe show a toast? but reload is requested by original code)
-        close();
-        window.location.reload();
+        promptForRestart(() => {
+          // On cancel of restart, close the entity detail modal because the entity is gone
+          close();
+        });
       },
     });
   }
@@ -527,6 +599,8 @@
       }
 
       onUpdate?.({ discoveryAlways: newValue });
+
+      promptForRestart();
     } catch (err) {
       forceActiveError =
         err instanceof Error ? err.message : $t('entity_detail.manage.force_active.error');

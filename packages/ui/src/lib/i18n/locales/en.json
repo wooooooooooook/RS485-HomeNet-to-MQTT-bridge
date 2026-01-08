@@ -402,7 +402,11 @@
       "save": "Save",
       "save_success": "Saved successfully (Backup: {backup})",
       "load_error": "Failed to load config.",
-      "save_error": "Failed to save."
+      "save_error": "Failed to save.",
+      "restart_title": "Restart Required",
+      "restart_confirm": "Do you want to restart the bridge to apply changes?",
+      "restart_button": "Restart",
+      "restart_initiated": "Restart initiated. The page will reload shortly."
     },
     "packets": {
       "title": "Packet Log (RX/TX)",

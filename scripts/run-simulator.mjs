@@ -1,8 +1,4 @@
-import { mkdir, rm, symlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import process from 'node:process';
-
-const DEFAULT_LINK_PATH = '/simshare/rs485-sim-tty';
 
 const ensureNumber = (value, fallback) => {
   if (value === undefined) {
@@ -17,20 +13,12 @@ const ensureNumber = (value, fallback) => {
   return parsed;
 };
 
-const exposePty = async (ptyPath, linkPath) => {
-  await mkdir(path.dirname(linkPath), { recursive: true });
-  await rm(linkPath, { force: true });
-  await symlink(ptyPath, linkPath);
-  await writeFile(`${linkPath}.meta`, JSON.stringify({ ptyPath }, null, 2));
-};
-
 async function main() {
   const { createSimulator, COMMAX_TEST_PACKETS } = await import(
     '../packages/simulator/dist/index.js'
   );
   const intervalMs = ensureNumber(process.env.SIMULATOR_INTERVAL_MS, 1000);
   const slow = ensureNumber(process.env.SIMULATOR_SLOW, 1);
-  const linkPath = process.env.SIMULATOR_LINK_PATH ?? DEFAULT_LINK_PATH;
 
   const simulatorProtocol = process.env.SIMULATOR_PROTOCOL || 'pty';
   const device = process.env.SIMULATOR_DEVICE || 'commax';
@@ -67,15 +55,15 @@ async function main() {
     });
     console.log(`[simulator] External Serial Mode started on ${portPath} (device=${device}, baudRate=9600, parity=${parity}, slow=${slow})`);
   } else {
+
     simulator = createSimulator({
       intervalMs: 1,
       packets: device === 'commax' ? COMMAX_TEST_PACKETS : undefined,
       device,
       slow,
     });
-    await exposePty(simulator.ptyPath, linkPath);
     console.log(
-      `[simulator] PTY 노출: 실제=${simulator.ptyPath}, 링크=${linkPath} (Byte Mode: 1ms, slow=${slow})`
+      `[simulator] PTY 노출: 실제=${simulator.ptyPath} (Byte Mode: 1ms, slow=${slow})`
     );
   }
 

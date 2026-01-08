@@ -52,22 +52,22 @@ services:
     <<: *dev-base
     container_name: rs485-simulator-dev
     environment:
-      SIMULATOR_LINK_PATH: /simshare/rs485-sim-tty
       SIMULATOR_INTERVAL_MS: '100'
-      SIMULATOR_PROTOCOL: 'serial'
+      SIMULATOR_PROTOCOL: 'tcp'
       SIMULATOR_PORT_PATH: '/tmp/ttyRS485'
-      SIMULATOR_DEVICE: samsung_sds
+      SIMULATOR_DEVICE: 'userdata'
       SIMULATOR_SLOW: '20'
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
       - simulator_node_modules:/workspace/node_modules
-      - simshare:/simshare
     command: >
       bash -lc "
         set -euo pipefail
-        # Start socat to listen on TCP 8888 and link to PTY
-        nohup socat TCP-LISTEN:8888,fork PTY,link=/tmp/ttyRS485,raw,echo=0,mode=666,b9600,inpck=0 > /tmp/socat.log 2>&1 &
+        # Start socat if NOT in tcp mode (in tcp mode, the simulator itself binds the port)
+        if [ "$$SIMULATOR_PROTOCOL" != "tcp" ]; then
+          nohup socat TCP-LISTEN:8888,fork PTY,link=/tmp/ttyRS485,raw,echo=0,mode=666,b9600,inpck=0 > /tmp/socat.log 2>&1 &
+        fi
         
         corepack enable
         pnpm install --filter @rs485-homenet/simulator... --no-frozen-lockfile
@@ -94,7 +94,6 @@ services:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
       - app_node_modules:/workspace/node_modules
-      - simshare:/simshare
       - /dev/pts:/dev/pts
     ports:
       - '3000:3000'
@@ -151,7 +150,6 @@ volumes:
   mosquitto_data:
   mosquitto_log:
   homeassistant_config:
-  simshare:
   pnpm-store:
   simulator_node_modules:
   app_node_modules:

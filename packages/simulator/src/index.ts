@@ -39,6 +39,7 @@ export interface SimulatorOptions {
   baudRate?: number;
   parity?: 'none' | 'even' | 'mark' | 'space' | 'odd';
   slow?: number;
+  emitMode?: 'byte' | 'packet';
 }
 
 export interface Simulator {
@@ -84,15 +85,18 @@ function normalizePackets(packets: readonly (Buffer | Uint8Array | number[])[]):
 class PacketStreamer {
   private _isRunning = false;
   private byteIndex = 0;
+  private packetIndex = 0;
   private nextSendTime = 0n;
   private nsPerByte: bigint;
   private allBytes: Buffer;
 
   constructor(
-    packets: Buffer[],
+    private packets: Buffer[],
     baudRate: number,
     slow: number,
     private writer: (data: Buffer) => void,
+    private intervalMs: number = 10,
+    private emitMode: 'byte' | 'packet' = 'byte',
   ) {
     this.allBytes = Buffer.concat(packets);
     const slowFactor = Math.max(1, slow);
@@ -121,28 +125,38 @@ class PacketStreamer {
     if (this.nextSendTime === 0n) this.nextSendTime = now;
 
     if (now >= this.nextSendTime) {
-      const timeDiff = now - this.nextSendTime;
-      const count = Number(timeDiff / this.nsPerByte + 1n);
-      const safeCount = Math.min(count, 1024);
+      if (this.emitMode === 'packet') {
+        const packet = this.packets[this.packetIndex];
+        this.writer(packet);
 
-      if (safeCount > 0) {
-        const remaining = this.allBytes.length - this.byteIndex;
-        if (safeCount <= remaining) {
-          this.writer(this.allBytes.subarray(this.byteIndex, this.byteIndex + safeCount));
-          this.byteIndex = (this.byteIndex + safeCount) % this.allBytes.length;
-        } else {
-          this.writer(this.allBytes.subarray(this.byteIndex));
-          const secondPartLen = safeCount - remaining;
-          this.writer(this.allBytes.subarray(0, secondPartLen));
-          this.byteIndex = secondPartLen;
+        const durationNs = BigInt(packet.length) * this.nsPerByte;
+        this.nextSendTime += durationNs;
+
+        this.packetIndex = (this.packetIndex + 1) % this.packets.length;
+      } else {
+        const timeDiff = now - this.nextSendTime;
+        const count = Number(timeDiff / this.nsPerByte + 1n);
+        const safeCount = Math.min(count, 1024);
+
+        if (safeCount > 0) {
+          const remaining = this.allBytes.length - this.byteIndex;
+          if (safeCount <= remaining) {
+            this.writer(this.allBytes.subarray(this.byteIndex, this.byteIndex + safeCount));
+            this.byteIndex = (this.byteIndex + safeCount) % this.allBytes.length;
+          } else {
+            this.writer(this.allBytes.subarray(this.byteIndex));
+            const secondPartLen = safeCount - remaining;
+            this.writer(this.allBytes.subarray(0, secondPartLen));
+            this.byteIndex = secondPartLen;
+          }
+          this.nextSendTime += BigInt(safeCount) * this.nsPerByte;
         }
-        this.nextSendTime += BigInt(safeCount) * this.nsPerByte;
       }
     }
     // Optimization: Use setTimeout instead of setImmediate to batch writes (~10ms intervals).
     // Sending data byte-by-byte (1000Hz) overloads the receiver's event loop.
     // Batching maintains throughput (9600 baud) but reduces CPU interrupts.
-    setTimeout(this.loop, 10);
+    setTimeout(this.loop, this.intervalMs);
   };
 }
 
@@ -157,8 +171,10 @@ export function createTcpSimulator(
     baudRate = 9600,
     packets: userPackets,
     port = 8888,
-    device = 'commax',
+    device = 'userdata',
     slow = 1,
+    intervalMs = 100, // TCP mode defaults to 100ms buffering
+    emitMode = 'packet',
   } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
@@ -176,9 +192,9 @@ export function createTcpSimulator(
     for (const client of clients) {
       try {
         client.write(data);
-      } catch (e) {}
+      } catch (e) { }
     }
-  });
+  }, intervalMs, emitMode);
 
   return {
     get running() {
@@ -197,7 +213,7 @@ export function createTcpSimulator(
 }
 
 export function createSimulator(options: SimulatorOptions = {}): Simulator {
-  const { baudRate = 9600, packets: userPackets, device = 'commax', slow = 1 } = options;
+  const { baudRate = 9600, packets: userPackets, device = 'userdata', slow = 1, intervalMs = 10, emitMode = 'byte' } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
   const { open: openPty } = pty as PtyModule;
@@ -210,6 +226,8 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
 
   const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) =>
     writer.write(data),
+    intervalMs,
+    emitMode
   );
 
   return {
@@ -232,10 +250,12 @@ export function createExternalPortSimulator(
   const {
     baudRate = 9600,
     packets: userPackets,
-    device = 'commax',
+    device = 'userdata',
     portPath,
     parity = 'none',
     slow = 1,
+    intervalMs = 10,
+    emitMode = 'byte',
   } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
@@ -255,7 +275,7 @@ export function createExternalPortSimulator(
     if (port.isOpen) {
       port.write(data);
     }
-  });
+  }, intervalMs, emitMode);
 
   return {
     get running() {
@@ -273,7 +293,7 @@ export function createExternalPortSimulator(
 
 // Main execution logic used when running this file directly (e.g. via node)
 async function main() {
-  const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'commax';
+  const device = (process.env.SIMULATOR_DEVICE as DeviceType) || 'userdata';
   const protocol = process.env.SIMULATOR_PROTOCOL || 'pty';
   const portPath = process.env.SIMULATOR_PORT_PATH;
   const slow = process.env.SIMULATOR_SLOW ? parseFloat(process.env.SIMULATOR_SLOW) : 1;

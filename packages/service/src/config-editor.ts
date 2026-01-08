@@ -210,7 +210,7 @@ export const createConfigEditorService = ({
           );
           if (remainingConfigs.length === 0) {
             const initMarker = path.join(configDir, '.initialized');
-            await fs.unlink(initMarker).catch(() => { });
+            await fs.unlink(initMarker).catch(() => {});
             logger.info('[config-editor] Last bridge deleted, .initialized marker removed');
           }
         } catch (err) {

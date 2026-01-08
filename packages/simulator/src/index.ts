@@ -188,13 +188,20 @@ export function createTcpSimulator(
 
   server.listen(port, '0.0.0.0');
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => {
-    for (const client of clients) {
-      try {
-        client.write(data);
-      } catch (e) { }
-    }
-  }, intervalMs, emitMode);
+  const streamer = new PacketStreamer(
+    normalizedPackets,
+    baudRate,
+    slow,
+    (data) => {
+      for (const client of clients) {
+        try {
+          client.write(data);
+        } catch (e) {}
+      }
+    },
+    intervalMs,
+    emitMode,
+  );
 
   return {
     get running() {
@@ -213,7 +220,14 @@ export function createTcpSimulator(
 }
 
 export function createSimulator(options: SimulatorOptions = {}): Simulator {
-  const { baudRate = 9600, packets: userPackets, device = 'userdata', slow = 1, intervalMs = 10, emitMode = 'byte' } = options;
+  const {
+    baudRate = 9600,
+    packets: userPackets,
+    device = 'userdata',
+    slow = 1,
+    intervalMs = 10,
+    emitMode = 'byte',
+  } = options;
   const packets = userPackets ?? getPacketsForDevice(device);
   const normalizedPackets = normalizePackets(packets);
   const { open: openPty } = pty as PtyModule;
@@ -224,10 +238,13 @@ export function createSimulator(options: SimulatorOptions = {}): Simulator {
   if (spawnSync('stty', ['-F', ptyPath, 'raw', '-echo']).status !== 0)
     console.warn('RAW 모드 전환 실패');
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) =>
-    writer.write(data),
+  const streamer = new PacketStreamer(
+    normalizedPackets,
+    baudRate,
+    slow,
+    (data) => writer.write(data),
     intervalMs,
-    emitMode
+    emitMode,
   );
 
   return {
@@ -271,11 +288,18 @@ export function createExternalPortSimulator(
     if (err) console.error(`[ExternalPortSimulator] Failed to open ${portPath}:`, err);
   });
 
-  const streamer = new PacketStreamer(normalizedPackets, baudRate, slow, (data) => {
-    if (port.isOpen) {
-      port.write(data);
-    }
-  }, intervalMs, emitMode);
+  const streamer = new PacketStreamer(
+    normalizedPackets,
+    baudRate,
+    slow,
+    (data) => {
+      if (port.isOpen) {
+        port.write(data);
+      }
+    },
+    intervalMs,
+    emitMode,
+  );
 
   return {
     get running() {

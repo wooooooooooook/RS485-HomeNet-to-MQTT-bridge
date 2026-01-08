@@ -14,8 +14,6 @@ export class StateManager {
   private portId: string;
   private mqttTopicPrefix: string;
   private ignoredEntityId: string | null = null;
-  // Timestamp of the last received chunk (ms since epoch)
-  private lastChunkTimestamp: number = 0;
   private sharedStates?: Map<string, Record<string, any>>;
 
   constructor(

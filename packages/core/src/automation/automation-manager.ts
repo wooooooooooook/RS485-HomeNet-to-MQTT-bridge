@@ -1071,7 +1071,7 @@ export class AutomationManager {
       try {
         const res = this.celExecutor.execute(payload, this.buildContext(context));
         if (res !== undefined) payload = res;
-      } catch { }
+      } catch {}
     }
 
     const finalPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);

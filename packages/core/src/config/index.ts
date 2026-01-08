@@ -384,12 +384,12 @@ export function validateConfig(
   }
 
   if (rawConfig) {
-    const rawAutomationList = (rawConfig as any).automation as
-      | Array<Record<string, unknown>>
-      | null;
-    const rawAutomationsAlias = (rawConfig as any).automations as
-      | Array<Record<string, unknown>>
-      | null;
+    const rawAutomationList = (rawConfig as any).automation as Array<
+      Record<string, unknown>
+    > | null;
+    const rawAutomationsAlias = (rawConfig as any).automations as Array<
+      Record<string, unknown>
+    > | null;
     const candidates = [rawAutomationList, rawAutomationsAlias].filter((value) =>
       Array.isArray(value),
     ) as Array<Array<Record<string, unknown>>>;

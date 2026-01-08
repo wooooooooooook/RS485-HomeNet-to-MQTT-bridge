@@ -174,7 +174,10 @@ export class MqttSubscriber {
         if (fanCommandKey in (targetEntity as any)) {
           commandName = `fan_${normalizedFanMode}`;
           commandValue = undefined;
-        } else if ((targetEntity as any).command_custom_fan || (targetEntity as any).custom_fan_mode) {
+        } else if (
+          (targetEntity as any).command_custom_fan ||
+          (targetEntity as any).custom_fan_mode
+        ) {
           commandName = 'custom_fan';
           commandValue = fanModeValue;
         } else {

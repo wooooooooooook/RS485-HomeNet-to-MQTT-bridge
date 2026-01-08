@@ -148,7 +148,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => { });
+      await this.startPromise.catch(() => {});
     }
 
     for (const context of this.portContexts.values()) {

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-08T04:18:34.693Z",
+  "generated_at": "2026-01-08T04:46:18.261Z",
   "vendors": [
     {
       "id": "bestin",
@@ -898,7 +898,7 @@
           "name_en": "Ventilation System",
           "description": "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Hyundai Imazu ventilation system with 3-speed control.",
-          "version": "1.0.1",
+          "version": "1.0.2",
           "author": "wooooooooooook",
           "tags": [
             "fan",

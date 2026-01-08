@@ -79,7 +79,12 @@
       "restart": "재시작",
       "restart_desc": "Homenet2MQTT 서비스를 재시작합니다. 잠시 동안 연결이 끊어집니다.",
       "restart_confirm": "정말로 서비스를 재시작하시겠습니까?",
-      "restarting": "재시작 요청 중..."
+      "restarting": "재시작 요청 중...",
+      "mqtt_cleanup": "MQTT 메시지 초기화",
+      "mqtt_cleanup_desc": "애플리케이션이 게시한 모든 MQTT 유지 메시지를 삭제합니다.",
+      "mqtt_cleanup_confirm": "정말로 모든 MQTT 유지 메시지를 삭제하시겠습니까? 장치 재검색이 필요할 수 있습니다.",
+      "cleaning": "초기화 중...",
+      "mqtt_cleanup_success": "MQTT 메시지가 초기화되었습니다."
     },
     "bridge_config": {
       "title": "브릿지 관리",

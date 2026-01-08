@@ -458,6 +458,55 @@
 
   // Application Control
   let isRestarting = $state(false);
+  let isClearingMqtt = $state(false);
+
+  async function triggerMqttCleanup() {
+    isClearingMqtt = true;
+    const res = await fetch('./api/mqtt/cleanup', {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      isClearingMqtt = false;
+      const err = await res.json();
+      throw new Error(err.error || 'Cleanup failed');
+    }
+
+    // Cleanup successful
+    const data = await res.json();
+    isClearingMqtt = false;
+
+    // Show success message or just reload?
+    // The API triggers a restart anyway after 1s.
+    // Let's show a success dialog or auto-reload.
+    // The restart will cause a reload eventually if the user is polling or connection is lost.
+    // But let's be explicit.
+
+    // Actually, triggerSystemRestart handles reload.
+    // Here we can just show a success alert or let the restart take over.
+    // Wait for the restart effect.
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
+  }
+
+  function handleClearMqtt() {
+    showConfirmDialog({
+      title: $t('settings.app_control.mqtt_cleanup'),
+      message: $t('settings.app_control.mqtt_cleanup_confirm'),
+      confirmText: $t('settings.app_control.mqtt_cleanup'),
+      variant: 'danger',
+      loadingText: $t('settings.app_control.cleaning'),
+      action: triggerMqttCleanup,
+      onSuccess: () => {
+        dialog.loading = true;
+        dialog.open = true;
+        dialog.title = $t('settings.app_control.restarting');
+        dialog.message = $t('settings.app_control.mqtt_cleanup_success');
+        dialog.loadingText = $t('settings.app_control.restarting');
+      },
+    });
+  }
 
   async function triggerSystemRestart() {
     isRestarting = true;
@@ -1007,6 +1056,21 @@
         disabled={isRestarting}
       >
         {$t('settings.app_control.restart')}
+      </Button>
+    </div>
+
+    <div class="setting">
+      <div>
+        <div class="setting-title">{$t('settings.app_control.mqtt_cleanup')}</div>
+        <div class="setting-desc">{$t('settings.app_control.mqtt_cleanup_desc')}</div>
+      </div>
+      <Button
+        onclick={handleClearMqtt}
+        variant="danger"
+        isLoading={isClearingMqtt}
+        disabled={isClearingMqtt || isRestarting}
+      >
+        {$t('settings.app_control.mqtt_cleanup')}
       </Button>
     </div>
   </div>

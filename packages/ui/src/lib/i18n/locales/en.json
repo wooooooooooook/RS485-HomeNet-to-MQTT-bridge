@@ -79,7 +79,12 @@
       "restart": "Restart",
       "restart_desc": "Restart the Homenet2MQTT service. Connection will be lost momentarily.",
       "restart_confirm": "Are you sure you want to restart the service?",
-      "restarting": "Requesting restart..."
+      "restarting": "Requesting restart...",
+      "mqtt_cleanup": "Clear MQTT Messages",
+      "mqtt_cleanup_desc": "Clear all retained MQTT messages published by the application.",
+      "mqtt_cleanup_confirm": "Are you sure you want to clear all retained MQTT messages? Devices may need to be re-discovered.",
+      "cleaning": "Cleaning...",
+      "mqtt_cleanup_success": "MQTT messages cleared."
     },
     "bridge_config": {
       "title": "Bridge Management",

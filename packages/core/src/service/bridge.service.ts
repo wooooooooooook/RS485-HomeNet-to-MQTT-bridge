@@ -148,7 +148,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
 
     for (const context of this.portContexts.values()) {
@@ -167,6 +167,14 @@ export class HomeNetBridge {
 
     this._mqttClient.end();
     this.startPromise = null;
+  }
+
+  async clearRetainedMessages(): Promise<number> {
+    if (!this._mqttClient || !this._mqttClient.isConnected) {
+      throw new Error('MQTT client is not connected');
+    }
+    // Use the common topic prefix (e.g., 'homenet')
+    return this._mqttClient.clearRetainedMessages(this.commonMqttTopicPrefix);
   }
 
   /**

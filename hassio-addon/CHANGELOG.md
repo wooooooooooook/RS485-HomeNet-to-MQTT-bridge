@@ -1,6 +1,12 @@
 v1.11.0
-> **!!breaking change!!** 
+> ### **!!breaking change!!** 
 > offset의 해석의 일관성을 위해 수정사항이 있으며 이로인해 설정이 깨졌을수 있습니다!
+>
+> **영향 받은 자동화 목록** - 갤러리에서 수정본 적용 가능
+> - ezville 현관문열림
+> - hyundai imazu 주기적 조명 상태요청 자동화
+> - 삼성sds 현관문 및 엘리베이터 (원래 작동 안됐음.. 지금도 안될겁니다)
+>
 > **offset은 헤더를 포함한 수신패킷 전체의 0-based index**이며 offset이 생략된경우 offset은 rx_header의 길이로 해석됩니다.
 > 따라서 기존에 offset을 생략했을때 offset: 0으로 해석되던 자동화의 packet trigger 사용부분에서 data에서 헤더부분을 삭제하거나 offset: 0으로 설정해야합니다.
 > ```yaml
@@ -22,14 +28,13 @@ v1.11.0
 >       # 혹은 헤더를 삭제.
 >       data: [0x41, 0x00, 0x6C]
 > ```
-> **영향 받은 자동화 목록**
-> - ezville 현관문열림
-> - hyundai imazu 주기적 조명 상태요청 자동화
-> - 삼성sds 현관문 및 엘리베이터 (원래 작동 안됐음.. 지금도 안될겁니다)
 - fix: commandSchema의 ack가 offset: 0 으로 해석되어 ack를 못찾는 문제 수정
+
 - feat: 엔티티 yaml 수정시 재시작여부를 묻는 모달 추가
 - feat: 마지막 남은 브릿지를 제거하면 초기 설정 마법사가 실행됩니다.
+- feat: mqtt cleanup 기능 추가. 설정-애플리케이션 관리에서 실행할 수 있으며 {prefix} (기본값 homenet2mqtt) 이하 모든 토픽을 삭제하고 재발행합니다. 설정파일 수정 등 이전 메시지가 지저분하게 남는경우 사용하세요. 
 - fix: climate의 preset discovery 오류 수정
+
 
 v1.10.0
 - feat: 일정시간 패킷이 수신되지 않으면 시리얼에 재연결을 시도하는 로직 추가.

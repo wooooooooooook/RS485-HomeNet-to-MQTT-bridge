@@ -745,6 +745,33 @@ app.put('/api/frontend-settings', async (req, res) => {
   }
 });
 
+app.post('/api/mqtt/cleanup', async (req, res) => {
+  if (!configRateLimiter.check(req.ip || 'unknown')) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  // We need at least one active bridge to access the MQTT client
+  const activeBridge = bridges.find((b) => b.bridge);
+
+  if (!activeBridge) {
+    return res.status(503).json({ error: 'No active bridge found to perform MQTT cleanup. Please ensure at least one bridge is configured and running.' });
+  }
+
+  try {
+    logger.info('[service] Starting MQTT retained message cleanup via API');
+    const count = await activeBridge.bridge.clearRetainedMessages();
+    res.json({ success: true, count, message: `Cleared ${count} retained messages` });
+
+    // Trigger a restart to refresh discovery if messages were cleared
+    if (count > 0) {
+      await triggerRestart();
+    }
+  } catch (error) {
+    logger.error({ err: error }, '[service] Failed to clear retained messages');
+    res.status(500).json({ error: 'Failed to clear retained messages' });
+  }
+});
+
 app.post('/api/cel/evaluate', async (req, res) => {
   if (!configRateLimiter.check(req.ip || 'unknown')) {
     return res.status(429).json({ error: 'Too many requests' });

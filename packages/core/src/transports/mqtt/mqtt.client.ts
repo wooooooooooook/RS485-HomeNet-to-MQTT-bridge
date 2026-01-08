@@ -55,4 +55,72 @@ export class MqttClient {
   public end(): void {
     this.client.end();
   }
+  public async clearRetainedMessages(topicPrefix: string): Promise<number> {
+    if (!this.client.connected) {
+      throw new Error('MQTT client is not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      const topicsToDelete = new Set<string>();
+      const searchTopic = `${topicPrefix.endsWith('/') ? topicPrefix : topicPrefix + '/'}#`;
+
+      logger.info({ searchTopic }, '[mqtt-client] Starting scan for retained messages to clear');
+
+      const messageHandler = (topic: string, message: Buffer, packet: mqtt.Packet) => {
+        if ((packet as any).retain) {
+          topicsToDelete.add(topic);
+        }
+      };
+
+      // Create a temporary client for scanning to avoid interfering with the main client's subscriptions
+      // Reuse the existing client's options but with a new client ID
+      const scanClient = mqtt.connect(this.client.options.host || 'localhost', {
+        ...this.client.options,
+        clientId: `mqtt-cleaner-${Date.now()}`,
+      });
+
+      scanClient.on('connect', () => {
+        scanClient.subscribe(searchTopic);
+        scanClient.on('message', messageHandler);
+
+        // Wait for 2 seconds to collect retained messages
+        setTimeout(() => {
+          scanClient.end();
+
+          if (topicsToDelete.size === 0) {
+            logger.info('[mqtt-client] No retained messages found to clear');
+            resolve(0);
+            return;
+          }
+
+          logger.info({ count: topicsToDelete.size }, '[mqtt-client] Clearing retained messages');
+
+          let clearedCount = 0;
+          const promises = Array.from(topicsToDelete).map((topic) => {
+            return new Promise<void>((pubResolve) => {
+              this.client.publish(topic, Buffer.alloc(0), { retain: true, qos: 1 }, (err) => {
+                if (err) {
+                  logger.warn({ topic, err }, '[mqtt-client] Failed to clear topic');
+                } else {
+                  clearedCount++;
+                }
+                pubResolve();
+              });
+            });
+          });
+
+          Promise.all(promises).then(() => {
+            logger.info({ clearedCount }, '[mqtt-client] Finished clearing retained messages');
+            resolve(clearedCount);
+          });
+        }, 2000);
+      });
+
+      scanClient.on('error', (err) => {
+        scanClient.end();
+        logger.error({ err }, '[mqtt-client] Error during retained message scan');
+        reject(err);
+      });
+    });
+  }
 }

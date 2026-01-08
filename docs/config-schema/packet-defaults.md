@@ -46,15 +46,16 @@
 | `add_no_header` | 헤더를 제외한 데이터 바이트의 합 (Sum & 0xFF) |
 | `xor` | 헤더를 포함한 모든 바이트의 XOR 연산 값 |
 | `xor_no_header` | 헤더를 제외한 데이터 바이트의 XOR 연산 값 |
-| `samsung_rx` | 삼성 월패드 수신 패킷 전용 (0xB0 초기값 + XOR, 단 첫 데이터가 0x7C 미만이면 XOR 0x80 추가 보정) |
-| `samsung_tx` | 삼성 월패드 송신 패킷 전용 (0x00 초기값 + XOR + 0x80 보정) |
+| `samsung_rx` | 삼성 수신용. 초기값 `0xB0`, 데이터 XOR 연산. 단, `data[0] < 0x7C`일 경우 결과에 `0x80` XOR 추가 |
+| `samsung_tx` | 삼성 송신용. 데이터 XOR 연산 후 결과에 `0x80` XOR 추가 |
+| `bestin_sum` | Bestin 전용. 초기값 3, `sum = ((byte ^ sum) + 1) & 0xFF` 반복 연산 (헤더 포함) |
 | `none` | 체크섬 검사를 하지 않음 |
 
 ### 2바이트 체크섬 (`rx_checksum2` / `tx_checksum2`)
 
 | 알고리즘 (값) | 설명 |
 | :--- | :--- |
-| `xor_add` | Ezville 등에서 사용. `[XOR, (ADD+XOR)]` 순서로 2바이트 생성 (헤더 포함, ADD는 XOR 결과를 더한 값) |
+| `xor_add` | Ezville 등. 2바이트 `[XOR, ADD]` 반환. `ADD`는 `(모든 바이트 합 + XOR 결과) & 0xFF` |
 
 > **참고**: 체크섬 필드에 알고리즘 이름 대신 CEL 표현식을 작성하면 커스텀 로직을 적용할 수 있습니다.
 > 예: `rx_checksum: "data[0] + data[1]"`

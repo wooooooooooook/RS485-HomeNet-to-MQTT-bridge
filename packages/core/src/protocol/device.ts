@@ -62,11 +62,13 @@ export abstract class Device {
       return false;
     }
 
-    // Adjust offset by header length if present
+    // offset이 명시되지 않은 경우에만 headerLength를 baseOffset으로 사용
+    // offset이 명시된 경우(0 포함)는 헤더 포함 전체 패킷 기준
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
+    const baseOffset = stateConfig.offset === undefined ? headerLength : 0;
 
     return matchesPacket(stateConfig, packet, {
-      baseOffset: headerLength,
+      baseOffset,
       context: { state: this.getState() },
     });
   }

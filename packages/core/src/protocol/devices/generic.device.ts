@@ -272,7 +272,11 @@ export class GenericDevice extends Device {
    */
   protected matchState(packetData: Uint8Array, stateSchema: StateSchema | undefined): boolean {
     if (!stateSchema) return false;
+    // offset이 명시되지 않은 경우에만 headerLen을 baseOffset으로 사용
+    const headerLen = this.protocolConfig.packet_defaults?.rx_header?.length ?? 0;
+    const baseOffset = stateSchema.offset === undefined ? headerLen : 0;
     return matchesPacket(stateSchema, packetData, {
+      baseOffset,
       allowEmptyData: true,
       context: { state: this.getState() },
     });

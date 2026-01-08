@@ -433,7 +433,11 @@ export class AutomationManager {
   }
 
   private matchesPacket(trigger: AutomationTriggerPacket, packet: Buffer) {
-    return matchesPacket(trigger.match as StateSchema, packet);
+    const match = trigger.match as StateSchema;
+    // offset이 명시되지 않은 경우에만 headerLen을 baseOffset으로 사용
+    const headerLen = this.config.packet_defaults?.rx_header?.length ?? 0;
+    const baseOffset = match?.offset === undefined ? headerLen : 0;
+    return matchesPacket(match, packet, { baseOffset });
   }
 
   private matchesStateTrigger(trigger: AutomationTriggerState, state: Record<string, any>) {
@@ -778,7 +782,11 @@ export class AutomationManager {
       if (this.isSchemaValue(rawValue)) {
         if (!payload) continue;
         if (this.isDataMatchSchema(rawValue)) {
+          // offset이 명시되지 않은 경우에만 headerLen을 baseOffset으로 사용
+          const headerLen = this.config.packet_defaults?.rx_header?.length ?? 0;
+          const baseOffset = rawValue.offset === undefined ? headerLen : 0;
           const matched = matchesPacket(rawValue, payload, {
+            baseOffset,
             allowEmptyData: true,
             context: this.buildContext(context),
           });
@@ -1063,7 +1071,7 @@ export class AutomationManager {
       try {
         const res = this.celExecutor.execute(payload, this.buildContext(context));
         if (res !== undefined) payload = res;
-      } catch {}
+      } catch { }
     }
 
     const finalPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);

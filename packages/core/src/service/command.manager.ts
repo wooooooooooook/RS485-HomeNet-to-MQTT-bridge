@@ -254,8 +254,12 @@ export class CommandManager {
     // If ackMatch exists, also set up packet matcher
     // This allows both state:changed and ack packet to trigger ACK
     if (job.ackMatch) {
+      // offset이 명시되지 않은 경우에만 headerLen을 baseOffset으로 사용
+      // offset이 명시된 경우(0 포함)는 헤더 포함 전체 패킷 기준
+      const headerLen = this.config.packet_defaults?.rx_header?.length ?? 0;
+      const baseOffset = job.ackMatch.offset === undefined ? headerLen : 0;
       const matcher = (packet: Buffer) => {
-        if (job.ackMatch && matchesPacket(job.ackMatch, packet)) {
+        if (job.ackMatch && matchesPacket(job.ackMatch, packet, { baseOffset })) {
           callback();
         }
       };

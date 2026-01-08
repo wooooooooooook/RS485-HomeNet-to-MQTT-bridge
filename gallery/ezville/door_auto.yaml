@@ -3,7 +3,7 @@ meta:
   name_en: "door auto open"
   description: "Ezville 현관문열림자동 설정입니다. 벨울림 -> 통화시작, 문열기, 통화종료를 순차전송 "
   description_en: "Ezville door auto open configuration. Bell ring -> call start, door open, call end in sequence."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "gunfos"
   tags: ["door auto open", "ezville"]
 
@@ -13,6 +13,7 @@ automation:
       - type: packet
         match:
           data: [0xf7, 0x40, 0x02, 0x93]
+          offset: 0
     then:
       # 통화 시작
       - action: send_packet

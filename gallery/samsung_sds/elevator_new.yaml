@@ -21,6 +21,7 @@ automation:
       - type: packet
         match:
           data: [0xCC, 0x5A, 0x01, 0x00, 0x17]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x5A, 0x01, 0x00, 0x6B]
@@ -35,6 +36,7 @@ automation:
       - type: packet
         match:
           data: [0xCC, 0x41, 0x01, 0x00, 0x0C]
+          offset: 0
     then:
       - action: send_packet
         data: "states['elevator_call']['state'] == 'on' ? [0xB0, 0x10, 0x01, 0x01, 0x20] : [0xB0, 0x41, 0x01, 0x00, 0x70]"
@@ -50,6 +52,7 @@ automation:
       - type: packet
         match:
           data: [0xCC, 0x10, 0x01, 0x01, 0x5C]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x41, 0x01, 0x00, 0x70]

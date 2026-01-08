@@ -61,6 +61,7 @@ automation:
         match:
           data: [0xA4, 0x5A]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x5A, 0x00]
@@ -73,6 +74,7 @@ automation:
         match:
           data: [0xA4, 0x41]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: choose
         choices:
@@ -122,6 +124,7 @@ automation:
         match:
           data: [0xA4, 0x42]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x41, 0x00]
@@ -134,6 +137,7 @@ automation:
         match:
           data: [0xA4, 0x32]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x32, 0x00]
@@ -146,6 +150,7 @@ automation:
         match:
           data: [0xA4, 0x31]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x31, 0x00]
@@ -158,6 +163,7 @@ automation:
         match:
           data: [0xA4, 0x36]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x42, 0x00]
@@ -170,6 +176,7 @@ automation:
         match:
           data: [0xA4, 0x38]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x42, 0x00]
@@ -182,6 +189,7 @@ automation:
         match:
           data: [0xA4, 0x35]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x35, 0x00]
@@ -194,6 +202,7 @@ automation:
         match:
           data: [0xA4, 0x3B]
           mask: [0xFF, 0xFF]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x42, 0x00]
@@ -206,6 +215,7 @@ automation:
       - type: packet
         match:
           data: [0xA4, 0x3E, 0x01]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x3E, 0x01]
@@ -216,6 +226,7 @@ automation:
       - type: packet
         match:
           data: [0xA4, 0x3E, 0x06]
+          offset: 0
     then:
       - action: send_packet
         data: [0xB0, 0x3E, 0x06]

@@ -65,22 +65,24 @@ trigger:
 
 ### 패킷 트리거 (Packet Trigger)
 정의된 스키마와 일치하는 원본(Raw) 패킷이 수신될 때 실행됩니다.
-**주의**: 패킷 트리거는 기본적으로 `Rx_header`를 포함한 전체 패킷을 대상으로 매칭을 수행합니다. 헤더를 제외한 데이터 영역만 비교하려면 `offset`을 헤더 길이만큼 설정해야 합니다.
+**참고**: `offset`을 생략하면 헤더 다음 바이트부터 매칭하고, `offset`을 명시하면 헤더 포함 전체 패킷 기준으로 매칭합니다.
 **참고**: `match`가 비어 있거나 정의되지 않으면 패킷 트리거는 매칭되지 않으며 무시됩니다.
 
 ```yaml
-trigger:
-  - type: packet
-    match:
-      data: [0xAA, 0x55]
-      # 헤더(AA)를 포함하여 매칭
-```
-```yaml
+# rx_header: [0xAA]인 경우
+# offset 생략 → 헤더 다음부터 매칭 (AA 55 ... 패킷 매칭)
 trigger:
   - type: packet
     match:
       data: [0x55]
-      offset: 1 # 헤더(1바이트)를 제외하고 데이터 영역부터 비교
+```
+```yaml
+# offset 명시 → 헤더 포함 전체 패킷 기준 (packet[1] = 0x55 매칭)
+trigger:
+  - type: packet
+    match:
+      data: [0x55]
+      offset: 1
 ```
 
 ### 스케줄 트리거 (Schedule Trigger)
@@ -182,7 +184,7 @@ state:
 ```
 
 - `state` 값이 `StateSchema/StateNumSchema`인 경우, 패킷에서 값을 추출하여 상태로 기록합니다.
-- `offset`은 수신된 **원본 패킷 전체(rx_header 포함)** 기준입니다.
+- `offset`을 생략하면 헤더 다음 바이트부터 추출하고, `offset`을 명시하면 헤더 포함 전체 패킷 기준 인덱스로 추출합니다.
 - 패킷 트리거인 경우에만 사용하세요.
 - `update_state`는 대상 엔티티에 정의된 `state_*` 항목과 해당 속성명(예: `brightness`, `target_temperature`)만 허용하며, 정의되지 않은 속성은 오류로 처리됩니다.
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-08T04:46:18.261Z",
+  "generated_at": "2026-01-08T05:37:09.636Z",
   "vendors": [
     {
       "id": "bestin",
@@ -920,7 +920,7 @@
           "name_en": "☑️Heaters (5 Thermostats)",
           "description": "현대 이마주 난방 온도조절기 5개 설정입니다. 외출 모드를 지원합니다.",
           "description_en": "Hyundai Imazu 5 heating thermostats with away mode support.",
-          "version": "1.0.1",
+          "version": "1.0.2",
           "author": "wooooooooooook",
           "tags": [
             "climate",

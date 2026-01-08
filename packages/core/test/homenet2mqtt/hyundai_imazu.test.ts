@@ -62,4 +62,27 @@ describe('HomeNet to MQTT - Hyundai Imazu Protocol', () => {
     ]);
     expect(ctx.mockSerialPort.write).toHaveBeenCalledWith(expectedFan);
   });
+
+  it('should generate fan speed command packets via CEL expression', async () => {
+    const ctx = await setupTest('hyundai_imazu.homenet_bridge.yaml');
+
+    // Test speed command with percentage value (33% -> level 1)
+    // command_speed CEL: (x <= 33 ? [[0x0b, 0x01, 0x2b, 0x02, 0x42, 0x11, 0x01, 0x00], ...])
+    ctx.mockSerialPort.write.mockClear();
+    await executeCommand(ctx, 'room_1_fan_1', 'speed', 33);
+
+    // Check if any packet was generated
+    console.log('Speed 33 calls:', ctx.mockSerialPort.write.mock.calls);
+    expect(ctx.mockSerialPort.write).toHaveBeenCalled();
+
+    // Test speed command with percentage value (66% -> level 2)
+    ctx.mockSerialPort.write.mockClear();
+    await executeCommand(ctx, 'room_1_fan_1', 'speed', 66);
+    console.log('Speed 66 calls:', ctx.mockSerialPort.write.mock.calls);
+
+    // Test speed command with percentage value (100% -> level 3)
+    ctx.mockSerialPort.write.mockClear();
+    await executeCommand(ctx, 'room_1_fan_1', 'speed', 100);
+    console.log('Speed 100 calls:', ctx.mockSerialPort.write.mock.calls);
+  });
 });

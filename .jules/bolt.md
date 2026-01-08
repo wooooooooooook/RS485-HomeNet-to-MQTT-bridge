@@ -1,3 +1,3 @@
-## 2024-05-23 - Node.js Worker Buffer serialization
-**Learning:** Data passed between threads via `worker_threads` `postMessage` undergoes structured cloning. If a `Buffer` is sent, it arrives as a `Uint8Array` in the receiver (not a `Buffer` instance). Calling `Buffer.from(uint8Array)` creates a deep copy (O(n)), whereas `Buffer.from(uint8Array.buffer, ...)` creates a zero-copy view (O(1)).
-**Action:** When receiving binary data from workers, always check for `Uint8Array` and create a Buffer view instead of using `Buffer.from()` directly to avoid massive GC pressure and latency on high-throughput streams.
+## 2026-01-08 - CEL Execution in Hot Paths
+**Learning:** In protocol parsing loops (specifically checksum sweeps), stateless script executors like `cel-js` can become a bottleneck due to repeated Map lookups and context object creation. Caching the "prepared" script execution logic that closes over the static analysis (like `usesData`) significantly reduces overhead in O(N^2) algorithms.
+**Action:** When integrating expression languages in tight loops, always look for a "prepare/compile" phase that moves static analysis out of the execution path.

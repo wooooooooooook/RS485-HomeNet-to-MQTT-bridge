@@ -2,7 +2,7 @@ import { Device } from '../device.js';
 import { DeviceConfig, ProtocolConfig } from '../types.js';
 import { StateSchema, StateNumSchema } from '../types.js';
 import { matchesPacket } from '../../utils/packet-matching.js';
-import { CelExecutor } from '../cel-executor.js';
+import { CelExecutor, CompiledScript } from '../cel-executor.js';
 import {
   calculateChecksum,
   calculateChecksum2,
@@ -11,6 +11,11 @@ import {
 } from '../utils/checksum.js';
 import { logger } from '../../utils/logger.js';
 import { Buffer } from 'buffer';
+
+interface StateScript {
+  key: string;
+  script: CompiledScript;
+}
 
 /**
  * A versatile device implementation that supports dynamic parsing and command generation
@@ -28,12 +33,60 @@ import { Buffer } from 'buffer';
  * @see {@link ../../../docs/CEL_GUIDE.md} for details on writing CEL expressions.
  */
 export class GenericDevice extends Device {
+  // Optimization: Cache prepared scripts to avoid parsing/lookups on every packet
+  private stateScripts: StateScript[] = [];
+  private commandScripts: Map<string, CompiledScript> = new Map();
+
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     super(config, protocolConfig);
+    this.prepareScripts();
   }
 
   private getExecutor(): CelExecutor {
     return CelExecutor.shared();
+  }
+
+  /**
+   * Pre-compiles all CEL scripts defined in the configuration.
+   * This runs once during device initialization.
+   */
+  private prepareScripts() {
+    const entityConfig = this.config as any;
+    const executor = this.getExecutor();
+
+    // Key mapping for CEL results to match HA discovery expectations
+    const keyMapping: Record<string, string> = {
+      temperature_target: 'target_temperature',
+      temperature_current: 'current_temperature',
+      humidity_target: 'target_humidity',
+      humidity_current: 'current_humidity',
+    };
+
+    for (const key in entityConfig) {
+      const value = entityConfig[key];
+      if (typeof value !== 'string') continue;
+
+      if (key.startsWith('state_')) {
+        // Prepare State Parsing Scripts
+        const rawKey = key.replace('state_', '');
+        const mappedKey = keyMapping[rawKey] || rawKey;
+        try {
+          this.stateScripts.push({
+            key: mappedKey,
+            script: executor.prepare(value),
+          });
+        } catch (err) {
+          logger.warn({ err, key, value }, '[GenericDevice] Failed to compile state script');
+        }
+      } else if (key.startsWith('command_')) {
+        // Prepare Command Generation Scripts
+        try {
+          this.commandScripts.set(key, executor.prepare(value));
+        } catch (err) {
+          logger.warn({ err, key, value }, '[GenericDevice] Failed to compile command script');
+        }
+      }
+    }
   }
 
   /**
@@ -55,39 +108,26 @@ export class GenericDevice extends Device {
     if (!this.matchesPacket(packet)) {
       return null;
     }
-    const entityConfig = this.config as any;
     const updates: Record<string, any> = {};
     let hasUpdates = false;
 
-    // Key mapping for CEL results to match HA discovery expectations
-    const keyMapping: Record<string, string> = {
-      temperature_target: 'target_temperature',
-      temperature_current: 'current_temperature',
-      humidity_target: 'target_humidity',
-      humidity_current: 'current_humidity',
-    };
+    // Execute pre-compiled state scripts
+    // Optimization: Iterating pre-filtered array avoids checking all config keys
+    // and using prepared scripts avoids Map lookups and parsing overhead.
+    const entityState = this.getState() || {};
+    const statesObj = states ? Object.fromEntries(states) : {};
 
-    // Check for state expressions (formerly CEL)
-    for (const key in entityConfig) {
-      if (key.startsWith('state_') && typeof entityConfig[key] === 'string') {
-        const script = entityConfig[key] as string;
-        const entityState = this.getState() || {};
-        const result = this.getExecutor().execute(script, {
-          data: packet,
-          x: null, // No previous value for state extraction usually
-          state: entityState,
-          states: states ? Object.fromEntries(states) : {}, // Pass global states if available
-        });
+    for (const { key, script } of this.stateScripts) {
+      const result = script.execute({
+        data: packet,
+        x: null, // No previous value for state extraction usually
+        state: entityState,
+        states: statesObj, // Pass global states if available
+      });
 
-        if (result !== undefined && result !== null && result !== '') {
-          // Remove 'state_' prefix and apply key mapping if needed
-          let stateKey = key.replace('state_', '');
-          if (keyMapping[stateKey]) {
-            stateKey = keyMapping[stateKey];
-          }
-          updates[stateKey] = result;
-          hasUpdates = true;
-        }
+      if (result !== undefined && result !== null && result !== '') {
+        updates[key] = result;
+        hasUpdates = true;
       }
     }
 
@@ -119,47 +159,50 @@ export class GenericDevice extends Device {
     const normalizedCommandName = commandName.startsWith('command_')
       ? commandName
       : `command_${commandName}`;
-    const commandConfig = entityConfig[normalizedCommandName];
 
     let commandData: number[] | null = null;
     let ackSchema: StateSchema | undefined;
 
-    if (commandConfig) {
-      if (typeof commandConfig === 'string') {
-        const script = commandConfig as string;
-        // Get current entity state from global states map, fallback to instance state
-        const entityState = {
-          value: null,
-          ...(states?.get(this.config.id) || this.getState() || {}),
-        };
-        const result = this.getExecutor().execute(script, {
-          x: value,
-          data: [], // No packet data for command construction
-          state: entityState,
-          states: states ? Object.fromEntries(states) : {}, // Pass global states
-        });
+    // Check if we have a pre-compiled CEL script for this command
+    const preparedScript = this.commandScripts.get(normalizedCommandName);
 
-        if (Array.isArray(result)) {
-          // Check if result is nested arrays (CEL returning multiple arrays)
-          if (Array.isArray(result[0])) {
-            // First array is command data
-            commandData = result[0];
+    if (preparedScript) {
+      // Execute CEL Script
+      const entityState = {
+        value: null,
+        ...(states?.get(this.config.id) || this.getState() || {}),
+      };
+      const result = preparedScript.execute({
+        x: value,
+        data: [], // No packet data for command construction
+        state: entityState,
+        states: states ? Object.fromEntries(states) : {}, // Pass global states
+      });
 
-            // Second array is ack:data (if exists)
-            if (result.length >= 2 && Array.isArray(result[1])) {
-              ackSchema = { data: result[1] };
+      if (Array.isArray(result)) {
+        // Check if result is nested arrays (CEL returning multiple arrays)
+        if (Array.isArray(result[0])) {
+          // First array is command data
+          commandData = result[0];
 
-              // Third array is ack:mask (if exists)
-              if (result.length >= 3 && Array.isArray(result[2])) {
-                ackSchema.mask = result[2];
-              }
+          // Second array is ack:data (if exists)
+          if (result.length >= 2 && Array.isArray(result[1])) {
+            ackSchema = { data: result[1] };
+
+            // Third array is ack:mask (if exists)
+            if (result.length >= 3 && Array.isArray(result[2])) {
+              ackSchema.mask = result[2];
             }
-          } else {
-            // Single flat array - just command data
-            commandData = result;
           }
+        } else {
+          // Single flat array - just command data
+          commandData = result;
         }
-      } else if (commandConfig.data) {
+      }
+    } else {
+      // Fallback: Check for static configuration (e.g. { data: [...] })
+      const commandConfig = entityConfig[normalizedCommandName];
+      if (commandConfig && typeof commandConfig === 'object' && commandConfig.data) {
         commandData = [...commandConfig.data];
       }
     }
@@ -219,6 +262,8 @@ export class GenericDevice extends Device {
           checksumPart.push(checksum);
         } else {
           // CEL Expression
+          // Note: tx_checksum is usually global, so we use shared execute (cached)
+          // For further optimization, ProtocolManager could prepare these too.
           const fullData = [...txHeader, ...commandData];
           const result = this.getExecutor().execute(checksumType, {
             data: fullData,

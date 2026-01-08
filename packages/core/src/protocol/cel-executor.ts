@@ -3,6 +3,25 @@ import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
 
 /**
+ * Interface for a prepared script that can be executed directly without Map lookups.
+ */
+export interface CompiledScript {
+  /**
+   * Executes the script with the provided context.
+   * Efficiently handles type conversions based on static analysis of the script.
+   *
+   * @param contextData - The variables to pass to the script
+   * @returns The result of the execution
+   */
+  execute(contextData: Record<string, any>): any;
+}
+
+interface ScriptCacheEntry {
+  parsed: ParseResult;
+  usesData: boolean;
+}
+
+/**
  * Executes Common Expression Language (CEL) scripts for protocol logic.
  *
  * This singleton class manages the CEL environment and provides a set of custom
@@ -31,7 +50,7 @@ export class CelExecutor {
   private static sharedInstance?: CelExecutor;
   private env: Environment;
   // Cache for parsed scripts to avoid expensive re-parsing
-  private scriptCache: Map<string, ParseResult> = new Map();
+  private scriptCache: Map<string, ScriptCacheEntry> = new Map();
   private readonly MAX_CACHE_SIZE = 1000;
 
   // Pre-allocate BigInts for bytes 0-255 to avoid constructor overhead in hot paths
@@ -109,6 +128,30 @@ export class CelExecutor {
   }
 
   /**
+   * Prepares a script for repeated execution.
+   * Returns a lightweight object that bypasses cache lookups and repeated string scanning.
+   *
+   * @param script - The CEL expression string.
+   * @returns CompiledScript object with an execute method.
+   */
+  public prepare(script: string): CompiledScript {
+    const entry = this.getOrParseScript(script);
+
+    return {
+      execute: (contextData: Record<string, any>) => {
+        try {
+          const safeContext = this.createSafeContext(contextData, entry.usesData);
+          const res = entry.parsed(safeContext);
+          return this.convertResult(res);
+        } catch (error) {
+          this.handleError(error, script);
+          return null;
+        }
+      },
+    };
+  }
+
+  /**
    * Evaluates a CEL script against the provided context.
    *
    * Automatically handles type conversions required by the CEL engine:
@@ -136,93 +179,108 @@ export class CelExecutor {
     contextData: Record<string, any>,
   ): { result: any; error?: string } {
     try {
-      // 1. Get or create parsed script from cache
-      let parsedScript = this.scriptCache.get(script);
-      if (!parsedScript) {
-        // Prevent unbounded memory growth
-        if (this.scriptCache.size >= this.MAX_CACHE_SIZE) {
-          this.scriptCache.clear();
-        }
-        parsedScript = this.env.parse(script);
-        this.scriptCache.set(script, parsedScript);
-      }
+      const entry = this.getOrParseScript(script);
 
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'
-      const safeContext: Record<string, any> = {};
+      const safeContext = this.createSafeContext(contextData, entry.usesData);
 
-      if (contextData.x !== undefined && contextData.x !== null) {
-        // If x is a string (e.g., custom mode name), set both x=0 and xstr=value
-        // If x is a number, convert to BigInt for CEL and set xstr=''
-        if (typeof contextData.x === 'string') {
-          safeContext.x = 0n; // CEL needs x to be int
-          safeContext.xstr = contextData.x; // String value accessible via xstr
-        } else {
-          const numValue = Number(contextData.x);
-          safeContext.x = Number.isNaN(numValue) ? 0n : BigInt(Math.floor(numValue));
-          safeContext.xstr = '';
-        }
-      } else {
-        safeContext.x = 0n; // Default for when x is not provided (e.g. state parsing)
-        safeContext.xstr = '';
-      }
-
-      // Optimization: Only convert 'data' buffer if the script actually references it.
-      // This avoids expensive O(N) allocation for simple scripts (e.g., "x / 10").
-      const scriptUsesData = script.includes('data');
-
-      if (Array.isArray(contextData.data)) {
-        safeContext.data = contextData.data.map((d: any) => BigInt(d));
-      } else if (Buffer.isBuffer(contextData.data) || contextData.data instanceof Uint8Array) {
-        if (scriptUsesData) {
-          // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
-          // to avoid intermediate array allocation and function call overhead.
-          const len = contextData.data.length;
-          const arr = new Array(len);
-          for (let i = 0; i < len; i++) {
-            // Use cached BigInts for byte values (0-255) to avoid constructor overhead
-            arr[i] = this.BIGINT_CACHE[contextData.data[i]];
-          }
-          safeContext.data = arr;
-        } else {
-          // If script doesn't use data, provide empty array to satisfy type requirements
-          // without paying the conversion cost.
-          safeContext.data = [];
-        }
-      } else {
-        safeContext.data = [];
-      }
-
-      // Always provide state (default to empty object for safe access in CEL)
-      safeContext.state = contextData.state || {};
-
-      if (contextData.states) {
-        safeContext.states = contextData.states;
-      } else {
-        safeContext.states = {};
-      }
-
-      if (contextData.trigger) {
-        safeContext.trigger = contextData.trigger;
-      }
-
-      if (contextData.args) {
-        safeContext.args = contextData.args;
-      } else {
-        safeContext.args = {};
-      }
-
-      // 2. Execute using cached script function
-      const res = parsedScript(safeContext);
+      // Execute using cached script function
+      const res = entry.parsed(safeContext);
 
       // Post-process result: Convert BigInt back to Number, List to Array
       return { result: this.convertResult(res) };
     } catch (error) {
-      // Improve error logging - extract message from Error object
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      logger.error({ error: errorMessage, stack: errorStack, script }, '[CEL] Execution failed');
+      const errorMessage = this.handleError(error, script);
       return { result: null, error: errorMessage };
     }
+  }
+
+  private getOrParseScript(script: string): ScriptCacheEntry {
+    let entry = this.scriptCache.get(script);
+    if (!entry) {
+      // Prevent unbounded memory growth
+      if (this.scriptCache.size >= this.MAX_CACHE_SIZE) {
+        this.scriptCache.clear();
+      }
+      const parsed = this.env.parse(script);
+      const usesData = script.includes('data');
+      entry = { parsed, usesData };
+      this.scriptCache.set(script, entry);
+    }
+    return entry;
+  }
+
+  private createSafeContext(
+    contextData: Record<string, any>,
+    scriptUsesData: boolean,
+  ): Record<string, any> {
+    const safeContext: Record<string, any> = {};
+
+    if (contextData.x !== undefined && contextData.x !== null) {
+      // If x is a string (e.g., custom mode name), set both x=0 and xstr=value
+      // If x is a number, convert to BigInt for CEL and set xstr=''
+      if (typeof contextData.x === 'string') {
+        safeContext.x = 0n; // CEL needs x to be int
+        safeContext.xstr = contextData.x; // String value accessible via xstr
+      } else {
+        const numValue = Number(contextData.x);
+        safeContext.x = Number.isNaN(numValue) ? 0n : BigInt(Math.floor(numValue));
+        safeContext.xstr = '';
+      }
+    } else {
+      safeContext.x = 0n; // Default for when x is not provided (e.g. state parsing)
+      safeContext.xstr = '';
+    }
+
+    if (Array.isArray(contextData.data)) {
+      safeContext.data = contextData.data.map((d: any) => BigInt(d));
+    } else if (Buffer.isBuffer(contextData.data) || contextData.data instanceof Uint8Array) {
+      if (scriptUsesData) {
+        // Optimize: Convert Buffer/Uint8Array to BigInt[] using a loop instead of map
+        // to avoid intermediate array allocation and function call overhead.
+        const len = contextData.data.length;
+        const arr = new Array(len);
+        for (let i = 0; i < len; i++) {
+          // Use cached BigInts for byte values (0-255) to avoid constructor overhead
+          arr[i] = this.BIGINT_CACHE[contextData.data[i]];
+        }
+        safeContext.data = arr;
+      } else {
+        // If script doesn't use data, provide empty array to satisfy type requirements
+        // without paying the conversion cost.
+        safeContext.data = [];
+      }
+    } else {
+      safeContext.data = [];
+    }
+
+    // Always provide state (default to empty object for safe access in CEL)
+    safeContext.state = contextData.state || {};
+
+    if (contextData.states) {
+      safeContext.states = contextData.states;
+    } else {
+      safeContext.states = {};
+    }
+
+    if (contextData.trigger) {
+      safeContext.trigger = contextData.trigger;
+    }
+
+    if (contextData.args) {
+      safeContext.args = contextData.args;
+    } else {
+      safeContext.args = {};
+    }
+
+    return safeContext;
+  }
+
+  private handleError(error: unknown, script: string): string {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error({ error: errorMessage, stack: errorStack, script }, '[CEL] Execution failed');
+    return errorMessage;
   }
 
   private convertResult(value: any): any {

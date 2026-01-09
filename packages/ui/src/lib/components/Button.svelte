@@ -41,7 +41,7 @@
     <span class="spinner" aria-hidden="true"></span>
     <span class="sr-only">Loading...</span>
   {/if}
-  <span class="content" class:hidden={isLoading}>
+  <span class="content" class:hidden={isLoading} aria-hidden={isLoading || undefined}>
     {@render children?.()}
   </span>
 </button>

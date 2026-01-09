@@ -50,7 +50,9 @@
   const ports = $derived(
     bridgeInfo?.bridges?.reduce<{ portId: string; path: string }[]>(
       (acc, bridge) =>
-        bridge.serial ? acc.concat({ portId: bridge.serial.portId, path: bridge.serial.path }) : acc,
+        bridge.serial
+          ? acc.concat({ portId: bridge.serial.portId, path: bridge.serial.path })
+          : acc,
       [],
     ) ?? [],
   );

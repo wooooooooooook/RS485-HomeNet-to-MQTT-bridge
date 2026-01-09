@@ -12,7 +12,7 @@
       onclick={() => onToggleSidebar?.()}
       aria-label={$t('header.toggle_menu')}
     >
-      <span class="icon">☰</span>
+      <span class="icon" aria-hidden="true">☰</span>
     </button>
 
     <div class="logo">
@@ -22,6 +22,7 @@
 
     <div
       class="beta-badge"
+      role="status"
       title={$t('header.beta_badge_label')}
       aria-label={$t('header.beta_badge_label')}
     >

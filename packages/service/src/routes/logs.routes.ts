@@ -128,8 +128,8 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
         }
 
         try {
-            ctx.rawPacketLogger.stop();
-            res.json({ success: true, message: 'Logging stopped' });
+            const result = ctx.rawPacketLogger.stop();
+            res.json({ success: true, message: 'Logging stopped', result });
         } catch (error) {
             logger.error({ err: error }, '[service] Failed to stop packet logging');
             res.status(500).json({ error: 'Failed to stop logging' });

@@ -12,6 +12,8 @@ import { createEntitiesRoutes, type EntitiesRoutesContext } from './entities.rou
 import { createControlsRoutes, type ControlsRoutesContext } from './controls.routes.js';
 import { createConfigRoutes, type ConfigRoutesContext } from './config.routes.js';
 import { createUtilsRoutes, type UtilsRoutesContext } from './utils.routes.js';
+import { createSetupRoutes, type SetupRoutesContext } from './setup.routes.js';
+import { createConfigEditorRoutes, type ConfigEditorRoutesContext } from './config-editor.routes.js';
 
 export interface RoutesContext extends
     SystemRoutesContext,
@@ -23,7 +25,9 @@ export interface RoutesContext extends
     EntitiesRoutesContext,
     ControlsRoutesContext,
     ConfigRoutesContext,
-    UtilsRoutesContext { }
+    UtilsRoutesContext,
+    SetupRoutesContext,
+    ConfigEditorRoutesContext { }
 
 export function registerRoutes(app: Express, ctx: RoutesContext): void {
     // System routes (health, restart, latency-test)
@@ -53,6 +57,12 @@ export function registerRoutes(app: Express, ctx: RoutesContext): void {
 
     // Utils routes (cel evaluate)
     app.use(createUtilsRoutes(ctx));
+
+    // Setup routes
+    app.use(createSetupRoutes(ctx));
+
+    // Config Editor routes
+    app.use(createConfigEditorRoutes(ctx));
 }
 
 export { createSystemRoutes } from './system.routes.js';

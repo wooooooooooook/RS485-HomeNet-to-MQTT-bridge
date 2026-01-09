@@ -81,8 +81,8 @@
       "restart_confirm": "정말로 서비스를 재시작하시겠습니까?",
       "restarting": "재시작 요청 중...",
       "mqtt_cleanup": "MQTT 메시지 초기화",
-      "mqtt_cleanup_desc": "애플리케이션이 게시한 모든 MQTT 유지 메시지를 삭제합니다.",
-      "mqtt_cleanup_confirm": "정말로 모든 MQTT 유지 메시지를 삭제하시겠습니까? 장치 재검색이 필요할 수 있습니다.",
+      "mqtt_cleanup_desc": "애플리케이션이 게시한 모든 MQTT 유지 메시지를 삭제합니다. 포트이름 변경 등 작업 후 남아있는 불필요한 mqtt 메시지를 제거할 수 있습니다.",
+      "mqtt_cleanup_confirm": "정말로 모든 MQTT 유지 메시지를 삭제하시겠습니까? mqtt메시지를 삭제 후 재시작됩니다.",
       "cleaning": "초기화 중...",
       "mqtt_cleanup_success": "MQTT 메시지가 초기화되었습니다."
     },
@@ -410,7 +410,11 @@
       "save": "저장",
       "save_success": "저장 완료 (백업: {backup})",
       "load_error": "설정 정보를 불러올 수 없습니다.",
-      "save_error": "저장에 실패했습니다."
+      "save_error": "저장에 실패했습니다.",
+      "restart_title": "재시작 필요",
+      "restart_confirm": "설정 변경 사항을 적용하려면 브릿지를 재시작해야 합니다. 지금 재시작하시겠습니까?",
+      "restart_button": "재시작",
+      "restart_initiated": "재시작 요청 중... 잠시 후 페이지가 새로고침됩니다."
     },
     "packets": {
       "title": "패킷 로그 (RX/TX)",

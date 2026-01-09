@@ -15,16 +15,13 @@ import {
   normalizePortId,
   validateConfig,
 } from '@rs485-homenet/core';
-import type {
-  SerialConfig,
-} from '@rs485-homenet/core/config/types';
 import { activityLogService } from './activity-log.service.js';
 import { logCollectorService } from './log-collector.service.js';
 import { RawPacketLoggerService } from './raw-packet-logger.service.js';
 import { LogRetentionService, type LogRetentionSettings } from './log-retention.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
-import { createSetupWizardService } from './setup-wizard.js';
-import { createConfigEditorService } from './config-editor.js';
+import { createSetupWizardService } from './services/setup.service.js';
+import { createConfigEditorService } from './services/config-editor.service.js';
 
 import type {
   BridgeInstance,
@@ -171,9 +168,6 @@ app.use((req, res, next) => {
   next();
 });
 
-setupWizardService.registerRoutes(app);
-configEditorService.registerRoutes(app);
-
 // --- Service Initializations ---
 activityLogService.addLog('log.service_started');
 const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
@@ -221,6 +215,8 @@ registerRoutes(app, {
     getRecentLogs: () => activityLogService.getRecentLogs(),
   },
   triggerRestart: async () => triggerRestart(),
+  setupWizardService,
+  configEditorService,
 });
 
 // WebSocket handling is now in websocket/packet-stream.ts

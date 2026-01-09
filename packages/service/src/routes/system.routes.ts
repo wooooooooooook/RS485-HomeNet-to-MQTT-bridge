@@ -33,6 +33,25 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
     const router = Router();
     const restartTokens = new Set<string>();
 
+    // Helper to execute process restart
+    const restartProcess = () => {
+        setTimeout(async () => {
+            // Dev environment support: touch this file to trigger tsx watch restart
+            if (process.env.npm_lifecycle_event === 'dev') {
+                logger.info('[service] Dev mode detected. Touching file to trigger restart...');
+                try {
+                    const now = new Date();
+                    await fs.utimes(__filename, now, now);
+                } catch (err) {
+                    logger.error({ err }, '[service] Failed to touch file for dev restart');
+                }
+            } else {
+                logger.info('[service] Exiting process to trigger restart...');
+                process.exit(0);
+            }
+        }, 500);
+    };
+
     // Health check
     router.get('/api/health', (_req, res) => {
         res.json({ status: 'ok' });
@@ -69,22 +88,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
             await triggerRestart();
             res.json({ success: true, message: 'Restarting...' });
 
-            // Give time for response to be sent
-            setTimeout(async () => {
-                // Dev environment support: touch this file to trigger tsx watch restart
-                if (process.env.npm_lifecycle_event === 'dev') {
-                    logger.info('[service] Dev mode detected. Touching file to trigger restart...');
-                    try {
-                        const now = new Date();
-                        await fs.utimes(__filename, now, now);
-                    } catch (err) {
-                        logger.error({ err }, '[service] Failed to touch file for dev restart');
-                    }
-                } else {
-                    logger.info('[service] Exiting process to trigger restart...');
-                    process.exit(0);
-                }
-            }, 500);
+            // Trigger process restart
+            restartProcess();
         } catch (error) {
             logger.error({ err: error }, '[service] Failed to trigger restart');
             res.status(500).json({ error: 'Restart failed' });
@@ -273,6 +278,7 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
             // Trigger a restart to refresh discovery if messages were cleared
             if (count > 0) {
                 await triggerRestart();
+                restartProcess();
             }
         } catch (error) {
             logger.error({ err: error }, '[service] Failed to clear retained messages');

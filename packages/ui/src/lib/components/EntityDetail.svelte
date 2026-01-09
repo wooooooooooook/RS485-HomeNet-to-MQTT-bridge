@@ -508,10 +508,7 @@
   }
 
   async function handleToggleAutomationEnabled(newValue: boolean) {
-    const oldValue = entity.enabled;
-    // Optimistic update
-    entity.enabled = newValue;
-
+    // No optimistic update - wait for restart
     isTogglingAutomation = true;
     automationToggleError = null;
 
@@ -521,15 +518,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: newValue }),
       });
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || $t('entity_detail.automation.toggle_error'));
       }
+
+      promptForRestart();
     } catch (err) {
       automationToggleError =
         err instanceof Error ? err.message : $t('entity_detail.automation.toggle_error');
-      // Revert on error
-      entity.enabled = oldValue;
     } finally {
       isTogglingAutomation = false;
     }

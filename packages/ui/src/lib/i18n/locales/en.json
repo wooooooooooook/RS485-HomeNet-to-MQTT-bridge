@@ -81,8 +81,8 @@
       "restart_confirm": "Are you sure you want to restart the service?",
       "restarting": "Requesting restart...",
       "mqtt_cleanup": "Clear MQTT Messages",
-      "mqtt_cleanup_desc": "Clear all retained MQTT messages published by the application.",
-      "mqtt_cleanup_confirm": "Are you sure you want to clear all retained MQTT messages? Devices may need to be re-discovered.",
+      "mqtt_cleanup_desc": "Clear all retained MQTT messages published by the application. Use this when you want to remove unnecessary MQTT messages after port name changes or other operations.",
+      "mqtt_cleanup_confirm": "Are you sure you want to clear all retained MQTT messages? The service will restart after clearing.",
       "cleaning": "Cleaning...",
       "mqtt_cleanup_success": "MQTT messages cleared."
     },
@@ -410,7 +410,11 @@
       "save": "Save",
       "save_success": "Saved successfully (Backup: {backup})",
       "load_error": "Failed to load config.",
-      "save_error": "Failed to save."
+      "save_error": "Failed to save.",
+      "restart_title": "Restart Required",
+      "restart_confirm": "Do you want to restart the bridge to apply changes?",
+      "restart_button": "Restart",
+      "restart_initiated": "Restart initiated. The page will reload shortly."
     },
     "packets": {
       "title": "Packet Log (RX/TX)",

@@ -103,6 +103,60 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
 
     // --- API Routes ---
 
+    router.get('/api/config/raw/:type/:entityId', (req, res) => {
+        const currentRawConfigs = ctx.getCurrentRawConfigs();
+        if (currentRawConfigs.length === 0) {
+            return res.status(400).json({ error: 'Config not loaded' });
+        }
+
+        const { type, entityId } = req.params;
+        let foundEntity: any = null;
+
+        if (type === 'entity') {
+            for (const rawConfig of currentRawConfigs) {
+                for (const entityType of ENTITY_TYPE_KEYS) {
+                    const entities = rawConfig[entityType] as Array<any> | undefined;
+                    if (Array.isArray(entities)) {
+                        foundEntity = entities.find((e) => e.id === entityId);
+                        if (foundEntity) break;
+                    }
+                }
+                if (foundEntity) break;
+            }
+        } else if (type === 'automation') {
+            for (const rawConfig of currentRawConfigs) {
+                const automations = rawConfig.automation as Array<any> | undefined;
+                if (Array.isArray(automations)) {
+                    foundEntity = automations.find((automation) => automation.id === entityId);
+                    if (foundEntity) break;
+                }
+            }
+        } else if (type === 'script') {
+            for (const rawConfig of currentRawConfigs) {
+                const scripts = rawConfig.scripts as Array<any> | undefined;
+                if (Array.isArray(scripts)) {
+                    foundEntity = scripts.find((script) => script.id === entityId);
+                    if (foundEntity) break;
+                }
+            }
+        } else {
+            return res.status(400).json({ error: 'Unknown config type' });
+        }
+
+        if (!foundEntity) {
+            return res.status(404).json({ error: 'Entity not found' });
+        }
+
+        try {
+            const yamlString = dumpConfigToYaml(foundEntity);
+            res.json({ yaml: yamlString });
+        } catch (err) {
+            logger.error({ err }, '[service] Failed to dump config to YAML');
+            res.status(500).json({ error: 'Failed to generate YAML' });
+        }
+    });
+
+
     router.post('/api/config/update', async (req, res) => {
         if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
             logger.warn({ ip: req.ip }, '[service] Config update rate limit exceeded');

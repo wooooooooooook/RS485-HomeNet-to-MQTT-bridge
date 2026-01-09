@@ -148,7 +148,7 @@ export class HomeNetBridge {
 
   async stop() {
     if (this.startPromise) {
-      await this.startPromise.catch(() => {});
+      await this.startPromise.catch(() => { });
     }
 
     for (const context of this.portContexts.values()) {
@@ -652,6 +652,7 @@ export class HomeNetBridge {
           match: {
             data: testPacket,
             mask: testPacket.map(() => 0xff), // Exact match
+            offset: 0,
           },
         },
       ],

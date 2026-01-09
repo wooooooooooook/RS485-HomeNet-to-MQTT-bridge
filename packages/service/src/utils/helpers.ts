@@ -1,0 +1,200 @@
+/**
+ * Shared helper functions for the service package
+ */
+
+import fs from 'node:fs/promises';
+import { logger } from '@rs485-homenet/core';
+import { CONFIG_RESTART_FLAG, BASE_MQTT_PREFIX } from './constants.js';
+import type { FrontendSettings, RawPacketPayload, RawPacketEvent } from '../types/index.js';
+
+// --- MQTT Helpers ---
+
+/**
+ * Splits a topic string into normalized parts, filtering out empty segments.
+ */
+export const normalizeTopicParts = (topic: string): string[] => topic.split('/').filter(Boolean);
+
+/**
+ * Pre-computed base prefix parts for topic parsing.
+ */
+export const BASE_PREFIX_PARTS = normalizeTopicParts(BASE_MQTT_PREFIX);
+
+/**
+ * Masks the password in an MQTT URL for safe logging/display.
+ */
+export function maskMqttPassword(url: string | undefined): string {
+    if (!url) return '';
+    try {
+        if (!url.includes('://')) return url;
+        const parsed = new URL(url);
+        if (parsed.password) {
+            parsed.password = '******';
+            return parsed.toString();
+        }
+        return url;
+    } catch (e) {
+        return url.replace(/:([^:@]+)@/, ':******@');
+    }
+}
+
+// --- File System Helpers ---
+
+/**
+ * Checks if a file or directory exists at the given path.
+ */
+export const fileExists = async (targetPath: string): Promise<boolean> => {
+    try {
+        await fs.access(targetPath);
+        return true;
+    } catch (error) {
+        const err = error as NodeJS.ErrnoException;
+        if (err.code === 'ENOENT') return false;
+        throw error;
+    }
+};
+
+// --- Environment Variable Helpers ---
+
+/**
+ * Parses a comma-separated list from environment variables.
+ * Supports migration from legacy key to primary key.
+ */
+export const parseEnvList = (
+    primaryKey: string,
+    legacyKey: string,
+    label: string,
+): { source: string | null; values: string[] } => {
+    const raw = process.env[primaryKey] ?? process.env[legacyKey];
+    const source = process.env[primaryKey] ? primaryKey : process.env[legacyKey] ? legacyKey : null;
+
+    if (!raw) return { source, values: [] };
+
+    const values = raw
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+
+    if (values.length === 0) {
+        throw new Error(`[service] ${source}에 최소 1개 이상의 ${label}을 지정하세요.`);
+    }
+
+    if (!raw.includes(',')) {
+        logger.warn(
+            `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
+            ' 사용을 권장합니다.',
+        );
+    }
+
+    if (source === legacyKey && primaryKey !== legacyKey) {
+        logger.warn(`[service] ${legacyKey} 대신 ${primaryKey} 환경 변수를 사용하도록 전환해주세요.`);
+    }
+
+    return { source, values };
+};
+
+// --- System Helpers ---
+
+/**
+ * Creates a restart flag file to signal that a restart is required.
+ * Used by HA addon run.sh or manual container restart in dev.
+ */
+export const triggerRestart = async (): Promise<void> => {
+    await fs.writeFile(CONFIG_RESTART_FLAG, new Date().toISOString(), 'utf-8');
+    logger.info('[service] Restart required. Please restart the addon/container to apply changes.');
+};
+
+// --- Frontend Settings Helpers ---
+
+const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
+    toast: {
+        stateChange: false,
+        command: true,
+    },
+    locale: 'ko',
+    logRetention: {
+        enabled: false,
+        autoSaveEnabled: false,
+        retentionCount: 7,
+    },
+};
+
+/**
+ * Normalizes partial frontend settings to ensure all required fields have defaults.
+ */
+export const normalizeFrontendSettings = (
+    value: Partial<FrontendSettings> | null | undefined,
+): FrontendSettings => {
+    return {
+        toast: {
+            stateChange:
+                typeof value?.toast?.stateChange === 'boolean'
+                    ? value.toast.stateChange
+                    : DEFAULT_FRONTEND_SETTINGS.toast.stateChange,
+            command:
+                typeof value?.toast?.command === 'boolean'
+                    ? value.toast.command
+                    : DEFAULT_FRONTEND_SETTINGS.toast.command,
+        },
+        locale: undefined, // Will be set below if valid
+        logRetention: {
+            enabled:
+                typeof value?.logRetention?.enabled === 'boolean'
+                    ? value.logRetention.enabled
+                    : DEFAULT_FRONTEND_SETTINGS.logRetention!.enabled,
+            autoSaveEnabled:
+                typeof value?.logRetention?.autoSaveEnabled === 'boolean'
+                    ? value.logRetention.autoSaveEnabled
+                    : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
+            retentionCount:
+                typeof value?.logRetention?.retentionCount === 'number' &&
+                    value.logRetention.retentionCount > 0
+                    ? value.logRetention.retentionCount
+                    : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
+        },
+    };
+};
+
+/**
+ * Creates a normalized raw packet event with defaults.
+ */
+export const normalizeRawPacket = (
+    data: RawPacketPayload & { direction?: 'RX' | 'TX' },
+): RawPacketEvent => {
+    const portId = data.portId ?? 'raw';
+    const topic = data.topic ?? `${BASE_MQTT_PREFIX}/${portId}/raw`;
+
+    return {
+        topic,
+        payload: typeof data.payload === 'string' ? data.payload : '',
+        receivedAt: data.receivedAt ?? new Date().toISOString(),
+        interval: typeof data.interval === 'number' ? data.interval : null,
+        portId,
+        direction: data.direction ?? 'RX',
+    };
+};
+
+// --- Topic Parsing Helpers ---
+
+/**
+ * Extracts entity ID from a topic path.
+ */
+export const extractEntityIdFromTopic = (topic: string): string => {
+    const parts = normalizeTopicParts(topic);
+    if (parts.length >= 3) {
+        return parts[parts.length - 2];
+    }
+    return parts.at(-1) ?? topic;
+};
+
+/**
+ * Checks if a topic is a state topic (ends with /state).
+ */
+export const isStateTopic = (topic: string): boolean => {
+    const parts = normalizeTopicParts(topic);
+    return parts.length >= 3 && parts[parts.length - 1] === 'state';
+};
+
+/**
+ * Parses the default frontend settings constant.
+ */
+export const getDefaultFrontendSettings = (): FrontendSettings => DEFAULT_FRONTEND_SETTINGS;

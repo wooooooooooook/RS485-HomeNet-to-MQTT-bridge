@@ -24,7 +24,6 @@ describe('Bestin Fan Test', () => {
 
     // Fan 엔티티가 있는지 확인
     const fanEntity = findEntityById(config, 'ventilation_fan');
-    console.log('Fan Entity:', fanEntity);
 
     if (!fanEntity) {
       console.log(
@@ -40,12 +39,10 @@ describe('Bestin Fan Test', () => {
     const fanPacket = [0x02, 0x61, 0x00, 0x10, 0x20, 0x01, 0x02, 0x00, 0x00];
     const checksum = calculateBestinSum(fanPacket);
     const fullPacket = Buffer.from([...fanPacket, checksum]);
-    console.log('Fan Packet:', fullPacket.toString('hex'));
 
     processPacket(stateManager, fullPacket);
 
     const fanState = stateManager.getEntityState('ventilation_fan');
-    console.log('Fan State:', fanState);
 
     if (fanState) {
       expect(fanState.state).toBe('ON');
@@ -74,7 +71,6 @@ describe('Bestin Fan Test', () => {
     processPacket(stateManager, fullPacket);
 
     const fanState = stateManager.getEntityState('ventilation_fan');
-    console.log('Fan OFF State:', fanState);
 
     if (fanState) {
       expect(fanState.state).toBe('OFF');
@@ -103,7 +99,6 @@ describe('Bestin Fan Test', () => {
     processPacket(stateManager, fullPacket);
 
     const fanState = stateManager.getEntityState('ventilation_fan');
-    console.log('Fan Natural Mode State:', fanState);
 
     if (fanState) {
       expect(fanState.state).toBe('ON');
@@ -142,11 +137,8 @@ describe('Bestin Fan Test', () => {
 
     await automationManager.runScript(commandConfig.script, context, commandConfig.args);
 
-    console.log('Write calls:', mockSerialPort.write.mock.calls.length);
-
     if (mockSerialPort.write.mock.calls.length > 0) {
       const generatedPacket = mockSerialPort.write.mock.calls[0][0];
-      console.log('Generated ON Packet:', generatedPacket.toString('hex'));
 
       // Verify basic packet structure
       expect(generatedPacket[0]).toBe(0x02); // Header
@@ -188,11 +180,8 @@ describe('Bestin Fan Test', () => {
 
     await automationManager.runScript(commandConfig.script, context, args);
 
-    console.log('Speed Write calls:', mockSerialPort.write.mock.calls.length);
-
     if (mockSerialPort.write.mock.calls.length > 0) {
       const generatedPacket = mockSerialPort.write.mock.calls[0][0];
-      console.log('Generated Speed Packet:', generatedPacket.toString('hex'));
 
       // Verify packet structure for speed control
       expect(generatedPacket[0]).toBe(0x02); // Header
@@ -209,17 +198,14 @@ describe('Bestin Fan Test', () => {
 
     // Test power state: bitAnd(data[5], 0x01) == 1
     const powerOn = celExecutor.execute('bitAnd(data[5], 0x01) == 1', { data: packet });
-    console.log('Power ON:', powerOn, 'expected:', true);
     expect(powerOn).toBe(true);
 
     // Test natural ventilation: bitAnd(data[5], 0x10) == 0x10
     const naturalMode = celExecutor.execute('bitAnd(data[5], 0x10) == 0x10', { data: packet });
-    console.log('Natural Mode:', naturalMode, 'expected:', true);
     expect(naturalMode).toBe(true);
 
     // Test speed level: data[6] == 2
     const speed = celExecutor.execute('data[6]', { data: packet });
-    console.log('Speed:', speed, 'expected:', 2);
     expect(speed).toBe(2);
   });
 
@@ -233,17 +219,14 @@ describe('Bestin Fan Test', () => {
 
     // Test power ON command generation
     const powerOnData = celExecutor.execute('[0x61, 0x01, 10, 0x00, 0x01, 0x01, 0x00, 0x00]', {});
-    console.log('Power ON data:', powerOnData);
     expect(powerOnData).toEqual([0x61, 0x01, 10, 0x00, 0x01, 0x01, 0x00, 0x00]);
 
     // Test speed 3 command generation
     const speed3Data = celExecutor.execute('[0x61, 0x03, 10, 0x00, 0x00, 3, 0x00, 0x00]', {});
-    console.log('Speed 3 data:', speed3Data);
     expect(speed3Data).toEqual([0x61, 0x03, 10, 0x00, 0x00, 3, 0x00, 0x00]);
 
     // Test natural ventilation ON command generation
     const naturalOnData = celExecutor.execute('[0x61, 0x07, 10, 0x00, 0x10, 0x00, 0x00, 0x00]', {});
-    console.log('Natural ON data:', naturalOnData);
     expect(naturalOnData).toEqual([0x61, 0x07, 10, 0x00, 0x10, 0x00, 0x00, 0x00]);
   });
 });

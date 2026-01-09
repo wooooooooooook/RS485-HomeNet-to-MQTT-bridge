@@ -24,7 +24,6 @@ describe('Bestin Climate Test', () => {
 
     // Room 1 난방 엔티티가 있는지 확인
     const room1Entity = findEntityById(config, 'room1_heating');
-    console.log('Room 1 Entity:', room1Entity);
 
     if (!room1Entity) {
       console.log(
@@ -42,12 +41,10 @@ describe('Bestin Climate Test', () => {
     ];
     const checksum1 = calculateBestinSum(packetRoom1);
     const fullPacket1 = Buffer.from([...packetRoom1, checksum1]);
-    console.log('Room 1 Packet:', fullPacket1.toString('hex'));
 
     processPacket(stateManager, fullPacket1);
 
     const room1State = stateManager.getEntityState('room1_heating');
-    console.log('Room 1 State:', room1State);
 
     if (room1State) {
       expect(room1State.mode).toBe('heat');
@@ -90,11 +87,8 @@ describe('Bestin Climate Test', () => {
 
     await automationManager.runScript(commandConfig.script, context, commandConfig.args);
 
-    console.log('Write calls:', mockSerialPort.write.mock.calls.length);
-
     if (mockSerialPort.write.mock.calls.length > 0) {
       const generatedPacket = mockSerialPort.write.mock.calls[0][0];
-      console.log('Generated Packet:', generatedPacket.toString('hex'));
 
       // Verify basic packet structure
       expect(generatedPacket[0]).toBe(0x02); // Header
@@ -110,12 +104,10 @@ describe('Bestin Climate Test', () => {
 
     // Test bitAnd(data[7], 0x3F) = bitAnd(0x58, 0x3F) = 0x18 = 24
     const result1 = celExecutor.execute('bitAnd(data[7], 0x3F)', { data: packet });
-    console.log('bitAnd(0x58, 0x3F):', result1, 'expected:', 24);
     expect(result1).toBe(24);
 
     // Test bitAnd(data[7], 0x40) = bitAnd(0x58, 0x40) = 0x40 = 64
     const result2 = celExecutor.execute('bitAnd(data[7], 0x40)', { data: packet });
-    console.log('bitAnd(0x58, 0x40):', result2, 'expected:', 64);
     expect(result2).toBe(64);
 
     // Test bitShiftLeft and bitOr for current temperature
@@ -123,7 +115,6 @@ describe('Bestin Climate Test', () => {
     const result3 = celExecutor.execute('bitOr(bitShiftLeft(data[8], 8), data[9])', {
       data: packet,
     });
-    console.log('Current temp raw:', result3, 'expected:', 242);
     expect(result3).toBe(242);
   });
 
@@ -131,8 +122,6 @@ describe('Bestin Climate Test', () => {
     // Simple packet: [0x02, 0x28, 0x10, 0x91, 0x00, 0x01, 0x11, 0x18, 0x00, 0xf2]
     const testPacket = [0x02, 0x28, 0x10, 0x91, 0x00, 0x01, 0x11, 0x18, 0x00, 0xf2];
     const checksum = calculateBestinSum(testPacket);
-
-    console.log('Test packet checksum:', checksum.toString(16));
 
     // Verify the checksum is a valid single byte
     expect(checksum).toBeGreaterThanOrEqual(0);

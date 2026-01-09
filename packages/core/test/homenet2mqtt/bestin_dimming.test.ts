@@ -33,7 +33,6 @@ describe('Bestin Dimming Test', () => {
     const packet3 = hexToBuffer(DUMP_PACKETS[0]);
     processPacket(stateManager, packet3);
 
-    console.log('Publish calls:', publishMock.mock.calls);
     expect(true).toBe(true);
   });
 
@@ -49,9 +48,7 @@ describe('Bestin Dimming Test', () => {
       args: { room_number: 1, position: 1, ONOFF: 1 },
     };
 
-    const { result, error } = celExecutor.executeWithDiagnostics(expr, context);
-    console.log('bitOr Result:', result);
-    console.log('bitOr Error:', error);
+    const { result } = celExecutor.executeWithDiagnostics(expr, context);
 
     expect(result).not.toBeNull();
     expect(Array.isArray(result)).toBe(true);
@@ -71,9 +68,7 @@ describe('Bestin Dimming Test', () => {
       args: { room_number: 1, position: 1, ONOFF: 1 },
     };
 
-    const { result, error } = celExecutor.executeWithDiagnostics(expr, context);
-    console.log('Full CEL Result:', result);
-    console.log('Full CEL Error:', error);
+    const { result } = celExecutor.executeWithDiagnostics(expr, context);
 
     // Expected data bytes (without header and checksum)
     const expectedData = [
@@ -91,7 +86,6 @@ describe('Bestin Dimming Test', () => {
       0xff, // fixed
     ];
 
-    expect(error).toBeUndefined();
     expect(result).not.toBeNull();
     expect(Array.isArray(result)).toBe(true);
     expect(result).toEqual(expectedData);
@@ -136,12 +130,9 @@ describe('Bestin Dimming Test', () => {
     const checksum = calculateBestinSum(expectedData);
     const expectedPacket = Buffer.from([...expectedData, checksum]);
 
-    console.log('Light ON - Expected:', expectedPacket.toString('hex'));
-
     expect(mockSerialPort.write.mock.calls.length).toBe(1);
 
     const generatedPacket = mockSerialPort.write.mock.calls[0][0];
-    console.log('Light ON - Generated:', generatedPacket.toString('hex'));
 
     expect(generatedPacket.toString('hex')).toBe(expectedPacket.toString('hex'));
   });
@@ -159,7 +150,6 @@ describe('Bestin Dimming Test', () => {
     expect(entity).not.toBeNull();
 
     const commandConfig = (entity as any).command_on;
-    console.log('Outlet command_on:', commandConfig);
 
     const context = {
       type: 'command' as any,
@@ -184,12 +174,9 @@ describe('Bestin Dimming Test', () => {
     const checksum = calculateBestinSum(expectedData);
     const expectedPacket = Buffer.from([...expectedData, checksum]);
 
-    console.log('Outlet ON - Expected:', expectedPacket.toString('hex'));
-
     expect(mockSerialPort.write.mock.calls.length).toBe(1);
 
     const generatedPacket = mockSerialPort.write.mock.calls[0][0];
-    console.log('Outlet ON - Generated:', generatedPacket.toString('hex'));
 
     expect(generatedPacket.toString('hex')).toBe(expectedPacket.toString('hex'));
   });
@@ -217,7 +204,6 @@ describe('Bestin Dimming Test', () => {
       lightCommandConfig.args,
     );
 
-    console.log('After Light command - Write count:', mockSerialPort.write.mock.calls.length);
     expect(mockSerialPort.write.mock.calls.length).toBe(1);
 
     // 2. Outlet ON command (sequence should be incremented by update_sequence_number script)
@@ -234,15 +220,11 @@ describe('Bestin Dimming Test', () => {
       outletCommandConfig.args,
     );
 
-    console.log('After Outlet command - Write count:', mockSerialPort.write.mock.calls.length);
     expect(mockSerialPort.write.mock.calls.length).toBe(2);
 
     // Verify both packets
     const lightPacket = mockSerialPort.write.mock.calls[0][0];
     const outletPacket = mockSerialPort.write.mock.calls[1][0];
-
-    console.log('Light Packet:', lightPacket.toString('hex'));
-    console.log('Outlet Packet:', outletPacket.toString('hex'));
 
     // Light packet starts with 02 31 0E 21 (header, room1, len=14, cmd=0x21)
     expect(lightPacket[0]).toBe(0x02);
@@ -283,7 +265,6 @@ describe('Bestin Dimming Test', () => {
     expect(mockSerialPort.write.mock.calls.length).toBe(1);
 
     const lightOffPacket = mockSerialPort.write.mock.calls[0][0];
-    console.log('Light OFF Packet:', lightOffPacket.toString('hex'));
 
     // Verify ONOFF byte is 0x02 (OFF)
     // Format: [0x02, 0x31, 0x0E, 0x21, seq, 0x01, 0x00, pos, ONOFF, ...]

@@ -2,6 +2,7 @@ import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveSecurePath } from './utils/helpers.js';
 
 interface LogOptions {
   configDir: string;
@@ -135,8 +136,8 @@ export class RawPacketLoggerService {
     };
   }
 
-  public getFilePath(filename: string): string {
-    return path.join(this.configDir, 'logs', filename);
+  public getFilePath(filename: string): string | null {
+    return resolveSecurePath(path.join(this.configDir, 'logs'), filename);
   }
 
   private setupListeners() {

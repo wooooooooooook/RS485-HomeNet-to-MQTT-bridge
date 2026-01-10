@@ -2,6 +2,7 @@ import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { resolveSecurePath } from './utils/helpers.js';
 
 const LOG_TTL = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 const CLEANUP_INTERVAL = 60 * 60 * 1000; // Cleanup every hour
@@ -566,13 +567,16 @@ export class LogRetentionService {
     }
   }
 
-  public getFilePath(filename: string): string {
-    return path.join(this.logsSubDir, filename);
+  public getFilePath(filename: string): string | null {
+    return resolveSecurePath(this.logsSubDir, filename);
   }
 
   public async deleteFile(filename: string): Promise<boolean> {
     try {
       const filePath = this.getFilePath(filename);
+      if (!filePath) {
+        return false;
+      }
       await fsp.unlink(filePath);
       return true;
     } catch {

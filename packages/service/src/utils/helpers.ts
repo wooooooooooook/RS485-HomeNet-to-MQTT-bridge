@@ -3,6 +3,7 @@
  */
 
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { logger } from '@rs485-homenet/core';
 import { CONFIG_RESTART_FLAG, BASE_MQTT_PREFIX } from './constants.js';
 import type { FrontendSettings, RawPacketPayload, RawPacketEvent } from '../types/index.js';
@@ -51,6 +52,21 @@ export const fileExists = async (targetPath: string): Promise<boolean> => {
     if (err.code === 'ENOENT') return false;
     throw error;
   }
+};
+
+/**
+ * Securely resolves a file path against a base directory, preventing path traversal.
+ * Returns null if the resolved path is outside the base directory.
+ */
+export const resolveSecurePath = (baseDir: string, filename: string): string | null => {
+    const resolvedBase = path.resolve(baseDir);
+    const resolvedPath = path.resolve(baseDir, filename);
+
+    if (!resolvedPath.startsWith(resolvedBase + path.sep)) {
+        return null;
+    }
+
+    return resolvedPath;
 };
 
 // --- Environment Variable Helpers ---

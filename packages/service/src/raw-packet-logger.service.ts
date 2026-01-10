@@ -59,9 +59,9 @@ export class RawPacketLoggerService {
           'Packet Stats:',
           ...(meta.stats
             ? Object.entries(meta.stats).map(
-              ([portId, s]: [string, any]) =>
-                ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), IdleOccur(Avg=${s.idleOccurrenceAvg}ms, Std=${s.idleOccurrenceStdDev}ms), Samples=${s.sampleSize}`,
-            )
+                ([portId, s]: [string, any]) =>
+                  ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), IdleOccur(Avg=${s.idleOccurrenceAvg}ms, Std=${s.idleOccurrenceStdDev}ms), Samples=${s.sampleSize}`,
+              )
             : [' - Stats not available']),
           '==================================================',
           '', // Empty line

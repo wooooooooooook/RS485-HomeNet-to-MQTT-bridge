@@ -40,25 +40,37 @@
 
 ### 1바이트 체크섬 (`rx_checksum` / `tx_checksum`)
 
-| 알고리즘 (값) | 설명 |
-| :--- | :--- |
-| `add` | 헤더를 포함한 모든 바이트의 합 (Sum & 0xFF) |
-| `add_no_header` | 헤더를 제외한 데이터 바이트의 합 (Sum & 0xFF) |
-| `xor` | 헤더를 포함한 모든 바이트의 XOR 연산 값 |
-| `xor_no_header` | 헤더를 제외한 데이터 바이트의 XOR 연산 값 |
-| `samsung_rx` | 삼성 수신용. 초기값 `0xB0`, 데이터 XOR 연산. 단, `data[0] < 0x7C`일 경우 결과에 `0x80` XOR 추가 |
-| `samsung_tx` | 삼성 송신용. 데이터 XOR 연산 후 결과에 `0x80` XOR 추가 |
-| `bestin_sum` | Bestin 전용. 초기값 3, `sum = ((byte ^ sum) + 1) & 0xFF` 반복 연산 (헤더 포함) |
-| `none` | 체크섬 검사를 하지 않음 |
+| 알고리즘 (값) | 범위 | 계산 로직 (Pseudo-code) |
+| :--- | :--- | :--- |
+| `add` | 헤더 + 데이터 | `Sum(All Bytes) & 0xFF` |
+| `add_no_header` | 데이터 | `Sum(Data Bytes) & 0xFF` |
+| `xor` | 헤더 + 데이터 | `XOR(All Bytes)` |
+| `xor_no_header` | 데이터 | `XOR(Data Bytes)` |
+| `samsung_rx` | 데이터 | 초기값 `0xB0`.<br>1. `crc = 0xB0 ^ XOR(Data)`<br>2. 만약 `data[0] < 0x7C`이면, `crc ^= 0x80` |
+| `samsung_tx` | 데이터 | 초기값 `0x00`.<br>`crc = 0x00 ^ XOR(Data) ^ 0x80` |
+| `bestin_sum` | 헤더 + 데이터 | 초기값 `3`.<br>각 바이트 `b`에 대해: `sum = ((b ^ sum) + 1) & 0xFF` |
+| `none` | - | 체크섬 검사를 하지 않음 |
 
 ### 2바이트 체크섬 (`rx_checksum2` / `tx_checksum2`)
 
-| 알고리즘 (값) | 설명 |
-| :--- | :--- |
-| `xor_add` | Ezville 등. 2바이트 `[XOR, ADD]` 반환. `ADD`는 `(모든 바이트 합 + XOR 결과) & 0xFF` |
+| 알고리즘 (값) | 범위 | 계산 로직 (Pseudo-code) |
+| :--- | :--- | :--- |
+| `xor_add` | 헤더 + 데이터 | 1. `xor_sum = XOR(All Bytes)`<br>2. `add_sum = Sum(All Bytes)`<br>3. `final_add = (add_sum + xor_sum) & 0xFF`<br>결과: `[xor_sum, final_add]` (2바이트 배열) |
 
 > **참고**: 체크섬 필드에 알고리즘 이름 대신 CEL 표현식을 작성하면 커스텀 로직을 적용할 수 있습니다.
 > 예: `rx_checksum: "data[0] + data[1]"`
+
+### 체크섬 문제 해결 (Troubleshooting)
+
+체크섬 검증이 실패하여 패킷이 수신되지 않는 경우 다음 단계를 확인하세요.
+
+1.  **로그 확인**: 로그 레벨을 `debug`로 설정하고 `Raw Packet` 로그를 확인하여 수신되는 패킷의 실제 바이트 값을 캡처합니다.
+2.  **알고리즘 검증**: 위 표의 로직을 사용하여 수동으로 체크섬을 계산해 봅니다.
+3.  **CEL 활용**: 표준 알고리즘과 미묘하게 다른 경우(예: 오프셋 차이, 초기값 차이), CEL 표현식을 사용하여 정확한 로직을 구현합니다.
+    ```yaml
+    # 예: XOR 체크섬인데 결과에 0xFF를 XOR 하는 변종
+    rx_checksum: "bitXor(bitXor(data[0], data[1]), 0xFF)"
+    ```
 
 ## 기본 예제 (양방향 동일 헤더/푸터)
 `kocom.homenet_bridge.yaml`은 동일한 헤더·푸터와 단순 합산 체크섬을 사용합니다.

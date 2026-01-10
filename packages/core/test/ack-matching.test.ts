@@ -21,7 +21,7 @@ class MockStream extends Duplex {
   _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
     callback();
   }
-  _read(size: number): void { }
+  _read(size: number): void {}
 }
 
 describe('ACK Matching', () => {

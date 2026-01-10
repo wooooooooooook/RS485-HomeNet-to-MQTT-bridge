@@ -37,15 +37,8 @@ import {
   CONFIG_RESTART_FLAG,
   BASE_MQTT_PREFIX,
 } from './utils/constants.js';
-import {
-  fileExists,
-  parseEnvList,
-  triggerRestart,
-} from './utils/helpers.js';
-import {
-  initializeBackupDir,
-  saveBackup,
-} from './services/backup.service.js';
+import { fileExists, parseEnvList, triggerRestart } from './utils/helpers.js';
+import { initializeBackupDir, saveBackup } from './services/backup.service.js';
 import { loadFrontendSettings } from './services/frontend-settings.service.js';
 import { registerRoutes } from './routes/index.js';
 import { createPacketStreamHandler } from './websocket/packet-stream.js';
@@ -398,7 +391,7 @@ async function loadAndStartBridges(filenames: string[]) {
   }
 
   if (bridgeStartPromise) {
-    await bridgeStartPromise.catch(() => { });
+    await bridgeStartPromise.catch(() => {});
   }
 
   bridgeStartPromise = (async () => {
@@ -679,7 +672,7 @@ server.listen(port, async () => {
 
     // 브리지 시작 성공 후 .restart-required 파일 삭제
     if (await fileExists(CONFIG_RESTART_FLAG)) {
-      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => { });
+      await fs.unlink(CONFIG_RESTART_FLAG).catch(() => {});
       logger.info('[service] Cleared .restart-required flag');
     }
 

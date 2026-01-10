@@ -84,10 +84,7 @@ export class PacketParser {
       }
     }
 
-    if (
-      typeof checksum2Type === 'string' &&
-      !this.checksum2Types.has(checksum2Type)
-    ) {
+    if (typeof checksum2Type === 'string' && !this.checksum2Types.has(checksum2Type)) {
       try {
         this.preparedChecksum2 = this.getExecutor().prepare(checksum2Type);
       } catch (err) {

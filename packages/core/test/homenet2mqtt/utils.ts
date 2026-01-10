@@ -94,7 +94,7 @@ export async function setupTest(configPath: string): Promise<TestContext> {
   const commandSender = async (_portId: string | undefined, packet: number[], _options?: any) => {
     // Directly write to the mock serial port
     const buffer = Buffer.from(packet);
-    mockSerialPort.write(buffer, () => { });
+    mockSerialPort.write(buffer, () => {});
   };
 
   // Create AutomationManager for script-based command support

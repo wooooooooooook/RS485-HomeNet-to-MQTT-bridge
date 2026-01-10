@@ -14,298 +14,299 @@ import { fileExists } from '../utils/helpers.js';
 import type { RawPacketStreamMode, BridgeInstance } from '../types/index.js';
 
 export interface LogsRoutesContext {
-    configRateLimiter: RateLimiter;
-    commandRateLimiter: RateLimiter;
-    rawPacketLogger: {
-        getStatus: () => any;
-        start: (meta: any, options: any) => void;
-        stop: () => any;
-        getFilePath: (filename: string) => string;
-    };
-    logRetentionService: LogRetentionService;
-    logCollectorService: {
-        getPublicStatus: () => Promise<any>;
-        updateConsent: (consent: boolean) => Promise<void>;
-    };
-    getCurrentConfigs: () => HomenetBridgeConfig[];
-    getCurrentConfigFiles: () => string[];
-    getBridges: () => BridgeInstance[];
-    getRawPacketMode: (value: unknown) => RawPacketStreamMode;
-    configDir: string;
-    activityLogService: {
-        getRecentLogs: () => any[];
-    };
+  configRateLimiter: RateLimiter;
+  commandRateLimiter: RateLimiter;
+  rawPacketLogger: {
+    getStatus: () => any;
+    start: (meta: any, options: any) => void;
+    stop: () => any;
+    getFilePath: (filename: string) => string;
+  };
+  logRetentionService: LogRetentionService;
+  logCollectorService: {
+    getPublicStatus: () => Promise<any>;
+    updateConsent: (consent: boolean) => Promise<void>;
+  };
+  getCurrentConfigs: () => HomenetBridgeConfig[];
+  getCurrentConfigFiles: () => string[];
+  getBridges: () => BridgeInstance[];
+  getRawPacketMode: (value: unknown) => RawPacketStreamMode;
+  configDir: string;
+  activityLogService: {
+    getRecentLogs: () => any[];
+  };
 }
 
 export function createLogsRoutes(ctx: LogsRoutesContext): Router {
-    const router = Router();
+  const router = Router();
 
-    // --- Log Sharing API ---
-    router.get('/api/activity/recent', (_req, res) => {
-        res.json(ctx.activityLogService.getRecentLogs());
-    });
+  // --- Log Sharing API ---
+  router.get('/api/activity/recent', (_req, res) => {
+    res.json(ctx.activityLogService.getRecentLogs());
+  });
 
-    router.get('/api/log-sharing/status', async (_req, res) => {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        const status = await ctx.logCollectorService.getPublicStatus();
-        res.json(status);
-    });
+  router.get('/api/log-sharing/status', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const status = await ctx.logCollectorService.getPublicStatus();
+    res.json(status);
+  });
 
-    router.post('/api/log-sharing/consent', async (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.post('/api/log-sharing/consent', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        const { consent } = req.body;
-        if (typeof consent !== 'boolean') {
-            return res.status(400).json({ error: 'consent must be boolean' });
-        }
-        await ctx.logCollectorService.updateConsent(consent);
+    const { consent } = req.body;
+    if (typeof consent !== 'boolean') {
+      return res.status(400).json({ error: 'consent must be boolean' });
+    }
+    await ctx.logCollectorService.updateConsent(consent);
 
-        // 로그 동의 완료 시 .initialized 마커 생성 (초기화 프로세스 완료)
-        if (!(await fileExists(CONFIG_INIT_MARKER))) {
-            await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
-            logger.info('[service] Initialization complete, .initialized marker created');
-        }
+    // 로그 동의 완료 시 .initialized 마커 생성 (초기화 프로세스 완료)
+    if (!(await fileExists(CONFIG_INIT_MARKER))) {
+      await fs.writeFile(CONFIG_INIT_MARKER, new Date().toISOString(), 'utf-8');
+      logger.info('[service] Initialization complete, .initialized marker created');
+    }
 
-        const status = await ctx.logCollectorService.getPublicStatus();
-        res.json(status);
-    });
+    const status = await ctx.logCollectorService.getPublicStatus();
+    res.json(status);
+  });
 
-    // --- Raw Packet Text Logging API ---
-    router.get('/api/logs/packet/status', (_req, res) => {
-        res.json(ctx.rawPacketLogger.getStatus());
-    });
+  // --- Raw Packet Text Logging API ---
+  router.get('/api/logs/packet/status', (_req, res) => {
+    res.json(ctx.rawPacketLogger.getStatus());
+  });
 
-    router.post('/api/logs/packet/start', (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            logger.warn({ ip: req.ip }, '[service] Packet log start rate limit exceeded');
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.post('/api/logs/packet/start', (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      logger.warn({ ip: req.ip }, '[service] Packet log start rate limit exceeded');
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        try {
-            const currentConfigs = ctx.getCurrentConfigs();
-            const currentConfigFiles = ctx.getCurrentConfigFiles();
-            const bridges = ctx.getBridges();
+    try {
+      const currentConfigs = ctx.getCurrentConfigs();
+      const currentConfigFiles = ctx.getCurrentConfigFiles();
+      const bridges = ctx.getBridges();
 
-            // Gather Metadata
-            const serial = currentConfigs
-                .map((conf) => conf?.serial)
-                .filter((serial): serial is NonNullable<typeof serial> => Boolean(serial))
-                .map((serial) => ({
-                    portId: serial.portId,
-                    path: serial.path,
-                    baudRate: serial.baud_rate,
-                }))[0] ?? null;
+      // Gather Metadata
+      const serial =
+        currentConfigs
+          .map((conf) => conf?.serial)
+          .filter((serial): serial is NonNullable<typeof serial> => Boolean(serial))
+          .map((serial) => ({
+            portId: serial.portId,
+            path: serial.path,
+            baudRate: serial.baud_rate,
+          }))[0] ?? null;
 
-            // Prefer UI-provided stats (accumulated on client-side) over server-side stats
-            let stats: Record<string, any> = {};
-            const uiStats = req.body?.uiStats;
-            if (uiStats && uiStats.portId) {
-                stats[uiStats.portId] = uiStats;
-            } else {
-                // Fallback to server-side stats (may be empty if listener wasn't active)
-                bridges.forEach((b) => {
-                    const bridgeStats = (b.bridge as any).getPacketIntervalStats?.() || {};
-                    Object.assign(stats, bridgeStats);
-                });
-            }
+      // Prefer UI-provided stats (accumulated on client-side) over server-side stats
+      let stats: Record<string, any> = {};
+      const uiStats = req.body?.uiStats;
+      if (uiStats && uiStats.portId) {
+        stats[uiStats.portId] = uiStats;
+      } else {
+        // Fallback to server-side stats (may be empty if listener wasn't active)
+        bridges.forEach((b) => {
+          const bridgeStats = (b.bridge as any).getPacketIntervalStats?.() || {};
+          Object.assign(stats, bridgeStats);
+        });
+      }
 
-            const meta = {
-                configFiles: currentConfigFiles,
-                serial,
-                stats,
-            };
+      const meta = {
+        configFiles: currentConfigFiles,
+        serial,
+        stats,
+      };
 
-            const mode = ctx.getRawPacketMode(req.body?.mode);
-            ctx.rawPacketLogger.start(meta, { mode });
-            res.json({ success: true, message: 'Logging started' });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to start packet logging');
-            res.status(500).json({ error: 'Failed to start logging' });
-        }
-    });
+      const mode = ctx.getRawPacketMode(req.body?.mode);
+      ctx.rawPacketLogger.start(meta, { mode });
+      res.json({ success: true, message: 'Logging started' });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to start packet logging');
+      res.status(500).json({ error: 'Failed to start logging' });
+    }
+  });
 
-    router.post('/api/logs/packet/stop', (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            logger.warn({ ip: req.ip }, '[service] Packet log stop rate limit exceeded');
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.post('/api/logs/packet/stop', (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      logger.warn({ ip: req.ip }, '[service] Packet log stop rate limit exceeded');
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        try {
-            const result = ctx.rawPacketLogger.stop();
-            res.json({ success: true, message: 'Logging stopped', result });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to stop packet logging');
-            res.status(500).json({ error: 'Failed to stop logging' });
-        }
-    });
+    try {
+      const result = ctx.rawPacketLogger.stop();
+      res.json({ success: true, message: 'Logging stopped', result });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to stop packet logging');
+      res.status(500).json({ error: 'Failed to stop logging' });
+    }
+  });
 
-    router.get('/api/logs/packet/download/:filename', async (req, res) => {
-        const { filename } = req.params;
-        const filePath = ctx.rawPacketLogger.getFilePath(filename);
+  router.get('/api/logs/packet/download/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const filePath = ctx.rawPacketLogger.getFilePath(filename);
 
-        if (!filePath) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+    if (!filePath) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-        try {
-            const stat = await fs.stat(filePath);
-            if (stat.isFile()) {
-                res.download(filePath);
-            } else {
-                res.status(404).json({ error: 'File not found' });
-            }
-        } catch (error) {
-            logger.error({ err: error }, '[service] Download failed');
-            res.status(500).json({ error: 'Download failed' });
-        }
-    });
+    try {
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) {
+        res.download(filePath);
+      } else {
+        res.status(404).json({ error: 'File not found' });
+      }
+    } catch (error) {
+      logger.error({ err: error }, '[service] Download failed');
+      res.status(500).json({ error: 'Download failed' });
+    }
+  });
 
-    router.delete('/api/logs/packet/:filename', async (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            logger.warn({ ip: req.ip }, '[service] Packet log delete rate limit exceeded');
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.delete('/api/logs/packet/:filename', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      logger.warn({ ip: req.ip }, '[service] Packet log delete rate limit exceeded');
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        const { filename } = req.params;
-        const filePath = ctx.rawPacketLogger.getFilePath(filename);
+    const { filename } = req.params;
+    const filePath = ctx.rawPacketLogger.getFilePath(filename);
 
-        if (!filePath) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+    if (!filePath) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-        try {
-            await fs.unlink(filePath);
-            res.json({ success: true, message: 'File deleted' });
-        } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                res.status(404).json({ error: 'File not found' });
-            } else {
-                logger.error({ err: error }, '[service] File delete failed');
-                res.status(500).json({ error: 'Delete failed' });
-            }
-        }
-    });
+    try {
+      await fs.unlink(filePath);
+      res.json({ success: true, message: 'File deleted' });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        res.status(404).json({ error: 'File not found' });
+      } else {
+        logger.error({ err: error }, '[service] File delete failed');
+        res.status(500).json({ error: 'Delete failed' });
+      }
+    }
+  });
 
-    // --- Log Cache API ---
-    router.get('/api/logs/cache/settings', async (_req, res) => {
-        try {
-            const settings = ctx.logRetentionService.getSettings();
-            res.json({ settings });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to get cache settings');
-            res.status(500).json({ error: 'Failed to get cache settings' });
-        }
-    });
+  // --- Log Cache API ---
+  router.get('/api/logs/cache/settings', async (_req, res) => {
+    try {
+      const settings = ctx.logRetentionService.getSettings();
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to get cache settings');
+      res.status(500).json({ error: 'Failed to get cache settings' });
+    }
+  });
 
-    router.put('/api/logs/cache/settings', async (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.put('/api/logs/cache/settings', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        try {
-            const settings = req.body?.settings ?? req.body;
-            if (!settings || typeof settings !== 'object') {
-                return res.status(400).json({ error: 'Invalid settings' });
-            }
+    try {
+      const settings = req.body?.settings ?? req.body;
+      if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ error: 'Invalid settings' });
+      }
 
-            await ctx.logRetentionService.updateSettings(settings);
-            const newSettings = ctx.logRetentionService.getSettings();
-            res.json({ settings: newSettings });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to update cache settings');
-            res.status(500).json({ error: 'Failed to update cache settings' });
-        }
-    });
+      await ctx.logRetentionService.updateSettings(settings);
+      const newSettings = ctx.logRetentionService.getSettings();
+      res.json({ settings: newSettings });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to update cache settings');
+      res.status(500).json({ error: 'Failed to update cache settings' });
+    }
+  });
 
-    router.get('/api/logs/cache/stats', (_req, res) => {
-        try {
-            const stats = ctx.logRetentionService.getStats();
-            res.json(stats);
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to get cache stats');
-            res.status(500).json({ error: 'Failed to get cache stats' });
-        }
-    });
+  router.get('/api/logs/cache/stats', (_req, res) => {
+    try {
+      const stats = ctx.logRetentionService.getStats();
+      res.json(stats);
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to get cache stats');
+      res.status(500).json({ error: 'Failed to get cache stats' });
+    }
+  });
 
-    router.get('/api/logs/cache/files', async (_req, res) => {
-        try {
-            const files = await ctx.logRetentionService.listSavedFiles();
-            res.json({ files });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Failed to list cache files');
-            res.status(500).json({ error: 'Failed to list cache files' });
-        }
-    });
+  router.get('/api/logs/cache/files', async (_req, res) => {
+    try {
+      const files = await ctx.logRetentionService.listSavedFiles();
+      res.json({ files });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to list cache files');
+      res.status(500).json({ error: 'Failed to list cache files' });
+    }
+  });
 
-    router.get('/api/logs/cache/download/:filename', async (req, res) => {
-        const { filename } = req.params;
-        const filePath = ctx.logRetentionService.getFilePath(filename);
+  router.get('/api/logs/cache/download/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const filePath = ctx.logRetentionService.getFilePath(filename);
 
-        if (!filePath) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+    if (!filePath) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-        try {
-            const stat = await fs.stat(filePath);
-            if (stat.isFile()) {
-                res.download(filePath);
-            } else {
-                res.status(404).json({ error: 'File not found' });
-            }
-        } catch (error) {
-            logger.error({ err: error }, '[service] Cache download failed');
-            res.status(500).json({ error: 'Download failed' });
-        }
-    });
+    try {
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) {
+        res.download(filePath);
+      } else {
+        res.status(404).json({ error: 'File not found' });
+      }
+    } catch (error) {
+      logger.error({ err: error }, '[service] Cache download failed');
+      res.status(500).json({ error: 'Download failed' });
+    }
+  });
 
-    router.delete('/api/logs/cache/:filename', async (req, res) => {
-        if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
-            logger.warn({ ip: req.ip }, '[service] Log cache delete rate limit exceeded');
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.delete('/api/logs/cache/:filename', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      logger.warn({ ip: req.ip }, '[service] Log cache delete rate limit exceeded');
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        const { filename } = req.params;
-        const filePath = ctx.logRetentionService.getFilePath(filename);
+    const { filename } = req.params;
+    const filePath = ctx.logRetentionService.getFilePath(filename);
 
-        if (!filePath) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+    if (!filePath) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-        try {
-            const deleted = await ctx.logRetentionService.deleteFile(filename);
-            if (deleted) {
-                res.json({ success: true, message: 'File deleted' });
-            } else {
-                res.status(404).json({ error: 'File not found' });
-            }
-        } catch (error) {
-            logger.error({ err: error }, '[service] Cache delete failed');
-            res.status(500).json({ error: 'Delete failed' });
-        }
-    });
+    try {
+      const deleted = await ctx.logRetentionService.deleteFile(filename);
+      if (deleted) {
+        res.json({ success: true, message: 'File deleted' });
+      } else {
+        res.status(404).json({ error: 'File not found' });
+      }
+    } catch (error) {
+      logger.error({ err: error }, '[service] Cache delete failed');
+      res.status(500).json({ error: 'Delete failed' });
+    }
+  });
 
-    router.post('/api/logs/cache/save', async (req, res) => {
-        if (!ctx.commandRateLimiter.check(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Too many requests' });
-        }
+  router.post('/api/logs/cache/save', async (req, res) => {
+    if (!ctx.commandRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
 
-        try {
-            const stats = ctx.logRetentionService.getStats();
-            if (!stats.enabled) {
-                return res.status(400).json({ error: 'Log caching is not enabled' });
-            }
+    try {
+      const stats = ctx.logRetentionService.getStats();
+      if (!stats.enabled) {
+        return res.status(400).json({ error: 'Log caching is not enabled' });
+      }
 
-            const result = await ctx.logRetentionService.saveToFile();
-            res.json({ success: true, result });
-        } catch (error) {
-            logger.error({ err: error }, '[service] Manual cache save failed');
-            res.status(500).json({ error: 'Save failed' });
-        }
-    });
+      const result = await ctx.logRetentionService.saveToFile();
+      res.json({ success: true, result });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Manual cache save failed');
+      res.status(500).json({ error: 'Save failed' });
+    }
+  });
 
-    return router;
+  return router;
 }
 
 export { createLogsRoutes as default };

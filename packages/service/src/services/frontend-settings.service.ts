@@ -14,8 +14,8 @@ const DEFAULT_FRONTEND_SETTINGS = getDefaultFrontendSettings();
  * Save frontend settings to disk
  */
 export const saveFrontendSettings = async (settings: FrontendSettings): Promise<void> => {
-    await fs.mkdir(CONFIG_DIR, { recursive: true });
-    await fs.writeFile(FRONTEND_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+  await fs.mkdir(CONFIG_DIR, { recursive: true });
+  await fs.writeFile(FRONTEND_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
 };
 
 /**
@@ -23,18 +23,18 @@ export const saveFrontendSettings = async (settings: FrontendSettings): Promise<
  * Creates default settings file if it doesn't exist
  */
 export const loadFrontendSettings = async (): Promise<FrontendSettings> => {
-    try {
-        const data = await fs.readFile(FRONTEND_SETTINGS_FILE, 'utf-8');
-        const parsed = JSON.parse(data);
-        return normalizeFrontendSettings(parsed);
-    } catch (error) {
-        const err = error as NodeJS.ErrnoException;
-        if (err.code === 'ENOENT') {
-            await saveFrontendSettings(DEFAULT_FRONTEND_SETTINGS);
-            return DEFAULT_FRONTEND_SETTINGS;
-        }
-        throw error;
+  try {
+    const data = await fs.readFile(FRONTEND_SETTINGS_FILE, 'utf-8');
+    const parsed = JSON.parse(data);
+    return normalizeFrontendSettings(parsed);
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') {
+      await saveFrontendSettings(DEFAULT_FRONTEND_SETTINGS);
+      return DEFAULT_FRONTEND_SETTINGS;
     }
+    throw error;
+  }
 };
 
 /**

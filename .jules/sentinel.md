@@ -41,3 +41,10 @@
 **Prevention:**
 1.  **Granular Rate Limiting:** Apply specific, tighter rate limits (e.g., 20/min) to endpoints that consume significant resources (Disk I/O, CPU, External APIs).
 2.  **Audit Write Endpoints:** Systematically review all `POST`, `PUT`, `DELETE` endpoints to ensuring they have stricter limits than read endpoints.
+
+## 2026-01-10 - [Path Traversal in File APIs]
+**Vulnerability:** The `RawPacketLoggerService` and `LogRetentionService` constructed file paths using user-provided filenames via `path.join` without validation. This allowed attackers to access arbitrary files on the system using `..` sequences (Path Traversal).
+**Learning:** `path.join` does not sanitize paths against directory traversal. When handling file paths derived from user input, we must explicitly verify that the resolved path is contained within the intended allowlist directory.
+**Prevention:**
+1.  **Resolve and Check:** Always use `path.resolve` on the user input and check if it starts with the `path.resolve(baseDir) + path.sep`.
+2.  **Helper Utility:** Centralize this logic in a helper function (like `resolveSecurePath`) to ensure consistency across the codebase.

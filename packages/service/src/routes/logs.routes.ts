@@ -20,7 +20,7 @@ export interface LogsRoutesContext {
         getStatus: () => any;
         start: (meta: any, options: any) => void;
         stop: () => any;
-        getFilePath: (filename: string) => string;
+        getFilePath: (filename: string) => string | null;
     };
     logRetentionService: LogRetentionService;
     logCollectorService: {

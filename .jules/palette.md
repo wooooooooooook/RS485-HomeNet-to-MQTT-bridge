@@ -1,19 +1,13 @@
-## 2024-05-23 - Reusable Toggle Component
-**Learning:** Replacing ad-hoc checkbox hacks with a semantic `<button role="switch">` component significantly improves accessibility (focus states, screen reader support) and code maintainability.
-**Action:** When encountering custom checkbox-based toggles, refactor them into a reusable `Toggle` component that handles ARIA attributes and keyboard interaction centrally.
+# Palette's Journal
 
-## 2024-12-31 - Optimistic UI for Controlled Toggles
-**Learning:** When replacing native checkboxes with controlled `Toggle` components, users expect immediate visual feedback. Waiting for API round-trips makes the UI feel sluggish.
-**Action:** Implement optimistic state updates (update local state immediately, revert on error) when using controlled components for network actions.
+## 2025-02-09 - Sidebar Navigation Interaction
+**Learning:** In sidebar layouts, relying purely on visual cues for 'current page' state (like background color) is insufficient for screen readers. Explicit `aria-current="page"` is crucial but sometimes missed.
+**Action:** Always verify `aria-current` on navigation links.
 
-## 2024-05-24 - Accessibility of Placeholder-Only Inputs
-**Learning:** Inputs that rely solely on `placeholder` text (like search boxes) are inaccessible to screen reader users who cannot perceive the placeholder as a label.
-**Action:** Always add `aria-label` (using the same localized string as the placeholder if appropriate) to inputs that lack a visible `<label>` element.
+## 2025-02-09 - Button Accessibility
+**Learning:** When using `isLoading` states on buttons, it's best to use `aria-busy` and visually hide the text while providing a screen-reader-only "Loading..." text to ensure users with assistive technology know what's happening.
+**Action:** Use the `aria-busy` + `sr-only` text pattern for all async buttons.
 
-## 2025-01-20 - Status Indicators for Screen Readers
-**Learning:** Visual status indicators (like colored dots) are invisible to screen readers. Relying on `data-state` or color alone excludes blind users from knowing the system status.
-**Action:** Always pair visual indicators with `aria-hidden="true"` and a complementary `.sr-only` span containing text that explicitly describes the status (e.g., "Running", "Error").
-
-## 2024-05-21 - Accessible Loading Buttons
-**Learning:** Simply hiding content visually (opacity: 0) during loading states is insufficient for screen readers, as they may still announce the hidden content along with the loading indicator (e.g., "Loading... Save").
-**Action:** Use `aria-hidden="true"` on the visually hidden content wrapper when a loading spinner is present to ensure a clean auditory experience.
+## 2025-02-09 - Semantic Nesting in Interactive Cards
+**Learning:** Placing heading elements (`<h3>`) inside `<button>` elements is invalid HTML and can confuse screen readers. The correct pattern for complex interactive cards is to use a `div` with `role="button"`, `tabindex="0"`, and manual keyboard handling (Enter/Space).
+**Action:** When designing clickable cards with structured content (headers, titles), avoid `<button>` and use the ARIA button pattern instead.

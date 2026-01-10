@@ -36,9 +36,23 @@
     }
     return String(value);
   }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect?.();
+    }
+  }
 </script>
 
-<button class="entity-card" class:inactive={!entity.isActive} onclick={() => onSelect?.()}>
+<div
+  role="button"
+  tabindex="0"
+  class="entity-card"
+  class:inactive={!entity.isActive}
+  onclick={() => onSelect?.()}
+  onkeydown={handleKeydown}
+>
   <header class="card-header">
     <div class="header-title">
       <h3>{entity.displayName}</h3>
@@ -81,7 +95,7 @@
       {/if}
     </div>
   </div>
-</button>
+</div>
 
 <style>
   .entity-card {
@@ -94,12 +108,18 @@
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.2s ease;
+    cursor: pointer;
   }
 
   .entity-card:hover {
     border-color: rgba(148, 163, 184, 0.2);
     background: rgba(30, 41, 59, 0.7);
   }
+  .entity-card:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
   .entity-card.inactive {
     opacity: 0.5;
   }

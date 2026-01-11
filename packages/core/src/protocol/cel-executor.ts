@@ -19,6 +19,10 @@ export interface CompiledScript {
 interface ScriptCacheEntry {
   parsed: ParseResult;
   usesData: boolean;
+  usesState: boolean;
+  usesStates: boolean;
+  usesTrigger: boolean;
+  usesArgs: boolean;
 }
 
 /**
@@ -213,7 +217,7 @@ export class CelExecutor {
     return {
       execute: (contextData: Record<string, any>) => {
         try {
-          const safeContext = this.createSafeContext(contextData, entry.usesData);
+          const safeContext = this.createSafeContext(contextData, entry);
           const res = entry.parsed(safeContext);
           return this.convertResult(res);
         } catch (error) {
@@ -255,7 +259,7 @@ export class CelExecutor {
       const entry = this.getOrParseScript(script);
 
       // Pre-process context data: Convert numbers to BigInt for 'x' and 'data'
-      const safeContext = this.createSafeContext(contextData, entry.usesData);
+      const safeContext = this.createSafeContext(contextData, entry);
 
       // Execute using cached script function
       const res = entry.parsed(safeContext);
@@ -276,8 +280,14 @@ export class CelExecutor {
         this.scriptCache.clear();
       }
       const parsed = this.env.parse(script);
+      // Static analysis of script to avoid populating unused context variables
       const usesData = script.includes('data');
-      entry = { parsed, usesData };
+      const usesState = script.includes('state'); // Covers 'state' and 'states'
+      const usesStates = script.includes('states');
+      const usesTrigger = script.includes('trigger');
+      const usesArgs = script.includes('args');
+
+      entry = { parsed, usesData, usesState, usesStates, usesTrigger, usesArgs };
       this.scriptCache.set(script, entry);
     }
     return entry;
@@ -285,10 +295,11 @@ export class CelExecutor {
 
   private createSafeContext(
     contextData: Record<string, any>,
-    scriptUsesData: boolean,
+    entry: ScriptCacheEntry,
   ): Record<string, any> {
     const safeContext: Record<string, any> = {};
 
+    // Only populate 'x' if provided or required by safe defaults
     if (contextData.x !== undefined && contextData.x !== null) {
       // If x is a string (e.g., custom mode name), set both x=0 and xstr=value
       // If x is a number, convert to BigInt for CEL and set xstr=''
@@ -308,7 +319,7 @@ export class CelExecutor {
     if (Array.isArray(contextData.data)) {
       safeContext.data = contextData.data.map((d: any) => BigInt(d));
     } else if (Buffer.isBuffer(contextData.data) || contextData.data instanceof Uint8Array) {
-      if (scriptUsesData) {
+      if (entry.usesData) {
         // Optimization: Use a Proxy to expose Buffer directly as a read-only List<BigInt>
         // This avoids O(N) allocation and copying of BigInt arrays, reducing memory pressure
         // and improving performance significantly in checksum sweeps (O(N^2) paths).
@@ -323,23 +334,22 @@ export class CelExecutor {
       safeContext.data = contextData.data || [];
     }
 
-    // Always provide state (default to empty object for safe access in CEL)
-    safeContext.state = contextData.state || {};
-
-    if (contextData.states) {
-      safeContext.states = contextData.states;
-    } else {
-      safeContext.states = {};
+    // Optimization: Only create objects for complex types if the script actually uses them.
+    // This saves 3-4 object allocations per execution in hot paths (like packet parsing).
+    if (entry.usesState) {
+      safeContext.state = contextData.state || {};
     }
 
-    if (contextData.trigger) {
+    if (entry.usesStates) {
+      safeContext.states = contextData.states || {};
+    }
+
+    if (entry.usesTrigger && contextData.trigger) {
       safeContext.trigger = contextData.trigger;
     }
 
-    if (contextData.args) {
-      safeContext.args = contextData.args;
-    } else {
-      safeContext.args = {};
+    if (entry.usesArgs) {
+      safeContext.args = contextData.args || {};
     }
 
     return safeContext;

@@ -636,39 +636,47 @@
       </div>
 
       <!-- Step indicator -->
-      <div class="step-indicator">
+      <div class="step-indicator" role="list">
         <div
           class="step"
           class:active={currentStep === 'config'}
           class:done={currentStep !== 'config'}
+          role="listitem"
+          aria-current={currentStep === 'config' ? 'step' : undefined}
         >
           <span class="step-number">1</span>
           <span class="step-label">{$t('setup_wizard.step_config')}</span>
         </div>
-        <div class="step-line"></div>
+        <div class="step-line" aria-hidden="true"></div>
         <div
           class="step"
           class:active={currentStep === 'packet_defaults'}
           class:done={currentStep !== 'config' && currentStep !== 'packet_defaults'}
+          role="listitem"
+          aria-current={currentStep === 'packet_defaults' ? 'step' : undefined}
         >
           <span class="step-number">2</span>
           <span class="step-label">{$t('setup_wizard.step_packet_defaults')}</span>
         </div>
-        <div class="step-line"></div>
+        <div class="step-line" aria-hidden="true"></div>
         <div
           class="step"
           class:active={currentStep === 'entity_selection'}
           class:done={currentStep === 'consent' || currentStep === 'complete'}
+          role="listitem"
+          aria-current={currentStep === 'entity_selection' ? 'step' : undefined}
         >
           <span class="step-number">3</span>
           <span class="step-label">{$t('setup_wizard.step_entities')}</span>
         </div>
-        <div class="step-line"></div>
+        <div class="step-line" aria-hidden="true"></div>
         {#if mode !== 'add'}
           <div
             class="step"
             class:active={currentStep === 'consent'}
             class:done={currentStep === 'complete'}
+            role="listitem"
+            aria-current={currentStep === 'consent' ? 'step' : undefined}
           >
             <span class="step-number">4</span>
             <span class="step-label">{$t('setup_wizard.step_consent')}</span>

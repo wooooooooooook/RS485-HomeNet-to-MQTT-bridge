@@ -169,7 +169,7 @@ export class CommandManager {
   }
 
   private executeJob(job: CommandJob): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const retryConfig = job.retryConfig;
       const totalAttempts = job.attemptsLeft;
       let attemptNumber = 0;

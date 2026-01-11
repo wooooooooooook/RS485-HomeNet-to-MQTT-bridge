@@ -30,7 +30,7 @@ export class MqttClient {
       ...options,
     });
 
-    this.connectionPromise = new Promise<void>((resolve, reject) => {
+    this.connectionPromise = new Promise<void>((resolve, _reject) => {
       const errorHandler = (err: Error) => {
         logger.error({ err }, '[mqtt-client] MQTT 연결 오류 (백그라운드)');
         // Note: The original implementation in bridge.service.ts did not reject here to avoid stopping the main process.
@@ -66,7 +66,7 @@ export class MqttClient {
 
       logger.info({ searchTopic }, '[mqtt-client] Starting scan for retained messages to clear');
 
-      const messageHandler = (topic: string, message: Buffer, packet: mqtt.Packet) => {
+      const messageHandler = (topic: string, _message: Buffer, packet: mqtt.Packet) => {
         if ((packet as any).retain) {
           topicsToDelete.add(topic);
         }

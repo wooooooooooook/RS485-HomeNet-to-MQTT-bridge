@@ -45,7 +45,7 @@ export class PacketProcessor extends EventEmitter {
 
   constructor(
     config: HomenetBridgeConfig,
-    stateProvider: EntityStateProvider,
+    _stateProvider: EntityStateProvider,
     states?: Map<string, Record<string, any>>,
   ) {
     super();
@@ -186,8 +186,8 @@ export class PacketProcessor extends EventEmitter {
    * Use `processChunk` instead, which handles buffering and parsing via `ProtocolManager`.
    */
   public parseIncomingPacket(
-    packet: number[],
-    allEntities: EntityConfig[],
+    _packet: number[],
+    _allEntities: EntityConfig[],
   ): { parsedStates: { entityId: string; state: any }[]; checksumValid: boolean } {
     // This method is no longer compatible with the stream-based approach.
     // We should update the caller (StateManager) to use processChunk.

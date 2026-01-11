@@ -18,7 +18,7 @@ export class StateManager {
 
   constructor(
     portId: string,
-    config: HomenetBridgeConfig,
+    _config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     mqttPublisher: MqttPublisher,
     mqttTopicPrefix: string,

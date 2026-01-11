@@ -52,12 +52,12 @@ export function calculateChecksum(header: ByteArray, data: ByteArray, type: Chec
 export function calculateChecksumFromBuffer(
   buffer: ByteArray,
   type: ChecksumType,
-  headerLength: number,
+  _headerLength: number,
   dataEnd: number,
   baseOffset: number = 0,
 ): number {
   const dataStart = baseOffset;
-  const headerStart = baseOffset + headerLength;
+  const headerStart = baseOffset + _headerLength;
   const dataStop = baseOffset + dataEnd;
   switch (type) {
     case 'add':
@@ -220,7 +220,7 @@ export function calculateChecksum2(
 export function calculateChecksum2FromBuffer(
   buffer: ByteArray,
   type: Checksum2Type,
-  headerLength: number,
+  _headerLength: number,
   dataEnd: number,
   baseOffset: number = 0,
 ): number[] {

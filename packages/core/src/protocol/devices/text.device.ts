@@ -1,5 +1,5 @@
 import { GenericDevice } from './generic.device.js';
-import { DeviceConfig, ProtocolConfig, CommandResult } from '../types.js';
+import { ProtocolConfig, CommandResult } from '../types.js';
 import { TextEntity } from '../../domain/entities/text.entity.js';
 
 export class TextDevice extends GenericDevice {

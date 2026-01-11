@@ -1,5 +1,5 @@
 import { GenericDevice } from './generic.device.js';
-import { DeviceConfig, ProtocolConfig } from '../types.js';
+import { ProtocolConfig } from '../types.js';
 import { BinarySensorEntity } from '../../domain/entities/binary-sensor.entity.js';
 
 export class BinarySensorDevice extends GenericDevice {

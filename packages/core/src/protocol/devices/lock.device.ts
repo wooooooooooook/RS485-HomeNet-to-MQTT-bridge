@@ -1,5 +1,5 @@
 import { GenericDevice } from './generic.device.js';
-import { DeviceConfig, ProtocolConfig, CommandResult } from '../types.js';
+import { ProtocolConfig, CommandResult } from '../types.js';
 import { LockEntity } from '../../domain/entities/lock.entity.js';
 
 export class LockDevice extends GenericDevice {

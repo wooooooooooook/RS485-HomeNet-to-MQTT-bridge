@@ -59,14 +59,14 @@ export const fileExists = async (targetPath: string): Promise<boolean> => {
  * Returns null if the resolved path is outside the base directory.
  */
 export const resolveSecurePath = (baseDir: string, filename: string): string | null => {
-    const resolvedBase = path.resolve(baseDir);
-    const resolvedPath = path.resolve(baseDir, filename);
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedPath = path.resolve(baseDir, filename);
 
-    if (!resolvedPath.startsWith(resolvedBase + path.sep)) {
-        return null;
-    }
+  if (!resolvedPath.startsWith(resolvedBase + path.sep)) {
+    return null;
+  }
 
-    return resolvedPath;
+  return resolvedPath;
 };
 
 // --- Environment Variable Helpers ---

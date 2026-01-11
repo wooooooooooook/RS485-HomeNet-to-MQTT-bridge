@@ -9,7 +9,7 @@ import { ButtonEntity } from '../../domain/entities/button.entity.js';
 import { SensorEntity } from '../../domain/entities/sensor.entity.js';
 import { FanEntity } from '../../domain/entities/fan.entity.js';
 import { SwitchEntity } from '../../domain/entities/switch.entity.js';
-import { PacketDefaults, ChecksumType, Checksum2Type, StateNumSchema } from '../types.js';
+import { ChecksumType, Checksum2Type, StateNumSchema } from '../types.js';
 import { logger } from '../../utils/logger.js';
 import { EntityStateProvider } from '../packet-processor.js';
 import { calculateChecksum, calculateChecksum2 } from '../utils/checksum.js';
@@ -64,7 +64,8 @@ export class CommandGenerator {
    * @deprecated This method is currently unused in the command generation flow
    *             but is preserved for potential future symmetric use.
    */
-  private decodeValue(bytes: number[], schema: StateNumSchema): number | string | null {
+  // @ts-ignore - Preserved for future symmetric use
+  private _decodeValue(bytes: number[], schema: StateNumSchema): number | string | null {
     const {
       offset,
       length = 1,

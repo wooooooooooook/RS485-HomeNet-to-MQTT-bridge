@@ -1,5 +1,5 @@
 import { GenericDevice } from './generic.device.js';
-import { DeviceConfig, ProtocolConfig, CommandResult } from '../types.js';
+import { ProtocolConfig, CommandResult } from '../types.js';
 import { TextSensorEntity } from '../../domain/entities/text-sensor.entity.js';
 
 export class TextSensorDevice extends GenericDevice {

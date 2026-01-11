@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { ProtocolConfig, PacketDefaults } from './types.js';
+import { ProtocolConfig } from './types.js';
 import { PacketParser } from './packet-parser.js';
 import { Device } from './device.js';
 import { logger } from '../utils/logger.js';

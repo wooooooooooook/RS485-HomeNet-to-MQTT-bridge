@@ -1,6 +1,6 @@
 import { PacketDefaults, ChecksumType, Checksum2Type } from './types.js';
 import { calculateChecksumFromBuffer, calculateChecksum2FromBuffer } from './utils/checksum.js';
-import { CelExecutor, CompiledScript } from './cel-executor.js';
+import { CelExecutor, CompiledScript, ReusableBufferView } from './cel-executor.js';
 import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
 
@@ -33,6 +33,7 @@ export class PacketParser {
   // Optimizations for CEL Checksums
   private preparedChecksum: CompiledScript | null = null;
   private preparedChecksum2: CompiledScript | null = null;
+  private reusableBufferView: ReusableBufferView | null = null;
 
   private readonly checksumTypes = new Set([
     'add',
@@ -72,13 +73,18 @@ export class PacketParser {
       (!this.defaults.rx_checksum || this.defaults.rx_checksum === 'none');
 
     // Prepare CEL scripts if applicable
+    const executor = this.getExecutor();
+
+    // Initialize ReusableBufferView for zero-allocation parsing
+    this.reusableBufferView = executor.createReusableBufferView();
+
     if (
       typeof checksumType === 'string' &&
       checksumType !== 'none' &&
       !this.checksumTypes.has(checksumType)
     ) {
       try {
-        this.preparedChecksum = this.getExecutor().prepare(checksumType);
+        this.preparedChecksum = executor.prepare(checksumType);
       } catch (err) {
         logger.warn({ err, checksumType }, '[PacketParser] Failed to prepare CEL checksum script');
       }
@@ -86,7 +92,7 @@ export class PacketParser {
 
     if (typeof checksum2Type === 'string' && !this.checksum2Types.has(checksum2Type)) {
       try {
-        this.preparedChecksum2 = this.getExecutor().prepare(checksum2Type);
+        this.preparedChecksum2 = executor.prepare(checksum2Type);
       } catch (err) {
         logger.warn(
           { err, checksum2Type },
@@ -589,12 +595,22 @@ export class PacketParser {
           return calculated === checksumByte;
         } else if (this.preparedChecksum) {
           // Prepared CEL Expression
-          // Optimization: Use prepared script to bypass cache lookups
-          const result = this.preparedChecksum.execute({
-            data: buffer.subarray(offset, dataEnd), // Pass Buffer directly to avoid array spread
-            len: dataEnd - offset,
-          });
-          return result === checksumByte;
+          // Optimization: Use ReusableBufferView to avoid allocation (Strategy C)
+          if (this.reusableBufferView) {
+            this.reusableBufferView.update(buffer, offset, dataEnd - offset);
+            const result = this.preparedChecksum.execute({
+              data: this.reusableBufferView.proxy,
+              len: dataEnd - offset,
+            });
+            return result === checksumByte;
+          } else {
+            // Fallback (e.g. if ReusableBufferView initialization failed)
+            const result = this.preparedChecksum.execute({
+              data: buffer.subarray(offset, dataEnd),
+              len: dataEnd - offset,
+            });
+            return result === checksumByte;
+          }
         } else {
           // Fallback (should not be reached if constructor works correctly)
           const result = this.getExecutor().execute(checksumOrScript, {
@@ -632,12 +648,23 @@ export class PacketParser {
           );
         } else if (this.preparedChecksum2) {
           // Prepared CEL Expression for 2-byte checksum
-          const result = this.preparedChecksum2.execute({
-            data: buffer.subarray(offset, checksumStart),
-            len: checksumStart - offset,
-          });
-          if (Array.isArray(result) && result.length === 2) {
-            return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
+          if (this.reusableBufferView) {
+            this.reusableBufferView.update(buffer, offset, checksumStart - offset);
+            const result = this.preparedChecksum2.execute({
+              data: this.reusableBufferView.proxy,
+              len: checksumStart - offset,
+            });
+            if (Array.isArray(result) && result.length === 2) {
+              return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
+            }
+          } else {
+            const result = this.preparedChecksum2.execute({
+              data: buffer.subarray(offset, checksumStart),
+              len: checksumStart - offset,
+            });
+            if (Array.isArray(result) && result.length === 2) {
+              return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
+            }
           }
         } else {
           // Fallback (legacy path)

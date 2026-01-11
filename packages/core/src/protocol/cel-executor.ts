@@ -22,6 +22,71 @@ interface ScriptCacheEntry {
 }
 
 /**
+ * A reusable view over a buffer that behaves like a List<BigInt> in CEL.
+ * This class eliminates the overhead of creating new Proxies and Buffers (subarray)
+ * in hot loops by allowing the underlying buffer and window to be updated.
+ */
+export class ReusableBufferView {
+  private buffer: Uint8Array | null = null;
+  private offset = 0;
+  private length = 0;
+  public readonly proxy: any;
+  private readonly cache: bigint[];
+
+  constructor(cache: bigint[]) {
+    this.cache = cache;
+    this.proxy = new Proxy([], {
+      get: (target, prop, receiver) => {
+        // Fast path for integer indexed access (e.g. data[0])
+        if (typeof prop === 'string') {
+          const idx = Number(prop);
+          // Check against VIRTUAL length
+          if (Number.isInteger(idx) && idx >= 0 && idx < this.length) {
+            // Map virtual index to physical index in the underlying buffer
+            return this.cache[this.buffer![this.offset + idx]];
+          }
+        }
+
+        // Handle length/size properties
+        if (prop === 'length') {
+          return this.length;
+        }
+
+        // Handle iteration (e.g. for macros like .map(), .exists())
+        if (prop === Symbol.iterator) {
+          // Capture references to avoid closure allocation if possible,
+          // though generator creates one anyway.
+          // eslint-disable-next-line @typescript-eslint/no-this-alias
+          const self = this;
+          return function* () {
+            for (let i = 0; i < self.length; i++) {
+              yield self.cache[self.buffer![self.offset + i]];
+            }
+          };
+        }
+
+        // Fallback to Reflect for other properties (e.g. toString, etc.)
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+  }
+
+  /**
+   * Updates the view to point to a new window within a buffer.
+   * This method is zero-allocation.
+   *
+   * @param buffer - The source buffer
+   * @param offset - The start offset
+   * @param length - The length of the view
+   */
+  public update(buffer: Uint8Array, offset: number, length: number) {
+    this.buffer = buffer;
+    this.offset = offset;
+    this.length = length;
+  }
+}
+
+/**
  * Executes Common Expression Language (CEL) scripts for protocol logic.
  *
  * This singleton class manages the CEL environment and provides a set of custom
@@ -115,6 +180,14 @@ export class CelExecutor {
     this.env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
     this.env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
     this.env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
+  }
+
+  /**
+   * Creates a reusable buffer view factory.
+   * Consumers can use the returned object to avoid allocations in hot loops.
+   */
+  public createReusableBufferView(): ReusableBufferView {
+    return new ReusableBufferView(this.BIGINT_CACHE);
   }
 
   /**
@@ -246,7 +319,8 @@ export class CelExecutor {
         safeContext.data = [];
       }
     } else {
-      safeContext.data = [];
+      // Allow valid custom objects (like ReusableBufferView.proxy) to pass through
+      safeContext.data = contextData.data || [];
     }
 
     // Always provide state (default to empty object for safe access in CEL)

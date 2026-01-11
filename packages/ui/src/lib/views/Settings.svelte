@@ -114,12 +114,19 @@
   let isCacheSaving = $state(false);
   let deletingFile = $state<string | null>(null);
   let downloadError = $state<string | null>(null);
+  const logFileCollapseThreshold = 5;
+  let cacheFilesOpen = $state(false);
 
   let backupFiles = $state<BackupFile[]>([]);
   let backupTotalSize = $state(0);
   let isBackupWorking = $state(false);
   let deletingBackup = $state<string | null>(null);
   let backupDownloadError = $state<string | null>(null);
+  const backupFileCollapseThreshold = 5;
+  let backupFilesOpen = $state(false);
+
+  const shouldCollapseCacheFiles = $derived(cacheFiles.length > logFileCollapseThreshold);
+  const shouldCollapseBackupFiles = $derived(backupFiles.length > backupFileCollapseThreshold);
 
   const fetchCacheSettings = async () => {
     try {
@@ -871,37 +878,84 @@
       {#if cacheFiles.length > 0}
         <div class="setting files-section">
           <div class="setting-title">{$t('settings.log_retention.saved_files')}</div>
-          <div class="files-list">
-            {#each cacheFiles as file (file.filename)}
-              <div class="file-row">
-                <span class="file-name">{file.filename}</span>
-                <span class="file-size">{formatBytes(file.size)}</span>
-                <div class="file-actions">
-                  <Button
-                    variant="secondary"
-                    class="file-action-btn"
-                    onclick={() => downloadCacheFile(file.filename)}
-                    ariaLabel={$t('settings.log_retention.download')}
-                    title={$t('settings.log_retention.download')}
-                  >
-                    ⬇
-                  </Button>
-                  <Button
-                    variant="danger"
-                    class="file-action-btn"
-                    onclick={() => deleteCacheFile(file.filename)}
-                    isLoading={deletingFile === file.filename}
-                    ariaLabel={$t('settings.log_retention.delete')}
-                    title={$t('settings.log_retention.delete')}
-                  >
-                    🗑
-                  </Button>
-                </div>
+          {#if shouldCollapseCacheFiles}
+            <details class="files-collapse" bind:open={cacheFilesOpen}>
+              <summary class="collapse-summary">
+                <span>
+                  {cacheFilesOpen
+                    ? $t('settings.log_retention.hide_files')
+                    : $t('settings.log_retention.show_files', {
+                        values: { count: cacheFiles.length.toLocaleString() },
+                      })}
+                </span>
+                <span class="count-badge">{cacheFiles.length.toLocaleString()}</span>
+              </summary>
+              <div class="files-list">
+                {#each cacheFiles as file (file.filename)}
+                  <div class="file-row">
+                    <span class="file-name">{file.filename}</span>
+                    <span class="file-size">{formatBytes(file.size)}</span>
+                    <div class="file-actions">
+                      <Button
+                        variant="secondary"
+                        class="file-action-btn"
+                        onclick={() => downloadCacheFile(file.filename)}
+                        ariaLabel={$t('settings.log_retention.download')}
+                        title={$t('settings.log_retention.download')}
+                      >
+                        ⬇
+                      </Button>
+                      <Button
+                        variant="danger"
+                        class="file-action-btn"
+                        onclick={() => deleteCacheFile(file.filename)}
+                        isLoading={deletingFile === file.filename}
+                        ariaLabel={$t('settings.log_retention.delete')}
+                        title={$t('settings.log_retention.delete')}
+                      >
+                        🗑
+                      </Button>
+                    </div>
+                  </div>
+                {/each}
               </div>
-            {/each}
-          </div>
-          {#if downloadError}
-            <div class="setting-desc warning">{downloadError}</div>
+              {#if downloadError}
+                <div class="setting-desc warning">{downloadError}</div>
+              {/if}
+            </details>
+          {:else}
+            <div class="files-list">
+              {#each cacheFiles as file (file.filename)}
+                <div class="file-row">
+                  <span class="file-name">{file.filename}</span>
+                  <span class="file-size">{formatBytes(file.size)}</span>
+                  <div class="file-actions">
+                    <Button
+                      variant="secondary"
+                      class="file-action-btn"
+                      onclick={() => downloadCacheFile(file.filename)}
+                      ariaLabel={$t('settings.log_retention.download')}
+                      title={$t('settings.log_retention.download')}
+                    >
+                      ⬇
+                    </Button>
+                    <Button
+                      variant="danger"
+                      class="file-action-btn"
+                      onclick={() => deleteCacheFile(file.filename)}
+                      isLoading={deletingFile === file.filename}
+                      ariaLabel={$t('settings.log_retention.delete')}
+                      title={$t('settings.log_retention.delete')}
+                    >
+                      🗑
+                    </Button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+            {#if downloadError}
+              <div class="setting-desc warning">{downloadError}</div>
+            {/if}
           {/if}
         </div>
       {:else if cacheSettings.autoSaveEnabled}
@@ -956,37 +1010,84 @@
     {#if backupFiles.length > 0}
       <div class="setting files-section">
         <div class="setting-title">{$t('settings.backup_management.saved_files')}</div>
-        <div class="files-list">
-          {#each backupFiles as file (file.filename)}
-            <div class="file-row">
-              <span class="file-name">{file.filename}</span>
-              <span class="file-size">{formatBytes(file.size)}</span>
-              <div class="file-actions">
-                <Button
-                  variant="secondary"
-                  class="file-action-btn"
-                  onclick={() => downloadBackupFile(file.filename)}
-                  ariaLabel={$t('settings.backup_management.download')}
-                  title={$t('settings.backup_management.download')}
-                >
-                  ⬇
-                </Button>
-                <Button
-                  variant="danger"
-                  class="file-action-btn"
-                  onclick={() => deleteBackupFile(file.filename)}
-                  isLoading={deletingBackup === file.filename}
-                  ariaLabel={$t('settings.backup_management.delete')}
-                  title={$t('settings.backup_management.delete')}
-                >
-                  🗑
-                </Button>
-              </div>
+        {#if shouldCollapseBackupFiles}
+          <details class="files-collapse" bind:open={backupFilesOpen}>
+            <summary class="collapse-summary">
+              <span>
+                {backupFilesOpen
+                  ? $t('settings.backup_management.hide_files')
+                  : $t('settings.backup_management.show_files', {
+                      values: { count: backupFiles.length.toLocaleString() },
+                    })}
+              </span>
+              <span class="count-badge">{backupFiles.length.toLocaleString()}</span>
+            </summary>
+            <div class="files-list">
+              {#each backupFiles as file (file.filename)}
+                <div class="file-row">
+                  <span class="file-name">{file.filename}</span>
+                  <span class="file-size">{formatBytes(file.size)}</span>
+                  <div class="file-actions">
+                    <Button
+                      variant="secondary"
+                      class="file-action-btn"
+                      onclick={() => downloadBackupFile(file.filename)}
+                      ariaLabel={$t('settings.backup_management.download')}
+                      title={$t('settings.backup_management.download')}
+                    >
+                      ⬇
+                    </Button>
+                    <Button
+                      variant="danger"
+                      class="file-action-btn"
+                      onclick={() => deleteBackupFile(file.filename)}
+                      isLoading={deletingBackup === file.filename}
+                      ariaLabel={$t('settings.backup_management.delete')}
+                      title={$t('settings.backup_management.delete')}
+                    >
+                      🗑
+                    </Button>
+                  </div>
+                </div>
+              {/each}
             </div>
-          {/each}
-        </div>
-        {#if backupDownloadError}
-          <div class="setting-desc warning">{backupDownloadError}</div>
+            {#if backupDownloadError}
+              <div class="setting-desc warning">{backupDownloadError}</div>
+            {/if}
+          </details>
+        {:else}
+          <div class="files-list">
+            {#each backupFiles as file (file.filename)}
+              <div class="file-row">
+                <span class="file-name">{file.filename}</span>
+                <span class="file-size">{formatBytes(file.size)}</span>
+                <div class="file-actions">
+                  <Button
+                    variant="secondary"
+                    class="file-action-btn"
+                    onclick={() => downloadBackupFile(file.filename)}
+                    ariaLabel={$t('settings.backup_management.download')}
+                    title={$t('settings.backup_management.download')}
+                  >
+                    ⬇
+                  </Button>
+                  <Button
+                    variant="danger"
+                    class="file-action-btn"
+                    onclick={() => deleteBackupFile(file.filename)}
+                    isLoading={deletingBackup === file.filename}
+                    ariaLabel={$t('settings.backup_management.delete')}
+                    title={$t('settings.backup_management.delete')}
+                  >
+                    🗑
+                  </Button>
+                </div>
+              </div>
+            {/each}
+          </div>
+          {#if backupDownloadError}
+            <div class="setting-desc warning">{backupDownloadError}</div>
+          {/if}
         {/if}
       </div>
     {:else}
@@ -1263,6 +1364,35 @@
     flex-direction: column;
     gap: 0.5rem;
     margin-top: 0.5rem;
+  }
+
+  .files-collapse {
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 10px;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .collapse-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-weight: 600;
+    color: #e2e8f0;
+    list-style: none;
+  }
+
+  .collapse-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .count-badge {
+    background: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
   }
 
   .file-row {

@@ -39,6 +39,7 @@ export type LogRetentionSettings = {
   enabled: boolean;
   autoSaveEnabled: boolean;
   retentionCount: number;
+  ttlHours: number;
 };
 
 export type LogRetentionStats = {

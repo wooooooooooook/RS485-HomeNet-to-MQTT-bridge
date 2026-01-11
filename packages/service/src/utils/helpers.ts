@@ -128,9 +128,10 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
   },
   locale: 'ko',
   logRetention: {
-    enabled: false,
+    enabled: true,
     autoSaveEnabled: false,
     retentionCount: 7,
+    ttlHours: 1,
   },
 };
 
@@ -166,6 +167,10 @@ export const normalizeFrontendSettings = (
         value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
+      ttlHours:
+        typeof value?.logRetention?.ttlHours === 'number' && value.logRetention.ttlHours > 0
+          ? value.logRetention.ttlHours
+          : DEFAULT_FRONTEND_SETTINGS.logRetention!.ttlHours,
     },
   };
 };

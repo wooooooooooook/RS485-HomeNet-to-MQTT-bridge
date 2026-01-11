@@ -4,14 +4,14 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { resolveSecurePath } from './utils/helpers.js';
 
-const LOG_TTL = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-const CLEANUP_INTERVAL = 60 * 60 * 1000; // Cleanup every hour
-const AUTO_SAVE_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
+const DEFAULT_TTL_HOURS = 1;
+const MAX_CLEANUP_INTERVAL = 60 * 60 * 1000; // Cleanup at least every hour
 
 export interface LogRetentionSettings {
   enabled: boolean;
   autoSaveEnabled: boolean;
   retentionCount: number;
+  ttlHours: number;
 }
 
 export interface LogRetentionStats {
@@ -63,9 +63,10 @@ type ActivityLogEntry = {
 };
 
 export class LogRetentionService {
-  private enabled: boolean = false;
+  private enabled: boolean = true;
   private autoSaveEnabled: boolean = false;
   private retentionCount: number = 7;
+  private ttlHours: number = DEFAULT_TTL_HOURS;
   private configDir: string;
   private logsSubDir: string;
 
@@ -101,13 +102,16 @@ export class LogRetentionService {
 
   public async init(settings?: Partial<LogRetentionSettings>) {
     if (settings) {
-      this.enabled = settings.enabled ?? false;
-      this.autoSaveEnabled = settings.autoSaveEnabled ?? false;
-      this.retentionCount = settings.retentionCount ?? 7;
+      this.enabled = settings.enabled ?? this.enabled;
+      this.autoSaveEnabled = settings.autoSaveEnabled ?? this.autoSaveEnabled;
+      this.retentionCount = settings.retentionCount ?? this.retentionCount;
+      if (typeof settings.ttlHours === 'number' && settings.ttlHours > 0) {
+        this.ttlHours = settings.ttlHours;
+      }
     }
 
     // Start cleanup timer
-    this.cleanupTimer = setInterval(() => this.cleanupOldLogs(), CLEANUP_INTERVAL);
+    this.startCleanupTimer();
 
     // Setup event listeners if enabled
     if (this.enabled) {
@@ -120,7 +124,7 @@ export class LogRetentionService {
     }
 
     logger.info(
-      `[LogRetention] Initialized. Enabled: ${this.enabled}, AutoSave: ${this.autoSaveEnabled}`,
+      `[LogRetention] Initialized. Enabled: ${this.enabled}, AutoSave: ${this.autoSaveEnabled}, TTL: ${this.ttlHours}h`,
     );
   }
 
@@ -129,6 +133,7 @@ export class LogRetentionService {
       enabled: this.enabled,
       autoSaveEnabled: this.autoSaveEnabled,
       retentionCount: this.retentionCount,
+      ttlHours: this.ttlHours,
     };
   }
 
@@ -191,6 +196,7 @@ export class LogRetentionService {
   ): Promise<LogRetentionSettings> {
     const wasEnabled = this.enabled;
     const wasAutoSaveEnabled = this.autoSaveEnabled;
+    const previousTtlHours = this.ttlHours;
 
     if (typeof settings.enabled === 'boolean') {
       this.enabled = settings.enabled;
@@ -200,6 +206,9 @@ export class LogRetentionService {
     }
     if (typeof settings.retentionCount === 'number' && settings.retentionCount > 0) {
       this.retentionCount = settings.retentionCount;
+    }
+    if (typeof settings.ttlHours === 'number' && settings.ttlHours > 0) {
+      this.ttlHours = settings.ttlHours;
     }
 
     // Handle enabled state change
@@ -217,6 +226,12 @@ export class LogRetentionService {
       this.startAutoSave();
     } else if (wasAutoSaveEnabled && !this.autoSaveEnabled) {
       this.stopAutoSave();
+    }
+    if (previousTtlHours !== this.ttlHours) {
+      this.startCleanupTimer();
+      if (this.autoSaveEnabled) {
+        this.startAutoSave();
+      }
     }
 
     return this.getSettings();
@@ -289,7 +304,7 @@ export class LogRetentionService {
   private cleanupOldLogs(): void {
     if (!this.enabled) return;
 
-    const cutoff = Date.now() - LOG_TTL;
+    const cutoff = Date.now() - this.getTtlMs();
 
     const originalParsedCount = this.parsedPacketLogs.length;
     this.parsedPacketLogs = this.parsedPacketLogs.filter(
@@ -464,8 +479,9 @@ export class LogRetentionService {
     if (this.autoSaveTimer) {
       clearInterval(this.autoSaveTimer);
     }
-    this.autoSaveTimer = setInterval(() => this.autoSave(), AUTO_SAVE_INTERVAL);
-    logger.info('[LogRetention] Auto-save started (6h interval)');
+    const ttlMs = this.getTtlMs();
+    this.autoSaveTimer = setInterval(() => this.autoSave(), ttlMs);
+    logger.info(`[LogRetention] Auto-save started (${this.ttlHours}h interval)`);
   }
 
   private stopAutoSave() {
@@ -591,5 +607,22 @@ export class LogRetentionService {
     }
     this.stopAutoSave();
     this.removeListeners();
+  }
+
+  private getTtlMs(): number {
+    return this.ttlHours * 60 * 60 * 1000;
+  }
+
+  private getCleanupIntervalMs(): number {
+    return Math.min(this.getTtlMs(), MAX_CLEANUP_INTERVAL);
+  }
+
+  private startCleanupTimer() {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    const cleanupInterval = this.getCleanupIntervalMs();
+    this.cleanupTimer = setInterval(() => this.cleanupOldLogs(), cleanupInterval);
+    logger.info(`[LogRetention] Cleanup timer set (${cleanupInterval / 1000}s interval)`);
   }
 }

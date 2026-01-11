@@ -107,6 +107,7 @@
     enabled: boolean;
     autoSaveEnabled: boolean;
     retentionCount: number;
+    ttlHours: number;
   } | null>(null);
   let cacheStats = $state<LogRetentionStats | null>(null);
   let cacheFiles = $state<SavedLogFile[]>([]);
@@ -248,6 +249,14 @@
     const value = parseInt(input.value, 10);
     if (value > 0 && value <= 30) {
       updateCacheSettings({ retentionCount: value });
+    }
+  };
+
+  const handleTtlChange = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    const value = parseInt(input.value, 10);
+    if (value > 0 && value <= 168) {
+      updateCacheSettings({ ttlHours: value });
     }
   };
 
@@ -789,6 +798,22 @@
           </div>
         </div>
 
+        <div class="setting sub-setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.ttl')}</div>
+            <div class="setting-desc">{$t('settings.log_retention.ttl_desc')}</div>
+          </div>
+          <input
+            type="number"
+            class="number-input"
+            min="1"
+            max="168"
+            value={cacheSettings.ttlHours}
+            onchange={handleTtlChange}
+            disabled={isCacheSaving}
+          />
+        </div>
+
         <div class="setting">
           <div>
             <div class="setting-title">{$t('settings.log_retention.manual_save')}</div>
@@ -810,7 +835,9 @@
               {$t('settings.log_retention.auto_save')}
             </div>
             <div class="setting-desc" id="auto-save-desc">
-              {$t('settings.log_retention.auto_save_desc')}
+              {$t('settings.log_retention.auto_save_desc', {
+                values: { ttl: cacheSettings.ttlHours },
+              })}
             </div>
           </div>
           <Toggle

@@ -1,6 +1,7 @@
 import { GenericDevice } from './generic.device.js';
 import { DeviceConfig, ProtocolConfig, CommandResult } from '../types.js';
 import { ValveEntity } from '../../domain/entities/valve.entity.js';
+import { normalizeDeviceState } from './state-normalizer.js';
 
 export class ValveDevice extends GenericDevice {
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
@@ -12,38 +13,14 @@ export class ValveDevice extends GenericDevice {
       return null;
     }
     const updates = super.parseData(packet) || {};
-    const entityConfig = this.config as ValveEntity;
-
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Handle basic open/closed states
-    if (!updates.state) {
-      if (entityConfig.state_open && this.matchState(payload, entityConfig.state_open)) {
-        updates.state = 'OPEN';
-      } else if (entityConfig.state_closed && this.matchState(payload, entityConfig.state_closed)) {
-        updates.state = 'CLOSED';
-      } else if (
-        entityConfig.state_opening &&
-        this.matchState(payload, entityConfig.state_opening)
-      ) {
-        updates.state = 'OPENING';
-      } else if (
-        entityConfig.state_closing &&
-        this.matchState(payload, entityConfig.state_closing)
-      ) {
-        updates.state = 'CLOSING';
-      }
-    }
+    const normalized = normalizeDeviceState({ ...this.config, type: 'valve' } as ValveEntity, payload, updates, {
+      headerLen: headerLength,
+      state: this.getState(),
+    });
 
-    // Handle position (0-100%)
-    if (!updates.position && entityConfig.state_position) {
-      const position = this.extractValue(payload, entityConfig.state_position);
-      if (position !== null && typeof position === 'number') {
-        updates.position = Math.min(100, Math.max(0, position));
-      }
-    }
-
-    return Object.keys(updates).length > 0 ? updates : null;
+    return Object.keys(normalized).length > 0 ? normalized : null;
   }
 
   public constructCommand(

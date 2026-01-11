@@ -6,6 +6,9 @@ import { StateManager } from '../../src/state/state-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 import { logger } from '../../src/utils/logger.js';
+import { LightDevice } from '../../src/protocol/devices/light.device.js';
+import { ClimateDevice } from '../../src/protocol/devices/climate.device.js';
+import { FanDevice } from '../../src/protocol/devices/fan.device.js';
 
 const serial = {
   portId: 'main',
@@ -567,6 +570,140 @@ describe('AutomationManager', () => {
     expect(JSON.parse(publishCall?.[1] ?? '{}')).toEqual({
       target_temperature: 25,
     });
+  });
+
+  it('update_state가 parseData와 동일한 상태 해석을 수행해야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      light: [
+        {
+          id: 'light_1',
+          name: 'Light 1',
+          type: 'light',
+          state: { data: [0x01] },
+          state_on: { offset: 1, data: [0x01] },
+          state_off: { offset: 1, data: [0x00] },
+          state_brightness: { offset: 2, length: 1 },
+        },
+      ],
+      climate: [
+        {
+          id: 'climate_1',
+          name: 'Climate 1',
+          type: 'climate',
+          state: { data: [0x02] },
+          state_heat: { offset: 1, data: [0x01] },
+          state_action_heating: { offset: 2, data: [0x01] },
+          state_fan_low: { offset: 3, data: [0x01] },
+          state_preset_eco: { offset: 4, data: [0x01] },
+          state_temperature_target: { offset: 5, length: 1 },
+        },
+      ],
+      fan: [
+        {
+          id: 'fan_1',
+          name: 'Fan 1',
+          type: 'fan',
+          state: { data: [0x03] },
+          state_on: { offset: 1, data: [0x01] },
+          state_speed: { offset: 2, length: 1 },
+          state_oscillating: { offset: 3, data: [0x01] },
+          state_direction: { offset: 4, data: [0x01] },
+        },
+      ],
+      automation: [
+        {
+          id: 'update_state_light_parse',
+          trigger: [{ type: 'packet', match: { data: [0x01, 0x01], offset: 0 } }],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'light_1',
+              state: {
+                state_on: { offset: 1, data: [0x01] },
+                state_off: { offset: 1, data: [0x00] },
+                state_brightness: { offset: 2, length: 1 },
+              },
+            },
+          ],
+        },
+        {
+          id: 'update_state_climate_parse',
+          trigger: [{ type: 'packet', match: { data: [0x02, 0x01], offset: 0 } }],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'climate_1',
+              state: {
+                state_heat: { offset: 1, data: [0x01] },
+                state_action_heating: { offset: 2, data: [0x01] },
+                state_fan_low: { offset: 3, data: [0x01] },
+                state_preset_eco: { offset: 4, data: [0x01] },
+                state_temperature_target: { offset: 5, length: 1 },
+              },
+            },
+          ],
+        },
+        {
+          id: 'update_state_fan_parse',
+          trigger: [{ type: 'packet', match: { data: [0x03, 0x01], offset: 0 } }],
+          then: [
+            {
+              action: 'update_state',
+              target_id: 'fan_1',
+              state: {
+                state_on: { offset: 1, data: [0x01] },
+                state_speed: { offset: 2, length: 1 },
+                state_oscillating: { offset: 3, data: [0x01] },
+                state_direction: { offset: 4, data: [0x01] },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const mqttPublisherStub = { publish: vi.fn() };
+    const stateManager = new StateManager(
+      'main',
+      config,
+      packetProcessor as any,
+      mqttPublisherStub as any,
+      'homenet2mqtt',
+    );
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      undefined,
+      stateManager as any,
+    );
+    automationManager.start();
+
+    const protocolConfig = { packet_defaults: config.packet_defaults } as any;
+    const lightDevice = new LightDevice(config.light?.[0] as any, protocolConfig);
+    const climateDevice = new ClimateDevice(config.climate?.[0] as any, protocolConfig);
+    const fanDevice = new FanDevice(config.fan?.[0] as any, protocolConfig);
+
+    const lightPacket = Buffer.from([0x01, 0x01, 0x64]);
+    const lightExpected = lightDevice.parseData(lightPacket);
+    packetProcessor.emit('packet', lightPacket);
+    await vi.runAllTimersAsync();
+    expect(stateManager.getEntityState('light_1')).toEqual(lightExpected);
+
+    const climatePacket = Buffer.from([0x02, 0x01, 0x01, 0x01, 0x01, 0x19]);
+    const climateExpected = climateDevice.parseData(climatePacket);
+    packetProcessor.emit('packet', climatePacket);
+    await vi.runAllTimersAsync();
+    expect(stateManager.getEntityState('climate_1')).toEqual(climateExpected);
+
+    const fanPacket = Buffer.from([0x03, 0x01, 0x05, 0x01, 0x01]);
+    const fanExpected = fanDevice.parseData(fanPacket);
+    packetProcessor.emit('packet', fanPacket);
+    await vi.runAllTimersAsync();
+    expect(stateManager.getEntityState('fan_1')).toEqual(fanExpected);
   });
 
   it('숫자 비교(gt, lt 등)가 포함된 상태 트리거를 처리해야 한다', async () => {

@@ -1,6 +1,7 @@
 import { GenericDevice } from './generic.device.js';
 import { DeviceConfig, ProtocolConfig, CommandResult } from '../types.js';
 import { FanEntity } from '../../domain/entities/fan.entity.js';
+import { normalizeDeviceState } from './state-normalizer.js';
 
 export class FanDevice extends GenericDevice {
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
@@ -12,54 +13,14 @@ export class FanDevice extends GenericDevice {
       return null;
     }
     const updates = super.parseData(packet) || {};
-    const entityConfig = this.config as FanEntity;
-
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Handle on/off if not CEL
-    if (!updates.state) {
-      if (entityConfig.state_on && this.matchState(payload, entityConfig.state_on)) {
-        updates.state = 'ON';
-      } else if (entityConfig.state_off && this.matchState(payload, entityConfig.state_off)) {
-        updates.state = 'OFF';
-      }
-    }
+    const normalized = normalizeDeviceState({ ...this.config, type: 'fan' } as FanEntity, payload, updates, {
+      headerLen: headerLength,
+      state: this.getState(),
+    });
 
-    // Handle speed
-    if (!updates.speed && entityConfig.state_speed) {
-      const val = this.extractValue(payload, entityConfig.state_speed);
-      if (val !== null) updates.speed = val;
-    }
-
-    // Handle percentage
-    if (!updates.percentage && entityConfig.state_percentage) {
-      const val = this.extractValue(payload, entityConfig.state_percentage);
-      if (val !== null) updates.percentage = val;
-    }
-
-    // Handle oscillation
-    if (!updates.oscillating && entityConfig.state_oscillating) {
-      if (
-        entityConfig.state_oscillating &&
-        this.matchState(payload, entityConfig.state_oscillating)
-      ) {
-        updates.oscillating = true;
-      }
-    }
-
-    // Handle direction
-    if (!updates.direction && entityConfig.state_direction) {
-      if (entityConfig.state_direction && this.matchState(payload, entityConfig.state_direction)) {
-        const offset = entityConfig.state_direction.offset || 0;
-        if (payload[offset] === 0) {
-          updates.direction = 'forward';
-        } else {
-          updates.direction = 'reverse';
-        }
-      }
-    }
-
-    return Object.keys(updates).length > 0 ? updates : null;
+    return Object.keys(normalized).length > 0 ? normalized : null;
   }
 
   public constructCommand(

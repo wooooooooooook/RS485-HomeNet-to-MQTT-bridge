@@ -1,6 +1,7 @@
 import { GenericDevice } from './generic.device.js';
 import { ProtocolConfig } from '../types.js';
 import { BinarySensorEntity } from '../../domain/entities/binary-sensor.entity.js';
+import { normalizeDeviceState } from './state-normalizer.js';
 
 export class BinarySensorDevice extends GenericDevice {
   constructor(config: BinarySensorEntity, protocolConfig: ProtocolConfig) {
@@ -13,18 +14,18 @@ export class BinarySensorDevice extends GenericDevice {
     }
 
     const updates = super.parseData(packet) || {};
-    const entityConfig = this.config as BinarySensorEntity;
-
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    if (!updates.state) {
-      if (entityConfig.state_on && this.matchState(payload, entityConfig.state_on)) {
-        updates.state = 'ON';
-      } else if (entityConfig.state_off && this.matchState(payload, entityConfig.state_off)) {
-        updates.state = 'OFF';
-      }
-    }
+    const normalized = normalizeDeviceState(
+      { ...this.config, type: 'binary_sensor' } as BinarySensorEntity,
+      payload,
+      updates,
+      {
+      headerLen: headerLength,
+      state: this.getState(),
+      },
+    );
 
-    return Object.keys(updates).length > 0 ? updates : null;
+    return Object.keys(normalized).length > 0 ? normalized : null;
   }
 }

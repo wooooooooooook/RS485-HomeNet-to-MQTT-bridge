@@ -37,6 +37,7 @@ import { parseDuration } from '../utils/duration.js';
 import { findEntityById } from '../utils/entities.js';
 import { logger } from '../utils/logger.js';
 import { matchesPacket } from '../utils/packet-matching.js';
+import { normalizeDeviceState } from '../protocol/devices/state-normalizer.js';
 import {
   calculateChecksumFromBuffer,
   calculateChecksum2FromBuffer,
@@ -768,11 +769,11 @@ export class AutomationManager {
       }
     }
 
-    const payload = context.packet ? Buffer.from(context.packet) : null;
+    const packetBuffer = context.packet ? Buffer.from(context.packet) : null;
     const requiresPacket = Object.values(action.state).some((value) => {
       return this.isSchemaValue(value);
     });
-    if (!payload && requiresPacket) {
+    if (!packetBuffer && requiresPacket) {
       logger.warn({ action }, '[automation] update_state requires packet context');
     }
     const updates: Record<string, any> = {};
@@ -780,12 +781,12 @@ export class AutomationManager {
     for (const [key, rawValue] of Object.entries(action.state)) {
       const mappedKey = this.mapStateKey(key);
       if (this.isSchemaValue(rawValue)) {
-        if (!payload) continue;
+        if (!packetBuffer) continue;
         if (this.isDataMatchSchema(rawValue)) {
           // offset이 명시되지 않은 경우에만 headerLen을 baseOffset으로 사용
           const headerLen = this.config.packet_defaults?.rx_header?.length ?? 0;
           const baseOffset = rawValue.offset === undefined ? headerLen : 0;
-          const matched = matchesPacket(rawValue, payload, {
+          const matched = matchesPacket(rawValue, packetBuffer, {
             baseOffset,
             allowEmptyData: true,
             context: this.buildContext(context),
@@ -793,7 +794,7 @@ export class AutomationManager {
           updates[mappedKey] = matched;
           continue;
         }
-        const extracted = extractFromSchema(payload, rawValue);
+        const extracted = extractFromSchema(packetBuffer, rawValue);
         if (extracted === null || extracted === undefined) {
           continue;
         }
@@ -808,23 +809,19 @@ export class AutomationManager {
       return;
     }
 
-    const stateFlags: Array<{ key: string; value: 'ON' | 'OFF' }> = [
-      { key: 'state_on', value: 'ON' },
-      { key: 'state_off', value: 'OFF' },
-      { key: 'on', value: 'ON' },
-      { key: 'off', value: 'OFF' },
-    ];
+    const headerLen = this.config.packet_defaults?.rx_header?.length ?? 0;
+    const payload = packetBuffer ? packetBuffer.slice(headerLen) : Buffer.alloc(0);
+    const normalizedUpdates = normalizeDeviceState(entity as Record<string, any>, payload, updates, {
+      headerLen,
+      state: this.stateManager.getEntityState(action.target_id) ?? {},
+    });
 
-    for (const { key, value } of stateFlags) {
-      if (typeof updates[key] === 'boolean') {
-        if (updates[key]) {
-          updates.state = value;
-        }
-        delete updates[key];
-      }
+    if (Object.keys(normalizedUpdates).length === 0) {
+      logger.debug({ action }, '[automation] update_state action skipped: normalized updates empty');
+      return;
     }
 
-    this.stateManager.updateEntityState(action.target_id, updates);
+    this.stateManager.updateEntityState(action.target_id, normalizedUpdates);
   }
 
   private async executeSendPacketAction(

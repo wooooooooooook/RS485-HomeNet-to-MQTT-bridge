@@ -1,6 +1,7 @@
 import { GenericDevice } from './generic.device.js';
 import { ProtocolConfig, CommandResult } from '../types.js';
 import { NumberEntity } from '../../domain/entities/number.entity.js';
+import { normalizeDeviceState } from './state-normalizer.js';
 
 export class NumberDevice extends GenericDevice {
   constructor(config: NumberEntity, protocolConfig: ProtocolConfig) {
@@ -13,33 +14,14 @@ export class NumberDevice extends GenericDevice {
     }
 
     const updates = super.parseData(packet) || {};
-    const entityConfig = this.config as NumberEntity;
-
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const payload = packet.slice(headerLength);
-    // Parse number value from state_number schema
-    if (!updates.value && entityConfig.state_number) {
-      const val = this.extractValue(payload, entityConfig.state_number);
-      if (val !== null) {
-        updates.value = val;
-      }
-    }
+    const normalized = normalizeDeviceState({ ...this.config, type: 'number' } as NumberEntity, payload, updates, {
+      headerLen: headerLength,
+      state: this.getState(),
+    });
 
-    // Check for increment/decrement/min/max state changes
-    if (entityConfig.state_increment && this.matchState(payload, entityConfig.state_increment)) {
-      updates.action = 'increment';
-    } else if (
-      entityConfig.state_decrement &&
-      this.matchState(payload, entityConfig.state_decrement)
-    ) {
-      updates.action = 'decrement';
-    } else if (entityConfig.state_to_min && this.matchState(payload, entityConfig.state_to_min)) {
-      updates.value = entityConfig.min_value;
-    } else if (entityConfig.state_to_max && this.matchState(payload, entityConfig.state_to_max)) {
-      updates.value = entityConfig.max_value;
-    }
-
-    return Object.keys(updates).length > 0 ? updates : null;
+    return Object.keys(normalized).length > 0 ? normalized : null;
   }
 
   public constructCommand(commandName: string, value?: any): number[] | CommandResult | null {

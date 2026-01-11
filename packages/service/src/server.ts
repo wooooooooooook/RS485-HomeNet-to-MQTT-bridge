@@ -61,7 +61,12 @@ const envConfigFiles = (() => {
 // --- Application State ---
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server, path: '/api/packets/stream' });
+const wss = new WebSocketServer({
+  server,
+  path: '/api/packets/stream',
+  // Security: Limit max payload to 64KB to prevent DoS via large WebSocket frames
+  maxPayload: 64 * 1024,
+});
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Security: Rate Limiters
@@ -177,7 +182,7 @@ registerRoutes(app, {
     getStatus: () => rawPacketLogger.getStatus(),
     start: (meta: any, options: any) => rawPacketLogger.start(meta, options),
     stop: () => rawPacketLogger.stop(),
-    getFilePath: (filename: string) => rawPacketLogger.getFilePath(filename),
+    getFilePath: (filename: string) => rawPacketLogger.getFilePath(filename) ?? '',
   },
   logRetentionService, // Pass the service instance directly
   logCollectorService: {

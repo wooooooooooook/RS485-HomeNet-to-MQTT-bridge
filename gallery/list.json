@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-12T08:22:32.219Z",
+  "generated_at": "2026-01-12T08:52:24.368Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1736,6 +1736,32 @@
           "content_summary": {
             "entities": {
               "light": 4
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
+          "file": "samsung_sds/outlet.yaml",
+          "name": "대기전력차단 콘센트 5개 설정",
+          "name_en": "Standby Power Cutoff Outlet (5 items)",
+          "description": "삼성 SDS 대기전력차단 콘센트 설정입니다. 전원 제어 및 전력량(W) 모니터링을 지원합니다. (5개 그룹)",
+          "description_en": "Samsung SDS Standby Power Cutoff Outlet configuration. Supports power control and power consumption (W) monitoring for 5 outlets.",
+          "version": "1.1.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "outlet",
+            "plug",
+            "switch",
+            "sensor",
+            "power",
+            "samsung",
+            "sds"
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 10,
+              "sensor": 5
             },
             "automations": 0,
             "scripts": 0

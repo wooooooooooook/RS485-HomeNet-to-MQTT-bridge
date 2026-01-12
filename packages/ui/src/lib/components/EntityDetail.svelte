@@ -1166,7 +1166,7 @@
   }
 
   .subtle {
-    margin: 0.25rem 0 0;
+    margin: 0.5rem 0;
     color: #94a3b8;
     font-size: 0.9rem;
   }

@@ -63,6 +63,17 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
     if (!entities) return;
 
     entities.forEach((entity) => {
+      // Ensure entity type is set
+      if (entity && typeof entity === 'object') {
+        (entity as any).type = type;
+
+        // Map packet_defaults (YAML) to packet_parameters (Internal)
+        if ((entity as any).packet_defaults && !(entity as any).packet_parameters) {
+          (entity as any).packet_parameters = (entity as any).packet_defaults;
+          delete (entity as any).packet_defaults;
+        }
+      }
+
       if (
         entity &&
         typeof entity === 'object' &&

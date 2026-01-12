@@ -390,7 +390,7 @@
       "config": "설정 (YAML)",
       "packets": "패킷 로그",
       "manage": "관리",
-      "logs": "실행 기록"
+      "logs": "활동 로그"
     },
     "execute": {
       "error": "실행에 실패했습니다."
@@ -411,6 +411,10 @@
       "delete_confirm": "이 자동화를 삭제할까요?",
       "delete_success": "자동화를 삭제했습니다.",
       "delete_error": "자동화를 삭제하지 못했습니다."
+    },
+    "entity": {
+      "logs_title": "엔티티 활동 로그",
+      "logs_empty": "표시할 엔티티 활동 로그가 없습니다."
     },
     "script": {
       "execute_title": "스크립트 즉시 실행",

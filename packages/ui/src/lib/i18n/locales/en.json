@@ -390,7 +390,7 @@
       "config": "Config (YAML)",
       "packets": "Packet Log",
       "manage": "Manage",
-      "logs": "Run logs"
+      "logs": "Activity log"
     },
     "execute": {
       "error": "Failed to execute."
@@ -411,6 +411,10 @@
       "delete_confirm": "Delete this automation?",
       "delete_success": "Automation deleted.",
       "delete_error": "Failed to delete automation."
+    },
+    "entity": {
+      "logs_title": "Entity activity log",
+      "logs_empty": "No entity activity logs to display."
     },
     "script": {
       "execute_title": "Run script now",

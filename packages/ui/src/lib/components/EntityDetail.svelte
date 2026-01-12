@@ -170,16 +170,16 @@
   const isDeviceEntity = $derived.by(() => entityCategory === 'entity');
   const isAutomation = $derived.by(() => entityCategory === 'automation');
   const isScript = $derived.by(() => entityCategory === 'script');
-  const logTitle = $derived.by(() =>
-    isAutomation
-      ? $t('entity_detail.automation.logs_title')
-      : $t('entity_detail.script.logs_title'),
-  );
-  const logEmptyMessage = $derived.by(() =>
-    isAutomation
-      ? $t('entity_detail.automation.logs_empty')
-      : $t('entity_detail.script.logs_empty'),
-  );
+  const logTitle = $derived.by(() => {
+    if (isAutomation) return $t('entity_detail.automation.logs_title');
+    if (isScript) return $t('entity_detail.script.logs_title');
+    return $t('entity_detail.entity.logs_title');
+  });
+  const logEmptyMessage = $derived.by(() => {
+    if (isAutomation) return $t('entity_detail.automation.logs_empty');
+    if (isScript) return $t('entity_detail.script.logs_empty');
+    return $t('entity_detail.entity.logs_empty');
+  });
 
   type MergedPacket = ({ type: 'rx' } & ParsedPacket) | ({ type: 'tx' } & CommandPacket);
 
@@ -691,16 +691,14 @@
         class:active={activeTab === 'config'}
         onclick={() => (activeTab = 'config')}>{$t('entity_detail.tabs.config')}</button
       >
-      {#if isAutomation || isScript}
-        <button
-          role="tab"
-          id="tab-logs"
-          aria-selected={activeTab === 'logs'}
-          aria-controls="panel-logs"
-          class:active={activeTab === 'logs'}
-          onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
-        >
-      {/if}
+      <button
+        role="tab"
+        id="tab-logs"
+        aria-selected={activeTab === 'logs'}
+        aria-controls="panel-logs"
+        class:active={activeTab === 'logs'}
+        onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
+      >
       {#if isDeviceEntity}
         <button
           role="tab"

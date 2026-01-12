@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-09T05:41:33.665Z",
+  "generated_at": "2026-01-12T01:55:31.912Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1009,6 +1009,24 @@
           "description_en": "Periodic light state request automation for Hyundai Telecom wallpads.",
           "version": "1.0.2",
           "author": "wooooooooooook",
+          "tags": [
+            "hyundai",
+            "imazu"
+          ],
+          "content_summary": {
+            "entities": {},
+            "automations": 2,
+            "scripts": 0
+          }
+        },
+        {
+          "file": "hyundai_imazu/periodic_update_climate.yaml",
+          "name": "☑️주기적 난방 상태요청 자동화",
+          "name_en": "☑️Periodic climate state request automation",
+          "description": "상태 갱신을 위한 주기적 난방 상태요청 자동화입니다.",
+          "description_en": "Periodic climate state request automation for Hyundai Telecom wallpads.",
+          "version": "1.0.0",
+          "author": "muuky",
           "tags": [
             "hyundai",
             "imazu"

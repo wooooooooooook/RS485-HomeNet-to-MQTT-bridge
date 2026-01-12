@@ -36,6 +36,15 @@ export class PacketParser {
   private preparedChecksum2: CompiledScript | null = null;
   private preparedLengthExpr: CompiledScript | null = null;
   private reusableBufferView: ReusableBufferView | null = null;
+  private readonly reusableContext = {
+    x: 0n,
+    xstr: '',
+    data: null as any,
+    state: {},
+    states: {},
+    trigger: {},
+    args: {},
+  };
 
   private readonly checksumTypes = new Set([
     'add',
@@ -84,6 +93,7 @@ export class PacketParser {
 
     // Initialize ReusableBufferView for zero-allocation parsing
     this.reusableBufferView = executor.createReusableBufferView();
+    this.reusableContext.data = this.reusableBufferView.proxy;
 
     if (
       typeof checksumType === 'string' &&
@@ -716,10 +726,9 @@ export class PacketParser {
           // Optimization: Use ReusableBufferView to avoid allocation (Strategy C)
           if (this.reusableBufferView) {
             this.reusableBufferView.update(buffer, offset, dataEnd - offset);
-            const result = this.preparedChecksum.execute({
-              data: this.reusableBufferView.proxy,
-              len: dataEnd - offset,
-            });
+            // Reuse context object + bypass safety checks for speed
+            // data matches reusableBufferView.proxy
+            const result = this.preparedChecksum.executeRaw(this.reusableContext);
             return result === checksumByte;
           } else {
             // Fallback (e.g. if ReusableBufferView initialization failed)

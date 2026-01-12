@@ -14,6 +14,16 @@ export interface CompiledScript {
    * @returns The result of the execution
    */
   execute(contextData: Record<string, any>): any;
+
+  /**
+   * Executes the script with a raw, pre-prepared context.
+   * Skips safe context creation (e.g., BigInt conversion) for maximum performance in hot loops.
+   * The caller MUST ensure the context contains correct types (e.g., BigInts for numbers).
+   *
+   * @param contextData - The raw context variables
+   * @returns The result of the execution
+   */
+  executeRaw(contextData: Record<string, any>): any;
 }
 
 interface ScriptCacheEntry {
@@ -219,6 +229,15 @@ export class CelExecutor {
         try {
           const safeContext = this.createSafeContext(contextData, entry);
           const res = entry.parsed(safeContext);
+          return this.convertResult(res);
+        } catch (error) {
+          this.handleError(error, script);
+          return null;
+        }
+      },
+      executeRaw: (contextData: Record<string, any>) => {
+        try {
+          const res = entry.parsed(contextData);
           return this.convertResult(res);
         } catch (error) {
           this.handleError(error, script);

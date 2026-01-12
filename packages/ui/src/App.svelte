@@ -1432,7 +1432,8 @@
         (log) => log.code.startsWith('log.script_') && log.params?.scriptId === selectedEntity.id,
       );
     }
-    return [];
+    // 일반 엔티티: entityId로 상태 변경 로그 필터링
+    return activityLogs.filter((log) => log.params?.entityId === selectedEntity.id);
   });
 
   $effect(() => {
@@ -1481,19 +1482,17 @@
     activePortId ? (packetStatsByPort.get(activePortId) ?? null) : null,
   );
 
-  const filteredActivityLogs = $derived.by<ActivityLog[]>(() =>
-    {
-      const baseLogs = activePortId
-        ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
-        : activityLogs;
-      const shouldHideAutomationScripts =
-        (frontendSettings ?? DEFAULT_FRONTEND_SETTINGS).activityLog?.hideAutomationScripts ?? false;
-      if (!shouldHideAutomationScripts) return baseLogs;
-      return baseLogs.filter(
-        (log) => !log.code.startsWith('log.automation_') && !log.code.startsWith('log.script_'),
-      );
-    },
-  );
+  const filteredActivityLogs = $derived.by<ActivityLog[]>(() => {
+    const baseLogs = activePortId
+      ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
+      : activityLogs;
+    const shouldHideAutomationScripts =
+      (frontendSettings ?? DEFAULT_FRONTEND_SETTINGS).activityLog?.hideAutomationScripts ?? false;
+    if (!shouldHideAutomationScripts) return baseLogs;
+    return baseLogs.filter(
+      (log) => !log.code.startsWith('log.automation_') && !log.code.startsWith('log.script_'),
+    );
+  });
 
   const portStatuses = $derived.by(() => {
     const defaultStatus = bridgeInfo?.status ?? 'idle';

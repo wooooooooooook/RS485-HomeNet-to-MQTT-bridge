@@ -360,6 +360,14 @@ export class PacketParser {
         const checksumLen = this.getChecksumLength();
         const minLen = headerLen + checksumLen;
         if (checksumLen > 0 && bufferLength >= minLen) {
+          // Optimization: Pre-check valid headers to avoid expensive calculations and skip invalid starts immediately
+          if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+            this.consumeBytes(1);
+            this.lastScannedLength = 0;
+            continue;
+          }
+
+
           // Optimization: Use rx_length_expr to calculate packet length directly
           // If the expression returns a valid length, verify only that length.
           // If it returns 0 or the buffer is insufficient, fallback to checksum sweep.

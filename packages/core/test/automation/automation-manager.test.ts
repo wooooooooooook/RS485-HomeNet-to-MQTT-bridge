@@ -430,7 +430,7 @@ describe('AutomationManager', () => {
     await vi.runAllTimersAsync();
 
     const errorCall = errorSpy.mock.calls.find((call) => call[1] === '[automation] Action failed');
-    expect((errorCall?.[0] as any)?.error?.message).toContain('update_state');
+    expect((errorCall?.[0] as any)?.error).toContain('update_state');
     expect(stateManager.getEntityState('light_1')).toBeUndefined();
 
     errorSpy.mockRestore();
@@ -1494,5 +1494,49 @@ describe('AutomationManager', () => {
       expect(mqttPublisher.publish).toHaveBeenCalledTimes(2);
       expect(mqttPublisher.publish).toHaveBeenCalledWith('nested', 'ok', undefined);
     });
+  });
+  it('이전 패킷(prev_packet)을 참조하여 가드 조건을 처리해야 한다', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      automation: [
+        {
+          id: 'prev_packet_test',
+          trigger: [
+            {
+              type: 'packet',
+              match: { data: [0xb0, 0x41], offset: 0 },
+            },
+          ],
+          // 이전 패킷이 [0xab, 0x41, 0x00] 일 때만 실행
+          guard: 'trigger.prev_packet == [0xab, 0x41, 0x00]',
+          then: [{ action: 'publish', topic: 'success', payload: 'ok' }],
+        },
+      ],
+    };
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+    );
+    automationManager.start();
+
+    // 1. 요청 패킷 수신 (AB 41 00) -> lastPacket 업데이트
+    packetProcessor.emit('packet', Buffer.from([0xab, 0x41, 0x00]));
+    await vi.runAllTimersAsync();
+    expect(mqttPublisher.publish).not.toHaveBeenCalled();
+
+    // 2. 응답 패킷 수신 (B0 41) -> 트리거 매칭, 가드 통과 (prev_packet == AB 41 00)
+    packetProcessor.emit('packet', Buffer.from([0xb0, 0x41]));
+    await vi.runAllTimersAsync();
+    expect(mqttPublisher.publish).toHaveBeenCalledWith('success', 'ok', undefined);
+    mqttPublisher.publish.mockClear();
+
+    // 3. 다른 패킷 수신 (B0 41) -> 트리거 매칭, 가드 실패 (prev_packet == B0 41)
+    // 직전 패킷이 B0 41 이므로 AB 41 00 이 아님
+    packetProcessor.emit('packet', Buffer.from([0xb0, 0x41]));
+    await vi.runAllTimersAsync();
+    expect(mqttPublisher.publish).not.toHaveBeenCalled();
   });
 });

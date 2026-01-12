@@ -7,6 +7,8 @@ import { logger } from '../utils/logger.js';
 import { MqttPublisher } from '../transports/mqtt/publisher.js';
 import { eventBus } from '../service/event-bus.js';
 import { stateCache } from './store.js';
+import { ENTITY_TYPE_KEYS } from '../utils/entities.js';
+import { EntityConfig } from '../domain/entities/base.entity.js';
 
 export class StateManager {
   private packetProcessor: PacketProcessor;
@@ -15,10 +17,11 @@ export class StateManager {
   private mqttTopicPrefix: string;
   private ignoredEntityId: string | null = null;
   private sharedStates?: Map<string, Record<string, any>>;
+  private internalEntityIds: Set<string>;
 
   constructor(
     portId: string,
-    _config: HomenetBridgeConfig,
+    config: HomenetBridgeConfig,
     packetProcessor: PacketProcessor,
     mqttPublisher: MqttPublisher,
     mqttTopicPrefix: string,
@@ -29,6 +32,23 @@ export class StateManager {
     this.mqttPublisher = mqttPublisher;
     this.mqttTopicPrefix = mqttTopicPrefix;
     this.sharedStates = sharedStates;
+
+    // Extract internal entity IDs from config
+    this.internalEntityIds = new Set<string>();
+    for (const type of ENTITY_TYPE_KEYS) {
+      const entities = config[type] as EntityConfig[] | undefined;
+      if (entities) {
+        for (const entity of entities) {
+          if (entity.internal === true && entity.id) {
+            this.internalEntityIds.add(entity.id);
+          }
+        }
+      }
+    }
+
+    // Initialize optimistic entities with default state
+    // This ensures they exist in states before any automation guard evaluates them
+    this.initializeOptimisticEntities(config);
 
     if (typeof (this.packetProcessor as any).on === 'function') {
       this.packetProcessor.on('state', (event: { deviceId: string; state: any }) => {
@@ -54,6 +74,50 @@ export class StateManager {
       eventBus.emit('raw-data', hex);
     }
     this.packetProcessor.processChunk(chunk);
+  }
+
+  /**
+   * Initialize optimistic entities with default states.
+   * This ensures they exist in deviceStates/sharedStates before any automation guard evaluates them.
+   */
+  private initializeOptimisticEntities(config: HomenetBridgeConfig): void {
+    const defaultStateByType: Record<string, Record<string, any>> = {
+      binary_sensor: { state: 'off' },
+      switch: { state: 'off' },
+      light: { state: 'off' },
+      valve: { state: 'closed' },
+      cover: { state: 'closed' },
+      fan: { state: 'off' },
+      lock: { state: 'locked' },
+      button: {}, // Buttons don't have persistent state
+      sensor: {}, // Sensors need actual values, skip
+      climate: {}, // Climate has complex state, skip
+      text: {}, // Text needs initial_value, handled by TextDevice
+    };
+
+    for (const type of ENTITY_TYPE_KEYS) {
+      const entities = config[type] as EntityConfig[] | undefined;
+      const defaultState = defaultStateByType[type];
+
+      if (!entities || !defaultState || Object.keys(defaultState).length === 0) {
+        continue;
+      }
+
+      for (const entity of entities) {
+        if (entity.optimistic && entity.id) {
+          // Only initialize if not already in deviceStates
+          if (!this.deviceStates.has(entity.id)) {
+            this.deviceStates.set(entity.id, { ...defaultState });
+            if (this.sharedStates) {
+              this.sharedStates.set(entity.id, { ...defaultState });
+            }
+            logger.debug(
+              `[StateManager] Initialized optimistic entity ${entity.id} with default state: ${JSON.stringify(defaultState)}`,
+            );
+          }
+        }
+      }
+    }
   }
 
   private deviceStates = new Map<string, any>();
@@ -133,6 +197,16 @@ export class StateManager {
     // Double check with cache (handles reference types like arrays that always fail strict equality)
     if (stateCache.get(topic) !== payload) {
       stateCache.set(topic, payload);
+
+      // Skip MQTT publish and event emission for internal entities
+      // Internal state is still stored in deviceStates/sharedStates for automation use
+      if (this.internalEntityIds.has(deviceId)) {
+        if (logger.isLevelEnabled('debug')) {
+          logger.debug(`[StateManager] ${deviceId}: [internal, skipping publish]`);
+        }
+        return;
+      }
+
       if (logger.isLevelEnabled('info') && stateStr) {
         logger.info(`[StateManager] ${deviceId}: {${stateStr}} → ${topic} [published]`);
       }

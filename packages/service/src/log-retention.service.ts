@@ -2,7 +2,7 @@ import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { resolveSecurePath } from './utils/helpers.js';
+import { resolveSecurePath, getLocalTimestamp } from './utils/helpers.js';
 
 const DEFAULT_TTL_HOURS = 1;
 const MAX_CLEANUP_INTERVAL = 60 * 60 * 1000; // Cleanup at least every hour
@@ -382,7 +382,7 @@ export class LogRetentionService {
       packetId,
       entityId: pkt.entityId || '',
       state: pkt.state,
-      timestamp: pkt.timestamp || new Date().toISOString(),
+      timestamp: pkt.timestamp ? getLocalTimestamp(pkt.timestamp) : getLocalTimestamp(),
       portId: pkt.portId,
     });
   };
@@ -409,7 +409,7 @@ export class LogRetentionService {
       entityId: pkt.entityId || '',
       command: pkt.command || '',
       value: pkt.value,
-      timestamp: pkt.timestamp || new Date().toISOString(),
+      timestamp: pkt.timestamp ? getLocalTimestamp(pkt.timestamp) : getLocalTimestamp(),
       portId: pkt.portId,
     });
   };
@@ -426,7 +426,7 @@ export class LogRetentionService {
 
     this.rawPacketLogs.push({
       payload: pkt.payload || '',
-      receivedAt: pkt.receivedAt || new Date().toISOString(),
+      receivedAt: pkt.receivedAt ? getLocalTimestamp(pkt.receivedAt) : getLocalTimestamp(),
       interval: pkt.interval ?? null,
       portId: pkt.portId,
       direction: 'RX',
@@ -444,7 +444,7 @@ export class LogRetentionService {
 
     this.rawPacketLogs.push({
       payload: pkt.payload || '',
-      receivedAt: pkt.timestamp || new Date().toISOString(),
+      receivedAt: pkt.timestamp ? getLocalTimestamp(pkt.timestamp) : getLocalTimestamp(),
       interval: null,
       portId: pkt.portId,
       direction: 'TX',
@@ -510,7 +510,7 @@ export class LogRetentionService {
     // Ensure log directory exists
     await fsp.mkdir(this.logsSubDir, { recursive: true });
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = getLocalTimestamp().replace(/[:.]/g, '-');
     const filename = `cache_log_${timestamp}.json`;
     const filePath = path.join(this.logsSubDir, filename);
 
@@ -521,7 +521,7 @@ export class LogRetentionService {
     });
 
     const data = {
-      exportedAt: new Date().toISOString(),
+      exportedAt: getLocalTimestamp(),
       stats: this.getStats(),
       packetDictionary: dict,
       parsedPacketLogs: this.parsedPacketLogs,

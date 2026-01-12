@@ -2,7 +2,7 @@ import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolveSecurePath } from './utils/helpers.js';
+import { resolveSecurePath, getLocalTimestamp } from './utils/helpers.js';
 
 interface LogOptions {
   configDir: string;
@@ -33,7 +33,7 @@ export class RawPacketLoggerService {
         fs.mkdirSync(logDir, { recursive: true });
       }
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = getLocalTimestamp().replace(/[:.]/g, '-');
       const filename = `packet_log_${timestamp}.txt`;
       this.currentLogFile = path.join(logDir, filename);
 
@@ -50,7 +50,7 @@ export class RawPacketLoggerService {
         const header = [
           '==================================================',
           '[METADATA]',
-          `Log Started: ${new Date().toISOString()}`,
+          `Log Started: ${getLocalTimestamp()}`,
           `Log Mode: ${this.logMode === 'valid' ? 'valid-only' : 'all'}`,
           `Config Files: ${Array.isArray(meta.configFiles) ? meta.configFiles.join(', ') : 'N/A'}`,
           'Serial:',
@@ -60,9 +60,9 @@ export class RawPacketLoggerService {
           'Packet Stats:',
           ...(meta.stats
             ? Object.entries(meta.stats).map(
-                ([portId, s]: [string, any]) =>
-                  ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), IdleOccur(Avg=${s.idleOccurrenceAvg}ms, Std=${s.idleOccurrenceStdDev}ms), Samples=${s.sampleSize}`,
-              )
+              ([portId, s]: [string, any]) =>
+                ` - ${portId}: Packet(Avg=${s.packetAvg}ms, Std=${s.packetStdDev}ms), Idle(Avg=${s.idleAvg}ms, Std=${s.idleStdDev}ms), IdleOccur(Avg=${s.idleOccurrenceAvg}ms, Std=${s.idleOccurrenceStdDev}ms), Samples=${s.sampleSize}`,
+            )
             : [' - Stats not available']),
           '==================================================',
           '', // Empty line
@@ -101,7 +101,7 @@ export class RawPacketLoggerService {
         '', // Empty line
         '==================================================',
         '[RECORDING SUMMARY]',
-        `Log Ended: ${new Date().toISOString()}`,
+        `Log Ended: ${getLocalTimestamp()}`,
         `Total Duration: ${minutes}m ${seconds}s`,
         `Total Packets Collected: ${this.packetCount}`,
         '==================================================',
@@ -160,7 +160,8 @@ export class RawPacketLoggerService {
     if (!this.writeStream) return;
     this.packetCount++;
     const { portId, payload, receivedAt } = data;
-    const logLine = `[${receivedAt}] [${portId}] [RX] ${payload}\n`;
+    const logTimestamp = getLocalTimestamp(receivedAt);
+    const logLine = `[${logTimestamp}] [${portId}] [RX] ${payload}\n`;
     this.writeStream.write(logLine);
   };
 
@@ -168,7 +169,8 @@ export class RawPacketLoggerService {
     if (!this.writeStream) return;
     this.packetCount++;
     const { portId, payload, timestamp } = data;
-    const logLine = `[${timestamp}] [${portId}] [TX] ${payload}\n`;
+    const logTimestamp = getLocalTimestamp(timestamp);
+    const logLine = `[${logTimestamp}] [${portId}] [TX] ${payload}\n`;
     this.writeStream.write(logLine);
   };
 }

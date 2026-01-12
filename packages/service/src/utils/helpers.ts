@@ -97,7 +97,7 @@ export const parseEnvList = (
   if (!raw.includes(',')) {
     logger.warn(
       `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
+      ' 사용을 권장합니다.',
     );
   }
 
@@ -164,7 +164,7 @@ export const normalizeFrontendSettings = (
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.autoSaveEnabled,
       retentionCount:
         typeof value?.logRetention?.retentionCount === 'number' &&
-        value.logRetention.retentionCount > 0
+          value.logRetention.retentionCount > 0
           ? value.logRetention.retentionCount
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.retentionCount,
       ttlHours:
@@ -219,3 +219,35 @@ export const isStateTopic = (topic: string): boolean => {
  * Parses the default frontend settings constant.
  */
 export const getDefaultFrontendSettings = (): FrontendSettings => DEFAULT_FRONTEND_SETTINGS;
+
+// --- Date/Time Helpers ---
+
+/**
+ * Returns a timestamp string in the local timezone (respecting system TZ).
+ * Format: YYYY-MM-DDTHH:mm:ss.SSS+HH:mm (ISO 8601 like, but with local offset)
+ */
+export const getLocalTimestamp = (dateInput?: Date | string | number): string => {
+  const date = dateInput ? new Date(dateInput) : new Date();
+
+  // Get offset in minutes (e.g., -540 for Asia/Seoul KST +09:00)
+  // getTimezoneOffset() returns positive for West, negative for East.
+  // We need positive for East, negative for West for the ISO string.
+  const offsetMinutes = -date.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMinsRemainder = Math.abs(offsetMinutes) % 60;
+
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const offsetString = `${sign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinsRemainder).padStart(2, '0')}`;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const ms = String(date.getMilliseconds()).padStart(3, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${offsetString}`;
+};

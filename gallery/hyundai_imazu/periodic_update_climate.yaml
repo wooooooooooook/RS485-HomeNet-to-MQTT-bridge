@@ -1,0 +1,103 @@
+meta:
+  name: "☑️주기적 난방 상태요청 자동화"
+  name_en: "☑️Periodic climate state request automation"
+  description: "상태 갱신을 위한 주기적 난방 상태요청 자동화입니다."
+  description_en: "Periodic climate state request automation for Hyundai Telecom wallpads."
+  version: "1.0.0"
+  author: "muuky"
+  tags: ["hyundai", "imazu"]
+
+automation:
+    - id: 'send heat state packet'
+      trigger:
+        - type: schedule
+          every: 15m
+      then:
+        - action: send_packet # 난방
+          data: [0x0B, 0x01, 0x18, 0x01, 0x46, 0x10, 0x00, 0x00]
+          header: true
+          checksum: true
+          footer: true
+
+    - id: 'update heat'
+      trigger:
+        - type: packet
+          match:
+            # f7 22 01 18 04 46 10 00 
+            # 01 17 18 -> 1번방 on / 현재 23도 / target 24도
+            # 04 18 19 -> 2번방 off / 현재 24도 / target 25도
+            # 04 16 18 -> 3번방 off / 현재 22도 / target 24도
+            # 04 15 16 -> 4번방 off / 현재 21도 / target 22도
+            # 00 00 00 00 00 00 00 00 00 00 00 00 98 ee
+            data: [0x22, 0x01, 0x18, 0x04, 0x46, 0x10, 0x00]
+            mask: [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+      then:
+        - action: update_state
+          target_id: heater_1
+          state:
+            state_heat:
+              offset: 8
+              data: [0x01]
+            state_off:
+              offset: 8
+              data: [0x04]
+            state_temperature_current:
+              offset: 9
+              length: 1
+              precision: 0
+            state_temperature_target:
+              offset: 10
+              length: 1
+              precision: 0
+        - action: update_state
+          target_id: heater_2
+          state:
+            state_heat:
+              offset: 11
+              data: [0x01]
+            state_off:
+              offset: 11
+              data: [0x04]
+            state_temperature_current:
+              offset: 12
+              length: 1
+              precision: 0
+            state_temperature_target:
+              offset: 13
+              length: 1
+              precision: 0
+        - action: update_state
+          target_id: heater_3
+          state:
+            state_heat:
+              offset: 14
+              data: [0x01]
+            state_off:
+              offset: 14
+              data: [0x04]
+            state_temperature_current:
+              offset: 15
+              length: 1
+              precision: 0
+            state_temperature_target:
+              offset: 16
+              length: 1
+              precision: 0
+        - action: update_state
+          target_id: heater_4
+          state:
+            state_heat:
+              offset: 17
+              data: [0x01]
+            state_off:
+              offset: 17
+              data: [0x04]
+            state_temperature_current:
+              offset: 18
+              length: 1
+              precision: 0
+            state_temperature_target:
+              offset: 19
+              length: 1
+              precision: 0
+            

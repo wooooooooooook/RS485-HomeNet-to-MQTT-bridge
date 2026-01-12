@@ -10,8 +10,6 @@ export const globalSecurityHeaders = (_req: Request, res: Response, next: NextFu
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   // Referrer 정보 노출 최소화
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // HSTS: 강제 HTTPS 사용 (1년)
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   // CSP: 스크립트 및 스타일 인라인 허용 (Svelte 호환), WebSocket 허용
   res.setHeader(
     'Content-Security-Policy',

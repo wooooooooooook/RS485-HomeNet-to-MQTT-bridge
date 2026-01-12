@@ -1,4 +1,10 @@
-- 패킷보관항목에서 raw패킷 제외 - raw패킷 녹화를통해 raw패킷을 수집할수 있습니다.
+v1.13.0
+- samsung_sds기본 설정에서 rx_header를 삭제. samsung_xor체크섬을 신규도입
+  - 현관문과 엘리베이터호출에서 b0가 아닌 패킷을 수신하기위한 변경입니다. 
+  - 기존 사용자분들은 초기화 한뒤 초기설정마법사를통해 새 구조로 변경해야 갤러리의 samsung_sds파일을 업데이트할 수 있습니다.
+- feat: [packet_defaults](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/packet-defaults.md)에 rx_valid_headers, rx_length_expr 옵션 도입 
+  - **rx_valid_headers**: rx_header, rx_footer모두 없는경우 체크섬 충돌가능성이 있는데, rx_valid_headers 배열에 정의된 바이트로 시작하는 경우만 유효한 패킷으로 간주합니다. (삼성sds에서 rx_header를 b0로 쓰던것을 rx_header를 폐지한뒤 발생한 문제를 해결)
+  - **rx_length_expr**: rx_length는 동적이지만 패킷에 길이를 나타내는 정보가 있는경우 사용하면 패킷파싱성능향상에 도움이됩니다. (bestin 설정에서 사용)
 - 설정에서 로그파일 목록 확인 및 삭제가능.
 
 v1.12.1

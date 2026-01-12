@@ -1,0 +1,276 @@
+meta:
+  name: "대기전력차단 콘센트 5개 설정"
+  name_en: "Standby Power Cutoff Outlet (5 items)"
+  description: "삼성 SDS 대기전력차단 콘센트 설정입니다. 전원 제어 및 전력량(W) 모니터링을 지원합니다. (5개 그룹)"
+  description_en: "Samsung SDS Standby Power Cutoff Outlet configuration. Supports power control and power consumption (W) monitoring for 5 outlets."
+  version: "1.1.0"
+  author: "wooooooooooook"
+  tags: ["outlet", "plug", "switch", "sensor", "power", "samsung", "sds"]
+
+entities:
+  switch:
+    # Outlet 1
+    - id: 'outlet_1'
+      name: 'Outlet 1'
+      icon: 'mdi:power-socket-eu'
+      state:
+        data: [0xB0, 0x4A, 0x01]
+      state_on:
+        offset: 3
+        data: [0x01]
+        mask: [0x0F]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0x0F]
+      command_on:
+        data: [0xC6, 0x6E, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x01]
+      command_off:
+        data: [0xC6, 0x6E, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x01]
+
+    - id: 'outlet_1_standby_cutoff'
+      name: 'Outlet 1 standby cutoff'
+      icon: 'mdi:leaf-circle-outline'
+      state:
+        data: [0xB0, 0x4A, 0x01]
+      state_on:
+        offset: 3
+        data: [0x10]
+        mask: [0xF0]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0xF0]
+      command_on:
+        data: [0xC6, 0x4B, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x01, 0x01]
+      command_off:
+        data: [0xC6, 0x4B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x01, 0x00]
+
+    # Outlet 2
+    - id: 'outlet_2'
+      name: 'Outlet 2'
+      icon: 'mdi:power-socket-eu'
+      state:
+        data: [0xB0, 0x4A, 0x02]
+      state_on:
+        offset: 3
+        data: [0x01]
+        mask: [0x0F]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0x0F]
+      command_on:
+        data: [0xC6, 0x6E, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x02]
+      command_off:
+        data: [0xC6, 0x6E, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x02]
+
+    - id: 'outlet_2_standby_cutoff'
+      name: 'Outlet 2 standby cutoff'
+      icon: 'mdi:leaf-circle-outline'
+      state:
+        data: [0xB0, 0x4A, 0x02]
+      state_on:
+        offset: 3
+        data: [0x10]
+        mask: [0xF0]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0xF0]
+      command_on:
+        data: [0xC6, 0x4B, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x02, 0x01]
+      command_off:
+        data: [0xC6, 0x4B, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x02, 0x00]
+
+    # Outlet 3
+    - id: 'outlet_3'
+      name: 'Outlet 3'
+      icon: 'mdi:power-socket-eu'
+      state:
+        data: [0xB0, 0x4A, 0x03]
+      state_on:
+        offset: 3
+        data: [0x01]
+        mask: [0x0F]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0x0F]
+      command_on:
+        data: [0xC6, 0x6E, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x03]
+      command_off:
+        data: [0xC6, 0x6E, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x03]
+
+    - id: 'outlet_3_standby_cutoff'
+      name: 'Outlet 3 standby cutoff'
+      icon: 'mdi:leaf-circle-outline'
+      state:
+        data: [0xB0, 0x4A, 0x03]
+      state_on:
+        offset: 3
+        data: [0x10]
+        mask: [0xF0]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0xF0]
+      command_on:
+        data: [0xC6, 0x4B, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x03, 0x01]
+      command_off:
+        data: [0xC6, 0x4B, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x03, 0x00]
+
+    # Outlet 4
+    - id: 'outlet_4'
+      name: 'Outlet 4'
+      icon: 'mdi:power-socket-eu'
+      state:
+        data: [0xB0, 0x4A, 0x04]
+      state_on:
+        offset: 3
+        data: [0x01]
+        mask: [0x0F]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0x0F]
+      command_on:
+        data: [0xC6, 0x6E, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x04]
+      command_off:
+        data: [0xC6, 0x6E, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x04]
+
+    - id: 'outlet_4_standby_cutoff'
+      name: 'Outlet 4 standby cutoff'
+      icon: 'mdi:leaf-circle-outline'
+      state:
+        data: [0xB0, 0x4A, 0x04]
+      state_on:
+        offset: 3
+        data: [0x10]
+        mask: [0xF0]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0xF0]
+      command_on:
+        data: [0xC6, 0x4B, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x04, 0x01]
+      command_off:
+        data: [0xC6, 0x4B, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x04, 0x00]
+
+    # Outlet 5
+    - id: 'outlet_5'
+      name: 'Outlet 5'
+      icon: 'mdi:power-socket-eu'
+      state:
+        data: [0xB0, 0x4A, 0x05]
+      state_on:
+        offset: 3
+        data: [0x01]
+        mask: [0x0F]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0x0F]
+      command_on:
+        data: [0xC6, 0x6E, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x05]
+      command_off:
+        data: [0xC6, 0x6E, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x6E, 0x05]
+
+    - id: 'outlet_5_standby_cutoff'
+      name: 'Outlet 5 standby cutoff'
+      icon: 'mdi:leaf-circle-outline'
+      state:
+        data: [0xB0, 0x4A, 0x05]
+      state_on:
+        offset: 3
+        data: [0x10]
+        mask: [0xF0]
+      state_off:
+        offset: 3
+        data: [0x00]
+        mask: [0xF0]
+      command_on:
+        data: [0xC6, 0x4B, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x05, 0x01]
+      command_off:
+        data: [0xC6, 0x4B, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB0, 0x4B, 0x05, 0x00]
+
+  sensor:
+    - id: 'outlet_1_power'
+      name: 'Outlet 1 Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      icon: 'mdi:lightning-bolt'
+      state:
+        data: [0xB0, 0x4A, 0x01]
+      state_number:
+        offset: 4
+        length: 2
+
+    - id: 'outlet_2_power'
+      name: 'Outlet 2 Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      icon: 'mdi:lightning-bolt'
+      state:
+        data: [0xB0, 0x4A, 0x02]
+      state_number:
+        offset: 4
+        length: 2
+
+    - id: 'outlet_3_power'
+      name: 'Outlet 3 Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      icon: 'mdi:lightning-bolt'
+      state:
+        data: [0xB0, 0x4A, 0x03]
+      state_number:
+        offset: 4
+        length: 2
+
+    - id: 'outlet_4_power'
+      name: 'Outlet 4 Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      icon: 'mdi:lightning-bolt'
+      state:
+        data: [0xB0, 0x4A, 0x04]
+      state_number:
+        offset: 4
+        length: 2
+
+    - id: 'outlet_5_power'
+      name: 'Outlet 5 Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      icon: 'mdi:lightning-bolt'
+      state:
+        data: [0xB0, 0x4A, 0x05]
+      state_number:
+        offset: 4
+        length: 2

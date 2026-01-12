@@ -138,8 +138,14 @@ export class StateManager {
     return undefined;
   }
 
+  private cachedStates: Record<string, any> | null = null;
+
   public getAllStates(): Record<string, any> {
-    return Object.fromEntries(this.deviceStates);
+    if (this.cachedStates) {
+      return this.cachedStates;
+    }
+    this.cachedStates = Object.fromEntries(this.deviceStates);
+    return this.cachedStates;
   }
 
   public getEntityState(entityId: string): any {
@@ -183,6 +189,7 @@ export class StateManager {
 
     const newState = { ...currentState, ...state };
     this.deviceStates.set(deviceId, newState);
+    this.cachedStates = null; // Invalidate cache
 
     // Update shared global state if available
     if (this.sharedStates) {

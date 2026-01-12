@@ -10,6 +10,7 @@ import type { RateLimiter } from '../utils/rate-limiter.js';
 import type { RawPacketLoggerService } from '../raw-packet-logger.service.js';
 import type { LogRetentionService } from '../log-retention.service.js';
 import { CONFIG_INIT_MARKER } from '../utils/constants.js';
+import { loadFrontendSettings, saveFrontendSettings } from '../services/frontend-settings.service.js';
 import { fileExists } from '../utils/helpers.js';
 import type { RawPacketStreamMode, BridgeInstance } from '../types/index.js';
 
@@ -213,6 +214,11 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
 
       await ctx.logRetentionService.updateSettings(settings);
       const newSettings = ctx.logRetentionService.getSettings();
+      const frontendSettings = await loadFrontendSettings();
+      await saveFrontendSettings({
+        ...frontendSettings,
+        logRetention: newSettings,
+      });
       res.json({ settings: newSettings });
     } catch (error) {
       logger.error({ err: error }, '[service] Failed to update cache settings');

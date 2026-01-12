@@ -140,6 +140,69 @@ export class RawPacketLoggerService {
     return resolveSecurePath(path.join(this.configDir, 'logs'), filename);
   }
 
+  public async listSavedFiles(): Promise<{ filename: string; size: number; createdAt: string }[]> {
+    try {
+      const logDir = path.join(this.configDir, 'logs');
+      if (!fs.existsSync(logDir)) {
+        return [];
+      }
+
+      const entries = fs.readdirSync(logDir, { withFileTypes: true });
+      const files: { filename: string; size: number; createdAt: string }[] = [];
+
+      for (const entry of entries) {
+        if (entry.isFile() && entry.name.endsWith('.txt')) {
+          const filePath = path.join(logDir, entry.name);
+          const stat = fs.statSync(filePath);
+          files.push({
+            filename: entry.name,
+            size: stat.size,
+            createdAt: stat.birthtime.toISOString(),
+          });
+        }
+      }
+
+      // Sort by creation date (newest first)
+      files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return files;
+    } catch (error) {
+      logger.error({ err: error }, '[RawPacketLogger] Failed to list saved files');
+      return [];
+    }
+  }
+
+  public async deleteFile(filename: string): Promise<boolean> {
+    try {
+      const filePath = this.getFilePath(filename);
+      if (!filePath) {
+        return false;
+      }
+      fs.unlinkSync(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public async cleanupFiles(
+    mode: 'all' | 'keep_recent',
+    keepCount: number = 0,
+  ): Promise<number> {
+    const files = await this.listSavedFiles();
+    // Files are already sorted by createdAt (newest first)
+    const targets = mode === 'all' ? files : files.slice(Math.max(keepCount, 0));
+
+    let deletedCount = 0;
+    for (const file of targets) {
+      const success = await this.deleteFile(file.filename);
+      if (success) {
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
+  }
+
   private setupListeners() {
     if (this.logMode === 'valid') {
       eventBus.on('raw-valid-packet', this.handleRxPacket);

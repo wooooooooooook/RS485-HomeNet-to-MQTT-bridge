@@ -600,6 +600,31 @@ export class LogRetentionService {
     }
   }
 
+  /**
+   * Cleanup log files based on mode
+   * @param mode 'all' to delete all, 'keep_recent' to keep N most recent
+   * @param keepCount Number of recent files to keep (only for 'keep_recent' mode)
+   * @returns Number of deleted files
+   */
+  public async cleanupFiles(
+    mode: 'all' | 'keep_recent',
+    keepCount: number = 0,
+  ): Promise<number> {
+    const files = await this.listSavedFiles();
+    // Files are already sorted by createdAt (newest first) from listSavedFiles
+    const targets = mode === 'all' ? files : files.slice(Math.max(keepCount, 0));
+
+    let deletedCount = 0;
+    for (const file of targets) {
+      const success = await this.deleteFile(file.filename);
+      if (success) {
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
+  }
+
   public destroy() {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);

@@ -112,10 +112,12 @@
   let cacheStats = $state<LogRetentionStats | null>(null);
   let cacheFiles = $state<SavedLogFile[]>([]);
   let isCacheSaving = $state(false);
+  let isCacheWorking = $state(false);
   let deletingFile = $state<string | null>(null);
   let downloadError = $state<string | null>(null);
   const logFileCollapseThreshold = 5;
   let cacheFilesOpen = $state(false);
+  const cacheTotalSize = $derived(cacheFiles.reduce((sum, f) => sum + f.size, 0));
 
   let backupFiles = $state<BackupFile[]>([]);
   let backupTotalSize = $state(0);
@@ -125,8 +127,18 @@
   const backupFileCollapseThreshold = 5;
   let backupFilesOpen = $state(false);
 
+  // Packet log files state
+  let packetLogFiles = $state<SavedLogFile[]>([]);
+  let packetLogTotalSize = $state(0);
+  let isPacketLogWorking = $state(false);
+  let deletingPacketLog = $state<string | null>(null);
+  let packetLogDownloadError = $state<string | null>(null);
+  const packetLogCollapseThreshold = 5;
+  let packetLogFilesOpen = $state(false);
+
   const shouldCollapseCacheFiles = $derived(cacheFiles.length > logFileCollapseThreshold);
   const shouldCollapseBackupFiles = $derived(backupFiles.length > backupFileCollapseThreshold);
+  const shouldCollapsePacketLogFiles = $derived(packetLogFiles.length > packetLogCollapseThreshold);
 
   const fetchCacheSettings = async () => {
     try {
@@ -176,11 +188,25 @@
     }
   };
 
+  const fetchPacketLogFiles = async () => {
+    try {
+      const res = await fetch(`./api/logs/packet/files?_=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        packetLogFiles = data.files || [];
+        packetLogTotalSize = data.totalSize || 0;
+      }
+    } catch (err) {
+      console.error('Failed to fetch packet log files', err);
+    }
+  };
+
   $effect(() => {
     fetchCacheSettings();
     fetchCacheStats();
     fetchCacheFiles();
     fetchBackupFiles();
+    fetchPacketLogFiles();
 
     // Refresh stats every 30 seconds if caching is enabled
     const interval = setInterval(() => {
@@ -305,6 +331,108 @@
         deletingFile = null;
       },
     });
+  };
+
+  const cleanupCacheFiles = async (mode: 'all' | 'keep_recent', keepCount = 3) => {
+    isCacheWorking = true;
+    try {
+      const res = await fetch('./api/logs/cache/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, keepCount }),
+      });
+      if (res.ok) {
+        await fetchCacheFiles();
+      }
+    } catch (err) {
+      console.error('Failed to cleanup cache files', err);
+    } finally {
+      isCacheWorking = false;
+    }
+  };
+
+  const handleDeleteAllCacheFiles = async () => {
+    if (!confirm($t('settings.log_retention.delete_all_confirm'))) return;
+    await cleanupCacheFiles('all');
+  };
+
+  const handleDeleteExceptRecentCacheFiles = async () => {
+    if (
+      !confirm($t('settings.log_retention.delete_except_recent_confirm', { values: { count: 3 } }))
+    )
+      return;
+    await cleanupCacheFiles('keep_recent', 3);
+  };
+
+  // Packet log file management functions
+  const downloadPacketLogFile = (filename: string) => {
+    packetLogDownloadError = null;
+    const isHAAppName = navigator.userAgent.includes('Home Assistant');
+    const link = document.createElement('a');
+    link.href = `./api/logs/packet/download/${filename}`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    if (isHAAppName) {
+      setTimeout(() => {
+        packetLogDownloadError = $t('analysis.raw_log.ha_app_download_warning');
+      }, 500);
+    }
+  };
+
+  const deletePacketLogFile = async (filename: string) => {
+    if (!confirm($t('settings.log_retention.packet_log.delete_confirm'))) return;
+
+    deletingPacketLog = filename;
+    try {
+      const res = await fetch(`./api/logs/packet/${filename}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchPacketLogFiles();
+      }
+    } catch (err) {
+      console.error('Failed to delete packet log file', err);
+    } finally {
+      deletingPacketLog = null;
+    }
+  };
+
+  const cleanupPacketLogFiles = async (mode: 'all' | 'keep_recent', keepCount = 3) => {
+    isPacketLogWorking = true;
+    try {
+      const res = await fetch('./api/logs/packet/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, keepCount }),
+      });
+      if (res.ok) {
+        await fetchPacketLogFiles();
+      }
+    } catch (err) {
+      console.error('Failed to cleanup packet log files', err);
+    } finally {
+      isPacketLogWorking = false;
+    }
+  };
+
+  const handleDeleteAllPacketLogFiles = async () => {
+    if (!confirm($t('settings.log_retention.packet_log.delete_all_confirm'))) return;
+    await cleanupPacketLogFiles('all');
+  };
+
+  const handleDeleteExceptRecentPacketLogFiles = async () => {
+    if (
+      !confirm(
+        $t('settings.log_retention.packet_log.delete_except_recent_confirm', {
+          values: { count: 3 },
+        }),
+      )
+    )
+      return;
+    await cleanupPacketLogFiles('keep_recent', 3);
   };
 
   const downloadBackupFile = (filename: string) => {
@@ -876,6 +1004,38 @@
       {/if}
 
       {#if cacheFiles.length > 0}
+        <div class="setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.total_usage')}</div>
+            <div class="setting-desc stats">
+              <span class="stat-value">{formatBytes(cacheTotalSize)}</span>
+              <span class="stat-detail">
+                {$t('settings.log_retention.file_count', {
+                  values: { count: cacheFiles.length.toLocaleString() },
+                })}
+              </span>
+            </div>
+          </div>
+          <div class="setting-actions">
+            <Button
+              variant="secondary"
+              onclick={handleDeleteExceptRecentCacheFiles}
+              isLoading={isCacheWorking}
+              disabled={isCacheWorking || cacheFiles.length <= 3}
+            >
+              {$t('settings.log_retention.delete_except_recent', { values: { count: 3 } })}
+            </Button>
+            <Button
+              variant="danger"
+              onclick={handleDeleteAllCacheFiles}
+              isLoading={isCacheWorking}
+              disabled={isCacheWorking || cacheFiles.length === 0}
+            >
+              {$t('settings.log_retention.delete_all')}
+            </Button>
+          </div>
+        </div>
+
         <div class="setting files-section">
           <div class="setting-title">{$t('settings.log_retention.saved_files')}</div>
           {#if shouldCollapseCacheFiles}
@@ -961,6 +1121,133 @@
       {:else if cacheSettings.autoSaveEnabled}
         <div class="setting sub-setting">
           <div class="setting-desc muted">{$t('settings.log_retention.no_files')}</div>
+        </div>
+      {/if}
+
+      <!-- Packet Log Files Section -->
+      {#if packetLogFiles.length > 0}
+        <div class="setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.packet_log.title')}</div>
+            <div class="setting-desc">{$t('settings.log_retention.packet_log.desc')}</div>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div>
+            <div class="setting-title">{$t('settings.log_retention.packet_log.total_usage')}</div>
+            <div class="setting-desc stats">
+              <span class="stat-value">{formatBytes(packetLogTotalSize)}</span>
+              <span class="stat-detail">
+                {$t('settings.log_retention.packet_log.file_count', {
+                  values: { count: packetLogFiles.length.toLocaleString() },
+                })}
+              </span>
+            </div>
+          </div>
+          <div class="setting-actions">
+            <Button
+              variant="secondary"
+              onclick={handleDeleteExceptRecentPacketLogFiles}
+              isLoading={isPacketLogWorking}
+              disabled={isPacketLogWorking || packetLogFiles.length <= 3}
+            >
+              {$t('settings.log_retention.packet_log.delete_except_recent', {
+                values: { count: 3 },
+              })}
+            </Button>
+            <Button
+              variant="danger"
+              onclick={handleDeleteAllPacketLogFiles}
+              isLoading={isPacketLogWorking}
+              disabled={isPacketLogWorking || packetLogFiles.length === 0}
+            >
+              {$t('settings.log_retention.packet_log.delete_all')}
+            </Button>
+          </div>
+        </div>
+
+        <div class="setting files-section">
+          <div class="setting-title">{$t('settings.log_retention.packet_log.saved_files')}</div>
+          {#if shouldCollapsePacketLogFiles}
+            <details class="files-collapse" bind:open={packetLogFilesOpen}>
+              <summary class="collapse-summary">
+                <span>
+                  {packetLogFilesOpen
+                    ? $t('settings.log_retention.packet_log.hide_files')
+                    : $t('settings.log_retention.packet_log.show_files', {
+                        values: { count: packetLogFiles.length.toLocaleString() },
+                      })}
+                </span>
+                <span class="count-badge">{packetLogFiles.length.toLocaleString()}</span>
+              </summary>
+              <div class="files-list">
+                {#each packetLogFiles as file (file.filename)}
+                  <div class="file-row">
+                    <span class="file-name">{file.filename}</span>
+                    <span class="file-size">{formatBytes(file.size)}</span>
+                    <div class="file-actions">
+                      <Button
+                        variant="secondary"
+                        class="file-action-btn"
+                        onclick={() => downloadPacketLogFile(file.filename)}
+                        ariaLabel={$t('settings.log_retention.packet_log.download')}
+                        title={$t('settings.log_retention.packet_log.download')}
+                      >
+                        ⬇
+                      </Button>
+                      <Button
+                        variant="danger"
+                        class="file-action-btn"
+                        onclick={() => deletePacketLogFile(file.filename)}
+                        isLoading={deletingPacketLog === file.filename}
+                        ariaLabel={$t('settings.log_retention.packet_log.delete')}
+                        title={$t('settings.log_retention.packet_log.delete')}
+                      >
+                        🗑
+                      </Button>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+              {#if packetLogDownloadError}
+                <div class="setting-desc warning">{packetLogDownloadError}</div>
+              {/if}
+            </details>
+          {:else}
+            <div class="files-list">
+              {#each packetLogFiles as file (file.filename)}
+                <div class="file-row">
+                  <span class="file-name">{file.filename}</span>
+                  <span class="file-size">{formatBytes(file.size)}</span>
+                  <div class="file-actions">
+                    <Button
+                      variant="secondary"
+                      class="file-action-btn"
+                      onclick={() => downloadPacketLogFile(file.filename)}
+                      ariaLabel={$t('settings.log_retention.packet_log.download')}
+                      title={$t('settings.log_retention.packet_log.download')}
+                    >
+                      ⬇
+                    </Button>
+                    <Button
+                      variant="danger"
+                      class="file-action-btn"
+                      onclick={() => deletePacketLogFile(file.filename)}
+                      isLoading={deletingPacketLog === file.filename}
+                      ariaLabel={$t('settings.log_retention.packet_log.delete')}
+                      title={$t('settings.log_retention.packet_log.delete')}
+                    >
+                      🗑
+                    </Button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+            {#if packetLogDownloadError}
+              <div class="setting-desc warning">{packetLogDownloadError}</div>
+            {/if}
+          {/if}
         </div>
       {/if}
     {/if}

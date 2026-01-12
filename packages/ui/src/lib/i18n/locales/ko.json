@@ -61,7 +61,30 @@
       "download": "다운로드",
       "delete": "삭제",
       "delete_confirm_title": "로그 파일 삭제",
-      "delete_confirm": "이 로그 파일을 삭제하시겠습니까?"
+      "delete_confirm": "이 로그 파일을 삭제하시겠습니까?",
+      "total_usage": "로그 파일 용량 합계",
+      "file_count": "파일 수: {count}",
+      "delete_all": "모두 삭제",
+      "delete_except_recent": "최근 {count}개 제외 삭제",
+      "delete_all_confirm": "저장된 로그 파일을 모두 삭제하시겠습니까?",
+      "delete_except_recent_confirm": "최근 {count}개를 제외하고 로그 파일을 삭제하시겠습니까?",
+      "packet_log": {
+        "title": "저장된 패킷 로그",
+        "desc": "Raw 패킷 녹화로 생성된 로그 파일입니다.",
+        "total_usage": "패킷 로그 파일 용량 합계",
+        "file_count": "파일 수: {count}",
+        "delete_all": "모두 삭제",
+        "delete_except_recent": "최근 {count}개 제외 삭제",
+        "delete_all_confirm": "저장된 패킷 로그 파일을 모두 삭제하시겠습니까?",
+        "delete_except_recent_confirm": "최근 {count}개를 제외하고 패킷 로그 파일을 삭제하시겠습니까?",
+        "saved_files": "패킷 로그 파일 목록",
+        "show_files": "패킷 로그 파일 보기 ({count}개)",
+        "hide_files": "패킷 로그 파일 숨기기",
+        "no_files": "저장된 패킷 로그 파일이 없습니다.",
+        "download": "다운로드",
+        "delete": "삭제",
+        "delete_confirm": "이 패킷 로그 파일을 삭제하시겠습니까?"
+      }
     },
     "backup_management": {
       "title": "백업 관리",

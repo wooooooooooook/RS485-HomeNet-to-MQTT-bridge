@@ -25,6 +25,9 @@ export interface LogsRoutesContext {
     start: (meta: any, options: any) => void;
     stop: () => any;
     getFilePath: (filename: string) => string | null;
+    listSavedFiles: () => Promise<{ filename: string; size: number; createdAt: string }[]>;
+    deleteFile: (filename: string) => Promise<boolean>;
+    cleanupFiles: (mode: 'all' | 'keep_recent', keepCount?: number) => Promise<number>;
   };
   logRetentionService: LogRetentionService;
   logCollectorService: {
@@ -193,6 +196,45 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
     }
   });
 
+  // List saved packet log files
+  router.get('/api/logs/packet/files', async (_req, res) => {
+    try {
+      const files = await ctx.rawPacketLogger.listSavedFiles();
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      res.json({ files, totalSize });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Failed to list packet log files');
+      res.status(500).json({ error: 'Failed to list files' });
+    }
+  });
+
+  // Cleanup packet log files
+  router.post('/api/logs/packet/cleanup', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    const mode = req.body?.mode;
+    const keepCountRaw = req.body?.keepCount;
+    const keepCount = Number.isFinite(keepCountRaw) ? Number(keepCountRaw) : 3;
+
+    if (!['all', 'keep_recent'].includes(mode)) {
+      return res.status(400).json({ error: 'Invalid cleanup mode' });
+    }
+
+    if (mode === 'keep_recent' && (!Number.isInteger(keepCount) || keepCount < 0)) {
+      return res.status(400).json({ error: 'Invalid keep count' });
+    }
+
+    try {
+      const deletedCount = await ctx.rawPacketLogger.cleanupFiles(mode, keepCount);
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Packet log cleanup failed');
+      res.status(500).json({ error: 'Cleanup failed' });
+    }
+  });
+
   // --- Log Cache API ---
   router.get('/api/logs/cache/settings', async (_req, res) => {
     try {
@@ -312,6 +354,33 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
     } catch (error) {
       logger.error({ err: error }, '[service] Manual cache save failed');
       res.status(500).json({ error: 'Save failed' });
+    }
+  });
+
+  // Cleanup old log cache files
+  router.post('/api/logs/cache/cleanup', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    const mode = req.body?.mode;
+    const keepCountRaw = req.body?.keepCount;
+    const keepCount = Number.isFinite(keepCountRaw) ? Number(keepCountRaw) : 3;
+
+    if (!['all', 'keep_recent'].includes(mode)) {
+      return res.status(400).json({ error: 'Invalid cleanup mode' });
+    }
+
+    if (mode === 'keep_recent' && (!Number.isInteger(keepCount) || keepCount < 0)) {
+      return res.status(400).json({ error: 'Invalid keep count' });
+    }
+
+    try {
+      const deletedCount = await ctx.logRetentionService.cleanupFiles(mode, keepCount);
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      logger.error({ err: error }, '[service] Log cache cleanup failed');
+      res.status(500).json({ error: 'Cleanup failed' });
     }
   });
 

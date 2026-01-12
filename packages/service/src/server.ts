@@ -181,6 +181,10 @@ registerRoutes(app, {
     start: (meta: any, options: any) => rawPacketLogger.start(meta, options),
     stop: () => rawPacketLogger.stop(),
     getFilePath: (filename: string) => rawPacketLogger.getFilePath(filename) ?? '',
+    listSavedFiles: () => rawPacketLogger.listSavedFiles(),
+    deleteFile: (filename: string) => rawPacketLogger.deleteFile(filename),
+    cleanupFiles: (mode: 'all' | 'keep_recent', keepCount?: number) =>
+      rawPacketLogger.cleanupFiles(mode, keepCount),
   },
   logRetentionService, // Pass the service instance directly
   logCollectorService: {

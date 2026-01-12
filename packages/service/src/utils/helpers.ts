@@ -127,7 +127,7 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
     command: true,
   },
   activityLog: {
-    hideAutomationScripts: false,
+    hideAutomationScripts: true,
   },
   locale: 'ko',
   logRetention: {

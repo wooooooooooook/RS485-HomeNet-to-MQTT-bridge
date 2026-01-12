@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-12T09:19:57.317Z",
+  "generated_at": "2026-01-12T13:43:31.246Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1557,6 +1557,7 @@
           "rx_valid_headers": [
             176,
             173,
+            171,
             204,
             164
           ]
@@ -1681,7 +1682,7 @@
           "name_en": "Gas Valve",
           "description": "삼성 SDS 가스밸브 설정입니다. 가스밸브 잠금 기능을 지원합니다. AB 41 00 요청 후 B0 41 응답만 상태로 인식합니다.",
           "description_en": "Samsung SDS gas valve configuration. Supports gas valve closing. Only recognizes B0 41 response after AB 41 00 request as valid state.",
-          "version": "1.2.0",
+          "version": "1.3.1",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1691,10 +1692,9 @@
           ],
           "content_summary": {
             "entities": {
-              "binary_sensor": 1,
               "valve": 1
             },
-            "automations": 2,
+            "automations": 1,
             "scripts": 0
           }
         },

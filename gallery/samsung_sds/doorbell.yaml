@@ -1,9 +1,9 @@
 meta:
   name: "현관문세트"
   name_en: "Doorbell Set"
-  description: "현관문세트를 사용하는 삼성 SDS 엘레베이터 설정입니다."
+  description: "삼성 SDS 현관문 세트 설정입니다. https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/DOCS_PACKETS.md#%EC%9D%B8%ED%84%B0%ED%8F%B0-A1A6"
   description_en: "Samsung SDS doorbell set."
-  version: "1.0.1"
+  version: "1.1.0"
   author: "wooooooooooook"
   tags: ["doorbell", "switch", "samsung", "sds"]
 
@@ -13,25 +13,27 @@ entities:
       name: '개인현관벨'
       icon: 'mdi:bell-ring'
       state:
-        data: [0x30]
-        mask: [0xF0]
+        data: [0xB0, 0x30]
+        mask: [0xFF, 0xF0]
       state_on:
-        data: [0x31, 0x00]
+        offset: 1
+        data: [0x31]
       state_off:
-        data: [0x3E, 0x01]
-        mask: [0xFF, 0x01]
+        offset: 1
+        data: [0x3E]
 
     - id: 'doorbell_public'
       name: '공용현관벨'
       icon: 'mdi:bell-ring'
       state:
-        data: [0x30]
-        mask: [0xF0]
+        data: [0xB0, 0x30]
+        mask: [0xFF, 0xF0]
       state_on:
-        data: [0x32, 0x00]
+        offset: 1
+        data: [0x32]
       state_off:
-        data: [0x3E, 0x06]
-        mask: [0xFF, 0x06]
+        offset: 1
+        data: [0x3E]
 
   switch:
     - id: 'doorbell_auto_open_public'

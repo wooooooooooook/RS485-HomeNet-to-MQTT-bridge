@@ -27,6 +27,7 @@ export class PacketParser {
   private defaults: PacketDefaults;
   private headerBuffer: Buffer | null = null;
   private footerBuffer: Buffer | null = null;
+  private validHeadersSet: Set<number> | null = null;
   private isStandard1Byte: boolean = false;
   private isStandard2Byte: boolean = false;
 
@@ -43,6 +44,7 @@ export class PacketParser {
     'samsung_rx',
     'samsung_tx',
     'samsung_xor',
+    'bestin_sum',
     'none',
   ]);
   private readonly checksum2Types = new Set(['xor_add']);
@@ -58,20 +60,23 @@ export class PacketParser {
     if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
       this.footerBuffer = Buffer.from(this.defaults.rx_footer);
     }
+    if (this.defaults.rx_valid_headers && this.defaults.rx_valid_headers.length > 0) {
+      this.validHeadersSet = new Set(this.defaults.rx_valid_headers);
+    }
 
     // Pre-calculate optimization flags for incremental checksums
     const checksumType = this.defaults.rx_checksum;
     this.isStandard1Byte =
       typeof checksumType === 'string' &&
-      ['add', 'xor', 'add_no_header', 'xor_no_header', 'samsung_rx', 'samsung_tx', 'samsung_xor'].includes(
-        checksumType,
-      );
+      checksumType !== 'none' &&
+      checksumType !== 'bestin_sum' && // bestin_sum은 복합 알고리즘이라 incremental 최적화 불가
+      this.checksumTypes.has(checksumType);
 
     const checksum2Type = this.defaults.rx_checksum2;
     this.isStandard2Byte =
       typeof checksum2Type === 'string' &&
-      ['xor_add'].includes(checksum2Type) &&
-      (!this.defaults.rx_checksum || this.defaults.rx_checksum === 'none');
+      checksum2Type !== 'none' &&
+      this.checksum2Types.has(checksum2Type);
 
     // Prepare CEL scripts if applicable
     const executor = this.getExecutor();
@@ -196,12 +201,17 @@ export class PacketParser {
         if (this.bufferLength() >= this.defaults.rx_length) {
           // Check Checksum
           if (this.verifyChecksum(this.buffer, this.readOffset, this.defaults.rx_length)) {
-            const packet = Buffer.from(
-              this.buffer.subarray(this.readOffset, this.readOffset + this.defaults.rx_length),
-            );
-            packets.push(packet);
-            this.consumeBytes(this.defaults.rx_length);
-            matchFound = true;
+            // Validate first byte against valid headers if configured
+            if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+              shift = true;
+            } else {
+              const packet = Buffer.from(
+                this.buffer.subarray(this.readOffset, this.readOffset + this.defaults.rx_length),
+              );
+              packets.push(packet);
+              this.consumeBytes(this.defaults.rx_length);
+              matchFound = true;
+            }
           } else {
             shift = true; // Invalid checksum for fixed length -> discard byte and try again
           }
@@ -280,6 +290,11 @@ export class PacketParser {
 
               const expected = this.buffer[baseOffset + len - 1 - footerLen];
               if ((finalChecksum & 0xff) === expected) {
+                // Validate first byte against valid headers if configured
+                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                  searchIdx = foundIdx + 1;
+                  continue;
+                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -300,6 +315,11 @@ export class PacketParser {
 
               const len = foundIdx + footerLen - this.readOffset;
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
+                // Validate first byte against valid headers if configured
+                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                  searchIdx = foundIdx + 1;
+                  continue;
+                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -389,6 +409,10 @@ export class PacketParser {
 
               const expected = this.buffer[baseOffset + len - 1];
               if ((finalChecksum & 0xff) === expected) {
+                // Validate first byte against valid headers if configured
+                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                  continue;
+                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -443,6 +467,10 @@ export class PacketParser {
               const expectedLow = this.buffer[baseOffset + len - 1];
 
               if (finalTemp === expectedHigh && finalCrc === expectedLow) {
+                // Validate first byte against valid headers if configured
+                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                  continue;
+                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -457,6 +485,10 @@ export class PacketParser {
             // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
             for (let len = startLen; len <= bufferLength; len++) {
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
+                // Validate first byte against valid headers if configured
+                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                  continue;
+                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );

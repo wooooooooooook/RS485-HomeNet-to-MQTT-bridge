@@ -23,6 +23,7 @@ export interface PacketDefaults {
   rx_checksum?: ChecksumType | string;
   rx_checksum2?: Checksum2Type | string;
   rx_length?: number;
+  rx_valid_headers?: number[];
   tx_header?: number[];
   tx_footer?: number[];
   tx_checksum?: ChecksumType | string;

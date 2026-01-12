@@ -24,16 +24,20 @@ homenet_bridge:
 
 삼성 SDS 구형 규격(`samsung_rx`, `samsung_tx`)은 하위 호환성을 위해 유지되나 **더 이상 권장되지 않습니다(Deprecated)**. 새로운 설정 시에는 패킷 전체 XOR 방식인 **`samsung_xor`** 사용을 권장합니다.
 
+**`rx_valid_headers`**를 설정하면 체크섬 충돌(checksum collision)로 인한 잘못된 패킷 인식을 방지할 수 있습니다. 삼성 SDS 패킷의 유효한 헤더 바이트(첫 번째 바이트)만 나열합니다.
+
 ```yaml
   packet_defaults:
     rx_timeout: 10ms
     tx_delay: 50ms
     tx_timeout: 500ms
     tx_retry_cnt: 3
-    rx_header: [0xB0]
-    rx_checksum: samsung_rx
-    tx_checksum: samsung_tx
+    rx_checksum: samsung_xor
+    tx_checksum: samsung_xor
+    rx_valid_headers: [0xB0, 0xAB, 0xAC, 0xAD, 0xAE, 0xC2, 0xCC, 0xA4]
 ```
+
+> 💡 **rx_valid_headers**: 체크섬이 유효해도 첫 바이트가 이 목록에 없으면 패킷으로 인식하지 않습니다. 패킷이 연속으로 수신될 때 우연히 체크섬이 맞는 잘못된 조합을 걸러냅니다.
 
 ---
 
@@ -101,106 +105,6 @@ EW11 등 WiFi 기반 RS485 변환기로도 시도해 볼 수 있으나, **권장
 > ⚠️ **주의:** 잘못된 설정 파일을 적용하면 패킷 매칭이 되지 않아 엘리베이터 호출이 동작하지 않습니다.
 
 ---
-
-## 지원 기기 예시
-
-삼성 SDS 홈넷에서 지원되는 기기 설정 예시입니다.
-
-### 조명 (Light)
-
-```yaml
-light:
-  - name: 'Light 1'
-    state:
-      data: [0x79, 0x21]
-    state_on:
-      offset: 2
-      data: [0x01]
-      mask: [0x01]
-    state_off:
-      offset: 2
-      data: [0x00]
-      mask: [0x01]
-    command_on:
-      data: [0xAC, 0x7A, 0x01, 0x01]
-      ack: [0x79, 0x01, 0x01]
-    command_off:
-      data: [0xAC, 0x7A, 0x01, 0x00]
-      ack: [0x79, 0x01, 0x00]
-```
-
-### 난방 (Climate)
-
-```yaml
-climate:
-  - name: 'Room Heater'
-    visual:
-      min_temperature: 5 °C
-      max_temperature: 40 °C
-      temperature_step: 1 °C
-    state:
-      data: [0x7C, 0x01]
-    state_temperature_current:
-      offset: 4
-      length: 1
-    state_temperature_target:
-      offset: 3
-      length: 1
-    state_off:
-      offset: 2
-      data: [0x00]
-      mask: [0x01]
-    state_heat:
-      offset: 2
-      data: [0x01]
-      mask: [0x01]
-    command_off:
-      data: [0xAE, 0x7D, 0x01, 0x00, 0x00, 0x00, 0x00]
-      ack: [0x7D, 0x01, 0x00]
-    command_heat:
-      data: [0xAE, 0x7D, 0x01, 0x01, 0x00, 0x00, 0x00]
-      ack: [0x7D, 0x01, 0x01]
-    command_temperature: >-
-      [[0xAE, 0x7F, 0x01, x, 0x00, 0x00, 0x00],[0x7F, 0x01, x]]
-    state_action: >-
-      data[3] == 0x00 ? 'off' : (data[4] > data[5] ? 'heating' : 'idle')
-```
-
-### 가스밸브 (Button)
-
-```yaml
-button:
-  - name: 'Gas Valve Close'
-    icon: 'mdi:gas-burner'
-    command_press:
-      data: [0xAB, 0x78, 0x00]
-      ack: [0x78]
-```
-
-### 환기팬 (Fan)
-
-```yaml
-fan:
-  - name: 'Ventilator'
-    state:
-      data: [0x4E]
-    state_on:
-      offset: 3
-      data: [0x00]
-    state_off:
-      offset: 3
-      data: [0x01]
-    state_speed: >-
-      data[1] == 0x03 ? 1 : (data[1] == 0x02 ? 2 : (data[1] == 0x01 ? 3 : 0))
-    command_on:
-      data: [0xC2, 0x4F, 0x05, 0x00, 0x00]
-      ack: [0x4F, 0x05]
-    command_off:
-      data: [0xC2, 0x4F, 0x06, 0x00, 0x00]
-      ack: [0x4F, 0x06]
-    command_speed: >-
-      [[0xC2, 0x4F, 0x04 - x, 0x00, 0x00],[0x4F, 0x04 - x]]
-```
 
 ### 엘리베이터 (Automation 활용)
 

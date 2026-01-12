@@ -8,6 +8,7 @@
 - `rx_checksum` / `tx_checksum`: 기본 1바이트 체크섬 계산기 (알고리즘 이름 문자열 또는 CEL 표현식).
 - `rx_checksum2` / `tx_checksum2`: 이중(2바이트) 체크섬 계산기 (알고리즘 이름 문자열 또는 CEL 표현식).
 - `rx_length`: 고정 길이 패킷일 때 전체 길이를 명시.
+- `rx_valid_headers`: 유효한 패킷 시작 바이트 목록(선택). 체크섬이 유효해도 첫 바이트가 이 목록에 없으면 패킷으로 인식하지 않음.
 - `tx_delay`: 재전송 간격 대기 시간 (ms).
 - `tx_retry_cnt`: 명령 전송 실패 시 재시도 횟수.
 - `tx_timeout`: 명령 패킷 전송 후 응답 대기 시간 (ms).
@@ -118,14 +119,14 @@ homenet_bridge:
 ```
 
 ## 브랜드별 커스텀 계산기 예제
-`samsung_sds.homenet_bridge.yaml`은 전용 체크섬 함수를 사용합니다. 이름만 바꾸면 다른 엔티티가 자동으로 상속합니다.
+`samsung_sds.homenet_bridge.yaml`은 전용 체크섬 함수와 유효 헤더 검증을 사용합니다. `rx_valid_headers`는 체크섬 충돌로 인한 잘못된 패킷 인식을 방지합니다.
 
 ```yaml
 homenet_bridge:
   packet_defaults:
-    rx_header: [0xB0]
-    rx_checksum: samsung_rx
-    tx_checksum: samsung_tx
+    rx_checksum: samsung_xor
+    tx_checksum: samsung_xor
+    rx_valid_headers: [0xB0, 0xAD, 0xCC, 0xA4]
 ```
 
 ## 작성 팁

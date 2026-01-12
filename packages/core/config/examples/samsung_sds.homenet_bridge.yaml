@@ -14,6 +14,7 @@ homenet_bridge:
     tx_retry_cnt: 3
     rx_checksum: samsung_xor
     tx_checksum: samsung_xor
+    rx_valid_headers: [0xB0, 0xAD, 0xCC, 0xA4]
 
   valve:
     - id: 'gas_valve'

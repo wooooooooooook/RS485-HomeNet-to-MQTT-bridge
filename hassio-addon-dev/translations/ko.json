@@ -2,7 +2,7 @@
     "configuration": {
         "log_level": {
             "name": "로그 레벨",
-            "description": "로그 출력 레벨을 설정합니다. 기본값: INFO (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL), DEBUG나 TRACE 레벨로 설정시 성능저하가 발생할 수 있습니다."
+            "description": "로그 출력 레벨을 설정합니다. (기본값: INFO) DEBUG나 TRACE 레벨로 설정시 성능저하가 발생할 수 있습니다."
         },
         "mqtt_url": {
             "name": "MQTT 주소",

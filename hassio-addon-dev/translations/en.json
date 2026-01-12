@@ -2,7 +2,7 @@
     "configuration": {
         "log_level": {
             "name": "Log Level",
-            "description": "Set the logging level. Default: INFO (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL). Setting to DEBUG or TRACE may cause performance degradation."
+            "description": "Set the logging level. (Default: INFO) Setting to DEBUG or TRACE may cause performance degradation."
         },
         "mqtt_url": {
             "name": "MQTT URL",

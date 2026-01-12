@@ -23,6 +23,7 @@
     isSaving = false,
     error = '',
     onToastChange,
+    onActivityLogChange,
     onLocaleChange,
   }: {
     frontendSettings?: FrontendSettings | null;
@@ -31,11 +32,16 @@
     isSaving?: boolean;
     error?: string;
     onToastChange?: (key: ToastSettingKey, value: boolean) => void;
+    onActivityLogChange?: (value: boolean) => void;
     onLocaleChange?: (value: string) => void;
   } = $props();
 
   const getToastValue = (key: ToastSettingKey) => {
     return frontendSettings?.toast?.[key] ?? true;
+  };
+
+  const getActivityLogValue = () => {
+    return frontendSettings?.activityLog?.hideAutomationScripts ?? false;
   };
 
   const handleToggle = (key: ToastSettingKey, event: Event) => {
@@ -843,6 +849,40 @@
           disabled={isSaving || isLoading}
           ariaLabelledBy="toast-command-title"
           ariaDescribedBy="toast-command-desc"
+        />
+      </div>
+    {/if}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>{$t('settings.activity_log.title')}</h2>
+        <p>{$t('settings.activity_log.desc')}</p>
+      </div>
+      {#if isSaving}
+        <span class="badge">{$t('settings.saving')}</span>
+      {/if}
+    </div>
+
+    {#if isLoading}
+      <div class="loading">{$t('settings.loading')}</div>
+    {:else}
+      <div class="setting">
+        <div>
+          <div class="setting-title" id="activity-log-hide-title">
+            {$t('settings.activity_log.hide_automation_scripts.title')}
+          </div>
+          <div class="setting-desc" id="activity-log-hide-desc">
+            {$t('settings.activity_log.hide_automation_scripts.desc')}
+          </div>
+        </div>
+        <Toggle
+          checked={getActivityLogValue()}
+          onchange={(checked) => onActivityLogChange?.(checked)}
+          disabled={isSaving || isLoading}
+          ariaLabelledBy="activity-log-hide-title"
+          ariaDescribedBy="activity-log-hide-desc"
         />
       </div>
     {/if}

@@ -126,6 +126,9 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
     stateChange: false,
     command: true,
   },
+  activityLog: {
+    hideAutomationScripts: false,
+  },
   locale: 'ko',
   logRetention: {
     enabled: true,
@@ -151,6 +154,12 @@ export const normalizeFrontendSettings = (
         typeof value?.toast?.command === 'boolean'
           ? value.toast.command
           : DEFAULT_FRONTEND_SETTINGS.toast.command,
+    },
+    activityLog: {
+      hideAutomationScripts:
+        typeof value?.activityLog?.hideAutomationScripts === 'boolean'
+          ? value.activityLog.hideAutomationScripts
+          : DEFAULT_FRONTEND_SETTINGS.activityLog!.hideAutomationScripts,
     },
     locale: undefined, // Will be set below if valid
     logRetention: {

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import yaml from 'js-yaml';
-import { type HomenetBridgeConfig, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
+import { type HomenetBridgeConfig, normalizePortId } from '@rs485-homenet/core';
 import type { SerialConfig } from '@rs485-homenet/core/config/types';
 import { createSerialPortConnection } from '@rs485-homenet/core/transports/serial/serial.factory';
 

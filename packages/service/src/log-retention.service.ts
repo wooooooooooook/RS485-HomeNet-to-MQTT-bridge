@@ -58,7 +58,6 @@ export class LogRetentionService {
   private autoSaveEnabled: boolean = false;
   private retentionCount: number = 7;
   private ttlHours: number = DEFAULT_TTL_HOURS;
-  private configDir: string;
   private logsSubDir: string;
 
   // Cached logs
@@ -80,7 +79,6 @@ export class LogRetentionService {
     packetDictionary?: Map<string, string>,
     packetDictionaryReverse?: Map<string, string>,
   ) {
-    this.configDir = configDir;
     this.logsSubDir = path.join(configDir, 'cache-logs');
     this.packetDictionary = packetDictionary || new Map<string, string>();
     this.packetDictionaryReverse = packetDictionaryReverse || new Map<string, string>();
@@ -541,10 +539,7 @@ export class LogRetentionService {
    * @param keepCount Number of recent files to keep (only for 'keep_recent' mode)
    * @returns Number of deleted files
    */
-  public async cleanupFiles(
-    mode: 'all' | 'keep_recent',
-    keepCount: number = 0,
-  ): Promise<number> {
+  public async cleanupFiles(mode: 'all' | 'keep_recent', keepCount: number = 0): Promise<number> {
     const files = await this.listSavedFiles();
     // Files are already sorted by createdAt (newest first) from listSavedFiles
     const targets = mode === 'all' ? files : files.slice(Math.max(keepCount, 0));

@@ -310,7 +310,10 @@ export class PacketParser {
               const expected = this.buffer[baseOffset + len - 1 - footerLen];
               if ((finalChecksum & 0xff) === expected) {
                 // Validate first byte against valid headers if configured
-                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                if (
+                  this.validHeadersSet &&
+                  !this.validHeadersSet.has(this.buffer[this.readOffset])
+                ) {
                   searchIdx = foundIdx + 1;
                   continue;
                 }
@@ -335,7 +338,10 @@ export class PacketParser {
               const len = foundIdx + footerLen - this.readOffset;
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
                 // Validate first byte against valid headers if configured
-                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                if (
+                  this.validHeadersSet &&
+                  !this.validHeadersSet.has(this.buffer[this.readOffset])
+                ) {
                   searchIdx = foundIdx + 1;
                   continue;
                 }
@@ -475,7 +481,10 @@ export class PacketParser {
               const expected = this.buffer[baseOffset + len - 1];
               if ((finalChecksum & 0xff) === expected) {
                 // Validate first byte against valid headers if configured
-                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                if (
+                  this.validHeadersSet &&
+                  !this.validHeadersSet.has(this.buffer[this.readOffset])
+                ) {
                   continue;
                 }
                 const packet = Buffer.from(
@@ -533,7 +542,10 @@ export class PacketParser {
 
               if (finalTemp === expectedHigh && finalCrc === expectedLow) {
                 // Validate first byte against valid headers if configured
-                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                if (
+                  this.validHeadersSet &&
+                  !this.validHeadersSet.has(this.buffer[this.readOffset])
+                ) {
                   continue;
                 }
                 const packet = Buffer.from(
@@ -551,7 +563,10 @@ export class PacketParser {
             for (let len = startLen; len <= bufferLength; len++) {
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
                 // Validate first byte against valid headers if configured
-                if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+                if (
+                  this.validHeadersSet &&
+                  !this.validHeadersSet.has(this.buffer[this.readOffset])
+                ) {
                   continue;
                 }
                 const packet = Buffer.from(

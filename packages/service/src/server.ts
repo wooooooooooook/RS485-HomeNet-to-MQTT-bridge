@@ -27,7 +27,6 @@ import type {
   BridgeInstance,
   BridgeStatus,
   ConfigStatus,
-  PersistableHomenetBridgeConfig,
   RawPacketStreamMode,
 } from './types/index.js';
 import {

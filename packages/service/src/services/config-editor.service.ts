@@ -1,7 +1,4 @@
-import path from 'node:path';
-import type { Express } from 'express';
 import yaml from 'js-yaml';
-import { type HomenetBridgeConfig } from '@rs485-homenet/core';
 
 export type ConfigEditorDeps = {
   configDir: string;

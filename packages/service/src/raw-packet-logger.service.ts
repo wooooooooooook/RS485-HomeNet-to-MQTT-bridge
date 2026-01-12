@@ -4,10 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { resolveSecurePath, getLocalTimestamp } from './utils/helpers.js';
 
-interface LogOptions {
-  configDir: string;
-}
-
 type RawPacketLogMode = 'all' | 'valid';
 
 export class RawPacketLoggerService {
@@ -184,10 +180,7 @@ export class RawPacketLoggerService {
     }
   }
 
-  public async cleanupFiles(
-    mode: 'all' | 'keep_recent',
-    keepCount: number = 0,
-  ): Promise<number> {
+  public async cleanupFiles(mode: 'all' | 'keep_recent', keepCount: number = 0): Promise<number> {
     const files = await this.listSavedFiles();
     // Files are already sorted by createdAt (newest first)
     const targets = mode === 'all' ? files : files.slice(Math.max(keepCount, 0));

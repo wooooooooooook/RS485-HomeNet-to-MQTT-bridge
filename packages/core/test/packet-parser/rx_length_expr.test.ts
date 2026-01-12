@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from 'vitest';
 import { PacketParser } from '../../src/protocol/packet-parser';
 import { PacketDefaults } from '../../src/protocol/types';
@@ -20,8 +19,8 @@ describe('PacketParser with rx_length_expr', () => {
 
     // Packet: Header(0x02), ID(0x28), Len(0x05), Data(0x10), Checksum(Sum)
     // Sum = 0x02 + 0x28 + 0x05 + 0x10 = 0x3F
-    const packet = Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3F]);
-    
+    const packet = Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3f]);
+
     const result = parser.parseChunk(packet);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual(packet);
@@ -42,7 +41,7 @@ describe('PacketParser with rx_length_expr', () => {
     // ID 0x30 doesn't match the condition, so expr returns 0.
     // Parser should sweep and find the packet anyway because checksum is valid.
     const packet = Buffer.from([0x02, 0x30, 0x05, 0x10, 0x47]);
-    
+
     const result = parser.parseChunk(packet);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual(packet);
@@ -60,14 +59,14 @@ describe('PacketParser with rx_length_expr', () => {
     // Packet needs 5 bytes, but we only send 4
     // Header(0x02), ID(0x28), Len(0x05), Data(0x10) ... Missing Checksum
     const partialPacket = Buffer.from([0x02, 0x28, 0x05, 0x10]);
-    
+
     const result1 = parser.parseChunk(partialPacket);
     expect(result1).toHaveLength(0); // Should wait
 
     // Send the missing byte (Checksum 0x3F)
-    const result2 = parser.parseChunk(Buffer.from([0x3F]));
+    const result2 = parser.parseChunk(Buffer.from([0x3f]));
     expect(result2).toHaveLength(1);
-    expect(result2[0]).toEqual(Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3F]));
+    expect(result2[0]).toEqual(Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3f]));
   });
 
   // Scenario 4: rx_length overrides rx_length_expr (with warning in logs)
@@ -81,8 +80,8 @@ describe('PacketParser with rx_length_expr', () => {
     const parser = new PacketParser(defaults);
 
     // Packet length 5
-    const packet = Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3F]);
-    
+    const packet = Buffer.from([0x02, 0x28, 0x05, 0x10, 0x3f]);
+
     const result = parser.parseChunk(packet);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual(packet);

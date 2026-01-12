@@ -42,6 +42,7 @@ import { initializeBackupDir, saveBackup } from './services/backup.service.js';
 import { loadFrontendSettings } from './services/frontend-settings.service.js';
 import { registerRoutes } from './routes/index.js';
 import { createPacketStreamHandler } from './websocket/packet-stream.js';
+import { globalSecurityHeaders, apiSecurityHeaders } from './middleware/security.js';
 
 // --- Path Constants ---
 const __filename = fileURLToPath(import.meta.url);
@@ -120,23 +121,12 @@ let bridgeStartPromise: Promise<void> | null = null;
 
 // --- Express Middleware & Setup ---
 app.disable('x-powered-by');
-app.use((_req, res, next) => {
-  // 보안 헤더 설정
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  // Referrer 정보 노출 최소화
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // CSP: 스크립트 및 스타일 인라인 허용 (Svelte 호환), WebSocket 허용
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: https://raw.githubusercontent.com;",
-  );
-  // 민감한 브라우저 기능 비활성화
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  next();
-});
+app.use(globalSecurityHeaders);
 // Payload 크기 제한 설정 (DoS 방지)
 app.use(express.json({ limit: '1mb' }));
+
+// API Caching: API 응답에 대한 캐싱 비활성화 (보안 강화)
+app.use('/api', apiSecurityHeaders);
 
 // Global Rate Limiter Middleware
 app.use((req, res, next) => {

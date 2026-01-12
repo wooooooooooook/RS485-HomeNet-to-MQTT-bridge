@@ -245,6 +245,9 @@
       stateChange: false,
       command: true,
     },
+    activityLog: {
+      hideAutomationScripts: false,
+    },
   };
   let frontendSettings = $state<FrontendSettings | null>(null);
   let settingsLoading = $state(false);
@@ -674,6 +677,23 @@
       if (previous.locale) {
         locale.set(previous.locale);
       }
+    }
+  }
+
+  async function updateActivityLogSetting(value: boolean) {
+    const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
+    const next: FrontendSettings = {
+      ...previous,
+      activityLog: {
+        ...(previous.activityLog ?? DEFAULT_FRONTEND_SETTINGS.activityLog),
+        hideAutomationScripts: value,
+      },
+    };
+    frontendSettings = next;
+    try {
+      await persistFrontendSettings(next);
+    } catch {
+      frontendSettings = previous;
     }
   }
 
@@ -1462,9 +1482,17 @@
   );
 
   const filteredActivityLogs = $derived.by<ActivityLog[]>(() =>
-    activePortId
-      ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
-      : activityLogs,
+    {
+      const baseLogs = activePortId
+        ? activityLogs.filter((log) => !log.portId || log.portId === activePortId)
+        : activityLogs;
+      const shouldHideAutomationScripts =
+        (frontendSettings ?? DEFAULT_FRONTEND_SETTINGS).activityLog?.hideAutomationScripts ?? false;
+      if (!shouldHideAutomationScripts) return baseLogs;
+      return baseLogs.filter(
+        (log) => !log.code.startsWith('log.automation_') && !log.code.startsWith('log.script_'),
+      );
+    },
   );
 
   const portStatuses = $derived.by(() => {
@@ -1565,6 +1593,7 @@
             error={settingsError}
             isSaving={settingsSaving}
             onToastChange={(key, value) => updateToastSetting(key, value)}
+            onActivityLogChange={(value) => updateActivityLogSetting(value)}
             onLocaleChange={(value) => updateLocaleSetting(value)}
           />
         {/if}

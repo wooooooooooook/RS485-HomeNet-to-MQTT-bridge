@@ -34,6 +34,9 @@ export type FrontendSettings = {
     stateChange: boolean;
     command: boolean;
   };
+  activityLog?: {
+    hideAutomationScripts: boolean;
+  };
   locale?: string;
   logRetention?: LogRetentionSettings;
 };

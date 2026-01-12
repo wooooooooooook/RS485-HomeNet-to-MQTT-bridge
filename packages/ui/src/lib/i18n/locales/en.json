@@ -13,6 +13,14 @@
         "desc": "Show toast when sending command packets."
       }
     },
+    "activity_log": {
+      "title": "Activity Log",
+      "desc": "Control which log types appear in dashboards and detail views.",
+      "hide_automation_scripts": {
+        "title": "Hide automation/script logs",
+        "desc": "Hide automation and script execution entries from activity log lists."
+      }
+    },
     "log_sharing": {
       "title": "Log & Data Sharing",
       "desc": "Send anonymized logs and packets (1000) to the developer for troubleshooting.",

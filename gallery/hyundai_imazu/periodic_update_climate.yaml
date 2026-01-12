@@ -8,7 +8,7 @@ meta:
   tags: ["hyundai", "imazu"]
 
 automation:
-    - id: 'send heat state packet'
+    - id: 'send_heat_state_packet'
       trigger:
         - type: schedule
           every: 15m
@@ -19,7 +19,7 @@ automation:
           checksum: true
           footer: true
 
-    - id: 'update heat'
+    - id: 'update_heat'
       trigger:
         - type: packet
           match:

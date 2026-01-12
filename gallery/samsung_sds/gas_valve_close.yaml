@@ -13,6 +13,14 @@ entities:
     - id: 'gas_valve_query_active'
       name: 'Gas Valve Query Active'
       optimistic: true
+      internal: true
+      # update_state를 위해 더미 state 정의 필요
+      state:
+        data: [0xFF, 0xFF, 0xFF, 0xFF]  # 절대 매칭되지 않는 패턴
+      state_on:
+        data: [0x01]
+      state_off:
+        data: [0x00]
 
   valve:
     - id: 'gas_valve'
@@ -36,13 +44,13 @@ automation:
       - action: update_state
         target_id: gas_valve_query_active
         state:
-          state: 'on'
+          state: true
       - action: delay
         milliseconds: 300ms
       - action: update_state
         target_id: gas_valve_query_active
         state:
-          state: 'off'
+          state: false
 
   # 2. B0 41 응답 패킷 감지 → 플래그가 ON일 때만 상태 업데이트
   - id: 'gas_valve_state_update'

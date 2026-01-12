@@ -31,6 +31,8 @@ describe('ID Generation', () => {
     const stateProvider = {
       getLightState: () => undefined,
       getClimateState: () => undefined,
+      getAllStates: () => ({}),
+      getEntityState: () => undefined,
     };
 
     const processor = new PacketProcessor(config, stateProvider);

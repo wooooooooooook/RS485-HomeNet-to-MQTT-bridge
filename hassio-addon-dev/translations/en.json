@@ -1,0 +1,36 @@
+{
+    "configuration": {
+        "log_level": {
+            "name": "Log Level",
+            "description": "Set the logging level. Default: INFO (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL). Setting to DEBUG or TRACE may cause performance degradation."
+        },
+        "mqtt_url": {
+            "name": "MQTT URL",
+            "description": "URL of the MQTT broker. (Address when using mosquitto addon: mqtt://core-mosquitto:1883)"
+        },
+        "mqtt_need_login": {
+            "name": "MQTT Require Login",
+            "description": "Enable if the MQTT broker requires authentication. Set to true if using the mosquitto addon."
+        },
+        "mqtt_user": {
+            "name": "MQTT Username",
+            "description": "Username for MQTT broker authentication. Enter the username configured in the mosquitto addon."
+        },
+        "mqtt_passwd": {
+            "name": "MQTT Password",
+            "description": "Password for MQTT broker authentication. Enter the password configured in the mosquitto addon."
+        },
+        "mqtt_topic_prefix": {
+            "name": "MQTT Topic Prefix",
+            "description": "Prefix for MQTT topics (default: homenet2mqtt). No need to change unless in special circumstances."
+        },
+        "config_files": {
+            "name": "Config Files",
+            "description": "List of configuration files to load. If left empty, the default (default.homenet_bridge.yaml) will be loaded."
+        },
+        "timezone": {
+            "name": "Timezone",
+            "description": "System timezone (e.g., Asia/Seoul). If left empty, the server uses UTC timezone, and the UI uses the browser's timezone."
+        }
+    }
+}

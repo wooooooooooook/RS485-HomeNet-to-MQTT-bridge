@@ -1,0 +1,36 @@
+{
+    "configuration": {
+        "log_level": {
+            "name": "로그 레벨",
+            "description": "로그 출력 레벨을 설정합니다. 기본값: INFO (TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL), DEBUG나 TRACE 레벨로 설정시 성능저하가 발생할 수 있습니다."
+        },
+        "mqtt_url": {
+            "name": "MQTT 주소",
+            "description": "MQTT 브로커의 주소입니다. (mosquitto 애드온 사용시 주소: mqtt://core-mosquitto:1883)"
+        },
+        "mqtt_need_login": {
+            "name": "MQTT 로그인 사용",
+            "description": "MQTT 브로커 접속 시 아이디/비밀번호 인증을 사용할지 여부입니다. mosquitto 애드온 사용시 true로 설정하세요."
+        },
+        "mqtt_user": {
+            "name": "MQTT 아이디",
+            "description": "MQTT 브로커 접속 아이디입니다. mosquitto 애드온에서 설정한 아이디를 입력하세요."
+        },
+        "mqtt_passwd": {
+            "name": "MQTT 비밀번호",
+            "description": "MQTT 브로커 접속 비밀번호입니다. mosquitto 애드온에서 설정한 비밀번호를 입력하세요."
+        },
+        "mqtt_topic_prefix": {
+            "name": "MQTT 토픽 접두사",
+            "description": "MQTT 토픽의 접두사를 설정합니다. (기본값: homenet2mqtt) 특수상황이 아니면 변경할 필요 없습니다."
+        },
+        "config_files": {
+            "name": "설정 파일 리스트",
+            "description": "로드할 설정 파일들의 목록입니다. 비워두면 기본값(default.homenet_bridge.yaml)로 로드됩니다."
+        },
+        "timezone": {
+            "name": "타임존",
+            "description": "시스템 타임존을 설정합니다. (예: Asia/Seoul) 비워두면 서버는 UTC timezone, UI는 브라우저의 타임존을 사용합니다."
+        }
+    }
+}

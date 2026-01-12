@@ -430,7 +430,7 @@ describe('AutomationManager', () => {
     await vi.runAllTimersAsync();
 
     const errorCall = errorSpy.mock.calls.find((call) => call[1] === '[automation] Action failed');
-    expect(errorCall?.[0]?.error?.message).toContain('update_state');
+    expect((errorCall?.[0] as any)?.error?.message).toContain('update_state');
     expect(stateManager.getEntityState('light_1')).toBeUndefined();
 
     errorSpy.mockRestore();

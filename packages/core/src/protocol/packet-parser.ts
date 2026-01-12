@@ -373,7 +373,6 @@ export class PacketParser {
             continue;
           }
 
-
           // Optimization: Use rx_length_expr to calculate packet length directly
           // If the expression returns a valid length, verify only that length.
           // If it returns 0 or the buffer is insufficient, fallback to checksum sweep.

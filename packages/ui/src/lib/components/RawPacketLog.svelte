@@ -466,6 +466,13 @@
         parsed: boolean;
       }
     >();
+    const orderedEntries: Array<{
+      payload: string;
+      count: number;
+      lastSeen: string;
+      lastSeenMs: number;
+      parsed: boolean;
+    }> = [];
     for (const packet of activePackets) {
       if (!packet.payload) continue;
       const payload = packet.payload.toUpperCase();
@@ -478,30 +485,31 @@
           existing.lastSeen = packet.receivedAt;
         }
       } else {
-        entries.set(payload, {
+        const entry = {
           payload,
           count: 1,
           lastSeen: packet.receivedAt,
           lastSeenMs: timestampMs,
           parsed: parsedSet.has(payload),
-        });
+        };
+        entries.set(payload, entry);
+        orderedEntries.push(entry);
       }
     }
     let parsedCount = 0;
     let unparsedCount = 0;
-    for (const entry of entries.values()) {
+    for (const entry of orderedEntries) {
       if (entry.parsed) {
         parsedCount += 1;
       } else {
         unparsedCount += 1;
       }
     }
-    const list = Array.from(entries.values()).sort((a, b) => b.lastSeenMs - a.lastSeenMs);
     return {
-      entries: list,
+      entries: orderedEntries,
       parsedCount,
       unparsedCount,
-      total: list.length,
+      total: orderedEntries.length,
     };
   });
 

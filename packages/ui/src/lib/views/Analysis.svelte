@@ -18,6 +18,8 @@
     commandPackets,
     parsedPackets,
     rawPackets,
+    parsedEntitiesByPayload,
+    packetDictionary,
     isStreaming,
     portMetadata,
     selectedPortId,
@@ -33,6 +35,8 @@
     commandPackets: CommandPacket[];
     parsedPackets: ParsedPacket[];
     rawPackets: RawPacketWithInterval[];
+    parsedEntitiesByPayload: Record<string, string[]>;
+    packetDictionary: Record<string, string>;
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
     selectedPortId: string | null;
@@ -58,6 +62,8 @@
   <PacketLog {commandPackets} {parsedPackets} />
   <RawPacketLog
     {rawPackets}
+    {parsedEntitiesByPayload}
+    {packetDictionary}
     {isStreaming}
     {stats}
     {onStart}

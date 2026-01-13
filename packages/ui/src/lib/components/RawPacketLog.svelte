@@ -9,6 +9,8 @@
 
   let {
     rawPackets = [],
+    parsedEntitiesByPayload = {},
+    packetDictionary = {},
     isStreaming,
     stats = null,
     onStart,
@@ -20,6 +22,8 @@
     portId = null,
   }: {
     rawPackets?: RawPacketWithInterval[];
+    parsedEntitiesByPayload?: Record<string, string[]>;
+    packetDictionary?: Record<string, string>;
     isStreaming: boolean;
     stats?: PacketStatsType | null;
     onStart?: () => void;
@@ -36,6 +40,7 @@
 
   let isPaused = $state(false);
   let pausedSnapshot = $state<RawPacketWithInterval[] | null>(null);
+  let viewMode = $state<'log' | 'set'>('log');
 
   // Status tracking
   let recordingDuration = $state(0);
@@ -133,6 +138,7 @@
   const MAX_DURATION_MS = 20 * 60 * 1000;
   const MAX_PACKETS_LIMIT = 10000;
   const FILTER_SEARCH_LIMIT = 1000; // 필터링 시 최근 N개 패킷만 검색
+  const MAX_SET_ITEMS = 500;
 
   // Debounce filter input (300ms)
   $effect(() => {
@@ -446,6 +452,93 @@
 
   const toHexPairs = (hex: string) => hex.match(/.{1,2}/g)?.map((pair) => pair.toUpperCase()) ?? [];
 
+  const parsedPacketSet = $derived.by(
+    () => new Set(Object.values(packetDictionary).map((packet) => packet.toUpperCase())),
+  );
+
+  const validPacketSet = $derived.by(() => {
+    const parsedSet = parsedPacketSet;
+    const entries = new Map<
+      string,
+      {
+        payload: string;
+        count: number;
+        lastSeen: string;
+        lastSeenMs: number;
+        parsed: boolean;
+        parsedEntities: string[];
+      }
+    >();
+    const orderedEntries: Array<{
+      payload: string;
+      count: number;
+      lastSeen: string;
+      lastSeenMs: number;
+      parsed: boolean;
+      parsedEntities: string[];
+    }> = [];
+    for (const packet of activePackets) {
+      if (!packet.payload) continue;
+      const payload = packet.payload.toUpperCase();
+      const timestampMs = Date.parse(packet.receivedAt);
+      const existing = entries.get(payload);
+      if (existing) {
+        existing.count += 1;
+        if (timestampMs > existing.lastSeenMs) {
+          existing.lastSeenMs = timestampMs;
+          existing.lastSeen = packet.receivedAt;
+        }
+      } else {
+        const parsedEntities = parsedEntitiesByPayload[payload] ?? [];
+        const entry = {
+          payload,
+          count: 1,
+          lastSeen: packet.receivedAt,
+          lastSeenMs: timestampMs,
+          parsed: parsedSet.has(payload),
+          parsedEntities,
+        };
+        entries.set(payload, entry);
+        orderedEntries.push(entry);
+      }
+    }
+    let parsedCount = 0;
+    let unparsedCount = 0;
+    for (const entry of orderedEntries) {
+      if (entry.parsed) {
+        parsedCount += 1;
+      } else {
+        unparsedCount += 1;
+      }
+    }
+    return {
+      entries: orderedEntries,
+      parsedCount,
+      unparsedCount,
+      total: orderedEntries.length,
+    };
+  });
+
+  const filteredPacketSet = $derived.by(() => {
+    const source = validPacketSet.entries;
+    if (!normalizedFilter || !cachedRegex) return source;
+    const regex = cachedRegex;
+    return source.filter((entry) => {
+      if (regex.test(entry.payload)) return true;
+      const formattedPayload = toHexPairs(entry.payload).join(' ');
+      return regex.test(formattedPayload);
+    });
+  });
+
+  const limitedPacketSet = $derived.by(() => filteredPacketSet.slice(0, MAX_SET_ITEMS));
+
+  const packetSetSummary = $derived.by(() => ({
+    total: validPacketSet.total,
+    parsed: validPacketSet.parsedCount,
+    unparsed: validPacketSet.unparsedCount,
+    limitedCount: limitedPacketSet.length,
+  }));
+
   function getHighlightedParts(text: string, filter: string) {
     if (!filter) return [{ text, highlight: false }];
 
@@ -530,8 +623,24 @@
         </div>
       {/if}
     </div>
+    <div class="header-actions">
+      <Button
+        variant={viewMode === 'log' ? 'primary' : 'secondary'}
+        onclick={() => (viewMode = 'log')}
+      >
+        {$t('analysis.raw_log.view_log')}
+      </Button>
+      <Button
+        variant={viewMode === 'set' ? 'primary' : 'secondary'}
+        onclick={() => (viewMode = 'set')}
+      >
+        {$t('analysis.raw_log.view_set')}
+      </Button>
+    </div>
   </div>
-  <p class="description">{$t('analysis.raw_log.desc')}</p>
+  <p class="description">
+    {viewMode === 'log' ? $t('analysis.raw_log.desc') : $t('analysis.raw_log.set_desc')}
+  </p>
   <div class="filter-row">
     <label class="filter-label">
       <span>{$t('analysis.raw_log.filter_label')}</span>
@@ -556,6 +665,9 @@
   {/if}
   {#if validOnly}
     <p class="filter-hint">{$t('analysis.raw_log.valid_only_hint')}</p>
+  {/if}
+  {#if viewMode === 'set' && !validOnly}
+    <p class="filter-hint">{$t('analysis.raw_log.set_valid_hint')}</p>
   {/if}
 
   {#if showSaveDialog && recordedFile}
@@ -601,17 +713,68 @@
       </Button>
     </div>
   {/if}
-  <div class="log-list raw-list">
-    {#if rawPackets.length === 0}
-      <p class="empty">{$t('analysis.raw_log.empty')}</p>
-    {:else}
-      <VirtualList
-        items={filteredPackets}
-        renderItem={renderPacketItem}
-        defaultEstimatedItemHeight={32}
-      />
-    {/if}
-  </div>
+  {#if viewMode === 'log'}
+    <div class="log-list raw-list">
+      {#if rawPackets.length === 0}
+        <p class="empty">{$t('analysis.raw_log.empty')}</p>
+      {:else}
+        <VirtualList
+          items={filteredPackets}
+          renderItem={renderPacketItem}
+          defaultEstimatedItemHeight={32}
+        />
+      {/if}
+    </div>
+  {:else}
+    <div class="set-section">
+      <div class="set-summary">
+        <span>{$t('analysis.raw_log.set_summary', { values: { count: packetSetSummary.total } })}</span>
+        <span class="badge parsed">{$t('analysis.raw_log.set_parsed', { values: { count: packetSetSummary.parsed } })}</span>
+        <span class="badge unparsed">
+          {$t('analysis.raw_log.set_unparsed', { values: { count: packetSetSummary.unparsed } })}
+        </span>
+        {#if packetSetSummary.total > packetSetSummary.limitedCount}
+          <span class="set-limit">
+            {$t('analysis.raw_log.set_limit_hint', { values: { count: MAX_SET_ITEMS } })}
+          </span>
+        {/if}
+      </div>
+      <div class="log-list set-list">
+        {#if limitedPacketSet.length === 0}
+          <p class="empty">{$t('analysis.raw_log.set_empty')}</p>
+        {:else}
+          {#each limitedPacketSet as entry (entry.payload)}
+            <div class="set-item">
+              <code class="payload payload-full">
+                {#each getHighlightedParts(toHexPairs(entry.payload).join(' '), normalizedFilter) as part, index (`${part}-${index}`)}
+                  {#if part.highlight}
+                    <mark>{part.text}</mark>
+                  {:else}
+                    {part.text}
+                  {/if}
+                {/each}
+              </code>
+              <div class="set-item-meta">
+                <span class="badge" class:parsed={entry.parsed} class:unparsed={!entry.parsed}>
+                  {entry.parsed
+                    ? $t('analysis.raw_log.set_badge_parsed')
+                    : $t('analysis.raw_log.set_badge_unparsed')}
+                </span>
+                {#if entry.parsed && entry.parsedEntities.length > 0}
+                  <span class="parsed-entities">
+                    {$t('analysis.raw_log.set_parsed_entities_label')}:
+                    {entry.parsedEntities.join(', ')}
+                  </span>
+                {/if}
+                <span class="set-count">x{entry.count}</span>
+                <span class="set-time">{formatTime(entry.lastSeen)}</span>
+              </div>
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </div>
+  {/if}
 
   <!-- Inline Packet Interval Analysis -->
   {#if stats}
@@ -681,6 +844,12 @@
     align-items: center;
     margin-bottom: 1rem;
     gap: 1rem;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .header-left {
@@ -802,6 +971,102 @@
     overflow: hidden;
     font-family: monospace;
     font-size: 0.85rem;
+  }
+
+  .set-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .set-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+
+  .set-list {
+    height: 320px;
+    overflow: auto;
+  }
+
+  .set-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+    color: #cbd5e1;
+  }
+
+  .set-item-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .payload-full {
+    width: 100%;
+    display: block;
+  }
+
+  .parsed-entities {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    padding: 0.2rem 0.45rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .set-item:last-child {
+    border-bottom: none;
+  }
+
+  .set-count {
+    color: #fbbf24;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .set-time {
+    color: #64748b;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .badge.parsed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+
+  .badge.unparsed {
+    background: rgba(248, 113, 113, 0.2);
+    color: #fca5a5;
+  }
+
+  .set-limit {
+    color: #fbbf24;
+    font-size: 0.75rem;
   }
 
   .log-item {

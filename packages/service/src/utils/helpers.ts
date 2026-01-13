@@ -34,7 +34,12 @@ export function maskMqttPassword(url: string | undefined): string {
     }
     return url;
   } catch (e) {
-    return url.replace(/:([^:@]+)@/, ':******@');
+    // Robust fallback for invalid URLs (e.g. typos, spaces)
+    // Matches: ://[user]:[password]@[host]
+    // Group 1: ://user: (or ://:) - finds first colon after scheme
+    // Group 2: password (greedy match until last @)
+    // Group 3: @
+    return url.replace(/(:\/\/[^:]*:)(.+)(@)/, '$1******$3');
   }
 }
 

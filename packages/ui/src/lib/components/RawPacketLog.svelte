@@ -9,6 +9,7 @@
 
   let {
     rawPackets = [],
+    parsedEntitiesByPayload = {},
     packetDictionary = {},
     isStreaming,
     stats = null,
@@ -21,6 +22,7 @@
     portId = null,
   }: {
     rawPackets?: RawPacketWithInterval[];
+    parsedEntitiesByPayload?: Record<string, string[]>;
     packetDictionary?: Record<string, string>;
     isStreaming: boolean;
     stats?: PacketStatsType | null;
@@ -464,6 +466,7 @@
         lastSeen: string;
         lastSeenMs: number;
         parsed: boolean;
+        parsedEntities: string[];
       }
     >();
     const orderedEntries: Array<{
@@ -472,6 +475,7 @@
       lastSeen: string;
       lastSeenMs: number;
       parsed: boolean;
+      parsedEntities: string[];
     }> = [];
     for (const packet of activePackets) {
       if (!packet.payload) continue;
@@ -485,12 +489,14 @@
           existing.lastSeen = packet.receivedAt;
         }
       } else {
+        const parsedEntities = parsedEntitiesByPayload[payload] ?? [];
         const entry = {
           payload,
           count: 1,
           lastSeen: packet.receivedAt,
           lastSeenMs: timestampMs,
           parsed: parsedSet.has(payload),
+          parsedEntities,
         };
         entries.set(payload, entry);
         orderedEntries.push(entry);
@@ -753,6 +759,12 @@
                   {/if}
                 {/each}
               </code>
+              {#if entry.parsed && entry.parsedEntities.length > 0}
+                <span class="parsed-entities">
+                  {$t('analysis.raw_log.set_parsed_entities_label')}:
+                  {entry.parsedEntities.join(', ')}
+                </span>
+              {/if}
               <span class="set-count">x{entry.count}</span>
               <span class="set-time">{formatTime(entry.lastSeen)}</span>
             </div>
@@ -986,6 +998,19 @@
     padding: 0.4rem 0.6rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.05);
     color: #cbd5e1;
+  }
+
+  .parsed-entities {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    padding: 0.2rem 0.45rem;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .set-item:last-child {

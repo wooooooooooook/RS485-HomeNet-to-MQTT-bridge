@@ -200,6 +200,7 @@
       "set_empty": "No packets in set.",
       "set_badge_parsed": "Parsed",
       "set_badge_unparsed": "Unparsed",
+      "set_parsed_entities_label": "Parsed as",
       "set_valid_hint": "Enable 'Show valid packets only' to build a valid packet set.",
       "empty": "No packets to display.",
       "collected_packets": "Collected Packets: {count}",

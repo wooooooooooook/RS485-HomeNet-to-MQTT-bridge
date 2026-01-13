@@ -200,6 +200,7 @@
       "set_empty": "유효 패킷 세트가 비어 있습니다.",
       "set_badge_parsed": "파싱됨",
       "set_badge_unparsed": "미파싱",
+      "set_parsed_entities_label": "파싱 항목",
       "set_valid_hint": "유효 패킷만 보기 옵션을 켜면 유효 패킷 세트를 확인할 수 있습니다.",
       "empty": "표시할 패킷이 없습니다.",
       "collected_packets": "수집된 패킷: {count}",

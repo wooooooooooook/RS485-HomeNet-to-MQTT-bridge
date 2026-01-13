@@ -211,6 +211,20 @@
       searchText: log.searchText,
     })),
   );
+  const parsedEntitiesByPayload = $derived.by<Record<string, string[]>>(() => {
+    const entries = new Map<string, Set<string>>();
+    for (const log of parsedPacketLogs) {
+      const payload = packetDictionary[log.packetId];
+      if (!payload) continue;
+      const key = payload.toUpperCase();
+      const set = entries.get(key) ?? new Set<string>();
+      set.add(log.entityId);
+      entries.set(key, set);
+    }
+    return Object.fromEntries(
+      Array.from(entries.entries()).map(([payload, entities]) => [payload, Array.from(entities)]),
+    );
+  });
 
   type DeviceStateEntry = { payload: string; portId?: string };
   let deviceStates = $state(new Map<string, DeviceStateEntry>());
@@ -1572,6 +1586,7 @@
             commandPackets={filteredCommandPackets}
             parsedPackets={filteredParsedPackets}
             rawPackets={filteredRawPackets}
+            {parsedEntitiesByPayload}
             {packetDictionary}
             {isStreaming}
             {portMetadata}

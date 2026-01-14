@@ -29,6 +29,9 @@ describe('Security Headers', () => {
     expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
     expect(res.headers['permissions-policy']).toBe('geolocation=(), microphone=(), camera=()');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
+    expect(res.headers['content-security-policy']).toContain("object-src 'none'");
+    expect(res.headers['content-security-policy']).toContain("base-uri 'self'");
+    expect(res.headers['content-security-policy']).toContain("form-action 'self'");
   });
 
   it('should disable x-powered-by', async () => {

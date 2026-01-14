@@ -13,7 +13,7 @@ export const globalSecurityHeaders = (_req: Request, res: Response, next: NextFu
   // CSP: 스크립트 및 스타일 인라인 허용 (Svelte 호환), WebSocket 허용
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: https://raw.githubusercontent.com;",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self';",
   );
   // 민감한 브라우저 기능 비활성화
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');

@@ -728,8 +728,12 @@
   {:else}
     <div class="set-section">
       <div class="set-summary">
-        <span>{$t('analysis.raw_log.set_summary', { values: { count: packetSetSummary.total } })}</span>
-        <span class="badge parsed">{$t('analysis.raw_log.set_parsed', { values: { count: packetSetSummary.parsed } })}</span>
+        <span
+          >{$t('analysis.raw_log.set_summary', { values: { count: packetSetSummary.total } })}</span
+        >
+        <span class="badge parsed"
+          >{$t('analysis.raw_log.set_parsed', { values: { count: packetSetSummary.parsed } })}</span
+        >
         <span class="badge unparsed">
           {$t('analysis.raw_log.set_unparsed', { values: { count: packetSetSummary.unparsed } })}
         </span>

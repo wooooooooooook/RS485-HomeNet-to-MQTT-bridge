@@ -52,7 +52,8 @@ export type StreamEvent =
   | 'command-packet'
   | 'parsed-packet'
   | 'state-change'
-  | 'activity-log-added';
+  | 'activity-log-added'
+  | 'entity-error';
 
 export type StreamMessage<T = unknown> = {
   event: StreamEvent;
@@ -85,6 +86,15 @@ export type StateChangeEvent = {
   state: Record<string, unknown>;
   timestamp: string;
   portId?: string;
+};
+
+export type EntityErrorEvent = {
+  entityId: string;
+  portId?: string;
+  type: 'parse' | 'cel' | 'command';
+  message: string;
+  timestamp: string;
+  context?: Record<string, unknown>;
 };
 
 // --- Command/Entity Types ---

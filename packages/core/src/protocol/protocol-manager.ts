@@ -218,7 +218,22 @@ export class ProtocolManager extends EventEmitter {
     }
 
     for (const device of this.devices) {
-      const stateUpdates = device.parseData(packet);
+      let stateUpdates: Record<string, any> | null = null;
+      try {
+        stateUpdates = device.parseData(packet);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.emit('entity-error', {
+          entityId: device.getId(),
+          type: 'parse',
+          message,
+          timestamp: new Date().toISOString(),
+          context: {
+            packet: packet.toString('hex'),
+          },
+        });
+        continue;
+      }
       if (stateUpdates) {
         matchedAny = true;
         if (isDebug) {

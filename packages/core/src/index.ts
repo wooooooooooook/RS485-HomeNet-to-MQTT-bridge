@@ -12,6 +12,7 @@ import type {
   AutomationGuardEvent,
   AutomationActionEvent,
   ScriptActionEvent,
+  EntityErrorEvent,
 } from './service/event-bus.js';
 import type { HomenetBridgeConfig } from './config/types.js';
 import { CommandGenerator } from './protocol/generators/command.generator.js';
@@ -41,6 +42,7 @@ export type {
   AutomationGuardEvent,
   AutomationActionEvent,
   ScriptActionEvent,
+  EntityErrorEvent,
 };
 
 export async function createBridge(

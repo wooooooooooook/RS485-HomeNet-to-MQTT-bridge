@@ -62,6 +62,11 @@
   <header class="card-header">
     <div class="header-title">
       <h3>{entity.displayName}</h3>
+      {#if entity.errorCount && entity.errorCount > 0}
+        <span class="error-indicator" aria-label={$t('dashboard.entity_card.error_label')}>
+          ❗️
+        </span>
+      {/if}
       {#if entity.category === 'automation'}
         <span class="entity-type-badge automation"
           >{$t('dashboard.entity_card.automation_badge')}</span
@@ -157,6 +162,14 @@
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+  }
+
+  .error-indicator {
+    font-size: 1rem;
+    color: #ef4444;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .entity-type-badge {

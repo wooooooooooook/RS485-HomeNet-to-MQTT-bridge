@@ -26,6 +26,7 @@
     CommandLogEntry,
     PacketHistoryResponse,
     ConfigEntitySummary,
+    EntityErrorEvent,
   } from './lib/types';
   import Sidebar from './lib/components/Sidebar.svelte';
   import Header from './lib/components/Header.svelte';
@@ -279,6 +280,8 @@
   let activityLogs = $state<ActivityLog[]>([]);
   let activityLoading = $state(true);
   let activityError = $state('');
+  let entityErrorsByKey = $state<Map<string, EntityErrorEvent[]>>(new Map());
+  const MAX_ENTITY_ERRORS = 50;
 
   let isRecording = $state(false);
   let recordingStartTime = $state<number | null>(null);
@@ -298,7 +301,8 @@
     | 'command-packet'
     | 'parsed-packet'
     | 'state-change'
-    | 'activity-log-added';
+    | 'activity-log-added'
+    | 'entity-error';
 
   type StreamMessage<T = unknown> = {
     event: StreamEvent;
@@ -585,6 +589,7 @@
       bridgeStatusByPort = new Map();
       rawPackets = [];
       deviceStates.clear();
+      entityErrorsByKey = new Map();
       packetStatsByPort = new Map();
 
       const portIds =
@@ -956,6 +961,14 @@
       activityLogs = [...activityLogs, data];
     };
 
+    const handleEntityError = (data: EntityErrorEvent) => {
+      const key = makeEntityKey(data.portId, data.entityId, 'entity');
+      const existing = entityErrorsByKey.get(key) ?? [];
+      const next = [data, ...existing].slice(0, MAX_ENTITY_ERRORS);
+      entityErrorsByKey.set(key, next);
+      entityErrorsByKey = new Map(entityErrorsByKey);
+    };
+
     const messageHandlers: Partial<Record<StreamEvent, (data: any) => void>> = {
       status: handleStatus,
       'mqtt-message': handleMqttMessage,
@@ -966,6 +979,7 @@
       'parsed-packet': handleParsedPacket,
       'state-change': handleStateChange,
       'activity-log-added': handleActivityLogAdded,
+      'entity-error': handleEntityError,
     };
 
     socket.addEventListener('open', () => {
@@ -1395,6 +1409,11 @@
       entity.isActive = isActive;
     }
 
+    for (const entity of entities.values()) {
+      const key = makeKey(entity.portId, entity.id, entity.category ?? 'entity');
+      entity.errorCount = entityErrorsByKey.get(key)?.length ?? 0;
+    }
+
     return Array.from(entities.values());
   });
 
@@ -1458,6 +1477,16 @@
         (e) => e.id === entityId && e.portId === portId && e.category === category,
       ) || null
     );
+  });
+
+  const selectedEntityErrors = $derived.by<EntityErrorEvent[]>(() => {
+    if (!selectedEntity) return [];
+    const key = makeEntityKey(
+      selectedEntity.portId,
+      selectedEntity.id,
+      selectedEntity.category ?? 'entity',
+    );
+    return entityErrorsByKey.get(key) ?? [];
   });
 
   const selectedEntityParsedPackets = $derived.by<ParsedPacket[]>(() =>
@@ -1680,6 +1709,7 @@
         parsedPackets={selectedEntityParsedPackets}
         commandPackets={selectedEntityCommandPackets}
         activityLogs={selectedEntityActivityLogs}
+        entityErrors={selectedEntityErrors}
         onClose={() => (selectedEntityKey = null)}
         onExecute={(cmd, value) => executeCommand(cmd, value)}
         isRenaming={renamingEntityId === selectedEntity.id}

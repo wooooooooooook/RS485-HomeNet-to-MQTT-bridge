@@ -118,12 +118,21 @@ export class GenericDevice extends Device {
     const statesObj = states ? Object.fromEntries(states) : {};
 
     for (const { key, script } of this.stateScripts) {
-      const result = script.execute({
+      const { result, error } = script.executeWithDiagnostics({
         data: packet,
         x: null, // No previous value for state extraction usually
         state: entityState,
         states: statesObj, // Pass global states if available
       });
+
+      if (error) {
+        this.reportError({
+          type: 'cel',
+          message: error,
+          context: { phase: 'state', key },
+        });
+        continue;
+      }
 
       if (result !== undefined && result !== null && result !== '') {
         updates[key] = result;
@@ -172,12 +181,21 @@ export class GenericDevice extends Device {
         value: null,
         ...(states?.get(this.config.id) || this.getState() || {}),
       };
-      const result = preparedScript.execute({
+      const { result, error } = preparedScript.executeWithDiagnostics({
         x: value,
         data: [], // No packet data for command construction
         state: entityState,
         states: states ? Object.fromEntries(states) : {}, // Pass global states
       });
+
+      if (error) {
+        this.reportError({
+          type: 'cel',
+          message: error,
+          context: { phase: 'command', command: normalizedCommandName },
+        });
+        return null;
+      }
 
       if (Array.isArray(result)) {
         // Check if result is nested arrays (CEL returning multiple arrays)
@@ -271,10 +289,17 @@ export class GenericDevice extends Device {
           // Note: tx_checksum is usually global, so we use shared execute (cached)
           // For further optimization, ProtocolManager could prepare these too.
           const fullData = [...txHeader, ...commandData];
-          const result = this.getExecutor().execute(checksumType, {
+          const { result, error } = this.getExecutor().executeWithDiagnostics(checksumType, {
             data: fullData,
             len: fullData.length,
           });
+          if (error) {
+            this.reportError({
+              type: 'cel',
+              message: error,
+              context: { phase: 'checksum', checksumType },
+            });
+          }
           if (typeof result === 'number') {
             checksumPart.push(result);
           } else if (Array.isArray(result)) {
@@ -295,10 +320,17 @@ export class GenericDevice extends Device {
         } else {
           // CEL Expression for 2-byte checksum
           const fullData = [...txHeader, ...commandData];
-          const result = this.getExecutor().execute(checksumType, {
+          const { result, error } = this.getExecutor().executeWithDiagnostics(checksumType, {
             data: fullData,
             len: fullData.length,
           });
+          if (error) {
+            this.reportError({
+              type: 'cel',
+              message: error,
+              context: { phase: 'checksum2', checksumType },
+            });
+          }
           if (Array.isArray(result)) {
             checksumPart.push(...result);
           } else {

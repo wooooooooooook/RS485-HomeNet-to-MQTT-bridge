@@ -402,7 +402,8 @@
     "entity_card": {
       "no_status": "상태 정보 없음",
       "automation_badge": "자동화",
-      "script_badge": "스크립트"
+      "script_badge": "스크립트",
+      "error_label": "엔티티 오류 발생"
     }
   },
   "entity_detail": {
@@ -416,6 +417,15 @@
       "packets": "패킷 로그",
       "manage": "관리",
       "logs": "활동 로그"
+    },
+    "errors": {
+      "title": "엔티티 오류",
+      "empty": "이 엔티티에 기록된 오류가 없습니다.",
+      "types": {
+        "parse": "파싱",
+        "cel": "CEL",
+        "command": "명령 생성"
+      }
     },
     "execute": {
       "error": "실행에 실패했습니다."

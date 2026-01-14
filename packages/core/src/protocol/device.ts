@@ -8,11 +8,14 @@ import {
 } from './types.js';
 import { Buffer } from 'buffer';
 import { extractFromSchema } from './schema-utils.js';
+import type { EntityErrorEvent, EntityErrorType } from '../service/event-bus.js';
 
 export abstract class Device {
   protected config: DeviceConfig;
   protected protocolConfig: ProtocolConfig;
   protected state: Record<string, any> = {};
+  private errorReporter?: (payload: EntityErrorEvent) => void;
+  private lastError: { type: EntityErrorType; timestamp: number } | null = null;
 
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     this.config = config;
@@ -41,6 +44,24 @@ export abstract class Device {
 
   public getState(): Record<string, any> {
     return this.state;
+  }
+
+  public setErrorReporter(reporter?: (payload: EntityErrorEvent) => void): void {
+    this.errorReporter = reporter;
+  }
+
+  public getLastError(): { type: EntityErrorType; timestamp: number } | null {
+    return this.lastError;
+  }
+
+  protected reportError(payload: Omit<EntityErrorEvent, 'entityId' | 'timestamp'>): void {
+    const timestamp = new Date().toISOString();
+    this.lastError = { type: payload.type, timestamp: Date.parse(timestamp) };
+    this.errorReporter?.({
+      entityId: this.config.id,
+      timestamp,
+      ...payload,
+    });
   }
 
   protected updateState(newState: Record<string, any>) {

@@ -47,4 +47,15 @@ export interface ScriptActionEvent {
   timestamp: number;
 }
 
+export type EntityErrorType = 'parse' | 'cel' | 'command';
+
+export interface EntityErrorEvent {
+  entityId: string;
+  portId?: string;
+  type: EntityErrorType;
+  message: string;
+  timestamp: string;
+  context?: Record<string, unknown>;
+}
+
 export const eventBus = new EventEmitter();

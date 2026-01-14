@@ -41,3 +41,4 @@ packages/core/config/sim_commax.homenet_bridge.yaml
 deploy/.configs/
 .logs/
 .vscode/
+packages/simulator/src/packets_from_userdata.ts

@@ -440,6 +440,18 @@
     return type === 'command' ? currentSettings.toast.command : currentSettings.toast.stateChange;
   };
 
+  function persistDashboardFilterVisibility(
+    entitiesEnabled: boolean,
+    automationsEnabled: boolean,
+    scriptsEnabled: boolean,
+  ) {
+    if (typeof window === 'undefined') return;
+    const hasAny = entitiesEnabled || automationsEnabled || scriptsEnabled;
+    window.localStorage.setItem(DASHBOARD_ENTITY_KEY, String(hasAny ? entitiesEnabled : true));
+    window.localStorage.setItem(DASHBOARD_AUTOMATION_KEY, String(automationsEnabled));
+    window.localStorage.setItem(DASHBOARD_SCRIPT_KEY, String(scriptsEnabled));
+  }
+
   onMount(() => {
     if (typeof window !== 'undefined') {
       const storedInactive = window.localStorage.getItem(DASHBOARD_INACTIVE_KEY);
@@ -457,6 +469,10 @@
       const storedScript = window.localStorage.getItem(DASHBOARD_SCRIPT_KEY);
       if (storedScript !== null) {
         showScriptCards = storedScript !== 'false';
+      }
+      if (!showEntityCards && !showAutomationCards && !showScriptCards) {
+        showEntityCards = true;
+        persistDashboardFilterVisibility(showEntityCards, showAutomationCards, showScriptCards);
       }
     }
     loadBridgeInfo(true);
@@ -738,23 +754,17 @@
 
   function toggleEntityCards() {
     showEntityCards = !showEntityCards;
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DASHBOARD_ENTITY_KEY, String(showEntityCards));
-    }
+    persistDashboardFilterVisibility(showEntityCards, showAutomationCards, showScriptCards);
   }
 
   function toggleAutomationCards() {
     showAutomationCards = !showAutomationCards;
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DASHBOARD_AUTOMATION_KEY, String(showAutomationCards));
-    }
+    persistDashboardFilterVisibility(showEntityCards, showAutomationCards, showScriptCards);
   }
 
   function toggleScriptCards() {
     showScriptCards = !showScriptCards;
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DASHBOARD_SCRIPT_KEY, String(showScriptCards));
-    }
+    persistDashboardFilterVisibility(showEntityCards, showAutomationCards, showScriptCards);
   }
 
   let socketCloseHandler: (() => void) | null = null;

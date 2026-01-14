@@ -203,7 +203,6 @@
     <div class="toggle-container" aria-label={$t('dashboard.filter_section_aria')}>
       <div class="toggle-header">
         <span class="toggle-title">{$t('dashboard.filter_title')}</span>
-        <span class="toggle-desc">{$t('dashboard.filter_desc')}</span>
       </div>
       {#if hasInactiveEntities && !hintDismissed}
         <HintBubble onDismiss={() => (hintDismissed = true)} autoCloseMs={10000}>
@@ -301,10 +300,6 @@
     color: #e2e8f0;
   }
 
-  .toggle-desc {
-    font-size: 0.75rem;
-    color: #94a3b8;
-  }
 
   .toggle-group {
     display: flex;

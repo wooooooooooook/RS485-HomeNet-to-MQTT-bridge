@@ -43,6 +43,12 @@
       onSelect?.();
     }
   }
+
+  function formatEntityId(entityInfo: UnifiedEntity): string {
+    const categoryPrefix = entityInfo.category && entityInfo.category !== 'entity';
+    const prefix = categoryPrefix ? entityInfo.category : entityInfo.type;
+    return prefix ? `${prefix}.${entityInfo.id}` : entityInfo.id;
+  }
 </script>
 
 <div
@@ -64,7 +70,7 @@
         <span class="entity-type-badge script">{$t('dashboard.entity_card.script_badge')}</span>
       {/if}
     </div>
-    <span class="entity-id-badge">{entity.id}</span>
+    <span class="entity-id-badge">{formatEntityId(entity)}</span>
   </header>
 
   <div class="card-body">

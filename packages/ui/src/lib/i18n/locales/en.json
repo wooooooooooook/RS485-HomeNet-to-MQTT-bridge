@@ -402,7 +402,8 @@
     "entity_card": {
       "no_status": "No status info",
       "automation_badge": "Automation",
-      "script_badge": "Script"
+      "script_badge": "Script",
+      "error_label": "Entity error detected"
     }
   },
   "entity_detail": {
@@ -416,6 +417,15 @@
       "packets": "Packet Log",
       "manage": "Manage",
       "logs": "Activity log"
+    },
+    "errors": {
+      "title": "Entity Errors",
+      "empty": "No errors recorded for this entity.",
+      "types": {
+        "parse": "Parse",
+        "cel": "CEL",
+        "command": "Command"
+      }
     },
     "execute": {
       "error": "Failed to execute."

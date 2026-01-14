@@ -24,6 +24,13 @@ export interface CompiledScript {
    * @returns The result of the execution
    */
   executeRaw(contextData: Record<string, any>): any;
+
+  /**
+   * Executes the script and returns result with error info if any.
+   *
+   * @param contextData - The variables to pass to the script
+   */
+  executeWithDiagnostics(contextData: Record<string, any>): { result: any; error?: string };
 }
 
 interface ScriptCacheEntry {
@@ -244,6 +251,16 @@ export class CelExecutor {
         } catch (error) {
           this.handleError(error, script);
           return null;
+        }
+      },
+      executeWithDiagnostics: (contextData: Record<string, any>) => {
+        try {
+          const safeContext = this.createSafeContext(contextData, entry);
+          const res = entry.parsed(safeContext);
+          return { result: this.convertResult(res) };
+        } catch (error) {
+          const errorMessage = this.handleError(error, script);
+          return { result: null, error: errorMessage };
         }
       },
     };

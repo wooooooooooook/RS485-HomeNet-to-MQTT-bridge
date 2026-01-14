@@ -26,6 +26,15 @@ export type StateChangeEvent = {
   portId?: string;
 };
 
+export type EntityErrorEvent = {
+  entityId: string;
+  portId?: string;
+  type: 'parse' | 'cel' | 'command';
+  message: string;
+  timestamp: string;
+  context?: Record<string, unknown>;
+};
+
 export type FrontendSettings = {
   toast: {
     stateChange: boolean;
@@ -183,6 +192,7 @@ export type UnifiedEntity = {
   discoveryAlways?: boolean;
   discoveryLinkedId?: string;
   isActive?: boolean;
+  errorCount?: number;
 };
 
 export type ParsedPayloadEntry = {

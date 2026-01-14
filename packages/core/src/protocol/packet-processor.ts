@@ -20,6 +20,7 @@ import { BinarySensorDevice } from './devices/binary-sensor.device.js';
 import { ProtocolConfig, CommandResult } from './types.js';
 import { slugify } from '../utils/common.js';
 import { logger } from '../utils/logger.js';
+import type { EntityErrorEvent } from '../service/event-bus.js';
 
 export interface EntityStateProvider {
   getLightState(entityId: string): { isOn: boolean } | undefined;
@@ -42,14 +43,17 @@ export interface EntityStateProvider {
 export class PacketProcessor extends EventEmitter {
   private protocolManager: ProtocolManager;
   private states?: Map<string, Record<string, any>>;
+  private portId?: string;
 
   constructor(
     config: HomenetBridgeConfig,
     _stateProvider: EntityStateProvider,
     states?: Map<string, Record<string, any>>,
+    portId?: string,
   ) {
     super();
     this.states = states;
+    this.portId = portId;
     const protocolConfig: ProtocolConfig = {
       packet_defaults: config.packet_defaults,
       rx_priority: 'data', // Default to data priority
@@ -101,6 +105,9 @@ export class PacketProcessor extends EventEmitter {
           }
           const DeviceClass = deviceMap[type] || GenericDevice;
           const device = new DeviceClass(entity, protocolConfig);
+          device.setErrorReporter((payload: EntityErrorEvent) => {
+            this.emit('entity-error', { ...payload, portId: this.portId });
+          });
           this.protocolManager.registerDevice(device);
         }
       }
@@ -117,6 +124,10 @@ export class PacketProcessor extends EventEmitter {
 
     this.protocolManager.on('parsed-packet', (data) => {
       this.emit('parsed-packet', data);
+    });
+
+    this.protocolManager.on('entity-error', (data) => {
+      this.emit('entity-error', { ...data, portId: this.portId });
     });
   }
 
@@ -159,9 +170,43 @@ export class PacketProcessor extends EventEmitter {
     // If not found, fallback to temporary GenericDevice (legacy behavior)
     if (!device) {
       device = new GenericDevice(entity, this.protocolManager['config']);
+      device.setErrorReporter((payload: EntityErrorEvent) => {
+        this.emit('entity-error', { ...payload, portId: this.portId });
+      });
     }
 
-    const cmd = device.constructCommand(commandName, value, this.states);
+    let cmd: number[] | CommandResult | null = null;
+    try {
+      cmd = device.constructCommand(commandName, value, this.states);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit('entity-error', {
+        entityId: entity.id,
+        portId: this.portId,
+        type: 'command',
+        message,
+        timestamp: new Date().toISOString(),
+        context: { command: commandNameInput },
+      });
+      return null;
+    }
+
+    if (!cmd) {
+      const lastError = device.getLastError();
+      const recentlyErrored =
+        lastError && Date.now() - lastError.timestamp < 500 && lastError.type === 'cel';
+      if (!recentlyErrored) {
+        this.emit('entity-error', {
+          entityId: entity.id,
+          portId: this.portId,
+          type: 'command',
+          message: `Failed to construct packet for ${commandNameInput}`,
+          timestamp: new Date().toISOString(),
+          context: { command: commandNameInput },
+        });
+      }
+      return null;
+    }
 
     // Handle Optimistic Updates
     if (entity.optimistic) {

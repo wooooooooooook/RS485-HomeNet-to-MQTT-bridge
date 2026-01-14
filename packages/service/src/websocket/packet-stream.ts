@@ -10,6 +10,7 @@ import {
   eventBus,
   StateChangedEvent,
   MqttMessageEvent,
+  EntityErrorEvent,
   normalizePortId,
 } from '@rs485-homenet/core';
 import type { SerialConfig, HomenetBridgeConfig } from '@rs485-homenet/core/config/types';
@@ -210,6 +211,10 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
 
     eventBus.on('activity-log:added', (data: unknown) => {
       broadcastStreamEvent('activity-log-added', data);
+    });
+
+    eventBus.on('entity:error', (data: EntityErrorEvent) => {
+      broadcastStreamEvent('entity-error', data);
     });
   };
 

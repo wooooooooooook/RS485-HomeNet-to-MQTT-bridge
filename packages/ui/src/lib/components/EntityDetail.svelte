@@ -15,6 +15,7 @@
     CommandPacket,
     EntityCategory,
     ActivityLog,
+    EntityErrorEvent,
   } from '../types';
 
   let {
@@ -22,6 +23,7 @@
     parsedPackets = [],
     commandPackets = [],
     activityLogs = [],
+    entityErrors = [],
     isOpen,
     isRenaming = false,
     renameError = null,
@@ -34,6 +36,7 @@
     parsedPackets?: ParsedPacket[];
     commandPackets?: CommandPacket[];
     activityLogs?: ActivityLog[];
+    entityErrors?: EntityErrorEvent[];
     isOpen: boolean;
     isRenaming?: boolean;
     renameError?: string | null;
@@ -71,6 +74,15 @@
 
   let showRx = $state(true);
   let showTx = $state(true);
+
+  const formatErrorContext = (context?: Record<string, unknown>) => {
+    if (!context || Object.keys(context).length === 0) return '';
+    try {
+      return JSON.stringify(context);
+    } catch {
+      return '';
+    }
+  };
 
   // Dialog State
   let dialog = $state({
@@ -947,6 +959,27 @@
         </div>
       {:else if activeTab === 'logs'}
         <div role="tabpanel" id="panel-logs" aria-labelledby="tab-logs" tabindex="0">
+          <div class="section error-section">
+            <h3>{$t('entity_detail.errors.title')}</h3>
+            {#if entityErrors.length === 0}
+              <div class="no-data">{$t('entity_detail.errors.empty')}</div>
+            {:else}
+              <div class="error-list" role="list">
+                {#each entityErrors as error (error.timestamp)}
+                  <div class="error-entry" role="listitem">
+                    <div class="error-meta">
+                      <span class="error-time">{formatTime(error.timestamp)}</span>
+                      <span class="error-type">{$t(`entity_detail.errors.types.${error.type}`)}</span>
+                    </div>
+                    <div class="error-message">{error.message}</div>
+                    {#if formatErrorContext(error.context)}
+                      <div class="error-context">{formatErrorContext(error.context)}</div>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
           <div class="section">
             <ActivityLogList
               logs={activityLogs}
@@ -1478,6 +1511,61 @@
     text-align: center;
     color: #475569;
     font-style: italic;
+  }
+
+  .error-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .error-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .error-entry {
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 10px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .error-meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.85rem;
+    color: rgba(248, 113, 113, 0.9);
+  }
+
+  .error-type {
+    background: rgba(248, 113, 113, 0.15);
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .error-message {
+    font-size: 0.95rem;
+    color: #fecaca;
+    word-break: break-word;
+  }
+
+  .error-context {
+    font-size: 0.8rem;
+    color: rgba(226, 232, 240, 0.75);
+    background: rgba(15, 23, 42, 0.6);
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    word-break: break-word;
   }
 
   /* Manage Tab Styles */

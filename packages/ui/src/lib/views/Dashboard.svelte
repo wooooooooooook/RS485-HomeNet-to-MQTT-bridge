@@ -300,7 +300,6 @@
     color: #e2e8f0;
   }
 
-
   .toggle-group {
     display: flex;
     flex-wrap: wrap;

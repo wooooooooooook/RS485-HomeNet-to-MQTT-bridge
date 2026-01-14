@@ -24,6 +24,21 @@
     children?: Snippet;
     onclick?: (e: MouseEvent) => void;
   }>();
+
+  function handleClick(e: MouseEvent) {
+    if (disabled || isLoading) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onclick?.(e);
+  }
+
+  // If a title is provided, we want it to be visible even when disabled.
+  // Native 'disabled' attribute suppresses mouse events, preventing the title tooltip.
+  // So we use aria-disabled only when title is present, allowing hover.
+  let useNativeDisabled = $derived((disabled || isLoading) && !title);
+  let isDisabled = $derived(disabled || isLoading);
 </script>
 
 <button
@@ -31,11 +46,13 @@
   class={`btn ${variant} ${className}`}
   class:loading={isLoading}
   class:full-width={fullWidth}
-  {onclick}
-  disabled={disabled || isLoading}
+  onclick={handleClick}
+  disabled={useNativeDisabled}
+  aria-disabled={isDisabled}
   aria-label={ariaLabel}
   aria-busy={isLoading}
   {title}
+  tabindex={isDisabled ? -1 : undefined}
 >
   {#if isLoading}
     <span class="spinner" aria-hidden="true"></span>
@@ -71,7 +88,7 @@
   .primary {
     background-color: #3b82f6;
   }
-  .primary:hover:not(:disabled) {
+  .primary:hover:not(:disabled):not([aria-disabled='true']) {
     background-color: #2563eb;
   }
 
@@ -81,7 +98,7 @@
     color: #94a3b8;
     border: 1px solid #475569;
   }
-  .secondary:hover:not(:disabled) {
+  .secondary:hover:not(:disabled):not([aria-disabled='true']) {
     background: #334155;
     color: white;
   }
@@ -90,7 +107,7 @@
   .danger {
     background-color: #ef4444;
   }
-  .danger:hover:not(:disabled) {
+  .danger:hover:not(:disabled):not([aria-disabled='true']) {
     background-color: #dc2626;
   }
 
@@ -98,11 +115,12 @@
   .success {
     background-color: #10b981;
   }
-  .success:hover:not(:disabled) {
+  .success:hover:not(:disabled):not([aria-disabled='true']) {
     background-color: #059669;
   }
 
-  .btn:disabled {
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
     cursor: not-allowed;
     opacity: 0.6;
   }

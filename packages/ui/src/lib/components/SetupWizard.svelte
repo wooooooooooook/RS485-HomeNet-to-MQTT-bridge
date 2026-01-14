@@ -618,6 +618,22 @@
       },
     });
   }
+
+  function getFormValidationMessage() {
+    if (!selectedExample) {
+      return $t('setup_wizard.example_hint'); // Use existing hint text for now, or fallback
+    }
+    if (!serialPath.trim()) {
+      return $t('setup_wizard.serial_path_hint'); // "Enter the path..."
+    }
+    // Check other fields
+    if (selectedExample === EMPTY_CONFIG_VALUE) {
+      if (!serialPortId.trim()) return $t('setup_wizard.serial_port_id_hint');
+    }
+    return '';
+  }
+
+  let validationMessage = $derived(getFormValidationMessage());
 </script>
 
 {#snippet wizardContent()}
@@ -844,6 +860,7 @@
                 variant="secondary"
                 onclick={handleSerialTest}
                 disabled={submitting || testingSerial || !selectedExample || !isFormReady()}
+                title={validationMessage}
                 class="wizard-test-btn"
               >
                 {$t('setup_wizard.serial_test_button')}
@@ -854,6 +871,7 @@
                 variant="primary"
                 isLoading={submitting || testingSerial}
                 disabled={!selectedExample || !isFormReady()}
+                title={validationMessage}
                 class="wizard-submit-btn"
               >
                 {#if !hasTested && testingSerial}

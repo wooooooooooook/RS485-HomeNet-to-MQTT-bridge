@@ -382,7 +382,12 @@
     "port_error": "포트 오류: {error}",
     "no_configured_ports": "구성된 포트가 없습니다.",
     "port_tabs_aria": "포트 선택",
-    "show_inactive_entities": "비활성 엔티티 보기",
+    "filter_section_aria": "대시보드 필터",
+    "filter_title": "필터",
+    "show_entities": "엔티티",
+    "show_automations": "자동화",
+    "show_scripts": "스크립트",
+    "show_inactive_entities": "비활성화 항목",
     "port_meta": {
       "path": "경로 (Path):",
       "baud": "속도 (Baud):",

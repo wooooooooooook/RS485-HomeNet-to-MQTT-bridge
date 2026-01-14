@@ -13,7 +13,6 @@
   import SetupWizard from '../components/SetupWizard.svelte';
 
   import HintBubble from '$lib/components/HintBubble.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
   import PortToolbar from '$lib/components/PortToolbar.svelte';
   import { t } from 'svelte-i18n';
 
@@ -26,6 +25,9 @@
     entities,
     selectedPortId,
     showInactive,
+    showEntities,
+    showAutomations,
+    showScripts,
     hasInactiveEntities = false,
     activityLogs,
     connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
@@ -33,6 +35,9 @@
     portStatuses = [],
     onSelect,
     onToggleInactive,
+    onToggleEntities,
+    onToggleAutomations,
+    onToggleScripts,
     onPortChange,
   }: {
     bridgeInfo: BridgeInfo | null;
@@ -49,6 +54,9 @@
     entities: UnifiedEntity[];
     selectedPortId: string | null;
     showInactive: boolean;
+    showEntities: boolean;
+    showAutomations: boolean;
+    showScripts: boolean;
     hasInactiveEntities?: boolean;
     activityLogs: ActivityLog[];
     connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
@@ -56,6 +64,9 @@
     portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
     onSelect?: (entityId: string, portId: string | undefined, category: EntityCategory) => void;
     onToggleInactive?: () => void;
+    onToggleEntities?: () => void;
+    onToggleAutomations?: () => void;
+    onToggleScripts?: () => void;
     onPortChange?: (portId: string) => void;
   } = $props();
 
@@ -189,20 +200,53 @@
     {/if}
 
     <!-- Toggle for Inactive Entities -->
-    <div
-      class="toggle-container"
-      style="position: relative; display: flex; justify-content: flex-end;"
-    >
+    <div class="toggle-container" aria-label={$t('dashboard.filter_section_aria')}>
+      <div class="toggle-header">
+        <span class="toggle-title">{$t('dashboard.filter_title')}</span>
+      </div>
       {#if hasInactiveEntities && !hintDismissed}
         <HintBubble onDismiss={() => (hintDismissed = true)} autoCloseMs={10000}>
           {$t('dashboard.hint_inactive_performance')}
         </HintBubble>
       {/if}
-      <Toggle
-        checked={showInactive}
-        onchange={onToggleInactive}
-        label={$t('dashboard.show_inactive_entities')}
-      />
+      <div class="toggle-group">
+        <button
+          type="button"
+          class:active={showEntities}
+          class="filter-chip"
+          aria-pressed={showEntities}
+          onclick={() => onToggleEntities?.()}
+        >
+          {$t('dashboard.show_entities')}
+        </button>
+        <button
+          type="button"
+          class:active={showAutomations}
+          class="filter-chip"
+          aria-pressed={showAutomations}
+          onclick={() => onToggleAutomations?.()}
+        >
+          {$t('dashboard.show_automations')}
+        </button>
+        <button
+          type="button"
+          class:active={showScripts}
+          class="filter-chip"
+          aria-pressed={showScripts}
+          onclick={() => onToggleScripts?.()}
+        >
+          {$t('dashboard.show_scripts')}
+        </button>
+        <button
+          type="button"
+          class:active={showInactive}
+          class="filter-chip"
+          aria-pressed={showInactive}
+          onclick={() => onToggleInactive?.()}
+        >
+          {$t('dashboard.show_inactive_entities')}
+        </button>
+      </div>
     </div>
 
     <!-- Entity Grid Section -->
@@ -232,6 +276,60 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .toggle-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .toggle-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    text-align: right;
+  }
+
+  .toggle-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+
+  .toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .filter-chip {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5f5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    color: #e2e8f0;
+  }
+
+  .filter-chip.active {
+    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(59, 130, 246, 0.2);
+    color: #eff6ff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   }
 
   .info-panel {

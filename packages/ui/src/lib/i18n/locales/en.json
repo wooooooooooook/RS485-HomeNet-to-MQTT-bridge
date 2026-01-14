@@ -382,7 +382,12 @@
     "port_error": "Port Error: {error}",
     "no_configured_ports": "No configured ports found.",
     "port_tabs_aria": "Select Port",
-    "show_inactive_entities": "Show Inactive Entities",
+    "filter_section_aria": "Dashboard filters",
+    "filter_title": "Filters",
+    "show_entities": "Entities",
+    "show_automations": "Automations",
+    "show_scripts": "Scripts",
+    "show_inactive_entities": "Inactive items",
     "port_meta": {
       "path": "Path:",
       "baud": "Baud:",

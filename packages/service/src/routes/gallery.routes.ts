@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import yaml from 'js-yaml';
 import { HomenetBridgeConfig, logger, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
 import { dumpConfigToYaml } from '../utils/yaml-dumper.js';
+import { expandGalleryTemplate, type GallerySnippet } from '../utils/gallery-template.js';
 import {
   CONFIG_DIR,
   GALLERY_RAW_BASE_URL,
@@ -108,7 +109,11 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
     }
 
     try {
-      const { portId, yamlContent } = req.body;
+      const { portId, yamlContent, parameterValues } = req.body as {
+        portId?: string;
+        yamlContent?: string;
+        parameterValues?: Record<string, unknown>;
+      };
 
       if (!portId || !yamlContent) {
         return res.status(400).json({ error: 'portId and yamlContent are required' });
@@ -134,16 +139,12 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Parse the gallery YAML content
-      const galleryYaml = yaml.load(yamlContent) as {
-        meta?: Record<string, unknown>;
-        entities?: Record<string, unknown[]>;
-        automation?: unknown[];
-        scripts?: unknown[];
-      };
+      const galleryYaml = yaml.load(yamlContent) as GallerySnippet;
 
       if (!galleryYaml) {
         return res.status(400).json({ error: 'Invalid YAML content' });
       }
+      const expandedGalleryYaml = expandGalleryTemplate(galleryYaml, parameterValues);
 
       const currentConfig = currentConfigs[configIndex];
       const conflicts: Array<{
@@ -160,8 +161,8 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }> = [];
 
       // Check entities for conflicts
-      if (galleryYaml.entities) {
-        for (const [entityType, entities] of Object.entries(galleryYaml.entities)) {
+      if (expandedGalleryYaml.entities) {
+        for (const [entityType, entities] of Object.entries(expandedGalleryYaml.entities)) {
           if (!Array.isArray(entities)) continue;
 
           const typeKey = entityType as keyof HomenetBridgeConfig;
@@ -199,10 +200,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Check automations for conflicts
-      if (galleryYaml.automation && Array.isArray(galleryYaml.automation)) {
+      if (expandedGalleryYaml.automation && Array.isArray(expandedGalleryYaml.automation)) {
         const existingAutomations = ((currentConfig as any).automation as unknown[]) || [];
 
-        for (const automation of galleryYaml.automation) {
+        for (const automation of expandedGalleryYaml.automation) {
           if (!automation || typeof automation !== 'object') continue;
 
           const automationObj = automation as Record<string, unknown>;
@@ -235,10 +236,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Check scripts for conflicts
-      if (galleryYaml.scripts && Array.isArray(galleryYaml.scripts)) {
+      if (expandedGalleryYaml.scripts && Array.isArray(expandedGalleryYaml.scripts)) {
         const existingScripts = ((currentConfig as any).scripts as unknown[]) || [];
 
-        for (const script of galleryYaml.scripts) {
+        for (const script of expandedGalleryYaml.scripts) {
           if (!script || typeof script !== 'object') continue;
 
           const scriptObj = script as Record<string, unknown>;
@@ -367,12 +368,13 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
     }
 
     try {
-      const { portId, yamlContent, fileName, resolutions, renames } = req.body as {
+      const { portId, yamlContent, fileName, resolutions, renames, parameterValues } = req.body as {
         portId: string;
         yamlContent: string;
         fileName?: string;
         resolutions?: Record<string, 'overwrite' | 'skip' | 'rename'>;
         renames?: Record<string, string>;
+        parameterValues?: Record<string, unknown>;
       };
 
       if (!portId || !yamlContent) {
@@ -403,16 +405,12 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Parse the gallery YAML content
-      const galleryYaml = yaml.load(yamlContent) as {
-        meta?: Record<string, unknown>;
-        entities?: Record<string, unknown[]>;
-        automation?: unknown[];
-        scripts?: unknown[];
-      };
+      const galleryYaml = yaml.load(yamlContent) as GallerySnippet;
 
       if (!galleryYaml) {
         return res.status(400).json({ error: 'Invalid YAML content' });
       }
+      const expandedGalleryYaml = expandGalleryTemplate(galleryYaml, parameterValues);
 
       // Read the current config file
       const configPath = path.join(CONFIG_DIR, targetConfigFile);
@@ -443,8 +441,8 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       let skippedScripts = 0;
 
       // Add entities from gallery snippet
-      if (galleryYaml.entities) {
-        for (const [entityType, entities] of Object.entries(galleryYaml.entities)) {
+      if (expandedGalleryYaml.entities) {
+        for (const [entityType, entities] of Object.entries(expandedGalleryYaml.entities)) {
           if (!Array.isArray(entities)) continue;
 
           const typeKey = entityType as keyof HomenetBridgeConfig;
@@ -512,14 +510,14 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Add automations from gallery snippet
-      if (galleryYaml.automation && Array.isArray(galleryYaml.automation)) {
+      if (expandedGalleryYaml.automation && Array.isArray(expandedGalleryYaml.automation)) {
         if (!normalizedConfig.automation) {
           (normalizedConfig as any).automation = [];
         }
 
         const automationList = (normalizedConfig as any).automation as unknown[];
 
-        for (const automation of galleryYaml.automation) {
+        for (const automation of expandedGalleryYaml.automation) {
           if (!automation || typeof automation !== 'object') continue;
 
           const automationObj = { ...(automation as Record<string, unknown>) };
@@ -577,14 +575,14 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Add scripts from gallery snippet
-      if (galleryYaml.scripts && Array.isArray(galleryYaml.scripts)) {
+      if (expandedGalleryYaml.scripts && Array.isArray(expandedGalleryYaml.scripts)) {
         if (!normalizedConfig.scripts) {
           (normalizedConfig as any).scripts = [];
         }
 
         const scriptsList = (normalizedConfig as any).scripts as unknown[];
 
-        for (const script of galleryYaml.scripts) {
+        for (const script of expandedGalleryYaml.scripts) {
           if (!script || typeof script !== 'object') continue;
 
           const scriptObj = { ...(script as Record<string, unknown>) };

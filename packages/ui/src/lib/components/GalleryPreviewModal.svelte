@@ -19,8 +19,22 @@
     version: string;
     author: string;
     tags: string[];
+    parameters?: GalleryParameterDefinition[];
     content_summary: ContentSummary;
     vendorId: string;
+  }
+
+  interface GalleryParameterDefinition {
+    name: string;
+    type: 'integer' | 'string' | 'integer[]' | 'object[]';
+    default?: unknown;
+    min?: number;
+    max?: number;
+    label?: string;
+    label_en?: string;
+    description?: string;
+    description_en?: string;
+    schema?: Record<string, unknown>;
   }
 
   interface VendorRequirements {
@@ -70,6 +84,8 @@
   let applyError = $state<string | null>(null);
   let applySuccess = $state(false);
   let restarting = $state(false);
+  let parameterError = $state<string | null>(null);
+  let parameterInputs = $state<Record<string, string>>({});
 
   // Conflict detection states
   let checkingConflicts = $state(false);
@@ -93,6 +109,7 @@
   );
 
   const scriptCount = $derived(item.content_summary.scripts ?? 0);
+  const hasParameters = $derived((item.parameters?.length ?? 0) > 0);
 
   function formatItemLabel(itemType: 'entity' | 'automation' | 'script', entityType?: string) {
     if (itemType === 'entity') {
@@ -121,7 +138,109 @@
 
   onMount(() => {
     loadYamlContent();
+    initializeParameterInputs();
   });
+
+  function initializeParameterInputs() {
+    const inputs: Record<string, string> = {};
+    if (!item.parameters) {
+      parameterInputs = inputs;
+      return;
+    }
+
+    for (const parameter of item.parameters) {
+      if (parameter.default !== undefined) {
+        if (typeof parameter.default === 'string') {
+          inputs[parameter.name] = parameter.default;
+        } else {
+          inputs[parameter.name] = JSON.stringify(parameter.default);
+        }
+      } else {
+        inputs[parameter.name] = '';
+      }
+    }
+
+    parameterInputs = inputs;
+  }
+
+  function resolveParameterLabel(parameter: GalleryParameterDefinition) {
+    if ($locale?.startsWith('en')) {
+      return parameter.label_en || parameter.label || parameter.name;
+    }
+    return parameter.label || parameter.name;
+  }
+
+  function resolveParameterDescription(parameter: GalleryParameterDefinition) {
+    if ($locale?.startsWith('en')) {
+      return parameter.description_en || parameter.description || '';
+    }
+    return parameter.description || '';
+  }
+
+  function updateParameterInput(name: string, value: string) {
+    parameterInputs = { ...parameterInputs, [name]: value };
+  }
+
+  function buildParameterValues() {
+    parameterError = null;
+
+    if (!item.parameters || item.parameters.length === 0) {
+      return undefined;
+    }
+
+    const values: Record<string, unknown> = {};
+
+    for (const parameter of item.parameters) {
+      const rawValue = parameterInputs[parameter.name]?.trim() ?? '';
+
+      if (parameter.type === 'integer') {
+        if (rawValue === '') {
+          throw new Error($t('gallery.preview.parameters.validation_required'));
+        }
+        const parsed = Number.parseInt(rawValue, 10);
+        if (!Number.isInteger(parsed)) {
+          throw new Error($t('gallery.preview.parameters.validation_integer'));
+        }
+        values[parameter.name] = parsed;
+        continue;
+      }
+
+      if (parameter.type === 'string') {
+        if (rawValue === '') {
+          throw new Error($t('gallery.preview.parameters.validation_required'));
+        }
+        values[parameter.name] = rawValue;
+        continue;
+      }
+
+      if (rawValue === '') {
+        throw new Error($t('gallery.preview.parameters.validation_required'));
+      }
+
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (parameter.type === 'integer[]' && !Array.isArray(parsed)) {
+          throw new Error($t('gallery.preview.parameters.validation_array'));
+        }
+        if (parameter.type === 'object[]') {
+          if (!Array.isArray(parsed)) {
+            throw new Error($t('gallery.preview.parameters.validation_array'));
+          }
+          const invalidItem = parsed.find((item) => !item || typeof item !== 'object');
+          if (invalidItem) {
+            throw new Error($t('gallery.preview.parameters.validation_object_array'));
+          }
+        }
+        values[parameter.name] = parsed;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : $t('gallery.preview.parameters.validation_json');
+        throw new Error(message);
+      }
+    }
+
+    return values;
+  }
 
   async function handleRestart() {
     if (restarting) return;
@@ -158,8 +277,10 @@
   async function confirmAndCheckConflicts() {
     checkingConflicts = true;
     applyError = null;
+    parameterError = null;
 
     try {
+      const parameterValues = buildParameterValues();
       const response = await fetch('./api/gallery/check-conflicts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,6 +288,7 @@
           portId: selectedPortId,
           yamlContent,
           vendorRequirements,
+          parameterValues,
         }),
       });
 
@@ -206,7 +328,9 @@
         await applySnippet();
       }
     } catch (e) {
-      applyError = e instanceof Error ? e.message : 'Unknown error';
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      parameterError = message;
+      applyError = message;
     } finally {
       checkingConflicts = false;
     }
@@ -237,8 +361,10 @@
     applying = true;
     applyError = null;
     applySuccess = false;
+    parameterError = null;
 
     try {
+      const parameterValues = buildParameterValues();
       const response = await fetch('./api/gallery/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,6 +374,7 @@
           fileName: item.file,
           resolutions: Object.keys(resolutions).length > 0 ? resolutions : undefined,
           renames: Object.keys(renames).length > 0 ? renames : undefined,
+          parameterValues,
         }),
       });
 
@@ -258,7 +385,9 @@
 
       applySuccess = true;
     } catch (e) {
-      applyError = e instanceof Error ? e.message : 'Unknown error';
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      parameterError = message;
+      applyError = message;
     } finally {
       applying = false;
     }
@@ -350,6 +479,68 @@
             </div>
           {/if}
         </div>
+
+        {#if hasParameters}
+          <div class="parameter-section">
+            <h4>{$t('gallery.preview.parameters.title')}</h4>
+            <div class="parameter-list">
+              {#each item.parameters as parameter (parameter.name)}
+                <div class="parameter-item">
+                  <label class="parameter-label" for={`parameter-${parameter.name}`}>
+                    {resolveParameterLabel(parameter)}
+                  </label>
+                  {#if resolveParameterDescription(parameter)}
+                    <p class="parameter-description">{resolveParameterDescription(parameter)}</p>
+                  {/if}
+
+                  {#if parameter.type === 'integer'}
+                    <input
+                      id={`parameter-${parameter.name}`}
+                      type="number"
+                      min={parameter.min}
+                      max={parameter.max}
+                      value={parameterInputs[parameter.name]}
+                      placeholder={$t('gallery.preview.parameters.placeholder_integer')}
+                      oninput={(event) =>
+                        updateParameterInput(
+                          parameter.name,
+                          (event.target as HTMLInputElement).value,
+                        )}
+                    />
+                  {:else if parameter.type === 'string'}
+                    <input
+                      id={`parameter-${parameter.name}`}
+                      type="text"
+                      value={parameterInputs[parameter.name]}
+                      placeholder={$t('gallery.preview.parameters.placeholder_string')}
+                      oninput={(event) =>
+                        updateParameterInput(
+                          parameter.name,
+                          (event.target as HTMLInputElement).value,
+                        )}
+                    />
+                  {:else}
+                    <textarea
+                      id={`parameter-${parameter.name}`}
+                      rows="4"
+                      value={parameterInputs[parameter.name]}
+                      placeholder={$t('gallery.preview.parameters.placeholder_json')}
+                      oninput={(event) =>
+                        updateParameterInput(
+                          parameter.name,
+                          (event.target as HTMLTextAreaElement).value,
+                        )}
+                    ></textarea>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+
+            {#if parameterError}
+              <div class="parameter-error">⚠️ {parameterError}</div>
+            {/if}
+          </div>
+        {/if}
 
         <div class="yaml-section">
           <h4>{$t('gallery.preview.yaml_content')}</h4>
@@ -608,6 +799,60 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .parameter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.6);
+  }
+
+  .parameter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .parameter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .parameter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .parameter-description {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .parameter-item input,
+  .parameter-item textarea {
+    padding: 0.6rem 0.75rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    color: #f1f5f9;
+    font-size: 0.85rem;
+  }
+
+  .parameter-item textarea {
+    resize: vertical;
+    min-height: 90px;
+  }
+
+  .parameter-error {
+    color: #f87171;
+    font-size: 0.8rem;
   }
 
   .info-grid {

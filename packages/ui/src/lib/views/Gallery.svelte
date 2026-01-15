@@ -22,7 +22,21 @@
     version: string;
     author: string;
     tags: string[];
+    parameters?: GalleryParameterDefinition[];
     content_summary: ContentSummary;
+  }
+
+  interface GalleryParameterDefinition {
+    name: string;
+    type: 'integer' | 'string' | 'integer[]' | 'object[]';
+    default?: unknown;
+    min?: number;
+    max?: number;
+    label?: string;
+    label_en?: string;
+    description?: string;
+    description_en?: string;
+    schema?: Record<string, unknown>;
   }
 
   interface Vendor {

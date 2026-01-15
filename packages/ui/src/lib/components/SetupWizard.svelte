@@ -733,13 +733,18 @@
         >
           <div class="form-group">
             <label for="example-select">{$t('setup_wizard.example_label')}</label>
-            <select id="example-select" bind:value={selectedExample} disabled={submitting}>
+            <select
+              id="example-select"
+              bind:value={selectedExample}
+              disabled={submitting}
+              aria-describedby="example-hint"
+            >
               <option value={EMPTY_CONFIG_VALUE}>{$t('setup_wizard.empty_option')}</option>
               {#each examples as example (example)}
                 <option value={example}>{getExampleDisplayName(example)}</option>
               {/each}
             </select>
-            <p class="field-hint">{$t('setup_wizard.example_hint')}</p>
+            <p id="example-hint" class="field-hint">{$t('setup_wizard.example_hint')}</p>
           </div>
 
           <div class="form-group">
@@ -750,8 +755,9 @@
               bind:value={serialPath}
               placeholder={$t('setup_wizard.serial_path_placeholder')}
               disabled={submitting}
+              aria-describedby="serial-path-hint"
             />
-            <p class="field-hint">{$t('setup_wizard.serial_path_hint')}</p>
+            <p id="serial-path-hint" class="field-hint">{$t('setup_wizard.serial_path_hint')}</p>
           </div>
 
           <!-- Port ID field - shown for both empty config and examples -->
@@ -763,8 +769,9 @@
               bind:value={serialPortId}
               placeholder={$t('setup_wizard.serial_port_id_placeholder')}
               disabled={submitting}
+              aria-describedby="serial-port-id-hint"
             />
-            <p class="field-hint">{$t('setup_wizard.serial_port_id_hint')}</p>
+            <p id="serial-port-id-hint" class="field-hint">{$t('setup_wizard.serial_port_id_hint')}</p>
           </div>
 
           {#if selectedExample === EMPTY_CONFIG_VALUE}
@@ -778,43 +785,67 @@
                   min="1"
                   step="1"
                   disabled={submitting}
+                  aria-describedby="serial-baud-rate-hint"
                 />
-                <p class="field-hint">{$t('setup_wizard.serial_baud_rate_hint')}</p>
+                <p id="serial-baud-rate-hint" class="field-hint">
+                  {$t('setup_wizard.serial_baud_rate_hint')}
+                </p>
               </div>
 
               <div class="form-group">
                 <label for="serial-data-bits">{$t('setup_wizard.serial_data_bits_label')}</label>
-                <select id="serial-data-bits" bind:value={serialDataBits} disabled={submitting}>
+                <select
+                  id="serial-data-bits"
+                  bind:value={serialDataBits}
+                  disabled={submitting}
+                  aria-describedby="serial-data-bits-hint"
+                >
                   <option value="5">5</option>
                   <option value="6">6</option>
                   <option value="7">7</option>
                   <option value="8">8</option>
                 </select>
-                <p class="field-hint">{$t('setup_wizard.serial_data_bits_hint')}</p>
+                <p id="serial-data-bits-hint" class="field-hint">
+                  {$t('setup_wizard.serial_data_bits_hint')}
+                </p>
               </div>
             </div>
 
             <div class="form-grid">
               <div class="form-group">
                 <label for="serial-parity">{$t('setup_wizard.serial_parity_label')}</label>
-                <select id="serial-parity" bind:value={serialParity} disabled={submitting}>
+                <select
+                  id="serial-parity"
+                  bind:value={serialParity}
+                  disabled={submitting}
+                  aria-describedby="serial-parity-hint"
+                >
                   <option value="none">none</option>
                   <option value="even">even</option>
                   <option value="mark">mark</option>
                   <option value="odd">odd</option>
                   <option value="space">space</option>
                 </select>
-                <p class="field-hint">{$t('setup_wizard.serial_parity_hint')}</p>
+                <p id="serial-parity-hint" class="field-hint">
+                  {$t('setup_wizard.serial_parity_hint')}
+                </p>
               </div>
 
               <div class="form-group">
                 <label for="serial-stop-bits">{$t('setup_wizard.serial_stop_bits_label')}</label>
-                <select id="serial-stop-bits" bind:value={serialStopBits} disabled={submitting}>
+                <select
+                  id="serial-stop-bits"
+                  bind:value={serialStopBits}
+                  disabled={submitting}
+                  aria-describedby="serial-stop-bits-hint"
+                >
                   <option value="1">1</option>
                   <option value="1.5">1.5</option>
                   <option value="2">2</option>
                 </select>
-                <p class="field-hint">{$t('setup_wizard.serial_stop_bits_hint')}</p>
+                <p id="serial-stop-bits-hint" class="field-hint">
+                  {$t('setup_wizard.serial_stop_bits_hint')}
+                </p>
               </div>
             </div>
             <p class="field-hint emphasis">{$t('setup_wizard.serial_manual_hint')}</p>
@@ -913,26 +944,48 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="rx_timeout">{$t('setup_wizard.pdf_rx_timeout')}</label>
-              <input type="text" id="rx_timeout" bind:value={packetDefaults.rx_timeout} />
-              <p class="field-hint">{$t('setup_wizard.pdf_rx_timeout_hint')}</p>
+              <input
+                type="text"
+                id="rx_timeout"
+                bind:value={packetDefaults.rx_timeout}
+                aria-describedby="rx-timeout-hint"
+              />
+              <p id="rx-timeout-hint" class="field-hint">{$t('setup_wizard.pdf_rx_timeout_hint')}</p>
             </div>
             <div class="form-group">
               <label for="tx_delay">{$t('setup_wizard.pdf_tx_delay')}</label>
-              <input type="text" id="tx_delay" bind:value={packetDefaults.tx_delay} />
-              <p class="field-hint">{$t('setup_wizard.pdf_tx_delay_hint')}</p>
+              <input
+                type="text"
+                id="tx_delay"
+                bind:value={packetDefaults.tx_delay}
+                aria-describedby="tx-delay-hint"
+              />
+              <p id="tx-delay-hint" class="field-hint">{$t('setup_wizard.pdf_tx_delay_hint')}</p>
             </div>
           </div>
 
           <div class="form-grid">
             <div class="form-group">
               <label for="tx_timeout">{$t('setup_wizard.pdf_tx_timeout')}</label>
-              <input type="text" id="tx_timeout" bind:value={packetDefaults.tx_timeout} />
-              <p class="field-hint">{$t('setup_wizard.pdf_tx_timeout_hint')}</p>
+              <input
+                type="text"
+                id="tx_timeout"
+                bind:value={packetDefaults.tx_timeout}
+                aria-describedby="tx-timeout-hint"
+              />
+              <p id="tx-timeout-hint" class="field-hint">{$t('setup_wizard.pdf_tx_timeout_hint')}</p>
             </div>
             <div class="form-group">
               <label for="tx_retry_cnt">{$t('setup_wizard.pdf_tx_retry_cnt')}</label>
-              <input type="number" id="tx_retry_cnt" bind:value={packetDefaults.tx_retry_cnt} />
-              <p class="field-hint">{$t('setup_wizard.pdf_tx_retry_cnt_hint')}</p>
+              <input
+                type="number"
+                id="tx_retry_cnt"
+                bind:value={packetDefaults.tx_retry_cnt}
+                aria-describedby="tx-retry-cnt-hint"
+              />
+              <p id="tx-retry-cnt-hint" class="field-hint">
+                {$t('setup_wizard.pdf_tx_retry_cnt_hint')}
+              </p>
             </div>
           </div>
 
@@ -1000,8 +1053,11 @@
                 value={packetDefaults.rx_checksum ?? ''}
                 oninput={(e) => handleChecksumChange('rx_checksum', e.currentTarget.value)}
                 disabled={Boolean(packetDefaults.rx_checksum2)}
+                aria-describedby="rx-checksum-hint"
               />
-              <p class="field-hint">{$t('setup_wizard.pdf_checksum_exclusive_hint')}</p>
+              <p id="rx-checksum-hint" class="field-hint">
+                {$t('setup_wizard.pdf_checksum_exclusive_hint')}
+              </p>
             </div>
             <div class="form-group">
               <label for="tx_checksum">{$t('setup_wizard.pdf_tx_checksum')}</label>
@@ -1011,8 +1067,11 @@
                 value={packetDefaults.tx_checksum ?? ''}
                 oninput={(e) => handleChecksumChange('tx_checksum', e.currentTarget.value)}
                 disabled={Boolean(packetDefaults.tx_checksum2)}
+                aria-describedby="tx-checksum-hint"
               />
-              <p class="field-hint">{$t('setup_wizard.pdf_checksum_exclusive_hint')}</p>
+              <p id="tx-checksum-hint" class="field-hint">
+                {$t('setup_wizard.pdf_checksum_exclusive_hint')}
+              </p>
             </div>
           </div>
 
@@ -1025,8 +1084,11 @@
                 value={packetDefaults.rx_checksum2 ?? ''}
                 oninput={(e) => handleChecksum2Change('rx_checksum2', e.currentTarget.value)}
                 disabled={Boolean(packetDefaults.rx_checksum)}
+                aria-describedby="rx-checksum2-hint"
               />
-              <p class="field-hint">{$t('setup_wizard.pdf_checksum2_hint')}</p>
+              <p id="rx-checksum2-hint" class="field-hint">
+                {$t('setup_wizard.pdf_checksum2_hint')}
+              </p>
             </div>
             <div class="form-group">
               <label for="tx_checksum2">{$t('setup_wizard.pdf_tx_checksum2')}</label>
@@ -1036,8 +1098,11 @@
                 value={packetDefaults.tx_checksum2 ?? ''}
                 oninput={(e) => handleChecksum2Change('tx_checksum2', e.currentTarget.value)}
                 disabled={Boolean(packetDefaults.tx_checksum)}
+                aria-describedby="tx-checksum2-hint"
               />
-              <p class="field-hint">{$t('setup_wizard.pdf_checksum2_hint')}</p>
+              <p id="tx-checksum2-hint" class="field-hint">
+                {$t('setup_wizard.pdf_checksum2_hint')}
+              </p>
             </div>
           </div>
 
@@ -1051,20 +1116,37 @@
                   ? JSON.stringify(packetDefaults.rx_valid_headers ?? [])
                   : packetDefaults.rx_valid_headers}
                 oninput={(e) => (packetDefaults.rx_valid_headers = e.currentTarget.value)}
+                aria-describedby="rx-valid-headers-hint"
               />
-              <p class="field-hint">{$t('setup_wizard.pdf_rx_valid_headers_hint')}</p>
+              <p id="rx-valid-headers-hint" class="field-hint">
+                {$t('setup_wizard.pdf_rx_valid_headers_hint')}
+              </p>
             </div>
             <div class="form-group">
               <label for="rx_length">{$t('setup_wizard.pdf_rx_length')}</label>
-              <input type="number" id="rx_length" bind:value={packetDefaults.rx_length} />
-              <p class="field-hint">{$t('setup_wizard.pdf_rx_length_hint')}</p>
+              <input
+                type="number"
+                id="rx_length"
+                bind:value={packetDefaults.rx_length}
+                aria-describedby="rx-length-hint"
+              />
+              <p id="rx-length-hint" class="field-hint">
+                {$t('setup_wizard.pdf_rx_length_hint')}
+              </p>
             </div>
           </div>
 
           <div class="form-group">
             <label for="rx_length_expr">{$t('setup_wizard.pdf_rx_length_expr')}</label>
-            <input type="text" id="rx_length_expr" bind:value={packetDefaults.rx_length_expr} />
-            <p class="field-hint">{$t('setup_wizard.pdf_rx_length_expr_hint')}</p>
+            <input
+              type="text"
+              id="rx_length_expr"
+              bind:value={packetDefaults.rx_length_expr}
+              aria-describedby="rx-length-expr-hint"
+            />
+            <p id="rx-length-expr-hint" class="field-hint">
+              {$t('setup_wizard.pdf_rx_length_expr_hint')}
+            </p>
           </div>
 
           <div class="actions">

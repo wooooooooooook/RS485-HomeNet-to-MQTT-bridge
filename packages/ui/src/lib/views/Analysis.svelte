@@ -9,7 +9,6 @@
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
-  import LatencyTest from '../components/analysis/LatencyTest.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
   import PortToolbar from '../components/PortToolbar.svelte';
 
@@ -77,10 +76,6 @@
     <PacketDictionaryView />
   {/if}
   <CelAnalyzerCard />
-
-  {#if activePortId}
-    <LatencyTest portId={activePortId} />
-  {/if}
 </div>
 
 <style>

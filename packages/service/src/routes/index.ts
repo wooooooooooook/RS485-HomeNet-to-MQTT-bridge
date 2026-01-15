@@ -33,7 +33,7 @@ export interface RoutesContext
     ConfigEditorRoutesContext {}
 
 export function registerRoutes(app: Express, ctx: RoutesContext): void {
-  // System routes (health, restart, latency-test)
+  // System routes (health, restart)
   app.use(createSystemRoutes(ctx));
 
   // Packet tools routes (preview, send)

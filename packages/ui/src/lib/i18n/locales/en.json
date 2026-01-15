@@ -149,16 +149,6 @@
       "title": "Automation/Script logs",
       "empty": "No automation or script logs to display."
     },
-    "latency": {
-      "title": "Packet Processing Latency Analysis",
-      "desc": "Measures the time it takes for a generated virtual packet to pass through the processing pipeline (Receive -> Parser -> Automation -> Command Generation). <br />Data is not sent to the actual serial port. (100 iterations)",
-      "start": "Start Test",
-      "running": "Running...",
-      "avg": "Average (Avg)",
-      "std_dev": "Std Dev",
-      "min": "Min",
-      "max": "Max"
-    },
     "packet_log": {
       "title": "Packet Log (RX/TX)",
       "rx": "RX (Received)",

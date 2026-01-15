@@ -72,7 +72,6 @@ const globalRateLimiter = new RateLimiter(60000, 300); // 300 requests per minut
 const commandRateLimiter = new RateLimiter(10000, 20); // 20 requests per 10 seconds
 const configRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
 const serialTestRateLimiter = new RateLimiter(60000, 20); // 20 requests per minute
-const latencyTestRateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
 
 const setupWizardService = createSetupWizardService({
   configDir: CONFIG_DIR,
@@ -143,7 +142,6 @@ const logRetentionService = new LogRetentionService(CONFIG_DIR);
 // Register modular routes (system, packets, gallery, logs, backups, utils)
 registerRoutes(app, {
   configRateLimiter,
-  latencyTestRateLimiter,
   commandRateLimiter,
   getBridges: () => bridges,
   getCurrentConfigs: () => currentConfigs,

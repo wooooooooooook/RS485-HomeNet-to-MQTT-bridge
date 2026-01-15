@@ -1,5 +1,5 @@
 /**
- * System routes - restart, health check, latency test, settings, and info endpoints
+ * System routes - restart, health check, settings, and info endpoints
  */
 
 import { Router } from 'express';
@@ -25,7 +25,6 @@ const __filename = fileURLToPath(import.meta.url);
 
 export interface SystemRoutesContext {
   configRateLimiter: RateLimiter;
-  latencyTestRateLimiter: RateLimiter;
   getBridges: () => BridgeInstance[];
   // Bridge Info Context
   getCurrentConfigs: () => HomenetBridgeConfig[];
@@ -102,58 +101,6 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
     } catch (error) {
       logger.error({ err: error }, '[service] Failed to trigger restart');
       res.status(500).json({ error: 'Restart failed' });
-    }
-  });
-
-  // Latency test for a specific port
-  router.post('/api/bridge/:portId/latency-test', async (req, res) => {
-    if (!ctx.latencyTestRateLimiter.check(req.ip || 'unknown')) {
-      logger.warn({ ip: req.ip }, '[service] Latency test rate limit exceeded');
-      return res.status(429).json({ error: 'Too many requests' });
-    }
-
-    const { portId } = req.params;
-    const bridges = ctx.getBridges();
-
-    if (bridges.length === 0) {
-      return res.status(503).json({ error: 'BRIDGE_NOT_STARTED' });
-    }
-
-    // Find the bridge instance managing this port
-    let targetBridgeInstance: BridgeInstance | undefined;
-
-    for (const instance of bridges) {
-      const config = instance.config;
-      if (config.serial) {
-        const pId = normalizePortId(config.serial.portId, 0);
-        if (pId === portId) {
-          targetBridgeInstance = instance;
-          break;
-        }
-      }
-      if (targetBridgeInstance) break;
-    }
-
-    if (!targetBridgeInstance) {
-      return res.status(404).json({ error: 'BRIDGE_NOT_FOUND_FOR_PORT', portId });
-    }
-
-    try {
-      logger.info({ portId }, '[service] Starting latency test');
-      const startTime = Date.now();
-      const stats = await targetBridgeInstance.bridge.runLatencyTest(portId);
-
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 5000) {
-        await new Promise((resolve) => setTimeout(resolve, 5000 - elapsed));
-      }
-
-      res.json(stats);
-    } catch (error) {
-      logger.error({ err: error, portId }, '[service] Latency test failed');
-      res
-        .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Latency test failed' });
     }
   });
 

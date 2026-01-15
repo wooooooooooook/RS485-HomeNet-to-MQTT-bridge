@@ -226,22 +226,46 @@ export class PacketParser {
 
       if (this.defaults.rx_length && this.defaults.rx_length > 0) {
         // Strategy A: Fixed Length
+        // Optimized scanning loop: Check all possible offsets in the current buffer at once.
+        // This avoids the overhead of repeated function calls and context resetting in the main loop
+        // when valid packets are sparse (noise).
         if (this.bufferLength() >= this.defaults.rx_length) {
-          // Check Checksum
-          if (this.verifyChecksum(this.buffer, this.readOffset, this.defaults.rx_length)) {
-            // Validate first byte against valid headers if configured
-            if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
-              shift = true;
-            } else {
-              const packet = Buffer.from(
-                this.buffer.subarray(this.readOffset, this.readOffset + this.defaults.rx_length),
-              );
-              packets.push(packet);
-              this.consumeBytes(this.defaults.rx_length);
-              matchFound = true;
+          const packetLen = this.defaults.rx_length;
+          let currentOffset = this.readOffset;
+          const maxOffset = this.writeOffset - packetLen;
+
+          while (currentOffset <= maxOffset) {
+            // Check Checksum for current window
+            if (this.verifyChecksum(this.buffer, currentOffset, packetLen)) {
+              // Validate first byte against valid headers if configured
+              if (!this.validHeadersSet || this.validHeadersSet.has(this.buffer[currentOffset])) {
+                const packet = Buffer.from(
+                  this.buffer.subarray(currentOffset, currentOffset + packetLen),
+                );
+                packets.push(packet);
+
+                // Packet found: Advance readOffset beyond this packet
+                const advance = currentOffset - this.readOffset + packetLen;
+                this.consumeBytes(advance);
+                matchFound = true;
+                break;
+              }
             }
-          } else {
-            shift = true; // Invalid checksum for fixed length -> discard byte and try again
+            // If verification failed or header invalid, try next byte
+            currentOffset++;
+          }
+
+          // Optimization: If we scanned a large chunk and found nothing, discard it
+          // to keep the buffer clean and avoid re-scanning the same bytes next time.
+          // However, we must stop at `maxOffset` because new data might complete a packet starting at `maxOffset` or later.
+          if (!matchFound) {
+            const scannedBytes = currentOffset - this.readOffset;
+            if (scannedBytes > 0) {
+              // We scanned up to `maxOffset` (exclusive of `currentOffset` which is `maxOffset + 1` at loop exit).
+              // We can safely discard bytes up to `maxOffset` because we know they don't start a valid packet
+              // (since we checked them all).
+              this.consumeBytes(scannedBytes);
+            }
           }
         }
       } else if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {

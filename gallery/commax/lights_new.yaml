@@ -1,0 +1,38 @@
+meta:
+  name: "☑️조명 설정"
+  name_en: "☑️Lights"
+  description: "코맥스 조명 설정입니다. 개수를 지정할 수 있습니다."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "commax"]
+parameters:
+  - name: light_count
+    type: integer
+    default: 4
+    min: 1
+    max: 9
+    label: "조명 개수"
+    label_en: "Number of Lights"
+entities:
+  light:
+    - $repeat:
+        count: '{{light_count}}'
+        as: i
+        start: 1
+      id: 'light_{{i}}'
+      name: 'Light {{i}}'
+      state:
+        data: [0xB0, 0x00, '{{i}}']
+        mask: [0xF0, 0x00, 0xFF]
+      state_on:
+        offset: 1
+        data: [0x01]
+      state_off:
+        offset: 1
+        data: [0x00]
+      command_on:
+        data: [0x31, '{{i}}', 0x01, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB1, 0x01, '{{i}}']
+      command_off:
+        data: [0x31, '{{i}}', 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0xB1, 0x00, '{{i}}']

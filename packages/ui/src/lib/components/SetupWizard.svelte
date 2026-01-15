@@ -203,6 +203,26 @@
     return val;
   }
 
+  function handleChecksumChange(
+    key: 'rx_checksum' | 'tx_checksum',
+    value: string,
+  ) {
+    packetDefaults[key] = value;
+    if (!value) return;
+    const otherKey = key === 'rx_checksum' ? 'rx_checksum2' : 'tx_checksum2';
+    packetDefaults[otherKey] = '';
+  }
+
+  function handleChecksum2Change(
+    key: 'rx_checksum2' | 'tx_checksum2',
+    value: string,
+  ) {
+    packetDefaults[key] = value;
+    if (!value) return;
+    const otherKey = key === 'rx_checksum2' ? 'rx_checksum' : 'tx_checksum';
+    packetDefaults[otherKey] = '';
+  }
+
   async function handleConfigSubmit() {
     if (currentStep === 'config') {
       const serialConfigPayload = buildSerialConfigPayload();
@@ -257,7 +277,7 @@
       error = '';
 
       const finalPacketDefaults = { ...packetDefaults };
-      ['rx_header', 'rx_footer', 'tx_header', 'tx_footer'].forEach((key) => {
+      ['rx_header', 'rx_footer', 'tx_header', 'tx_footer', 'rx_valid_headers'].forEach((key) => {
         if (typeof finalPacketDefaults[key] === 'string') {
           finalPacketDefaults[key] = parseConfigValue(finalPacketDefaults[key]);
         }
@@ -974,12 +994,77 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="rx_checksum">{$t('setup_wizard.pdf_rx_checksum')}</label>
-              <input type="text" id="rx_checksum" bind:value={packetDefaults.rx_checksum} />
+              <input
+                type="text"
+                id="rx_checksum"
+                value={packetDefaults.rx_checksum ?? ''}
+                oninput={(e) => handleChecksumChange('rx_checksum', e.currentTarget.value)}
+                disabled={Boolean(packetDefaults.rx_checksum2)}
+              />
+              <p class="field-hint">{$t('setup_wizard.pdf_checksum_exclusive_hint')}</p>
             </div>
             <div class="form-group">
               <label for="tx_checksum">{$t('setup_wizard.pdf_tx_checksum')}</label>
-              <input type="text" id="tx_checksum" bind:value={packetDefaults.tx_checksum} />
+              <input
+                type="text"
+                id="tx_checksum"
+                value={packetDefaults.tx_checksum ?? ''}
+                oninput={(e) => handleChecksumChange('tx_checksum', e.currentTarget.value)}
+                disabled={Boolean(packetDefaults.tx_checksum2)}
+              />
+              <p class="field-hint">{$t('setup_wizard.pdf_checksum_exclusive_hint')}</p>
             </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_checksum2">{$t('setup_wizard.pdf_rx_checksum2')}</label>
+              <input
+                type="text"
+                id="rx_checksum2"
+                value={packetDefaults.rx_checksum2 ?? ''}
+                oninput={(e) => handleChecksum2Change('rx_checksum2', e.currentTarget.value)}
+                disabled={Boolean(packetDefaults.rx_checksum)}
+              />
+              <p class="field-hint">{$t('setup_wizard.pdf_checksum2_hint')}</p>
+            </div>
+            <div class="form-group">
+              <label for="tx_checksum2">{$t('setup_wizard.pdf_tx_checksum2')}</label>
+              <input
+                type="text"
+                id="tx_checksum2"
+                value={packetDefaults.tx_checksum2 ?? ''}
+                oninput={(e) => handleChecksum2Change('tx_checksum2', e.currentTarget.value)}
+                disabled={Boolean(packetDefaults.tx_checksum)}
+              />
+              <p class="field-hint">{$t('setup_wizard.pdf_checksum2_hint')}</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_valid_headers">{$t('setup_wizard.pdf_rx_valid_headers')}</label>
+              <input
+                type="text"
+                id="rx_valid_headers"
+                value={typeof packetDefaults.rx_valid_headers !== 'string'
+                  ? JSON.stringify(packetDefaults.rx_valid_headers ?? [])
+                  : packetDefaults.rx_valid_headers}
+                oninput={(e) => (packetDefaults.rx_valid_headers = e.currentTarget.value)}
+              />
+              <p class="field-hint">{$t('setup_wizard.pdf_rx_valid_headers_hint')}</p>
+            </div>
+            <div class="form-group">
+              <label for="rx_length">{$t('setup_wizard.pdf_rx_length')}</label>
+              <input type="number" id="rx_length" bind:value={packetDefaults.rx_length} />
+              <p class="field-hint">{$t('setup_wizard.pdf_rx_length_hint')}</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="rx_length_expr">{$t('setup_wizard.pdf_rx_length_expr')}</label>
+            <input type="text" id="rx_length_expr" bind:value={packetDefaults.rx_length_expr} />
+            <p class="field-hint">{$t('setup_wizard.pdf_rx_length_expr_hint')}</p>
           </div>
 
           <div class="actions">

@@ -14,8 +14,8 @@ export type BridgeInstance = {
   config: HomenetBridgeConfig;
 };
 
-export type BridgeStatus = 'idle' | 'starting' | 'started' | 'stopped' | 'error';
-export type ConfigStatus = 'idle' | 'starting' | 'started' | 'error' | 'stopped';
+export type BridgeStatus = 'idle' | 'starting' | 'started' | 'stopped' | 'error' | 'reconnecting';
+export type ConfigStatus = 'idle' | 'starting' | 'started' | 'error' | 'stopped' | 'reconnecting';
 
 // --- Config Types ---
 

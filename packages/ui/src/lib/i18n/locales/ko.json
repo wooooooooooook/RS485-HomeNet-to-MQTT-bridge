@@ -47,7 +47,7 @@
     "saving": "저장 중...",
     "log_retention": {
       "title": "로그 보관",
-      "desc": "설정한 TTL 동안 로그(패킷, 활동 로그)를 서버에 저장합니다. 기본값은 1시간이며 분석 목적 외에는 활성화할 필요 없습니다.",
+      "desc": "설정한 TTL 동안 로그(패킷, 활동 로그)를 서버에 저장합니다. 기본값은 1시간입니다.",
       "enable": "로그 보관 활성화",
       "enable_desc": "활성화 시 서버 메모리를 사용합니다. 비활성화 시 UI를 열고 있는 동안의 로그만 확인할 수 있습니다.",
       "save_now": "현재 로그 저장 및 다운로드",
@@ -277,6 +277,7 @@
     "english": "English",
     "korean": "한국어",
     "close": "닫기",
+    "retry": "다시 시도",
     "cancel": "취소",
     "confirm": "확인",
     "apply": "적용",
@@ -290,7 +291,8 @@
       "started": "작동 중",
       "stopped": "중지됨",
       "error": "오류",
-      "unknown": "알 수 없음"
+      "unknown": "알 수 없음",
+      "reconnecting": "재접속 중"
     }
   },
   "header": {
@@ -391,7 +393,8 @@
     "port_meta": {
       "path": "경로 (Path):",
       "baud": "속도 (Baud):",
-      "file": "설정파일:"
+      "file": "설정파일:",
+      "status": "상태:"
     },
     "recent_activity": {
       "title": "최근 활동",

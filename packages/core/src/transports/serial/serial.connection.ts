@@ -34,7 +34,7 @@ export const waitForSerialDevice = async (serialPath: string, timeoutMs?: number
 
       const elapsed = Date.now() - startedAt;
       if (elapsed >= waitTimeout) {
-        throw new Error(`시리얼 포트 경로(${serialPath})를 ${waitTimeout}ms 내에 찾지 못했습니다.`);
+        throw new Error(`Serial port path(${serialPath}) not found within ${waitTimeout}ms.`);
       }
 
       await delay(SERIAL_WAIT_INTERVAL_MS);

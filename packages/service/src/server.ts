@@ -492,6 +492,14 @@ async function loadAndStartBridges(filenames: string[]) {
           configOverride: result.config,
         });
 
+        // Listen for status changes from the bridge
+        bridge.on('status', (event: { portId: string; status: BridgeStatus }) => {
+          const cfgIndex = filenames.indexOf(filenames[i]);
+          if (cfgIndex !== -1) {
+            currentConfigStatuses[cfgIndex] = event.status as ConfigStatus;
+          }
+        });
+
         newBridges.push({
           bridge,
           configFile: filenames[i],

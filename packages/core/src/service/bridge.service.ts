@@ -78,7 +78,9 @@ export interface LatencyStats {
   samples: number;
 }
 
-export class HomeNetBridge {
+import { EventEmitter } from 'node:events';
+
+export class HomeNetBridge extends EventEmitter {
   private readonly minPacketIntervalsForStats = 10;
   private readonly options: BridgeOptions;
   private _mqttClient!: MqttClient; // New internal instance
@@ -92,6 +94,7 @@ export class HomeNetBridge {
   private commonMqttTopicPrefix = MQTT_TOPIC_PREFIX;
 
   constructor(options: BridgeOptions) {
+    super();
     this.options = options;
   }
 
@@ -849,6 +852,20 @@ export class HomeNetBridge {
       }
 
       const stateProvider = this.buildStateProvider(normalizedPortId);
+
+      // Listen for ReconnectingTcpSocket events
+      if (port instanceof ReconnectingTcpSocket) {
+        port.on('reconnecting', () => {
+          logger.warn({ portId: normalizedPortId }, '[core] Bridge reconnecting...');
+          this.emit('status', { portId: normalizedPortId, status: 'reconnecting' });
+        });
+
+        port.on('reconnected', () => {
+          logger.info({ portId: normalizedPortId }, '[core] Bridge reconnected.');
+          this.emit('status', { portId: normalizedPortId, status: 'started' });
+        });
+      }
+      
       // Create a shared states Map for this port context
       const states = new Map<string, Record<string, any>>();
       const packetProcessor = new PacketProcessor(

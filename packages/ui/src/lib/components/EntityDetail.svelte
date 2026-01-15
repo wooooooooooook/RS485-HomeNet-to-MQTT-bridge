@@ -183,6 +183,33 @@
   const isDeviceEntity = $derived.by(() => entityCategory === 'entity');
   const isAutomation = $derived.by(() => entityCategory === 'automation');
   const isScript = $derived.by(() => entityCategory === 'script');
+  const hasErrors = $derived(entityErrors.length > 0);
+
+  const groupedErrors = $derived.by(() => {
+    const groups = new Map<
+      string,
+      { error: EntityErrorEvent; count: number; latestTimestamp: number }
+    >();
+
+    for (const error of entityErrors) {
+      const key = JSON.stringify({
+        type: error.type,
+        message: error.message,
+        context: error.context,
+      });
+
+      const ts = new Date(error.timestamp).getTime();
+
+      if (!groups.has(key)) {
+        groups.set(key, { error, count: 0, latestTimestamp: ts });
+      }
+      const group = groups.get(key)!;
+      group.count++;
+      group.latestTimestamp = Math.max(group.latestTimestamp, ts);
+    }
+
+    return Array.from(groups.values()).sort((a, b) => b.latestTimestamp - a.latestTimestamp);
+  });
   const logTitle = $derived.by(() => {
     if (isAutomation) return $t('entity_detail.automation.logs_title');
     if (isScript) return $t('entity_detail.script.logs_title');
@@ -751,7 +778,8 @@
         aria-controls="panel-logs"
         tabindex={activeTab === 'logs' ? 0 : -1}
         class:active={activeTab === 'logs'}
-        onclick={() => (activeTab = 'logs')}>{$t('entity_detail.tabs.logs')}</button
+        onclick={() => (activeTab = 'logs')}
+        >{$t('entity_detail.tabs.logs')}{#if hasErrors}❗{/if}</button
       >
       {#if isDeviceEntity}
         <button
@@ -959,27 +987,37 @@
         </div>
       {:else if activeTab === 'logs'}
         <div role="tabpanel" id="panel-logs" aria-labelledby="tab-logs" tabindex="0">
-          <div class="section error-section">
-            <h3>{$t('entity_detail.errors.title')}</h3>
-            {#if entityErrors.length === 0}
-              <div class="no-data">{$t('entity_detail.errors.empty')}</div>
-            {:else}
+          {#if hasErrors}
+            <div class="section error-section">
+              <h3>{$t('entity_detail.errors.title')}</h3>
               <div class="error-list" role="list">
-                {#each entityErrors as error (error.timestamp)}
+                {#each groupedErrors as group (group.latestTimestamp)}
                   <div class="error-entry" role="listitem">
                     <div class="error-meta">
-                      <span class="error-time">{formatTime(error.timestamp)}</span>
-                      <span class="error-type">{$t(`entity_detail.errors.types.${error.type}`)}</span>
+                      <span class="error-time">{formatTime(group.latestTimestamp)}</span>
+                      {#if group.count > 1}
+                        <span
+                          class="error-count-badge"
+                          title={$t('entity_detail.errors.count', {
+                            values: { count: group.count },
+                          }) || `${group.count} occurrences`}
+                        >
+                          {group.count}
+                        </span>
+                      {/if}
+                      <span class="error-type"
+                        >{$t(`entity_detail.errors.types.${group.error.type}`)}</span
+                      >
                     </div>
-                    <div class="error-message">{error.message}</div>
-                    {#if formatErrorContext(error.context)}
-                      <div class="error-context">{formatErrorContext(error.context)}</div>
+                    <div class="error-message">{group.error.message}</div>
+                    {#if formatErrorContext(group.error.context)}
+                      <div class="error-context">{formatErrorContext(group.error.context)}</div>
                     {/if}
                   </div>
                 {/each}
               </div>
-            {/if}
-          </div>
+            </div>
+          {/if}
           <div class="section">
             <ActivityLogList
               logs={activityLogs}
@@ -1566,6 +1604,21 @@
     padding: 0.35rem 0.5rem;
     border-radius: 8px;
     word-break: break-word;
+  }
+
+  .error-count-badge {
+    background: #f59e0b;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 0.4rem;
+    border-radius: 9999px;
+    margin-right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.25rem;
+    min-width: 1.25rem;
   }
 
   /* Manage Tab Styles */

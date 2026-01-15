@@ -56,6 +56,7 @@
   tabindex="0"
   class="entity-card"
   class:inactive={!entity.isActive}
+  class:has-error={entity.errorCount && entity.errorCount > 0}
   onclick={() => onSelect?.()}
   onkeydown={handleKeydown}
 >
@@ -138,6 +139,16 @@
   .entity-card.inactive:hover {
     border-color: rgba(148, 163, 184, 0.1);
     background: rgba(30, 41, 59, 0.5);
+  }
+
+  .entity-card.has-error {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(127, 29, 29, 0.3);
+  }
+
+  .entity-card.has-error:hover {
+    border-color: rgba(239, 68, 68, 0.7);
+    background: rgba(127, 29, 29, 0.5);
   }
 
   .card-header {

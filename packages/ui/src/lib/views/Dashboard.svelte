@@ -16,6 +16,8 @@
   import PortToolbar from '$lib/components/PortToolbar.svelte';
   import { t } from 'svelte-i18n';
 
+  import Button from '$lib/components/Button.svelte';
+
   let {
     bridgeInfo,
     infoLoading,
@@ -122,6 +124,11 @@
   {:else if infoError}
     <div class="error-state">
       <p class="error">{$t(`errors.${infoError}`)}</p>
+      <div class="error-actions">
+        <Button variant="primary" onclick={() => window.location.reload()}>
+          {$t('common.retry')}
+        </Button>
+      </div>
     </div>
   {:else if !bridgeInfo}
     <div class="empty-state">
@@ -179,6 +186,13 @@
             <div class="meta-item">
               <span class="label">{$t('dashboard.port_meta.path')}</span>
               <span class="value">{activePortMetadata.path || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+              <span class="label">{$t('dashboard.port_meta.status')}</span>
+              <span class="value bridge-status-value" data-state={getPortStatus(activePortId)}>
+                <span class="status-dot"></span>
+                {$t(`common.status.${getPortStatus(activePortId)}`)}
+              </span>
             </div>
           </div>
         {/if}
@@ -281,8 +295,8 @@
   .toggle-container {
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    justify-content: flex-end;
+    align-items: center;
     gap: 0.5rem;
   }
 
@@ -456,6 +470,12 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
   }
 
+  .error-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
   .entity-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -468,5 +488,50 @@
     font-style: italic;
     text-align: center;
     padding: 2rem;
+  }
+
+  /* Bridge Status Styles */
+  .bridge-status-value {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .bridge-status-value .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #64748b;
+  }
+
+  .bridge-status-value[data-state='started'] .status-dot {
+    background-color: #10b981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+
+  .bridge-status-value[data-state='starting'] .status-dot {
+    background-color: #f59e0b;
+    animation: pulse 2s infinite;
+  }
+
+  .bridge-status-value[data-state='reconnecting'] .status-dot {
+    background-color: #f59e0b;
+    animation: pulse 1s infinite;
+  }
+
+  .bridge-status-value[data-state='error'] .status-dot {
+    background-color: #ef4444;
+  }
+
+  .bridge-status-value[data-state='started'] {
+    color: #10b981;
+  }
+
+  .bridge-status-value[data-state='reconnecting'] {
+    color: #f59e0b;
+  }
+
+  .bridge-status-value[data-state='error'] {
+    color: #ef4444;
   }
 </style>

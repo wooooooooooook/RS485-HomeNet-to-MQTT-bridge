@@ -70,6 +70,7 @@
             onclick={() => handlePortClick(portId)}
             data-state={getPortStatus(portId)}
             aria-current={activePortId === portId ? 'true' : undefined}
+            title={$t(`common.status.${getPortStatus(portId)}`)}
           >
             {#if portStatuses.length > 0}
               <span class="port-status-dot" aria-hidden="true"></span>
@@ -95,6 +96,7 @@
         type="button"
         onclick={() => onAddBridge?.()}
         aria-label={$t('settings.bridge_config.add_button')}
+        title={$t('settings.bridge_config.add_button')}
       >
         +
       </button>
@@ -166,6 +168,11 @@
     background-color: #64748b;
   }
 
+  .port-tabs button[data-state='reconnecting'] .port-status-dot {
+    background-color: #f59e0b;
+    animation: pulse 1s infinite;
+  }
+
   .port-tabs button.active {
     background: rgba(59, 130, 246, 0.15);
     border-color: rgba(59, 130, 246, 0.6);
@@ -188,7 +195,6 @@
     background: rgba(30, 41, 59, 0.4) !important;
     border: 1px dashed rgba(148, 163, 184, 0.4) !important;
     color: #94a3b8 !important;
-    font-size: 1.2rem;
     line-height: 1;
   }
 

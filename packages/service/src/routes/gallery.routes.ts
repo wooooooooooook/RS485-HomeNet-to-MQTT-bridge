@@ -7,6 +7,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import yaml from 'js-yaml';
 import { HomenetBridgeConfig, logger, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
+import { processGalleryTemplate } from '../utils/gallery-template.js';
 import { dumpConfigToYaml } from '../utils/yaml-dumper.js';
 import {
   CONFIG_DIR,
@@ -108,7 +109,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
     }
 
     try {
-      const { portId, yamlContent } = req.body;
+      const { portId, yamlContent, parameters } = req.body;
 
       if (!portId || !yamlContent) {
         return res.status(400).json({ error: 'portId and yamlContent are required' });
@@ -134,15 +135,26 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Parse the gallery YAML content
-      const galleryYaml = yaml.load(yamlContent) as {
+      let galleryYaml = yaml.load(yamlContent) as {
         meta?: Record<string, unknown>;
         entities?: Record<string, unknown[]>;
         automation?: unknown[];
         scripts?: unknown[];
+        parameters?: unknown[];
       };
 
       if (!galleryYaml) {
         return res.status(400).json({ error: 'Invalid YAML content' });
+      }
+
+      // Process template if parameters exist in schema or are provided
+      if (galleryYaml.parameters || (parameters && Object.keys(parameters).length > 0)) {
+        try {
+          galleryYaml = processGalleryTemplate(galleryYaml, parameters || {});
+        } catch (e) {
+          logger.error({ err: e }, '[gallery] Failed to process gallery template');
+          return res.status(400).json({ error: 'Failed to process template: ' + (e instanceof Error ? e.message : String(e)) });
+        }
       }
 
       const currentConfig = currentConfigs[configIndex];
@@ -367,9 +379,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
     }
 
     try {
-      const { portId, yamlContent, fileName, resolutions, renames } = req.body as {
+      const { portId, yamlContent, parameters, fileName, resolutions, renames } = req.body as {
         portId: string;
         yamlContent: string;
+        parameters?: Record<string, any>;
         fileName?: string;
         resolutions?: Record<string, 'overwrite' | 'skip' | 'rename'>;
         renames?: Record<string, string>;
@@ -403,15 +416,26 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       // Parse the gallery YAML content
-      const galleryYaml = yaml.load(yamlContent) as {
+      let galleryYaml = yaml.load(yamlContent) as {
         meta?: Record<string, unknown>;
         entities?: Record<string, unknown[]>;
         automation?: unknown[];
         scripts?: unknown[];
+        parameters?: unknown[];
       };
 
       if (!galleryYaml) {
         return res.status(400).json({ error: 'Invalid YAML content' });
+      }
+
+      // Process template if parameters exist in schema or are provided
+      if (galleryYaml.parameters || (parameters && Object.keys(parameters).length > 0)) {
+        try {
+          galleryYaml = processGalleryTemplate(galleryYaml, parameters || {});
+        } catch (e) {
+          logger.error({ err: e }, '[gallery] Failed to process gallery template');
+          return res.status(400).json({ error: 'Failed to process template: ' + (e instanceof Error ? e.message : String(e)) });
+        }
       }
 
       // Read the current config file

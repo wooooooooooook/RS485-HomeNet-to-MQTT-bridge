@@ -6,9 +6,9 @@
     ParsedPacket,
     BridgeSerialInfo,
   } from '../types';
-  import { t } from 'svelte-i18n';
   import PacketLog from '../components/PacketLog.svelte';
   import RawPacketLog from '../components/RawPacketLog.svelte';
+  import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
   import LatencyTest from '../components/analysis/LatencyTest.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
   import PortToolbar from '../components/PortToolbar.svelte';
@@ -18,7 +18,6 @@
     commandPackets,
     parsedPackets,
     rawPackets,
-    parsedEntitiesByPayload,
     packetDictionary,
     isStreaming,
     portMetadata,
@@ -30,12 +29,12 @@
     isRecording = $bindable(),
     recordingStartTime = $bindable(),
     recordedFile = $bindable(),
+    logRetentionEnabled,
   }: {
     stats: PacketStatsType | null;
     commandPackets: CommandPacket[];
     parsedPackets: ParsedPacket[];
     rawPackets: RawPacketWithInterval[];
-    parsedEntitiesByPayload: Record<string, string[]>;
     packetDictionary: Record<string, string>;
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
@@ -47,6 +46,7 @@
     isRecording: boolean;
     recordingStartTime: number | null;
     recordedFile: { filename: string; path: string } | null;
+    logRetentionEnabled: boolean;
   } = $props();
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
@@ -62,7 +62,6 @@
   <PacketLog {commandPackets} {parsedPackets} />
   <RawPacketLog
     {rawPackets}
-    {parsedEntitiesByPayload}
     {packetDictionary}
     {isStreaming}
     {stats}
@@ -74,6 +73,9 @@
     bind:recordedFile
     portId={activePortId}
   />
+  {#if logRetentionEnabled}
+    <PacketDictionaryView />
+  {/if}
   <CelAnalyzerCard />
 
   {#if activePortId}

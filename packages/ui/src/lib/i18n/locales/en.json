@@ -263,6 +263,16 @@
       "expression_required": "Enter a CEL expression.",
       "request_failed": "Failed to evaluate CEL."
     },
+    "packet_dictionary": {
+      "title": "Packet Dictionary",
+      "desc": "View all packets collected by the bridge. 'Parsed' packets are matched to entities, 'Unmatched' packets are valid but not matched to any entity.",
+      "parsed_count": "Parsed: {count}",
+      "unmatched_count": "Unmatched: {count}",
+      "tab_all": "All",
+      "tab_parsed": "Parsed",
+      "tab_unmatched": "Unmatched",
+      "empty": "No packets collected yet."
+    },
     "stats": {
       "title": "Packet Interval Analysis",
       "packet_interval": "Packet interval",

@@ -1673,7 +1673,6 @@
             commandPackets={filteredCommandPackets}
             parsedPackets={filteredParsedPackets}
             rawPackets={filteredRawPackets}
-            {parsedEntitiesByPayload}
             {packetDictionary}
             {isStreaming}
             {portMetadata}
@@ -1684,6 +1683,7 @@
             bind:isRecording
             bind:recordingStartTime
             bind:recordedFile
+            logRetentionEnabled={frontendSettings?.logRetention?.enabled ?? false}
           />
         {:else if activeView === 'gallery'}
           <Gallery {bridgeInfo} />

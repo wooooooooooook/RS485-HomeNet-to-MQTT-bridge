@@ -251,8 +251,11 @@ export class ProtocolManager extends EventEmitter {
       }
     }
 
-    if (!matchedAny && isDebug) {
-      logger.debug(`[ProtocolManager] Packet not matched: ${packetHex}`);
+    if (!matchedAny) {
+      this.emit('unmatched-packet', { packet });
+      if (isDebug) {
+        logger.debug(`[ProtocolManager] Packet not matched: ${packetHex}`);
+      }
     }
   }
 }

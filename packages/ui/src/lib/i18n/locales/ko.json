@@ -263,6 +263,16 @@
       "expression_required": "CEL 표현식을 입력하세요.",
       "request_failed": "CEL 평가 요청에 실패했습니다."
     },
+    "packet_dictionary": {
+      "title": "패킷 딕셔너리",
+      "desc": "브릿지에서 수집한 모든 패킷을 확인합니다. '파싱됨' 패킷은 엔티티와 매칭된 패킷이고, '미파싱'은 유효하지만 매칭되지 않은 패킷입니다.",
+      "parsed_count": "파싱됨: {count}",
+      "unmatched_count": "미파싱: {count}",
+      "tab_all": "전체",
+      "tab_parsed": "파싱됨",
+      "tab_unmatched": "미파싱",
+      "empty": "아직 수집된 패킷이 없습니다."
+    },
     "stats": {
       "title": "패킷 간격 분석",
       "packet_interval": "패킷 간격",
@@ -285,6 +295,9 @@
     "delete": "삭제",
     "delete_confirm": "삭제하시겠습니까?",
     "copied": "복사됨!",
+    "loading": "로딩 중...",
+    "refresh": "새로고침",
+    "copy": "복사",
     "status": {
       "idle": "대기",
       "starting": "시작 중",

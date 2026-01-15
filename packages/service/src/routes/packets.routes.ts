@@ -53,6 +53,23 @@ export function createPacketToolsRoutes(ctx: PacketToolsRoutesContext): Router {
     });
   });
 
+  // Unmatched (valid but unparsed) packets
+  router.get('/api/packets/unmatched', (_req, res) => {
+    res.json({
+      packets: ctx.logRetentionService.getUnmatchedPackets(),
+    });
+  });
+
+  // Full dictionary view (dictionary + unmatched packets + stats + parsed entities)
+  router.get('/api/packets/dictionary/full', (_req, res) => {
+    res.json({
+      dictionary: ctx.logRetentionService.getPacketDictionary(),
+      unmatchedPackets: ctx.logRetentionService.getUnmatchedPackets(),
+      parsedPacketEntities: ctx.logRetentionService.getParsedPacketEntities(),
+      stats: ctx.logRetentionService.getStats(),
+    });
+  });
+
   // Packet preview (construct without sending)
   router.post('/api/tools/packet/preview', async (req, res) => {
     if (!ctx.commandRateLimiter.check(req.ip || 'unknown')) {

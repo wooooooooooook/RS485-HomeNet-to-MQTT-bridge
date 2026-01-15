@@ -17,6 +17,7 @@ export interface LogRetentionSettings {
 export interface LogRetentionStats {
   enabled: boolean;
   packetLogCount: number;
+  unparsedValidPacketCount: number;
   activityLogCount: number;
   memoryUsageBytes: number;
   oldestLogTimestamp: number | null;
@@ -64,6 +65,9 @@ export class LogRetentionService {
   private parsedPacketLogs: PacketLogEntry[] = [];
   private commandPacketLogs: CommandLogEntry[] = [];
   private activityLogs: ActivityLogEntry[] = [];
+
+  // Dictionary for valid but unparsed packets (unique packet hex strings)
+  private validButUnparsedPackets = new Set<string>();
 
   // Timers
   private cleanupTimer: NodeJS.Timeout | null = null;
@@ -179,6 +183,31 @@ export class LogRetentionService {
     return dict;
   }
 
+  public getUnmatchedPackets(): string[] {
+    return Array.from(this.validButUnparsedPackets);
+  }
+
+  /**
+   * Returns a mapping of packet hex -> array of entity IDs that parsed this packet
+   */
+  public getParsedPacketEntities(): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+
+    for (const log of this.parsedPacketLogs) {
+      const packetHex = this.packetDictionaryReverse.get(log.packetId);
+      if (!packetHex) continue;
+
+      if (!result[packetHex]) {
+        result[packetHex] = [];
+      }
+      if (!result[packetHex].includes(log.entityId)) {
+        result[packetHex].push(log.entityId);
+      }
+    }
+
+    return result;
+  }
+
   public async updateSettings(
     settings: Partial<LogRetentionSettings>,
   ): Promise<LogRetentionSettings> {
@@ -232,6 +261,7 @@ export class LogRetentionService {
     return {
       enabled: this.enabled,
       packetLogCount: this.parsedPacketLogs.length + this.commandPacketLogs.length,
+      unparsedValidPacketCount: this.validButUnparsedPackets.size,
       activityLogCount: this.activityLogs.length,
       memoryUsageBytes: memoryUsage,
       oldestLogTimestamp: oldestTimestamp,
@@ -242,12 +272,13 @@ export class LogRetentionService {
     // Rough estimation of memory usage
     // Each log entry is estimated based on typical object sizes
     const packetLogSize = (this.parsedPacketLogs.length + this.commandPacketLogs.length) * 200; // ~200 bytes per entry
+    const unparsedPacketSize = this.validButUnparsedPackets.size * 50; // ~50 bytes per unique packet
     const activityLogSize = this.activityLogs.length * 250; // ~250 bytes per entry
 
     // Dictionary overhead
     const dictSize = this.packetDictionary.size * 100; // ~100 bytes per entry
 
-    return packetLogSize + activityLogSize + dictSize;
+    return packetLogSize + unparsedPacketSize + activityLogSize + dictSize;
   }
 
   private getOldestLogTimestamp(): number | null {
@@ -269,6 +300,7 @@ export class LogRetentionService {
   private clearLogs(): void {
     this.parsedPacketLogs = [];
     this.commandPacketLogs = [];
+    this.validButUnparsedPackets.clear();
     this.activityLogs = [];
   }
 
@@ -319,7 +351,7 @@ export class LogRetentionService {
   private pruneDictionary(): void {
     const usedPacketIds = new Set<string>();
 
-    // Collect all used packet IDs
+    // Collect all used packet IDs (validButUnparsedPackets stores raw hex, not packetId)
     this.parsedPacketLogs.forEach((log) => usedPacketIds.add(log.packetId));
     this.commandPacketLogs.forEach((log) => usedPacketIds.add(log.packetId));
 
@@ -396,16 +428,32 @@ export class LogRetentionService {
     this.activityLogs.push(log);
   };
 
+  private handleUnmatchedPacket = (data: unknown) => {
+    if (!this.enabled) return;
+
+    const pkt = data as {
+      packet?: string;
+      timestamp?: string;
+      portId?: string;
+    };
+    if (!pkt.packet) return;
+
+    // Add the raw packet hex to the set (unique values only)
+    this.validButUnparsedPackets.add(pkt.packet);
+  };
+
   private setupListeners() {
     eventBus.on('parsed-packet', this.handleParsedPacket);
     eventBus.on('command-packet', this.handleCommandPacket);
     eventBus.on('activity-log:added', this.handleActivityLog);
+    eventBus.on('unmatched-packet', this.handleUnmatchedPacket);
   }
 
   private removeListeners() {
     eventBus.off('parsed-packet', this.handleParsedPacket);
     eventBus.off('command-packet', this.handleCommandPacket);
     eventBus.off('activity-log:added', this.handleActivityLog);
+    eventBus.off('unmatched-packet', this.handleUnmatchedPacket);
   }
 
   // Auto-save functionality
@@ -460,6 +508,7 @@ export class LogRetentionService {
       packetDictionary: dict,
       parsedPacketLogs: this.parsedPacketLogs,
       commandPacketLogs: this.commandPacketLogs,
+      validButUnparsedPackets: Array.from(this.validButUnparsedPackets),
       activityLogs: this.activityLogs,
     };
 

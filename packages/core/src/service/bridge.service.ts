@@ -892,6 +892,15 @@ export class HomeNetBridge extends EventEmitter {
         eventBus.emit('entity:error', data);
       });
 
+      packetProcessor.on('unmatched-packet', (data) => {
+        const hexPacket = data.packet.toString('hex');
+        eventBus.emit('unmatched-packet', {
+          portId: normalizedPortId,
+          packet: hexPacket,
+          timestamp: new Date().toISOString(),
+        });
+      });
+
       const mqttTopicPrefix = this.getMqttTopicPrefix(normalizedPortId);
       const mqttPublisher = new MqttPublisher(this._mqttClient, mqttTopicPrefix);
       const stateManager = new StateManager(

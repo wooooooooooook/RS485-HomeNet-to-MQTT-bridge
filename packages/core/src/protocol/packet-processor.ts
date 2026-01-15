@@ -129,6 +129,10 @@ export class PacketProcessor extends EventEmitter {
     this.protocolManager.on('entity-error', (data) => {
       this.emit('entity-error', { ...data, portId: this.portId });
     });
+
+    this.protocolManager.on('unmatched-packet', (data) => {
+      this.emit('unmatched-packet', data);
+    });
   }
 
   /**

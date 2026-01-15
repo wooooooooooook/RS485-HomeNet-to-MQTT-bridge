@@ -57,9 +57,17 @@ export type LogRetentionSettings = {
 export type LogRetentionStats = {
   enabled: boolean;
   packetLogCount: number;
+  unparsedValidPacketCount: number;
   activityLogCount: number;
   memoryUsageBytes: number;
   oldestLogTimestamp: number | null;
+};
+
+export type PacketDictionaryFullResponse = {
+  dictionary: Record<string, string>;
+  unmatchedPackets: string[];
+  parsedPacketEntities: Record<string, string[]>;
+  stats: LogRetentionStats;
 };
 
 export type SavedLogFile = {

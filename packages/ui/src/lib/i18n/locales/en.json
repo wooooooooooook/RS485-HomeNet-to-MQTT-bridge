@@ -372,6 +372,17 @@
         "actual": "Current",
         "force_apply": "Apply even if settings don't match",
         "force_apply_warning": "Applying with incompatible settings may cause the snippet to not work properly."
+      },
+      "parameters": {
+        "title": "Template Parameters",
+        "placeholder_integer": "Enter a number",
+        "placeholder_string": "Enter a value",
+        "placeholder_json": "Enter a JSON array/object",
+        "validation_required": "Please enter a parameter value.",
+        "validation_integer": "Please enter an integer value.",
+        "validation_array": "Please enter a JSON array.",
+        "validation_object_array": "Please enter a JSON array of objects.",
+        "validation_json": "Invalid JSON format."
       }
     }
   },

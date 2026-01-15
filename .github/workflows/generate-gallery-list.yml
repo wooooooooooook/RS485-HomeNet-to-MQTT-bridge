@@ -126,6 +126,7 @@ jobs:
                   version: doc.meta.version || '1.0.0',
                   author: doc.meta.author || 'unknown',
                   tags: doc.meta.tags || [],
+                  parameters: Array.isArray(doc.parameters) ? doc.parameters : [],
                   content_summary: contentSummary
                 });
               } catch (err) {

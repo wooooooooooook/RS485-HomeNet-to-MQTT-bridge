@@ -326,6 +326,8 @@
     "entities": "Entities",
     "automations": "Automations",
     "scripts": "Scripts",
+    "parameters": "Params",
+    "has_parameters": "Configurable parameters",
     "tags": "Tags",
     "view_details": "View Details",
     "preview": {

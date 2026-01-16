@@ -16,6 +16,7 @@
     version: string;
     author: string;
     tags: string[];
+    parameters?: { name: string }[];
     content_summary: ContentSummary;
     vendorId: string;
     vendorName: string;
@@ -46,11 +47,19 @@
   const hasAutomation = $derived(item.content_summary.automations > 0);
   const scriptCount = $derived(item.content_summary.scripts ?? 0);
   const hasScripts = $derived(scriptCount > 0);
+  const hasParameters = $derived((item.parameters?.length ?? 0) > 0);
 </script>
 
 <div class="card">
   <div class="card-header">
-    <h3 class="card-title">{displayName}</h3>
+    <div class="title-row">
+      <h3 class="card-title">{displayName}</h3>
+      {#if hasParameters}
+        <span class="badge parameter" title={$t('gallery.has_parameters')}>
+          ⚙️ {$t('gallery.parameters')}
+        </span>
+      {/if}
+    </div>
     <span class="version">v{item.version}</span>
   </div>
 
@@ -128,6 +137,14 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
   }
 
   .card-title {
@@ -229,6 +246,12 @@
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .badge.parameter {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
   }
 
   .tags {

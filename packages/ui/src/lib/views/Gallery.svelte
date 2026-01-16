@@ -144,6 +144,13 @@
       );
     }
 
+    // Sort: items with parameters first
+    items.sort((a, b) => {
+      const aHasParams = (a.parameters?.length ?? 0) > 0 ? 1 : 0;
+      const bHasParams = (b.parameters?.length ?? 0) > 0 ? 1 : 0;
+      return bHasParams - aHasParams;
+    });
+
     return items;
   });
 

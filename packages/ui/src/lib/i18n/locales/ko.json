@@ -329,6 +329,8 @@
     "entities": "엔티티",
     "automations": "자동화",
     "scripts": "스크립트",
+    "parameters": "파라미터",
+    "has_parameters": "파라미터 설정 가능",
     "tags": "태그",
     "view_details": "상세보기",
     "preview": {

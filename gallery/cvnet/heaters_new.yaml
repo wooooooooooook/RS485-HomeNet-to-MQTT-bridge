@@ -1,0 +1,67 @@
+meta:
+  name: "☑️난방 설정"
+  name_en: "☑️Heaters"
+  description: "CVNet 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다."
+  description_en: "CVNet heating thermostats. You can specify the number of thermostats."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "cvnet"]
+
+parameters:
+  - name: heater_count
+    type: integer
+    default: 4
+    min: 1
+    max: 8
+    label: "난방 개수"
+    label_en: "Number of Heaters"
+
+discovery:
+  match:
+    data: [0x20, 0x01, 0x4A]
+    mask: [0xFF, 0xFF, 0xFF]
+  dimensions:
+    - parameter: "heater_count"
+      offset: 0
+      # CVNet 난방 패킷은 [0x20, 0x01, 0x4A...] 하나에 모든 정보가 담겨있는 것으로 보임
+      # 패킷 길이 또는 데이터 구조로 개수를 파악해야 함.
+      # 우선 기본값 사용 유도하거나, 사용자가 설정하도록 함.
+      # 여기서는 단순히 패턴 매칭만 수행.
+  ui:
+    label: "난방"
+    label_en: "heaters"
+    summary: "난방 시스템 발견됨"
+    summary_en: "Heating system discovered"
+
+entities:
+  climate:
+    - $repeat:
+        count: '{{heater_count}}'
+        as: i
+        start: 1
+      id: 'heater_{{i}}'
+      name: 'Heater {{i}}'
+      visual:
+        min_temperature: 6 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x20, 0x01, 0x4A]
+      state_temperature_current:
+        offset: '{{3 + i * 2}}'
+      state_temperature_target: >-
+        bitAnd(data[{{2 + i * 2}}], 0x7F)
+      state_off:
+        offset: '{{2 + i * 2}}'
+        data: [0x00]
+        mask: [0x80]
+      state_heat:
+        offset: '{{2 + i * 2}}'
+        data: [0x80]
+        mask: [0x80]
+      command_off: >-
+        [[0x20, '{{0x40 + i}}', 0x01, 0x11, int(has(state.target_temperature) ? state.target_temperature : 0), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], [0x20, 0x01, '{{0x40 + i}}', 0x91]]
+      command_heat: >-
+        [[0x20, '{{0x40 + i}}', 0x01, 0x11, int(has(state.target_temperature) ? state.target_temperature : 0) + 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], [0x20, 0x01, '{{0x40 + i}}', 0x91]]
+      command_temperature: >-
+        [[0x20, '{{0x40 + i}}', 0x01, 0x11, int(x) + 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], [0x20, 0x01, '{{0x40 + i}}', 0x91]]

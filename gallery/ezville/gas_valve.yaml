@@ -3,9 +3,19 @@ meta:
   name_en: "Gas Valve"
   description: "Ezville 가스밸브 설정입니다."
   description_en: "Ezville gas valve configuration."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["valve", "gas", "ezville"]
+
+discovery:
+  match:
+    data: [0x12, 0x01, 0x81]
+    mask: [0xFF, 0xFF, 0xFF]
+  ui:
+    label: "가스밸브"
+    label_en: "Gas Valve"
+    summary: "가스밸브 발견됨"
+    summary_en: "Gas Valve discovered"
 
 entities:
   valve:

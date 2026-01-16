@@ -3,9 +3,19 @@ meta:
   name_en: "Gas Valve"
   description: "CVNet 가스밸브 설정입니다."
   description_en: "CVNet gas valve configuration."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["valve", "gas", "cvnet"]
+
+discovery:
+  match:
+    data: [0x20, 0x01, 0x11]
+    mask: [0xFF, 0xFF, 0xFF]
+  ui:
+    label: "가스밸브"
+    label_en: "gas valve"
+    summary: "가스밸브 발견됨"
+    summary_en: "Gas valve discovered"
 
 entities:
   valve:

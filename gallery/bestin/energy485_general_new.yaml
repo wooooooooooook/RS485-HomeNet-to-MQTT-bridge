@@ -1,0 +1,260 @@
+meta:
+  name: "☑️Bestin general 조명 및 아웃렛 (energy485)"
+  name_en: "☑️Bestin general Light and Outlet (energy485)"
+  description: >-
+    Bestin general gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.
+  description_en: >- 
+    Bestin general gateway light and outlet. You can specify lights/outlets per room.
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "outlet", "bestin"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        light_count: 4
+        outlet_count: 3
+      - room_id: 2
+        light_count: 2
+        outlet_count: 2
+    schema:
+      room_id: { type: integer, min: 1, max: 8, label: "방 번호", label_en: "Room ID" }
+      light_count: { type: integer, min: 0, max: 8, label: "조명 개수", label_en: "Light Count" }
+      outlet_count: { type: integer, min: 0, max: 4, label: "콘센트 개수", label_en: "Outlet Count" }
+
+discovery:
+  match:
+    data: [0x31, 0x1E, 0x91]
+    mask: [0xFF, 0xFF, 0xFF]
+  dimensions:
+    - parameter: "room_id"
+      offset: 4
+      transform: "bitAnd(x, 0x0F)"
+    - parameter: "light_count"
+      offset: 5
+      detect: "active_bits"
+    - parameter: "outlet_count"
+      offset: 6
+      detect: "active_bits"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "조명/콘센트"
+    label_en: "lights/outlets"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  scripts:
+    - id: "update_sequence_number"
+      name: "update sequence number"
+      actions:
+        - action: update_state
+          target_id: "sequence_number"
+          state:
+            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+
+    - id: "make_light_packet"
+      name: "Light Packet Make"
+      description: >- 
+        조명 제어 패킷 생성 (Gen1/General, 13바이트)
+          args: 
+            room_number: (1-8)
+            position: 조명번호 0-based (pos_id)
+            ONOFF: true(on), false(off)
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x31, 0x0D, 0x01, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(args.room_number),
+            int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
+            0x00, 0x00, 0x00, 0x00,
+            int(args.ONOFF ? 0x04 : 0x00)]
+          ack: >- 
+            [0x02, 0x31, 0x81]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+    - id: "make_outlet_packet"
+      name: "Outlet Packet Make"
+      description: >- 
+        콘센트 제어 패킷 생성 (Gen1/General, 13바이트)
+          args: 
+            room_number: (1-8)
+            position: 콘센트번호 0-based (pos_id)
+            ONOFF: true(on), false(off)
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x31, 0x0D, 0x01, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(args.room_number),
+            0x00,
+            int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
+            0x00, 0x00, 0x00,
+            int(args.ONOFF ? bitShiftLeft(0x09, args.position) : 0x00)]
+          ack: >- 
+            [0x02, 0x31, 0x81]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+    - id: "make_standby_cutoff_packet"
+      name: "Standby Cutoff Packet Make"
+      description: >- 
+        대기전력 차단 제어 패킷 생성 (Gen1/General, 13바이트)
+          args: 
+            room_number: (1-8)
+            ONOFF: true(차단on), false(차단off)
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x31, 0x0D, 0x01, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(args.room_number),
+            0x00, 0x00,
+            int(args.ONOFF ? 0x83 : 0x03),
+            0x00, 0x00, 0x00]
+          ack: >- 
+            [0x02, 0x31, 0x81]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+  number:
+    - id: sequence_number
+      name: "내부관리용시퀀스번호"
+      internal: true
+      min_value: 0
+      max_value: 255
+      step: 1
+      state: 
+        data: [0x00]
+        mask: [0x00]
+      state_number: 'data[1]==0x1E ? data[3] : data[4]'
+
+  light:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.light_count}}'
+          as: light_num
+          start: 0
+        id: 'room{{room.room_id}}_light{{light_num + 1}}'
+        name: 'Room{{room.room_id}} Light {{light_num + 1}}'
+        state:
+          data: [0x31, 0x1E, 0x91, 0x00, '{{room.room_id}}']
+          mask: [0xFF, 0xFF, 0xFF, 0x00, 0x0F]
+        state_on: "bitAnd(data[5], {{bitShiftLeft(0x01, light_num)}}) == {{bitShiftLeft(0x01, light_num)}}"
+        state_off: "bitAnd(data[5], {{bitShiftLeft(0x01, light_num)}}) == 0"
+        command_on:
+          script: "make_light_packet"
+          args:
+            room_number: '{{room.room_id}}'
+            position: '{{light_num}}'
+            ONOFF: true
+        command_off:
+          script: "make_light_packet"
+          args:
+            room_number: '{{room.room_id}}'
+            position: '{{light_num}}'
+            ONOFF: false
+
+  switch:
+    # Outlets
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 0
+        id: 'room{{room.room_id}}_outlet{{outlet_num + 1}}'
+        name: 'Room{{room.room_id}} Outlet {{outlet_num + 1}}'
+        state:
+          data: [0x31, 0x1E, 0x91, 0x00, '{{room.room_id}}']
+          mask: [0xFF, 0xFF, 0xFF, 0x00, 0x0F]
+        state_on: "bitAnd(data[6], {{bitShiftLeft(0x01, outlet_num)}}) == {{bitShiftLeft(0x01, outlet_num)}}"
+        state_off: "bitAnd(data[6], {{bitShiftLeft(0x01, outlet_num)}}) == 0"
+        command_on:
+          script: "make_outlet_packet"
+          args:
+            room_number: '{{room.room_id}}'
+            position: '{{outlet_num}}'
+            ONOFF: true
+        command_off:
+          script: "make_outlet_packet"
+          args:
+            room_number: '{{room.room_id}}'
+            position: '{{outlet_num}}'
+            ONOFF: false
+
+    # Standby Power Cutoff per room
+    - $repeat:
+        over: rooms
+        as: room
+      id: 'room{{room.room_id}}_standby_cutoff'
+      name: 'Room{{room.room_id}} Standby Power Cutoff'
+      state:
+        data: [0x31, 0x1E, 0x91, 0x00, '{{room.room_id}}']
+        mask: [0xFF, 0xFF, 0xFF, 0x00, 0x0F]
+      state_on: 'bitAnd(data[6], 0x10) == 0x10'
+      state_off: 'bitAnd(data[6], 0x10) == 0'
+      command_on:
+        script: "make_standby_cutoff_packet"
+        args:
+          room_number: '{{room.room_id}}'
+          ONOFF: true
+      command_off:
+        script: "make_standby_cutoff_packet"
+        args:
+          room_number: '{{room.room_id}}'
+          ONOFF: false
+
+  sensor:
+    # Outlet Power Consumption per room (up to 4 outlets per room)
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 0
+        id: 'room{{room.room_id}}_outlet{{outlet_num + 1}}_power'
+        name: 'Room{{room.room_id}} Outlet {{outlet_num + 1}} Power'
+        device_class: power
+        unit_of_measurement: W
+        state:
+          data: [0x31, 0x1E, 0x91, 0x00, '{{room.room_id}}']
+          mask: [0xFF, 0xFF, 0xFF, 0x00, 0x0F]
+        state_number: "bitOr(bitShiftLeft(data[{{13 + outlet_num * 2}}], 8), data[{{14 + outlet_num * 2}}]) / 10.0"
+
+    # DC Voltage per room
+    - $repeat:
+        over: rooms
+        as: room
+      id: 'room{{room.room_id}}_dc_voltage'
+      name: 'Room{{room.room_id}} DC Voltage'
+      device_class: voltage
+      unit_of_measurement: V
+      state:
+        data: [0x31, 0x1E, 0x91, 0x00, '{{room.room_id}}']
+        mask: [0xFF, 0xFF, 0xFF, 0x00, 0x0F]
+      state_number: "bitOr(bitShiftLeft(data[11], 8), data[12]) / 10.0"

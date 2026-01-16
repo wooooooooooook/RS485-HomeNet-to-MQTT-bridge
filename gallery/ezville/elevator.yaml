@@ -3,9 +3,19 @@ meta:
   name_en: "Elevator Call"
   description: "Ezville 엘리베이터 호출 버튼 설정입니다. 항상 활성화 옵션이 적용되어있습니다."
   description_en: "Ezville elevator call button. Always enabled option is applied."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["elevator", "button", "ezville"]
+
+discovery:
+  match:
+    data: [0x33, 0x01, 0x81]
+    mask: [0xFF, 0xFF, 0xFF]
+  ui:
+    label: "엘리베이터 호출"
+    label_en: "Elevator Call"
+    summary: "엘리베이터 호출 버튼 발견됨"
+    summary_en: "Elevator Call Button discovered"
 
 entities:
   button:

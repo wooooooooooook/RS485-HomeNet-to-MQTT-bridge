@@ -1,0 +1,120 @@
+meta:
+  name: "난방 설정"
+  name_en: "Heaters"
+  description: "코콤 Thinks 난방 온도조절기 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다."
+  description_en: "Kocom Thinks heating thermostats with away preset mode. Configurable count."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "kocom", "thinks"]
+
+parameters:
+  - name: heater_count
+    type: integer
+    default: 6
+    min: 1
+    max: 8
+    label: "난방 개수"
+    label_en: "Number of Heaters"
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x36]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF]
+  ui:
+    label: "난방"
+    label_en: "heaters"
+    summary: "난방 시스템 발견됨"
+    summary_en: "Heating system discovered"
+
+entities:
+  climate:
+    - $repeat:
+        count: '{{heater_count}}'
+        as: i
+        start: 1
+      id: 'room_{{i - 1}}_heater'
+      name: 'Room {{i - 1}} Heater'
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 30 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x30, 0xd0, 0x00, 0x36, '{{i - 1}}']
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff]
+      state_temperature_current:
+        offset: 12
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 10
+        length: 1
+        precision: 0
+      state_off:
+        offset: 8
+        data: [0x00] # Thinks heaters.yaml says 0x00 (line 27) and 0x01 (line 68, 107 ...).
+        # Wait, heaters.yaml line 27 (livingroom) -> 0x00. line 68 (room1) -> 0x01. line 107 (room2) -> 0x01.
+        # It seems 0x00 or 0x01 can be 'off' indicator depending on model/room?
+        # But wait, line 27 (Livingroom) has mask [0xF0].
+        # line 68 (Room 1) offset 8 data [0x01]. (mask omitted? no, earlier mask definition).
+        # This inconsistency is tricky. Maybe bit 0 is irrelevant?
+        # Let's look at mask. Livingroom: mask [0xF0]. So 0x00 & 0xF0 == 0x00. 0x01 & 0xF0 == 0x00.
+        # So low nibble is ignored.
+        # Room 1: offset 8 data [0x01]. Wait, mask? line 68 no mask defined there. But line 61 has mask [..., 0xff].
+        # If no local mask, it uses global mask?
+        # Let's assume low nibble masking is safer. Use mask [0xF0] and data [0x00] or [0x10].
+        # However, heaters.yaml explicitly sets data [0x01] for Room 1 Off state.
+        # Let's check command_off for Room 1: ... 0x01, 0x00 ... (byte 8, 9).
+        # It seems Thinks uses 0x01 as 'Off' command for Room1+?
+        # But Livingroom uses 0x01 too in command.
+        # Let's stick to standard Kocom pattern if possible, or follow the file exactly.
+        # The file has explicit differences. Livingroom Off state: data[0x00], mask[0xF0].
+        # Room 1 Off state: data[0x01]. (No mask locally).
+        # Room 1 Heat state: data[0x11].
+        # So it seems Room 1 uses lower nibble 1? Livingroom uses lower nibble 0?
+        # This makes parameterization hard if index 0 has different behavior.
+        # BUT, command structure is consistent (byte 8=0x01 for off, 0x11 for heat).
+        # Only State reporting differs?
+        # Let's apply a mask that ignores the lower nibble for state check. [0xF0].
+        # Then Off is 0x0x, Heat is 0x1x.
+        mask: [0xF0]
+      state_heat:
+        offset: 8
+        data: [0x10]
+        mask: [0xF0]
+      state_preset_away:
+        offset: 9
+        data: [0x01]
+      state_preset_none:
+        offset: 9
+        data: [0x00]
+      
+      # Thinks Cmd: [[..., index, 0x01, 0x00, 0x00, mode, 0x00, target...]]
+      # command_off: mode 0x01 (byte 8), byte 9=0x00
+      # command_heat: mode 0x11, byte 9=0x00
+      # command_preset_away: mode 0x11, byte 9=0x01
+      command_off: >-
+        [[0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x00, 0x01, 0x00, x, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]]
+      command_heat: >-
+        [[0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x00, 0x11, 0x00, x, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]]
+      command_preset_none: >-
+        [[0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x00, 0x11, 0x00, x, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]]
+      command_preset_away: >-
+        [[0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x00, 0x11, 0x01, x, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]]
+      command_temperature: >-
+        [[0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x00, 0x11, 0x00, x, 0x00, 0x00, 0x00, 0x00, 0x00], [0x30, 0xdc]]
+      command_update:
+        data: [0x30, 0xbc, 0x00, 0x36, '{{i - 1}}', 0x01, 0x00, 0x3a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]
+        
+automation:
+  - $repeat:
+      count: '{{heater_count}}'
+      as: i
+      start: 1
+    id: 'heater_{{i - 1}}_refresh'
+    trigger:
+      - type: schedule
+        every: 2h
+    then:
+      - action: command
+        target: id(room_{{i - 1}}_heater).command_update()

@@ -3,9 +3,19 @@ meta:
   name_en: "Living Room Lights (3 Lights)"
   description: "코콤 Thinks 거실 조명 3개 설정입니다."
   description_en: "Kocom Thinks living room with 3 lights."
-  version: "1.0.1"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["light", "kocom", "thinks", "livingroom"]
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x0e]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF]
+  ui:
+    label: "거실 조명"
+    label_en: "Living Room Lights"
+    summary: "거실 조명 발견됨"
+    summary_en: "Living Room Lights discovered"
 
 entities:
   light:

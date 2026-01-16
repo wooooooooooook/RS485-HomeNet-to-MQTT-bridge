@@ -1,0 +1,115 @@
+meta:
+  name: "☑️Bestin 난방"
+  name_en: "☑️Bestin Climate"
+  description: "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다."
+  description_en: "Bestin climate with configurable room count. bestin1.0 bestin2.0 common."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "bestin"]
+
+parameters:
+  - name: room_count
+    type: integer
+    default: 4
+    min: 1
+    max: 8
+    label: "방 개수"
+    label_en: "Number of Rooms"
+
+discovery:
+  match:
+    data: [0x28, 0x10, 0x91]
+    mask: [0xFF, 0xFF, 0xFF]
+  dimensions:
+    - parameter: "room_count"
+      offset: 4
+  inference:
+    strategy: max
+  ui:
+    label: "난방"
+    label_en: "heating"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  scripts:
+    - id: "update_sequence_number"
+      name: "update sequence number"
+      actions:
+        - action: update_state
+          target_id: "sequence_number"
+          state:
+            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+
+    - id: "make_heating_packet"
+      name: "Heating Packet Make"
+      description: >- 
+        난방 공통 패킷 생성 
+          args: 
+            room_id: 방 ID (1-based)
+            power: 1(on), 2(off)
+            temp: 설정 온도
+      actions:
+        - action: send_packet
+          data: >- 
+            [0x28, 0x0E, 0x12, 
+            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            bitAnd(args.room_id, 0x0F), 
+            int(args.power), 
+            has(args.temp)?(int(args.temp) + (int(args.temp * 10) % 10 >= 5 ? 0x40 : 0)):0,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: >- 
+            [0x02, 0x28, 0x81]
+          header: true
+          checksum: true
+        - action: script
+          script: update_sequence_number
+
+  number:
+    - id: sequence_number
+      name: "내부관리용시퀀스번호"
+      internal: true
+      min_value: 0
+      max_value: 255
+      step: 1
+      state: 
+        # 언제나 매칭
+        data: [0x00]
+        mask: [0x00]
+      state_number: 'data[2]==10?data[3]:data[4]'
+
+  climate:
+    - $repeat:
+        count: '{{room_count}}'
+        as: i
+        start: 1
+      id: 'room{{i}}_heating'
+      name: 'Room {{i}} Heating'
+      state:
+        # [HEADER, LEN, TYPE, SEQ, ROOM_ID]
+        data: [0x28, 0x10, 0x91, 0x00, '{{i}}']
+        mask: [0xFF, 0xFF, 0xFF, 0x00, 0xFF]
+      state_temperature_current: "int(bitOr(bitShiftLeft(data[8], 8), data[9])) / 10.0"
+      state_temperature_target: "bitAnd(data[7], 0x3F) + (bitAnd(data[7], 0x40) > 0 ? 0.5 : 0)"
+      state_heat:
+        data: [0x11]
+        offset: 6
+      state_off: 
+        data: [0x02]
+        offset: 6
+      command_heat:
+        script: "make_heating_packet"
+        args:
+          room_id: '{{i}}'
+          power: 1
+      command_off:
+        script: "make_heating_packet"
+        args:
+          room_id: '{{i}}'
+          power: 2
+      command_temperature:
+        script: "make_heating_packet"
+        args:
+          room_id: '{{i}}'
+          power: 1
+          temp: "x"

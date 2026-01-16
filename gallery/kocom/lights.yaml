@@ -3,9 +3,19 @@ meta:
   name_en: "Lights (Room 0-3, 8 Lights)"
   description: "코콤 조명 8개 설정입니다. (각 방 2개씩)"
   description_en: "Kocom 8 lights configuration (2 per room)."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["light", "kocom"]
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x0e]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF]
+  ui:
+    label: "조명"
+    label_en: "lights"
+    summary: "조명 시스템 발견"
+    summary_en: "Lighting system discovered"
 
 entities:
   light:

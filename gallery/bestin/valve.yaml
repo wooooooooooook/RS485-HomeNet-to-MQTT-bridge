@@ -3,9 +3,19 @@ meta:
   name_en: "Bestin Gas Valve"
   description: "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin gas valve. bestin1.0 bestin2.0 common."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["valve", "gas", "bestin"]
+
+discovery:
+  match:
+    data: [0x31, 0x02]
+    mask: [0xFF, 0xFF]
+  ui:
+    label: "가스밸브"
+    label_en: "gas valve"
+    summary: "가스밸브 발견됨"
+    summary_en: "Gas valve discovered"
 
 entities:
   scripts:

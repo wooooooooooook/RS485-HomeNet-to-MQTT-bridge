@@ -1,0 +1,91 @@
+meta:
+  name: "☑️스마트 콘센트 설정"
+  name_en: "☑️Smart Plugs"
+  description: "현대 이마주 스마트 콘센트 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다."
+  description_en: "Hyundai Imazu smart plugs configuration. You can configure room count and plugs per room (with power meter)."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["switch", "plug", "sensor", "power", "hyundai", "imazu"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        outlet_count: 2
+      - room_id: 2
+        outlet_count: 2
+    schema:
+      room_id: { type: integer, min: 1, max: 15, label: "방 번호 (ID)", label_en: "Room ID" }
+      outlet_count: { type: integer, min: 1, max: 4, label: "콘센트 개수", label_en: "Outlet Count" }
+
+discovery:
+  match:
+    data: [0x00, 0x01, 0x1F, 0x04, 0x40]
+    mask: [0x00, 0xff, 0xff, 0xff, 0xff]
+  dimensions:
+    - parameter: "room_id"
+      offset: 5 # 0x00 0x01 0x1F 0x04 0x40 [0x11]
+      transform: "bitShiftRight(x, 4)"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "스마트 콘센트"
+    label_en: "smart plugs"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  switch:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        id: 'room_{{room.room_id}}_plug_{{outlet_num}}'
+        name: 'Room {{room.room_id}} Plug {{outlet_num}}'
+        icon: 'mdi:power-socket-eu'
+        state:
+          data: [0x00, 0x01, 0x1F, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}']
+          mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        state_on:
+          offset: 7
+          data: [0x01]
+        state_off:
+          offset: 7
+          data: [0x02]
+        command_on:
+          data: [0x0b, 0x01, 0x1f, 0x02, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x01, 0x00]
+          ack: [0x0b, 0x01, 0x1f, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x01, 0x01]
+        command_off:
+          data: [0x0b, 0x01, 0x1f, 0x02, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x02, 0x00]
+          ack: [0x0b, 0x01, 0x1f, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x02, 0x02]
+
+  sensor:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        name: 'Room {{room.room_id}} Plug {{outlet_num}} Power'
+        unit_of_measurement: 'W'
+        state:
+          # 원본 plugs.yaml state data: [0x12, 0x01, 0x1f, 0x04, 0x40, 0x11]
+          # Switch state는 [0x00...], Sensor state는 [0x12...]
+          # 0x00: Status Notify? 0x12: Power Report?
+          data: [0x12, 0x01, 0x1f, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}']
+        state_number:
+          offset: 8
+          length: 2
+          precision: 0

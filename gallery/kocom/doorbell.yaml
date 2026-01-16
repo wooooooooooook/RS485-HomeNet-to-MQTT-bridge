@@ -3,9 +3,19 @@ meta:
   name_en: "Doorbell Set"
   description: "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다."
   description_en: "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["doorbell", "kocom", "switch", "button"]
+
+discovery:
+  match:
+    data: [0xAA, 0x55, 0x70, 0x90]
+    mask: [0xFF, 0xFF, 0xF0, 0xF0]
+  ui:
+    label: "현관문세트"
+    label_en: "Doorbell Set"
+    summary: "현관문세트 발견됨"
+    summary_en: "Doorbell Set discovered"
 
 entities:
   # 벨 울림 감지 (개인현관)

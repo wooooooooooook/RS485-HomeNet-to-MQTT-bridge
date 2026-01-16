@@ -3,9 +3,19 @@ meta:
   name_en: "Ventilation System"
   description: "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다."
   description_en: "Hyundai Imazu ventilation system with 3-speed control."
-  version: "1.0.2"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["fan", "ventilation", "hyundai", "imazu"]
+
+discovery:
+  match:
+    data: [0x00, 0x01, 0x2b, 0x04, 0x40, 0x11]
+    mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+  ui:
+    label: "환기시스템"
+    label_en: "Ventilation System"
+    summary: "환기시스템 발견됨"
+    summary_en: "Ventilation System discovered"
 
 entities:
   fan:

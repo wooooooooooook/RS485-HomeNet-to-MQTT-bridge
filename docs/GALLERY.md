@@ -447,7 +447,7 @@ discovery:
   dimensions:
     - parameter: "room_count"
       offset: 1
-      transform: "x & 0x0F"
+      transform: "bitAnd(x, 0x0F)"
     - parameter: "lights_per_room"
       offset: 4
   inference:
@@ -490,7 +490,7 @@ discovery:
   dimensions:
     - parameter: "room_id"
       offset: 1
-      transform: "x & 0x0F"
+      transform: "bitAnd(x, 0x0F)"
     - parameter: "light_id"
       offset: 4
   inference:

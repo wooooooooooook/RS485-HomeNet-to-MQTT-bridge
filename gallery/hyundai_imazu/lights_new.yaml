@@ -1,0 +1,70 @@
+meta:
+  name: "☑️조명 설정"
+  name_en: "☑️Lights"
+  description: "현대 이마주 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다."
+  description_en: "Hyundai Imazu lights configuration. You can configure room count and lights per room."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "hyundai", "imazu"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        light_count: 4
+      - room_id: 2
+        light_count: 3
+    schema:
+      room_id: { type: integer, min: 1, max: 8, label: "방 번호 (ID)", label_en: "Room ID" }
+      light_count: { type: integer, min: 1, max: 8, label: "조명 개수", label_en: "Light Count" }
+
+discovery:
+  match:
+    data: [0x00, 0x01, 0x19, 0x04, 0x40]
+    mask: [0x00, 0xff, 0xff, 0xff, 0xff]
+  dimensions:
+    - parameter: "room_id"
+      offset: 5 # 0x00 0x01 0x19 0x04 0x40 [0x11]
+      # 0x11 -> Room 1, Light 1. 0x21 -> Room 2, Light 1
+      transform: "bitShiftRight(x, 4)"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "조명"
+    label_en: "lights"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  light:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.light_count}}'
+          as: light_num
+          start: 1
+        id: 'room_{{room.room_id}}_light_{{light_num}}'
+        name: 'Room {{room.room_id}} Light {{light_num}}'
+        state:
+          # data: [0x00, 0x01, 0x19, 0x04, 0x40, (room_id << 4) | light_num]
+          data: [0x00, 0x01, 0x19, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), light_num)}}']
+          mask: [0x00, 0xff, 0xff, 0xff, 0xff, 0xff]
+        state_on:
+          offset: 7
+          data: [0x01]
+        state_off:
+          offset: 7
+          data: [0x02]
+        command_on:
+          data: [0x0b, 0x01, 0x19, 0x02, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), light_num)}}', 0x01, 0x00]
+          ack: [0x0b, 0x01, 0x19, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), light_num)}}', 0x01, 0x01]
+        command_off:
+          data: [0x0b, 0x01, 0x19, 0x02, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), light_num)}}', 0x02, 0x00]
+          ack: [0x0b, 0x01, 0x19, 0x04, 0x40, '{{bitOr(bitShiftLeft(room.room_id, 4), light_num)}}', 0x02, 0x02]

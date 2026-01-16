@@ -1,0 +1,96 @@
+meta:
+  name: "☑️조명 설정"
+  name_en: "☑️Lights"
+  description: "Ezville 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다."
+  description_en: "Ezville lights configuration. You can configure room count and lights per room."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "ezville"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        light_count: 5
+      - room_id: 2
+        light_count: 2
+      - room_id: 3
+        light_count: 1
+      - room_id: 4
+        light_count: 1
+      - room_id: 5
+        light_count: 1
+    schema:
+      room_id: { type: integer, min: 1, max: 15, label: "방 번호 (ID)", label_en: "Room ID" }
+      light_count: { type: integer, min: 1, max: 8, label: "조명 개수", label_en: "Light Count" }
+
+discovery:
+  match:
+    data: [0x0E]
+    mask: [0xFF]
+  dimensions:
+    - parameter: "room_id"
+      offset: 1
+      # Room ID 0x11 -> 1, 0x12 -> 2
+      transform: "bitAnd(x, 0x0F)"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "조명"
+    label_en: "lights"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  light:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        # 일괄 제어 (All Lights)
+        - id: 'room_{{room.room_id}}_all_lights'
+          name: 'Room {{room.room_id}} All Lights'
+          state:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x81]
+          state_on:
+            offset: 5
+            data: [0x00]
+            mask: [0xFF]
+            inverted: true
+          state_off:
+            offset: 5
+            data: [0x00]
+            mask: [0xFF]
+          command_on:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x41, 0x03, 0x0F, 0x01, 0x00]
+            ack: [0x0E, '{{0x10 + room.room_id}}', 0xC1]
+          command_off:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x41, 0x03, 0x0F, 0x00, 0x00]
+            ack: [0x0E, '{{0x10 + room.room_id}}', 0xC1]
+
+        # 개별 조명
+        - $repeat:
+            count: '{{room.light_count}}'
+            as: light_num
+            start: 1
+          id: 'room_{{room.room_id}}_light_{{light_num}}'
+          name: 'Room {{room.room_id}} Light {{light_num}}'
+          state:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x81]
+          state_on:
+            offset: '{{4 + light_num}}'
+            data: [0x01]
+          state_off:
+            offset: '{{4 + light_num}}'
+            data: [0x00]
+          command_on:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x41, 0x03, '{{light_num}}', 0x01, 0x00]
+            ack: [0x0E, '{{0x10 + room.room_id}}', 0xC1]
+          command_off:
+            data: [0x0E, '{{0x10 + room.room_id}}', 0x41, 0x03, '{{light_num}}', 0x00, 0x00]
+            ack: [0x0E, '{{0x10 + room.room_id}}', 0xC1]

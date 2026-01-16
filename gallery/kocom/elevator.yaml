@@ -3,9 +3,19 @@ meta:
   name_en: "Elevator Call"
   description: "코콤 엘리베이터 호출 버튼과 층수/방향 센서 설정입니다."
   description_en: "Kocom elevator call button with floor and direction sensors."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["elevator", "button", "sensor", "kocom"]
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+  ui:
+    label: "엘리베이터"
+    label_en: "Elevator"
+    summary: "엘리베이터 발견됨"
+    summary_en: "Elevator discovered"
 
 entities:
   sensor:

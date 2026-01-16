@@ -3,9 +3,19 @@ meta:
   name_en: "Gas Valve"
   description: "코콤 Thinks 가스밸브 설정입니다."
   description_en: "Kocom Thinks gas valve configuration."
-  version: "1.0.1"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["valve", "gas", "kocom", "thinks"]
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x2c]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF]
+  ui:
+    label: "가스밸브"
+    label_en: "Gas Valve"
+    summary: "가스밸브 발견됨"
+    summary_en: "Gas Valve discovered"
 
 entities:
   valve:

@@ -99,13 +99,6 @@ export const parseEnvList = (
     throw new Error(`[service] ${source}에 최소 1개 이상의 ${label}을 지정하세요.`);
   }
 
-  if (!raw.includes(',')) {
-    logger.warn(
-      `[service] ${source}에 단일 값이 입력되었습니다. 쉼표로 구분된 배열 형식(${source}=item1,item2)` +
-        ' 사용을 권장합니다.',
-    );
-  }
-
   if (source === legacyKey && primaryKey !== legacyKey) {
     logger.warn(`[service] ${legacyKey} 대신 ${primaryKey} 환경 변수를 사용하도록 전환해주세요.`);
   }

@@ -1,0 +1,84 @@
+meta:
+  name: "☑️난방 설정"
+  name_en: "☑️Heaters"
+  description: "현대 이마주 난방 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다."
+  description_en: "Hyundai Imazu heating configuration with count parameter. Supports away mode."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "heater", "thermostat", "hyundai", "imazu"]
+
+parameters:
+  - name: heater_count
+    type: integer
+    default: 5
+    min: 1
+    max: 8
+    label: "난방 개수"
+    label_en: "Number of Heaters"
+
+discovery:
+  match:
+    data: [0x00, 0x01, 0x18, 0x04, 0x45]
+    mask: [0x00, 0xff, 0xff, 0xff, 0xff]
+  ui:
+    label: "난방"
+    label_en: "heaters"
+    summary: "난방 시스템 발견됨"
+    summary_en: "Heating system discovered"
+
+entities:
+  climate:
+    - $repeat:
+        count: '{{heater_count}}'
+        as: i
+        start: 1
+      id: 'heater_{{i}}'
+      name: 'Room 1 Heater {{i}}'
+      # 다 0x1X라서 Room 1로 가정? 아니면 Room ID 개념이 없나?
+      # 원본 heaters.yaml: "Room 1 Heater 1" (0x10), "Room 1 Heater 2" (0x11)
+      # 0x1X가 방 번호라기 보단 그냥 난방기 Index인 듯. (0x10 ~ 0x14)
+      # 하지만 lights는 (Room<<4)|Index 였음. Heaters도 Room 개념이 있을수 있음.
+      # 여기서는 heater_count로 순차적 생성. (0x10 + i - 1)
+      visual:
+        min_temperature: 5 °C
+        max_temperature: 40 °C
+        temperature_step: 1 °C
+      state:
+        data: [0x00, 0x01, 0x18, 0x04, 0x45, '{{0x10 + i - 1}}']
+        mask: [0x00, 0xff, 0xff, 0xff, 0xfc, 0xff]
+      state_temperature_current:
+        offset: 8
+        length: 1
+        precision: 0
+      state_temperature_target:
+        offset: 9
+        length: 1
+        precision: 0
+      state_off:
+        offset: 7
+        data: [0x04]
+      state_heat:
+        offset: 7
+        data: [0x01]
+      state_preset_away:
+        offset: 7
+        data: [0x07]
+      state_preset_none:
+        offset: 7
+        data: [0x07]
+        inverted: True
+      
+      command_off:
+        data: [0x0B, 0x01, 0x18, 0x02, 0x46, '{{0x10 + i - 1}}', 0x04, 0x00]
+        ack: [0x0D, 0x01, 0x18, 0x04, 0x46, '{{0x10 + i - 1}}', 0x04, 0x04]
+      command_heat:
+        data: [0x0B, 0x01, 0x18, 0x02, 0x46, '{{0x10 + i - 1}}', 0x01, 0x00]
+        ack: [0x0D, 0x01, 0x18, 0x04, 0x46, '{{0x10 + i - 1}}', 0x01, 0x01]
+      command_preset_away:
+        data: [0x0B, 0x01, 0x18, 0x02, 0x46, '{{0x10 + i - 1}}', 0x07, 0x00]
+        ack: [0x0D, 0x01, 0x18, 0x04, 0x46, '{{0x10 + i - 1}}', 0x07, 0x07]
+      command_preset_none:
+        data: [0x0B, 0x01, 0x18, 0x02, 0x46, '{{0x10 + i - 1}}', 0x01, 0x00]
+        ack: [0x0D, 0x01, 0x18, 0x04, 0x46, '{{0x10 + i - 1}}', 0x01, 0x01]
+      command_temperature: >-
+        [[0x0B, 0x01, 0x18, 0x02, 0x45, '{{0x10 + i - 1}}', x, 0x00],[0x0D, 0x01, 0x18, 0x04, 0x45, '{{0x10 + i - 1}}', x, 0x01]]

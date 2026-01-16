@@ -1,0 +1,74 @@
+meta:
+  name: "☑️조명 설정"
+  name_en: "☑️Lights"
+  description: "CVNet 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다."
+  description_en: "CVNet lights configuration. You can configure room count and lights per room."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["light", "cvnet"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 0
+        light_count: 3
+      - room_id: 1
+        light_count: 1
+    schema:
+      room_id: { type: integer, min: 0, max: 15, label: "방 번호 (ID)", label_en: "Room ID" }
+      light_count: { type: integer, min: 1, max: 4, label: "조명 개수", label_en: "Light Count" }
+
+discovery:
+  match:
+    data: [0x20, 0x01]
+    mask: [0xFF, 0xFF]
+  dimensions:
+    - parameter: "room_id"
+      offset: 2
+      transform: "bitAnd(x, 0x0F)"
+    - parameter: "light_count"
+      offset: 3
+      # 0x20 0x01 0x21 0x11(CMD) ... ?
+      # 정확한 조명 개수 확인이 어렵다면 기본값 유도 또는 active_bits와 같은 방식 필요
+      # CVNet 패킷에서 조명 개수를 명확히 알 수 있는 부분이 있는지 확인 필요
+      # 우선 unique_tuples로 방 ID만 식별하고 조명 개수는 사용자가 확인하도록 함
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "조명"
+    label_en: "lights"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  light:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.light_count}}'
+          as: light_num
+          start: 1
+        id: 'room_{{room.room_id}}_light_{{light_num}}'
+        name: 'Room {{room.room_id}} Light {{light_num}}'
+        state:
+          data: [0x20, 0x01, '{{0x20 + room.room_id + 1}}']
+          # Room 0 -> 0x21, Room 1 -> 0x22 ...
+        state_on:
+          offset: '{{3 + light_num}}'
+          data: [0x01]
+        state_off:
+          offset: '{{3 + light_num}}'
+          data: [0x00]
+        command_on:
+          data: [0x20, '{{0x20 + room.room_id + 1}}', 0x01, '{{0x10 + light_num}}', 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: [0x20, 0x01, '{{0x20 + room.room_id + 1}}', 0x9F]
+        command_off:
+          data: [0x20, '{{0x20 + room.room_id + 1}}', 0x01, '{{0x10 + light_num}}', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          ack: [0x20, 0x01, '{{0x20 + room.room_id + 1}}', 0x9F]

@@ -1,0 +1,98 @@
+meta:
+  name: "☑️스마트 콘센트 설정"
+  name_en: "☑️Smart Outlets"
+  description: "Ezville 스마트 콘센트 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다."
+  description_en: "Ezville smart outlets configuration. You can configure room count and outlets per room (with power meter)."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["switch", "outlet", "power", "ezville"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        outlet_count: 2
+      - room_id: 2
+        outlet_count: 2
+    schema:
+      room_id: { type: integer, min: 1, max: 15, label: "방 번호 (ID)", label_en: "Room ID" }
+      outlet_count: { type: integer, min: 1, max: 4, label: "콘센트 개수", label_en: "Outlet Count" }
+
+discovery:
+  match:
+    data: [0x39]
+    mask: [0xFF]
+  dimensions:
+    - parameter: "room_id"
+      offset: 1
+      # Room 1 -> 0x1F, Room 2 -> 0x2F ... (하위 4비트는 0xF ?)
+      transform: "bitShiftRight(x, 4)"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "콘센트"
+    label_en: "outlets"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  switch:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        id: 'room_{{room.room_id}}_outlet_{{outlet_num}}'
+        name: 'Room {{room.room_id}} Outlet {{outlet_num}}'
+        state:
+          # Room 1 -> 0x1F (Upper 4bit: Room ID, Lower 4bit: F?)
+          data: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), 0x0F)}}', 0x81]
+          # data: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), 0x01)}}', 0x81] ?
+          # 원본 outlets.yaml: 0x1f, 0x2f, 0x3f, 0x4f, 0x8f
+          # 즉 (room_id << 4) | 0x0F 가 맞음.
+        state_on:
+          offset: '{{2 + 3 * outlet_num}}' # 5, 8, 11... -> 2 + 3*1=5, 2+3*2=8
+          mask: [0x10]
+          data: [0x10]
+        state_off:
+          offset: '{{2 + 3 * outlet_num}}'
+          mask: [0x10]
+          data: [0x00]
+        command_on:
+          # Command: 0x39, (room_id << 4) | outlet_num, ...
+          data: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x41, 0x01, 0x11]
+          ack: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0xC1]
+        command_off:
+          data: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0x41, 0x01, 0x10]
+          ack: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), outlet_num)}}', 0xC1]
+
+  sensor:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        id: 'room_{{room.room_id}}_power_{{outlet_num}}'
+        name: 'Room {{room.room_id}} Outlet {{outlet_num}} Power'
+        state:
+          data: [0x39, '{{bitOr(bitShiftLeft(room.room_id, 4), 0x0F)}}', 0x81]
+        accuracy_decimals: 1
+        unit_of_measurement: 'W'
+        state_number:
+          offset: '{{2 + 3 * outlet_num}}'
+          length: 3
+          precision: 1
+          signed: false
+          decode: bcd

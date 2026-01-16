@@ -1,0 +1,93 @@
+meta:
+  name: "☑️스마트 콘센트 (F7 50)"
+  name_en: "☑️Smart Outlets (F7 50)"
+  description: "Ezville 스마트 콘센트 (F7 50 타입) 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다."
+  description_en: "Ezville smart outlets (F7 50 type) configuration. Room count and outlets per room (with power meter)."
+  version: "2.0.0"
+  author: "wooooooooooook"
+  tags: ["switch", "outlet", "power", "ezville"]
+
+parameters:
+  - name: rooms
+    type: object[]
+    label: "방별 설정"
+    label_en: "Room Settings"
+    default:
+      - room_id: 1
+        outlet_count: 2
+      - room_id: 2
+        outlet_count: 2
+    schema:
+      room_id: { type: integer, min: 1, max: 15, label: "방 번호 (ID)", label_en: "Room ID" }
+      outlet_count: { type: integer, min: 1, max: 4, label: "콘센트 개수", label_en: "Outlet Count" }
+
+discovery:
+  match:
+    data: [0x50]
+    mask: [0xFF]
+  dimensions:
+    - parameter: "room_id"
+      offset: 1
+      # Room 1 -> 0x11, Room 2 -> 0x12 ... (0x10 + ID)
+      transform: "bitAnd(x, 0x0F)"
+  inference:
+    strategy: "unique_tuples"
+    output: "rooms"
+  ui:
+    label: "스마트 콘센트 (F7)"
+    label_en: "smart outlets (F7)"
+    summary: "{room_count}개 방 발견됨"
+    summary_en: "{room_count} rooms discovered"
+
+entities:
+  switch:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        id: 'room_{{room.room_id}}_outlet_{{outlet_num}}'
+        name: 'Room {{room.room_id}} Outlet {{outlet_num}}'
+        state:
+          data: [0x50, '{{0x10 + room.room_id}}', 0x81]
+        state_on:
+          # Offset: 7 + (outlet_num - 1) * 6
+          offset: '{{7 + (outlet_num - 1) * 6}}'
+          mask: [0x01]
+          data: [0x01]
+        state_off:
+          offset: '{{7 + (outlet_num - 1) * 6}}'
+          mask: [0x01]
+          data: [0x00]
+        command_on:
+          data: [0x50, '{{0x10 + room.room_id}}', 0x43, 0x02, '{{outlet_num}}', 0x01, 0x00, 0x00]
+          ack: [0x50, '{{0x10 + room.room_id}}', 0x81] # Ack가 상태 패킷과 같을 수도 있고 다를 수도 있음. 원본은 언급 없음. 상태 패킷을 Ack로 가정.
+          # 원본 smart_outlets_f750.yaml에는 ack 정의가 없음. command만 있음.
+          # 여기서는 우선 생략하거나 상태 패킷을 기대하도록 설정.
+        command_off:
+          data: [0x50, '{{0x10 + room.room_id}}', 0x43, 0x02, '{{outlet_num}}', 0x00, 0x00, 0x00]
+
+  sensor:
+    - $repeat:
+        over: rooms
+        as: room
+        index: room_idx
+      $nested:
+        $repeat:
+          count: '{{room.outlet_count}}'
+          as: outlet_num
+          start: 1
+        id: 'room_{{room.room_id}}_power_{{outlet_num}}'
+        name: 'Room {{room.room_id}} Outlet {{outlet_num}} Power'
+        state:
+          data: [0x50, '{{0x10 + room.room_id}}', 0x81]
+        unit_of_measurement: 'W'
+        state_number:
+          # Offset: 8 + (outlet_num - 1) * 6
+          offset: '{{8 + (outlet_num - 1) * 6}}'
+          length: 2
+          precision: 2

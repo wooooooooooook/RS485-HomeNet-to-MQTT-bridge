@@ -3,9 +3,19 @@ meta:
   name_en: "Bestin Doorlock"
   description: "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin doorlock. bestin1.0 bestin2.0 common."
-  version: "1.0.0"
+  version: "2.0.0"
   author: "wooooooooooook"
   tags: ["lock", "doorlock", "bestin"]
+
+discovery:
+  match:
+    data: [0x41, 0x02]
+    mask: [0xFF, 0xFF]
+  ui:
+    label: "도어락"
+    label_en: "doorlock"
+    summary: "도어락 발견됨"
+    summary_en: "Doorlock discovered"
 
 entities:
   scripts:

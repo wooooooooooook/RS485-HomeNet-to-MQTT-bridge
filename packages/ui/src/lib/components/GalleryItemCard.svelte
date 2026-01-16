@@ -42,10 +42,12 @@
   let {
     item,
     discoveryResult,
+    isCompatible = true,
     onViewDetails,
   }: {
     item: GalleryItem;
     discoveryResult?: DiscoveryResult;
+    isCompatible?: boolean;
     onViewDetails: () => void;
   } = $props();
 
@@ -82,13 +84,18 @@
   });
 </script>
 
-<div class="card">
+<div class="card" class:disabled={!isCompatible} aria-disabled={!isCompatible}>
   <div class="card-header">
     <div class="title-row">
       <h3 class="card-title">{displayName}</h3>
       {#if isDiscovered}
         <span class="badge discovery" title="패킷이 감지되었습니다">
           🔍 {discoveryBadgeText()}
+        </span>
+      {/if}
+      {#if !isCompatible}
+        <span class="badge incompatible" title={$t('gallery.incompatible_port')}>
+          ⚠️ {$t('gallery.incompatible_port')}
         </span>
       {/if}
       {#if hasParameters}
@@ -146,7 +153,7 @@
     </div>
   {/if}
 
-  <button class="view-btn" onclick={onViewDetails}>
+  <button class="view-btn" onclick={onViewDetails} disabled={!isCompatible}>
     {$t('gallery.view_details')}
   </button>
 </div>
@@ -167,6 +174,16 @@
   .card:hover {
     border-color: rgba(59, 130, 246, 0.3);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .card.disabled {
+    opacity: 0.55;
+    border-color: rgba(148, 163, 184, 0.05);
+  }
+
+  .card.disabled:hover {
+    border-color: rgba(148, 163, 184, 0.05);
+    box-shadow: none;
   }
 
   .card-header {
@@ -297,6 +314,12 @@
     border: 1px solid rgba(34, 197, 94, 0.3);
   }
 
+  .badge.incompatible {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+
   .tags {
     display: flex;
     flex-wrap: wrap;
@@ -326,5 +349,12 @@
   .view-btn:hover {
     background: rgba(59, 130, 246, 0.25);
     border-color: #3b82f6;
+  }
+
+  .view-btn:disabled {
+    cursor: not-allowed;
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(148, 163, 184, 0.2);
+    color: #64748b;
   }
 </style>

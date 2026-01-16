@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t, locale } from 'svelte-i18n';
-  import { onMount, untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import Button from './Button.svelte';
   import Modal from './Modal.svelte';
 
@@ -78,13 +78,13 @@
 
   let {
     item,
-    ports,
+    portId,
     vendorRequirements,
     discoveryResult,
     onClose,
   }: {
     item: GalleryItem;
-    ports: { portId: string; path: string }[];
+    portId: string | null;
     vendorRequirements?: VendorRequirements;
     discoveryResult?: DiscoveryResult;
     onClose: () => void;
@@ -96,7 +96,6 @@
   let loadingYaml = $state(true);
   let yamlError = $state<string | null>(null);
 
-  let selectedPortId = $state(untrack(() => ports[0]?.portId ?? ''));
   let applying = $state(false);
   let applyError = $state<string | null>(null);
   let applySuccess = $state(false);
@@ -310,7 +309,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          portId: selectedPortId,
+          portId,
           yamlContent,
           vendorRequirements,
           parameterValues,
@@ -381,7 +380,7 @@
   }
 
   async function applySnippet() {
-    if (!selectedPortId) return;
+    if (!portId) return;
 
     applying = true;
     applyError = null;
@@ -394,7 +393,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          portId: selectedPortId,
+          portId,
           yamlContent,
           fileName: item.file,
           resolutions: Object.keys(resolutions).length > 0 ? resolutions : undefined,
@@ -466,6 +465,12 @@
               <span class="info-label">{$t('gallery.author')}</span>
               <span class="info-value">{item.author}</span>
             </div>
+            {#if portId}
+              <div class="info-item">
+                <span class="info-label">{$t('gallery.preview.target_port')}</span>
+                <span class="info-value">{portId}</span>
+              </div>
+            {/if}
           </div>
 
           <div class="contents-summary">
@@ -587,15 +592,6 @@
         {/if}
 
         <div class="footer-controls">
-          <div class="port-select">
-            <label for="port-select">{$t('gallery.preview.select_port')}</label>
-            <select id="port-select" bind:value={selectedPortId}>
-              {#each ports as port, index (`${port.portId}-${index}`)}
-                <option value={port.portId}>{port.portId} ({port.path})</option>
-              {/each}
-            </select>
-          </div>
-
           <div class="action-buttons">
             <Button variant="secondary" onclick={onClose}>
               {$t('common.cancel')}
@@ -604,7 +600,7 @@
               variant="primary"
               onclick={confirmAndCheckConflicts}
               isLoading={applying || checkingConflicts}
-              disabled={!selectedPortId || loadingYaml}
+              disabled={!portId || loadingYaml}
             >
               {#if applying}
                 {$t('gallery.preview.applying')}
@@ -1036,30 +1032,8 @@
 
   .footer-controls {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 1rem;
-  }
-
-  .port-select {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .port-select label {
-    font-size: 0.75rem;
-    color: #64748b;
-  }
-
-  .port-select select {
-    padding: 0.5rem 0.75rem;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 6px;
-    color: #f1f5f9;
-    font-size: 0.85rem;
-    min-width: 200px;
   }
 
   .action-buttons {
@@ -1080,10 +1054,6 @@
     .footer-controls {
       flex-direction: column;
       align-items: stretch;
-    }
-
-    .port-select select {
-      width: 100%;
     }
 
     .action-buttons {

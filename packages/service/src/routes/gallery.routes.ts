@@ -109,6 +109,54 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
     }
   });
 
+  router.post('/api/gallery/compatibility', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    const { portId, vendors } = req.body as {
+      portId?: string;
+      vendors?: Array<{
+        id: string;
+        requirements?: {
+          serial?: Record<string, unknown>;
+          packet_defaults?: Record<string, unknown>;
+        };
+      }>;
+    };
+
+    if (typeof portId !== 'string' || !Array.isArray(vendors)) {
+      return res.status(400).json({ error: 'portId and vendors are required' });
+    }
+
+    const currentConfigs = ctx.getCurrentConfigs();
+    const configForPort =
+      currentConfigs.find((config, index) => {
+        if (!config.serial) return false;
+        return normalizePortId(config.serial.portId, index) === portId;
+      }) ?? null;
+
+    const compatibilityByVendorId: Record<string, boolean> = {};
+
+    for (const vendor of vendors) {
+      if (!vendor?.id) continue;
+      if (!configForPort) {
+        compatibilityByVendorId[vendor.id] = false;
+        continue;
+      }
+      if (!vendor.requirements) {
+        compatibilityByVendorId[vendor.id] = true;
+        continue;
+      }
+      compatibilityByVendorId[vendor.id] = checkConfigRequirements(
+        configForPort,
+        vendor.requirements,
+      );
+    }
+
+    return res.json({ compatibilityByVendorId });
+  });
+
 // Helper to check if a config matches vendor requirements
 function checkConfigRequirements(
   config: HomenetBridgeConfig,

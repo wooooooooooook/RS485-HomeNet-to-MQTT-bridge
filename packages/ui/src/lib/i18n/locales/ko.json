@@ -334,6 +334,7 @@
     "parameters": "파라미터",
     "has_parameters": "파라미터 설정 가능",
     "tags": "태그",
+    "incompatible_port": "포트 비호환",
     "view_details": "상세보기",
     "preview": {
       "title": "스니펫 미리보기",
@@ -351,7 +352,7 @@
       "option_skip": "건너뛰기",
       "option_rename": "새 ID로 추가",
       "new_id_placeholder": "새 ID 입력",
-      "select_port": "적용할 포트 선택",
+      "target_port": "적용 포트",
       "apply": "적용",
       "applying": "적용 중...",
       "checking": "충돌 확인 중...",

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import { onMount } from 'svelte';
-  import type { BridgeInfo } from '../types';
+  import type { BridgeSerialInfo, BridgeStatus } from '../types';
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
+  import PortToolbar from '../components/PortToolbar.svelte';
 
   const GALLERY_LIST_URL = './api/gallery/list';
 
@@ -68,21 +69,16 @@
   }
 
   let {
-    bridgeInfo,
+    portMetadata,
+    portStatuses = [],
+    selectedPortId,
+    onPortChange,
   }: {
-    bridgeInfo: BridgeInfo | null;
+    portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
+    portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
+    selectedPortId: string | null;
+    onPortChange?: (portId: string) => void;
   } = $props();
-
-  // Extract ports from bridgeInfo for the modal
-  const ports = $derived(
-    bridgeInfo?.bridges?.reduce<{ portId: string; path: string }[]>(
-      (acc, bridge) =>
-        bridge.serial
-          ? acc.concat({ portId: bridge.serial.portId, path: bridge.serial.path })
-          : acc,
-      [],
-    ) ?? [],
-  );
 
   let galleryData: GalleryData | null = $state(null);
   let loading = $state(true);
@@ -100,6 +96,15 @@
   // Discovery results
   let discoveryResults = $state<Record<string, DiscoveryResult>>({});
   let discoveryLoading = $state(false);
+  let compatibilityByVendor = $state<Record<string, boolean>>({});
+  let compatibilityRequestId = $state(0);
+
+  const portIds = $derived.by<string[]>(() =>
+    portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
+  );
+  const activePortId = $derived.by<string | null>(() =>
+    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
+  );
 
   async function loadDiscovery() {
     discoveryLoading = true;
@@ -136,6 +141,47 @@
     loadGallery();
     loadDiscovery();
   });
+
+  async function loadCompatibility(portId: string, vendors: Vendor[]) {
+    const requestId = compatibilityRequestId + 1;
+    compatibilityRequestId = requestId;
+    try {
+      const response = await fetch('./api/gallery/compatibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          portId,
+          vendors: vendors.map((vendor) => ({
+            id: vendor.id,
+            requirements: vendor.requirements,
+          })),
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to fetch compatibility');
+      const data = await response.json();
+      if (compatibilityRequestId !== requestId) return;
+      compatibilityByVendor = data.compatibilityByVendorId ?? {};
+    } catch {
+      if (compatibilityRequestId !== requestId) return;
+      compatibilityByVendor = {};
+    } finally {
+      // no-op
+    }
+  }
+
+  $effect(() => {
+    if (!galleryData || !activePortId) {
+      compatibilityByVendor = {};
+      return;
+    }
+    loadCompatibility(activePortId, galleryData.vendors);
+  });
+
+  function resolveCompatibility(vendorId: string) {
+    if (!activePortId) return false;
+    const vendorCompatibility = compatibilityByVendor[vendorId];
+    return vendorCompatibility ?? true;
+  }
 
   const filteredItems = $derived(() => {
     if (!galleryData) return [];
@@ -179,8 +225,17 @@
       );
     }
 
-    // Sort: items with discovery first, then items with parameters
-    items.sort((a, b) => {
+    const decoratedItems = items.map((item) => ({
+      ...item,
+      isCompatible: resolveCompatibility(item.vendorId),
+    }));
+
+    // Sort: compatible items first, then items with discovery, then items with parameters
+    decoratedItems.sort((a, b) => {
+      const aCompatible = a.isCompatible ? 1 : 0;
+      const bCompatible = b.isCompatible ? 1 : 0;
+      if (bCompatible !== aCompatible) return bCompatible - aCompatible;
+
       // Discovery match takes priority
       const aDiscovered = discoveryResults[a.file]?.matched ? 2 : 0;
       const bDiscovered = discoveryResults[b.file]?.matched ? 2 : 0;
@@ -192,7 +247,7 @@
       return bHasParams - aHasParams;
     });
 
-    return items;
+    return decoratedItems;
   });
 
   function openPreview(
@@ -227,6 +282,8 @@
       </button>
     </div>
   {:else if galleryData}
+    <PortToolbar {portIds} {activePortId} {portStatuses} {onPortChange} />
+
     <div class="filters">
       <div class="search-box">
         <input
@@ -275,8 +332,9 @@
       {#each filteredItems() as item (item.file)}
         <GalleryItemCard
           {item}
+          isCompatible={item.isCompatible}
           discoveryResult={discoveryResults[item.file]}
-          onViewDetails={() => openPreview(item)}
+          onViewDetails={() => item.isCompatible && openPreview(item)}
         />
       {:else}
         <div class="no-items">
@@ -290,7 +348,7 @@
 {#if showPreviewModal && selectedItem}
   <GalleryPreviewModal
     item={selectedItem}
-    {ports}
+    portId={activePortId}
     vendorRequirements={selectedItem.vendorRequirements}
     discoveryResult={discoveryResults[selectedItem.file]}
     onClose={closePreview}

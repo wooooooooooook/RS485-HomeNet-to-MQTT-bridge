@@ -1686,7 +1686,12 @@
             logRetentionEnabled={frontendSettings?.logRetention?.enabled ?? false}
           />
         {:else if activeView === 'gallery'}
-          <Gallery {bridgeInfo} />
+          <Gallery
+            {portMetadata}
+            {portStatuses}
+            selectedPortId={activePortId}
+            onPortChange={(portId) => (selectedPortId = portId)}
+          />
         {:else if activeView === 'settings'}
           <SettingsView
             {frontendSettings}

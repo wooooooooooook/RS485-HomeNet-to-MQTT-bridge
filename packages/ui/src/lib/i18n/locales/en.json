@@ -331,6 +331,7 @@
     "parameters": "Params",
     "has_parameters": "Configurable parameters",
     "tags": "Tags",
+    "incompatible_port": "Port incompatible",
     "view_details": "View Details",
     "preview": {
       "title": "Snippet Preview",
@@ -348,7 +349,7 @@
       "option_skip": "Skip",
       "option_rename": "Add with new ID",
       "new_id_placeholder": "Enter new ID",
-      "select_port": "Select target port",
+      "target_port": "Target port",
       "apply": "Apply",
       "applying": "Applying...",
       "checking": "Checking conflicts...",

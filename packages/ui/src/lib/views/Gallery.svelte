@@ -101,6 +101,9 @@
   let compatibilityRequestId = $state(0);
   let compatibilityCache = $state<Map<string, Record<string, boolean>>>(new Map());
   let compatibilityTimeoutId = $state<ReturnType<typeof setTimeout> | null>(null);
+  let discoveryTimeoutId = $state<ReturnType<typeof setTimeout> | null>(null);
+  let discoveryPortId = $state<string | null>(null);
+  let discoveryLoadedPortId = $state<string | null>(null);
   let galleryAbortController = $state<AbortController | null>(null);
   let discoveryAbortController = $state<AbortController | null>(null);
   let compatibilityAbortController = $state<AbortController | null>(null);
@@ -115,9 +118,13 @@
   async function loadDiscovery(portId: string | null) {
     if (!portId) {
       discoveryResults = {};
+      discoveryPortId = null;
+      discoveryLoadedPortId = null;
       return;
     }
+    if (discoveryLoading && discoveryPortId === portId) return;
     discoveryLoading = true;
+    discoveryPortId = portId;
     if (discoveryAbortController) {
       discoveryAbortController.abort();
     }
@@ -140,6 +147,9 @@
       clearTimeout(timeoutId);
       if (discoveryAbortController === controller) {
         discoveryAbortController = null;
+      }
+      if (discoveryPortId === portId) {
+        discoveryLoadedPortId = portId;
       }
       discoveryLoading = false;
     }
@@ -185,6 +195,13 @@
       return;
     }
 
+    const vendorsWithRequirements = vendors.filter((vendor) => vendor.requirements);
+    if (vendorsWithRequirements.length === 0) {
+      compatibilityByVendor = {};
+      compatibilityCache = new Map(compatibilityCache).set(compatibleKey, {});
+      return;
+    }
+
     if (compatibilityAbortController) {
       compatibilityAbortController.abort();
     }
@@ -200,7 +217,7 @@
         signal: controller.signal,
         body: JSON.stringify({
           portId,
-          vendors: vendors.map((vendor) => ({
+          vendors: vendorsWithRequirements.map((vendor) => ({
             id: vendor.id,
             requirements: vendor.requirements,
           })),
@@ -228,10 +245,25 @@
   $effect(() => {
     if (!activePortId) {
       discoveryResults = {};
+      discoveryPortId = null;
+      discoveryLoadedPortId = null;
       return;
     }
 
-    loadDiscovery(activePortId);
+    if (discoveryTimeoutId) {
+      clearTimeout(discoveryTimeoutId);
+      discoveryTimeoutId = null;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (activePortId === discoveryLoadedPortId || discoveryLoading) return;
+      loadDiscovery(activePortId);
+    }, 300);
+    discoveryTimeoutId = timeoutId;
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   });
 
   $effect(() => {

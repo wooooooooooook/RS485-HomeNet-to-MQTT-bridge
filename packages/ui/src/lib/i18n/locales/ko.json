@@ -261,7 +261,9 @@
       "tab_all": "전체",
       "tab_parsed": "파싱됨",
       "tab_unmatched": "미파싱",
-      "empty": "아직 수집된 패킷이 없습니다."
+      "empty": "아직 수집된 패킷이 없습니다.",
+      "sort_asc": "오름차순 정렬",
+      "sort_desc": "내림차순 정렬"
     },
     "stats": {
       "title": "패킷 간격 분석",

@@ -8,6 +8,7 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let viewMode = $state<'parsed' | 'unmatched' | 'all'>('all');
+  let sortDesc = $state(false);
 
   async function fetchData() {
     loading = true;
@@ -43,11 +44,22 @@
   });
 
   const displayPackets = $derived.by(() => {
-    if (viewMode === 'parsed') return parsedPackets;
-    if (viewMode === 'unmatched') return unmatchedPackets;
-    // 'all' mode - combine and deduplicate
-    const combined = new Set([...parsedPackets, ...unmatchedPackets]);
-    return Array.from(combined);
+    let packets: string[] = [];
+    if (viewMode === 'parsed') {
+      packets = parsedPackets;
+    } else if (viewMode === 'unmatched') {
+      packets = unmatchedPackets;
+    } else {
+      // 'all' mode - combine and deduplicate
+      packets = Array.from(new Set([...parsedPackets, ...unmatchedPackets]));
+    }
+
+    packets.sort((a, b) => {
+      const res = a.localeCompare(b);
+      return sortDesc ? -res : res;
+    });
+
+    return packets;
   });
 
   const parsedSet = $derived.by(() => new Set(parsedPackets));
@@ -99,6 +111,17 @@
         onclick={() => (viewMode = 'unmatched')}
       >
         {$t('analysis.packet_dictionary.tab_unmatched')}
+      </Button>
+      <div class="separator"></div>
+      <Button
+        variant="secondary"
+        onclick={() => (sortDesc = !sortDesc)}
+        title={sortDesc
+          ? $t('analysis.packet_dictionary.sort_asc')
+          : $t('analysis.packet_dictionary.sort_desc')}
+      >
+        <span class="sort-icon">{sortDesc ? '↓' : '↑'}</span>
+        {sortDesc ? 'Z-A' : 'A-Z'}
       </Button>
     </div>
   </div>
@@ -287,6 +310,17 @@
   .error {
     padding: 2rem;
     text-align: center;
+  }
+
+  .separator {
+    width: 1px;
+    background: rgba(148, 163, 184, 0.2);
+    margin: 0 0.25rem;
+  }
+
+  .sort-icon {
+    margin-right: 0.25rem;
+    font-weight: bold;
   }
 
   .error {

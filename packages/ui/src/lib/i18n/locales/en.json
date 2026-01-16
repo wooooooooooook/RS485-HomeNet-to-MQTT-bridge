@@ -261,7 +261,9 @@
       "tab_all": "All",
       "tab_parsed": "Parsed",
       "tab_unmatched": "Unmatched",
-      "empty": "No packets collected yet."
+      "empty": "No packets collected yet.",
+      "sort_asc": "Sort A-Z",
+      "sort_desc": "Sort Z-A"
     },
     "stats": {
       "title": "Packet Interval Analysis",

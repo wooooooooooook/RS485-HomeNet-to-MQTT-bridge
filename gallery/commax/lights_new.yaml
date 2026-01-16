@@ -13,6 +13,20 @@ parameters:
     max: 9
     label: "조명 개수"
     label_en: "Number of Lights"
+discovery:
+  match:
+    data: [0xB0]
+    mask: [0xF0]
+  dimensions:
+    - parameter: "light_count"
+      offset: 2
+  inference:
+    strategy: max
+  ui:
+    label: "조명"
+    label_en: "lights"
+    summary: "{light_count}개 조명 발견됨"
+    summary_en: "{light_count} lights discovered"
 entities:
   light:
     - $repeat:

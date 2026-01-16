@@ -26,6 +26,19 @@
     content_summary: ContentSummary;
   }
 
+  interface DiscoveryResult {
+    matched: boolean;
+    matchedPacketCount: number;
+    parameterValues: Record<string, unknown>;
+    ui?: {
+      label?: string;
+      label_en?: string;
+      badge?: string;
+      summary?: string;
+      summary_en?: string;
+    };
+  }
+
   interface GalleryParameterDefinition {
     name: string;
     type: 'integer' | 'string' | 'integer[]' | 'object[]';
@@ -84,6 +97,27 @@
   >(null);
   let showPreviewModal = $state(false);
 
+  // Discovery results
+  let discoveryResults = $state<Record<string, DiscoveryResult>>({});
+  let discoveryLoading = $state(false);
+
+  async function loadDiscovery() {
+    discoveryLoading = true;
+    try {
+      const response = await fetch('./api/gallery/discovery');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.available && data.results) {
+          discoveryResults = data.results;
+        }
+      }
+    } catch {
+      // Ignore discovery errors - it's optional
+    } finally {
+      discoveryLoading = false;
+    }
+  }
+
   async function loadGallery() {
     loading = true;
     error = null;
@@ -100,6 +134,7 @@
 
   onMount(() => {
     loadGallery();
+    loadDiscovery();
   });
 
   const filteredItems = $derived(() => {
@@ -144,8 +179,14 @@
       );
     }
 
-    // Sort: items with parameters first
+    // Sort: items with discovery first, then items with parameters
     items.sort((a, b) => {
+      // Discovery match takes priority
+      const aDiscovered = discoveryResults[`${a.vendorId}/${a.file}`]?.matched ? 2 : 0;
+      const bDiscovered = discoveryResults[`${b.vendorId}/${b.file}`]?.matched ? 2 : 0;
+      if (bDiscovered !== aDiscovered) return bDiscovered - aDiscovered;
+
+      // Then items with parameters
       const aHasParams = (a.parameters?.length ?? 0) > 0 ? 1 : 0;
       const bHasParams = (b.parameters?.length ?? 0) > 0 ? 1 : 0;
       return bHasParams - aHasParams;
@@ -232,7 +273,11 @@
 
     <div class="items-grid">
       {#each filteredItems() as item (item.file)}
-        <GalleryItemCard {item} onViewDetails={() => openPreview(item)} />
+        <GalleryItemCard
+          {item}
+          discoveryResult={discoveryResults[`${item.vendorId}/${item.file}`]}
+          onViewDetails={() => openPreview(item)}
+        />
       {:else}
         <div class="no-items">
           <p>{$t('gallery.no_items')}</p>
@@ -247,6 +292,7 @@
     item={selectedItem}
     {ports}
     vendorRequirements={selectedItem.vendorRequirements}
+    discoveryResult={discoveryResults[`${selectedItem.vendorId}/${selectedItem.file}`]}
     onClose={closePreview}
   />
 {/if}

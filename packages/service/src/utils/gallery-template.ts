@@ -15,6 +15,32 @@ export interface GalleryParameterDefinition {
 export interface GallerySnippet {
   meta?: Record<string, unknown>;
   parameters?: GalleryParameterDefinition[];
+  discovery?: {
+    match: {
+      data: number[];
+      mask?: number[];
+      offset?: number;
+      any_of?: Array<{ data: number[]; mask?: number[]; offset?: number }>;
+    };
+    dimensions: Array<{
+      parameter: string;
+      offset: number;
+      mask?: number;
+      transform?: string;
+      detect?: 'active_bits';
+    }>;
+    inference?: {
+      strategy: 'max' | 'count' | 'unique_tuples' | 'grouped';
+      output?: string;
+    };
+    ui?: {
+      label?: string;
+      label_en?: string;
+      badge?: string;
+      summary?: string;
+      summary_en?: string;
+    };
+  };
   entities?: Record<string, unknown>;
   automation?: unknown[];
   scripts?: unknown[];

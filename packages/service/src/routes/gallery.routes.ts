@@ -16,6 +16,12 @@ import {
   ENTITY_TYPE_KEYS,
 } from '../utils/constants.js';
 import { saveBackup } from '../services/backup.service.js';
+import {
+  evaluateDiscovery,
+  type DiscoverySchema,
+  type DiscoveryResult,
+} from '../services/discovery.service.js';
+import type { LogRetentionService } from '../log-retention.service.js';
 import type { RateLimiter } from '../utils/rate-limiter.js';
 import type { PersistableHomenetBridgeConfig } from '../types/index.js';
 
@@ -27,6 +33,7 @@ export interface GalleryRoutesContext {
   setCurrentConfigs: (index: number, config: HomenetBridgeConfig) => void;
   setCurrentRawConfigs: (index: number, config: HomenetBridgeConfig) => void;
   rebuildPortMappings: () => void;
+  logRetentionService: LogRetentionService;
 }
 
 export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
@@ -99,6 +106,81 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       res
         .status(500)
         .json({ error: error instanceof Error ? error.message : 'Failed to load gallery file' });
+    }
+  });
+
+  // Evaluate discovery schemas against packet dictionary
+  router.get('/api/gallery/discovery', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    try {
+      // Check if log retention is enabled
+      if (!ctx.logRetentionService.isEnabled()) {
+        return res.json({
+          available: false,
+          results: {},
+          message: 'Log retention is not enabled',
+        });
+      }
+
+      // Get packet dictionary and unmatched packets
+      const packetDictionary = ctx.logRetentionService.getPacketDictionary();
+      const unmatchedPackets = ctx.logRetentionService.getUnmatchedPackets();
+
+      // Fetch gallery list
+      const listResponse = await fetch(GALLERY_LIST_URL);
+      if (!listResponse.ok) {
+        return res.status(listResponse.status).json({ error: 'Failed to fetch gallery list' });
+      }
+
+      const galleryList = (await listResponse.json()) as {
+        vendors: Array<{
+          id: string;
+          items: Array<{ file: string }>;
+        }>;
+      };
+
+      const results: Record<string, DiscoveryResult> = {};
+
+      // Process each vendor and item
+      for (const vendor of galleryList.vendors) {
+        for (const item of vendor.items) {
+          const filePath = `${vendor.id}/${item.file}`;
+
+          try {
+            // Fetch the YAML file
+            const fileUrl = `${GALLERY_RAW_BASE_URL}/${filePath}`;
+            const fileResponse = await fetch(fileUrl);
+            if (!fileResponse.ok) continue;
+
+            const yamlContent = await fileResponse.text();
+            const snippet = yaml.load(yamlContent) as GallerySnippet;
+
+            // Check if snippet has discovery schema
+            if (snippet?.discovery) {
+              const discovery = snippet.discovery as DiscoverySchema;
+              const result = evaluateDiscovery(discovery, packetDictionary, unmatchedPackets);
+              results[filePath] = result;
+            }
+          } catch {
+            // Skip files that fail to parse
+            continue;
+          }
+        }
+      }
+
+      res.json({
+        available: true,
+        results,
+        packetCount: Object.keys(packetDictionary).length + unmatchedPackets.length,
+      });
+    } catch (error) {
+      logger.error({ err: error }, '[gallery] Failed to evaluate discovery');
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Discovery evaluation failed',
+      });
     }
   });
 

@@ -36,7 +36,7 @@ export const CONFIG_RESTART_FLAG = path.join(CONFIG_DIR, '.restart-required');
 
 export const GALLERY_RAW_BASE_URL =
   'https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery';
-export const GALLERY_LIST_URL = `${GALLERY_RAW_BASE_URL}/list.json`;
+export const GALLERY_LIST_URL = `${GALLERY_RAW_BASE_URL}/list_new.json`;
 
 // --- Entity Type Keys ---
 

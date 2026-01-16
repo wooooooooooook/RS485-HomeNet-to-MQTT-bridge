@@ -61,19 +61,36 @@
     id: string;
   }
 
+  interface DiscoveryResult {
+    matched: boolean;
+    matchedPacketCount: number;
+    parameterValues: Record<string, unknown>;
+    ui?: {
+      label?: string;
+      label_en?: string;
+      badge?: string;
+      summary?: string;
+      summary_en?: string;
+    };
+  }
+
   const GALLERY_FILE_API = './api/gallery/file';
 
   let {
     item,
     ports,
     vendorRequirements,
+    discoveryResult,
     onClose,
   }: {
     item: GalleryItem;
     ports: { portId: string; path: string }[];
     vendorRequirements?: VendorRequirements;
+    discoveryResult?: DiscoveryResult;
     onClose: () => void;
   } = $props();
+
+  const isDiscovered = $derived(discoveryResult?.matched ?? false);
 
   let yamlContent = $state('');
   let loadingYaml = $state(true);
@@ -149,6 +166,14 @@
     }
 
     for (const parameter of item.parameters) {
+      // Check if discovery result has a value for this parameter
+      const discoveredValue = discoveryResult?.parameterValues?.[parameter.name];
+      if (discoveredValue !== undefined && typeof discoveredValue === 'number') {
+        inputs[parameter.name] = String(discoveredValue);
+        continue;
+      }
+
+      // Fall back to default value
       if (parameter.default !== undefined) {
         if (typeof parameter.default === 'string') {
           inputs[parameter.name] = parameter.default;

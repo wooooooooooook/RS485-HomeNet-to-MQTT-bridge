@@ -29,7 +29,7 @@ jobs:
       - name: Install js-yaml
         run: npm install -g js-yaml
 
-      - name: Generate list.json
+      - name: Generate list.json and list_new.json
         run: |
           export NODE_PATH=$(npm root -g)
           node << 'EOF'
@@ -38,7 +38,8 @@ jobs:
           const yaml = require('js-yaml');
 
           const galleryDir = './gallery';
-          const vendors = {};
+          const vendorsLegacy = {};  // Without parameters/discovery
+          const vendorsNew = {};     // With parameters/discovery
 
           // Vendor display names
           const vendorNames = {
@@ -79,12 +80,13 @@ jobs:
 
             if (files.length === 0) continue;
 
-            vendors[vendorId] = {
+            // Initialize vendor entries for both lists
+            const createVendorEntry = () => ({
               id: vendorId,
               name: vendorNames[vendorId] || vendorId,
               requirements: vendorRequirements,
               items: []
-            };
+            });
 
             for (const file of files) {
               const filePath = path.join(vendorPath, file);
@@ -93,6 +95,11 @@ jobs:
               try {
                 const doc = yaml.load(content);
                 if (!doc.meta) continue;
+
+                // Check if has parameters or discovery section
+                const hasParameters = Array.isArray(doc.parameters) && doc.parameters.length > 0;
+                const hasDiscovery = doc.discovery !== undefined && doc.discovery !== null;
+                const hasAdvancedFeatures = hasParameters || hasDiscovery;
 
                 // Count entities, automations, and scripts
                 const contentSummary = {
@@ -117,7 +124,7 @@ jobs:
                   contentSummary.scripts = doc.scripts.length;
                 }
 
-                vendors[vendorId].items.push({
+                const item = {
                   file: `${vendorId}/${file}`,
                   name: doc.meta.name || file,
                   name_en: doc.meta.name_en || null,
@@ -128,30 +135,57 @@ jobs:
                   tags: doc.meta.tags || [],
                   parameters: Array.isArray(doc.parameters) ? doc.parameters : [],
                   content_summary: contentSummary
-                });
+                };
+
+                // Add to appropriate list based on features
+                if (hasAdvancedFeatures) {
+                  if (!vendorsNew[vendorId]) {
+                    vendorsNew[vendorId] = createVendorEntry();
+                  }
+                  vendorsNew[vendorId].items.push(item);
+                } else {
+                  if (!vendorsLegacy[vendorId]) {
+                    vendorsLegacy[vendorId] = createVendorEntry();
+                  }
+                  vendorsLegacy[vendorId].items.push(item);
+                }
               } catch (err) {
                 console.error(`Error parsing ${filePath}:`, err.message);
               }
             }
           }
 
-          const result = {
+          // Generate list.json (without parameters/discovery)
+          const resultLegacy = {
             generated_at: new Date().toISOString(),
-            vendors: Object.values(vendors).filter(v => v.items.length > 0)
+            vendors: Object.values(vendorsLegacy).filter(v => v.items.length > 0)
           };
 
           fs.writeFileSync(
             path.join(galleryDir, 'list.json'),
-            JSON.stringify(result, null, 2)
+            JSON.stringify(resultLegacy, null, 2)
           );
 
-          console.log('Generated list.json with', result.vendors.length, 'vendors');
+          console.log('Generated list.json with', resultLegacy.vendors.length, 'vendors');
+
+          // Generate list_new.json (with parameters/discovery)
+          const resultNew = {
+            generated_at: new Date().toISOString(),
+            vendors: Object.values(vendorsNew).filter(v => v.items.length > 0)
+          };
+
+          fs.writeFileSync(
+            path.join(galleryDir, 'list_new.json'),
+            JSON.stringify(resultNew, null, 2)
+          );
+
+          console.log('Generated list_new.json with', resultNew.vendors.length, 'vendors');
           EOF
 
-      - name: Commit list.json
+      - name: Commit list.json and list_new.json
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add gallery/list.json
-          git diff --staged --quiet || git commit -m "chore: update gallery list.json [skip ci]"
+          git add gallery/list.json gallery/list_new.json
+          git diff --staged --quiet || git commit -m "chore: update gallery list.json and list_new.json [skip ci]"
           git push

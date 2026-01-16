@@ -236,23 +236,26 @@ export class PacketParser {
           const maxOffset = this.writeOffset - packetLen;
 
           while (currentOffset <= maxOffset) {
+            // Optimization: Check header first before expensive checksum
+            if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[currentOffset])) {
+              currentOffset++;
+              continue;
+            }
+
             // Check Checksum for current window
             if (this.verifyChecksum(this.buffer, currentOffset, packetLen)) {
-              // Validate first byte against valid headers if configured
-              if (!this.validHeadersSet || this.validHeadersSet.has(this.buffer[currentOffset])) {
-                const packet = Buffer.from(
-                  this.buffer.subarray(currentOffset, currentOffset + packetLen),
-                );
-                packets.push(packet);
+              const packet = Buffer.from(
+                this.buffer.subarray(currentOffset, currentOffset + packetLen),
+              );
+              packets.push(packet);
 
-                // Packet found: Advance readOffset beyond this packet
-                const advance = currentOffset - this.readOffset + packetLen;
-                this.consumeBytes(advance);
-                matchFound = true;
-                break;
-              }
+              // Packet found: Advance readOffset beyond this packet
+              const advance = currentOffset - this.readOffset + packetLen;
+              this.consumeBytes(advance);
+              matchFound = true;
+              break;
             }
-            // If verification failed or header invalid, try next byte
+            // If verification failed, try next byte
             currentOffset++;
           }
 
@@ -276,6 +279,13 @@ export class PacketParser {
         const minLen = headerLen + 1 + checksumLen + this.defaults.rx_footer.length;
 
         if (bufferLength >= minLen && this.footerBuffer) {
+          // Optimization: Check header first to skip invalid start bytes immediately
+          if (this.validHeadersSet && !this.validHeadersSet.has(this.buffer[this.readOffset])) {
+            this.consumeBytes(1);
+            this.lastScannedLength = 0;
+            continue;
+          }
+
           const footerLen = this.footerBuffer.length;
           // Footer ends at 'len', so it starts at 'len - footerLen'.
           // 'len' starts at 'minLen', so start search at 'minLen - footerLen'.
@@ -350,14 +360,6 @@ export class PacketParser {
 
               const expected = this.buffer[baseOffset + len - 1 - footerLen];
               if ((finalChecksum & 0xff) === expected) {
-                // Validate first byte against valid headers if configured
-                if (
-                  this.validHeadersSet &&
-                  !this.validHeadersSet.has(this.buffer[this.readOffset])
-                ) {
-                  searchIdx = foundIdx + 1;
-                  continue;
-                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -378,14 +380,6 @@ export class PacketParser {
 
               const len = foundIdx + footerLen - this.readOffset;
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
-                // Validate first byte against valid headers if configured
-                if (
-                  this.validHeadersSet &&
-                  !this.validHeadersSet.has(this.buffer[this.readOffset])
-                ) {
-                  searchIdx = foundIdx + 1;
-                  continue;
-                }
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
                 );
@@ -769,6 +763,7 @@ export class PacketParser {
             this.reusableBufferView.update(buffer, offset, dataEnd - offset);
             // Reuse context object + bypass safety checks for speed
             // data matches reusableBufferView.proxy
+            this.reusableContext.len = BigInt(dataEnd - offset);
             const result = this.preparedChecksum.executeRaw(this.reusableContext);
             return result === checksumByte;
           } else {

@@ -59,6 +59,11 @@ export class ReusableBufferView {
     this.cache = cache;
     this.proxy = new Proxy([], {
       get: (target, prop, receiver) => {
+        // Handle length/size properties
+        if (prop === 'length') {
+          return this.length;
+        }
+
         // Fast path for integer indexed access (e.g. data[0])
         if (typeof prop === 'string') {
           const idx = Number(prop);
@@ -67,11 +72,6 @@ export class ReusableBufferView {
             // Map virtual index to physical index in the underlying buffer
             return this.cache[this.buffer![this.offset + idx]];
           }
-        }
-
-        // Handle length/size properties
-        if (prop === 'length') {
-          return this.length;
         }
 
         // Handle iteration (e.g. for macros like .map(), .exists())

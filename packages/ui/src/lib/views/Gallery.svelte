@@ -112,7 +112,11 @@
     selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
 
-  async function loadDiscovery() {
+  async function loadDiscovery(portId: string | null) {
+    if (!portId) {
+      discoveryResults = {};
+      return;
+    }
     discoveryLoading = true;
     if (discoveryAbortController) {
       discoveryAbortController.abort();
@@ -121,7 +125,9 @@
     discoveryAbortController = controller;
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch('./api/gallery/discovery', { signal: controller.signal });
+      const response = await fetch(`./api/gallery/discovery?portId=${encodeURIComponent(portId)}`, {
+        signal: controller.signal,
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.available && data.results) {
@@ -169,7 +175,6 @@
 
   onMount(() => {
     loadGallery();
-    loadDiscovery();
   });
 
   async function loadCompatibility(portId: string, vendors: Vendor[], cacheKey: string) {
@@ -219,6 +224,15 @@
       }
     }
   }
+
+  $effect(() => {
+    if (!activePortId) {
+      discoveryResults = {};
+      return;
+    }
+
+    loadDiscovery(activePortId);
+  });
 
   $effect(() => {
     if (!galleryData || !activePortId) {

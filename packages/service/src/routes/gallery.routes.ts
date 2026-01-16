@@ -251,14 +251,24 @@ function checkConfigRequirements(
 
       const results: Record<string, DiscoveryResult> = {};
       const currentConfigs = ctx.getCurrentConfigs();
+      const portId = typeof req.query.portId === 'string' ? req.query.portId : null;
+      const configForPort =
+        portId !== null
+          ? currentConfigs.find((config, index) => {
+              if (!config.serial) return false;
+              return normalizePortId(config.serial.portId, index) === portId;
+            }) ?? null
+          : null;
 
       // Process each vendor and item
       for (const vendor of galleryList.vendors) {
         // If vendor has requirements, check if ANY active config matches them
         if (vendor.requirements) {
-          const isCompatible = currentConfigs.some((config) =>
-            checkConfigRequirements(config, vendor.requirements),
-          );
+          const isCompatible = portId
+            ? configForPort
+              ? checkConfigRequirements(configForPort, vendor.requirements)
+              : false
+            : currentConfigs.some((config) => checkConfigRequirements(config, vendor.requirements));
 
           if (!isCompatible) {
             continue; // Skip this vendor if no active config matches requirements

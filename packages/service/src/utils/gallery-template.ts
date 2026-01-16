@@ -1,5 +1,5 @@
 type ParameterType = 'integer' | 'string' | 'integer[]' | 'object[]';
-import vm from 'node:vm';
+import { Environment } from '@marcbachmann/cel-js';
 
 export interface GalleryParameterDefinition {
   name: string;
@@ -30,8 +30,6 @@ interface RepeatBlock {
 }
 
 const TEMPLATE_EXPRESSION = /{{\s*([^}]+)\s*}}/g;
-const UNSAFE_EXPRESSION = /__proto__|constructor|prototype/;
-const ALLOWED_EXPRESSION = /^[\w\s.+\-*/()]+$/;
 
 function resolveParameterValues(
   definitions: GalleryParameterDefinition[] | undefined,
@@ -114,19 +112,50 @@ function coerceInteger(value: unknown, name: string): number {
 }
 
 function evaluateExpression(expression: string, context: Record<string, unknown>): unknown {
-  if (UNSAFE_EXPRESSION.test(expression)) {
-    throw new Error(`[gallery] Unsafe expression: ${expression}`);
-  }
-  if (!ALLOWED_EXPRESSION.test(expression)) {
-    throw new Error(`[gallery] Unsupported expression: ${expression}`);
+  const env = new Environment();
+
+  // Dynamically register variables from context
+  const safeContext: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(context)) {
+    let type = 'dyn'; // Default to dynamic
+    if (typeof value === 'number' && Number.isInteger(value)) {
+      type = 'int';
+      // CEL expects int as BigInt in execute (though some impls vary)
+      // cel-js usually works with BigInt for int type.
+      // But let's check what it expects. The library usually handles it if we pass number?
+      // Based on previous error "Variable 'num' is not of type 'int', got 'double'",
+      // it seems strictly checking JS number as double.
+      // So if we register as 'int', we MUST pass BigInt or use 'double' or 'dyn'.
+      // However, 'num * 2' with 'num' as int(10) works if we convert context value to BigInt.
+
+      safeContext[key] = BigInt(value);
+    } else {
+      safeContext[key] = value;
+      if (typeof value === 'string') {
+        type = 'string';
+      } else if (Array.isArray(value)) {
+        type = 'list';
+      } else if (typeof value === 'object' && value !== null) {
+        type = 'map';
+      }
+    }
+    env.registerVariable(key, type);
   }
 
-  // Use vm.runInNewContext instead of new Function/eval for security
-  // This prevents access to global objects like 'process'
-  return vm.runInNewContext(expression, {
-    ...context,
-    Math, // Allow Math functions
-  });
+  try {
+    const ast = env.parse(expression);
+    const result = ast(safeContext); // Use safeContext with BigInts
+
+    // Convert BigInt results from CEL back to Number
+    if (typeof result === 'bigint') {
+      return Number(result);
+    }
+    return result;
+  } catch (error) {
+    const err = error as Error;
+    throw new Error(`[gallery] CEL Evaluation failed for "${expression}": ${err.message}`);
+  }
 }
 
 function applyFilters(value: unknown, filters: string[]): unknown {

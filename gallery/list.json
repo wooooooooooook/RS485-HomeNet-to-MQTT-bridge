@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-16T01:01:34.597Z",
+  "generated_at": "2026-01-16T01:16:33.919Z",
   "vendors": [
     {
       "id": "bestin",
@@ -299,7 +299,7 @@
           "name_en": "☑️Elevator Call",
           "description": "코맥스 엘리베이터 호출 버튼과 현재 층수 센서 설정입니다.",
           "description_en": "Commax elevator call button and current floor sensor.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -323,7 +323,7 @@
           "name_en": "☑️Elevator Call",
           "description": "코맥스 엘리베이터 호출 버튼과 26으로 시작하는 층수 센서 설정입니다.",
           "description_en": "Commax elevator call button and current floor sensor.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -369,7 +369,7 @@
           "name_en": "Gas Valve",
           "description": "코맥스 가스밸브 설정입니다. 닫기 전용 밸브입니다.",
           "description_en": "Commax gas valve configuration. Close-only valve.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -409,12 +409,12 @@
           }
         },
         {
-          "file": "commax/lights.yaml",
-          "name": "☑️조명 설정 (4개)",
-          "name_en": "☑️Lights (4 Lights)",
-          "description": "코맥스 조명 4개 + 일괄소등 스위치 설정입니다.",
-          "description_en": "Commax 4 lights with master light breaker switch.",
-          "version": "1.0.0",
+          "file": "commax/light_breaker.yaml",
+          "name": "☑️일괄소등",
+          "name_en": "☑️Light Breaker",
+          "description": "코맥스 일괄소등 스위치 설정입니다.",
+          "description_en": "Commax light breaker switch.",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -423,7 +423,28 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "light": 5
+              "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
+          "file": "commax/lights.yaml",
+          "name": "☑️조명 설정 (4개)",
+          "name_en": "☑️Lights (4 Lights)",
+          "description": "코맥스 조명 4개 설정입니다.",
+          "description_en": "Commax 4 lights.",
+          "version": "1.0.1",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "commax"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "light": 4
             },
             "automations": 0,
             "scripts": 0
@@ -435,7 +456,7 @@
           "name_en": "☑️Smart Plugs (4 Outlets)",
           "description": "코맥스 스마트 콘센트 4개 설정입니다. 전력 사용량 센서도 포함되어 있습니다.",
           "description_en": "Commax 4 smart plugs with power consumption sensors.",
-          "version": "1.0.0",
+          "version": "1.0.1",
           "author": "wooooooooooook",
           "tags": [
             "switch",

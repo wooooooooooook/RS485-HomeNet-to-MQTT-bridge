@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-16T02:14:54.389Z",
+  "generated_at": "2026-01-16T04:41:37.758Z",
   "vendors": [
     {
       "id": "bestin",
@@ -54,7 +54,7 @@
           "name_en": "Bestin Doorlock",
           "description": "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin doorlock. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -131,7 +131,7 @@
           "name_en": "Bestin Ventilation Fan",
           "description": "Bestin 환기팬 설정입니다. 3단 속도(약/중/강)와 자연환기 모드를 지원합니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin ventilation fan with 3-speed control and natural ventilation mode. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -155,7 +155,7 @@
           "name_en": "Bestin General/Gen2 Energy Sensors",
           "description": "Bestin General/Gen2 게이트웨이용 에너지 센서 설정입니다.  전기, 수도, 온수, 가스, 난방 5개 요소의 총 사용량과 실시간 사용량을 제공합니다.",
           "description_en": "Bestin General/Gen2 gateway energy sensors configuration. Provides total and realtime usage for 5 elements: electric, water, hotwater, gas, heat.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "energy",
@@ -177,7 +177,7 @@
           "name_en": "Bestin AIO Energy Sensors",
           "description": "Bestin AIO 게이트웨이용 에너지 센서 설정입니다.  전기, 수도, 가스 3개 요소의 총 사용량과 실시간 사용량을 제공합니다.",
           "description_en": "Bestin AIO gateway energy sensors configuration. Provides total and realtime usage for 3 elements: electric, water, gas.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "energy",
@@ -200,7 +200,7 @@
           "name_en": "Bestin Gas Valve",
           "description": "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin gas valve. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -512,7 +512,7 @@
           "name_en": "Elevator Call",
           "description": "CVNet 엘리베이터 호출 버튼과 층수 센서 설정입니다.",
           "description_en": "CVNet elevator call button and floor sensor.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -561,7 +561,7 @@
           "name_en": "Fan",
           "description": "CVNet 환기팬 설정입니다. 속도 조절을 지원합니다.",
           "description_en": "CVNet fan with speed control.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -582,7 +582,7 @@
           "name_en": "Gas Valve",
           "description": "CVNet 가스밸브 설정입니다.",
           "description_en": "CVNet gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -674,7 +674,7 @@
           "name_en": "door auto open",
           "description": "Ezville 현관문열림자동 설정입니다. 벨울림 -> 통화시작, 문열기, 통화종료를 순차전송 ",
           "description_en": "Ezville door auto open configuration. Bell ring -> call start, door open, call end in sequence.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "gunfos",
           "tags": [
             "door auto open",
@@ -693,7 +693,7 @@
           "name_en": "Elevator Call",
           "description": "Ezville 엘리베이터 호출 버튼 설정입니다. 항상 활성화 옵션이 적용되어있습니다.",
           "description_en": "Ezville elevator call button. Always enabled option is applied.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -715,7 +715,7 @@
           "name_en": "Energy Sensors",
           "description": "Ezville 에너지 사용량 센서 (전력, 수도, 가스) 설정입니다.",
           "description_en": "Ezville energy consumption sensors for power, water, and gas.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "sensor",
@@ -740,7 +740,7 @@
           "name_en": "heat exchanger fan",
           "description": "Ezville 전열교환기 설정입니다.",
           "description_en": "Ezville heat exchanger fan configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "gunfos",
           "tags": [
             "heat exchanger fan",
@@ -761,7 +761,7 @@
           "name_en": "Gas Valve",
           "description": "Ezville 가스밸브 설정입니다.",
           "description_en": "Ezville gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -906,7 +906,7 @@
           "name_en": "☑️Hyundai Telecom Elevator",
           "description": "현대통신 월패드용 엘리베이터 호출 및 상태 확인 설정입니다. 참고:https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C",
           "description_en": "Elevator call and status configuration for Hyundai Telecom wallpads. Reference: https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C",
-          "version": "1.0.5",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -952,7 +952,7 @@
           "name_en": "Ventilation System",
           "description": "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Hyundai Imazu ventilation system with 3-speed control.",
-          "version": "1.0.2",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -1021,7 +1021,7 @@
           "name_en": "☑️All Lights Off Switch",
           "description": "현대 이마주 일괄소등 스위치 설정입니다. 일괄소등 ON/OFF만 지원합니다.",
           "description_en": "Hyundai Imazu all lights off switch configuration (ON/OFF only).",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "switch",
@@ -1219,7 +1219,7 @@
           "name_en": "Doorbell Set",
           "description": "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
           "description_en": "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "doorbell",
@@ -1244,7 +1244,7 @@
           "name_en": "Elevator Call",
           "description": "코콤 엘리베이터 호출 버튼과 층수/방향 센서 설정입니다.",
           "description_en": "Kocom elevator call button with floor and direction sensors.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1268,7 +1268,7 @@
           "name_en": "Gas Valve",
           "description": "코콤 가스밸브 설정입니다.",
           "description_en": "Kocom gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1313,7 +1313,7 @@
           "name_en": "Lights (Room 0-3, 8 Lights)",
           "description": "코콤 조명 8개 설정입니다. (각 방 2개씩)",
           "description_en": "Kocom 8 lights configuration (2 per room).",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1369,11 +1369,12 @@
           "name_en": "Elevator Call",
           "description": "코콤 Theart 엘리베이터 호출 스위치 설정입니다.",
           "description_en": "Kocom Theart elevator call switch.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
-            "switch",
+            "button",
+            "sensor",
             "kocom",
             "theart"
           ],
@@ -1393,7 +1394,7 @@
           "name_en": "Gas Burner Lock",
           "description": "코콤 Theart 가스버너 잠금 설정입니다.",
           "description_en": "Kocom Theart gas burner lock configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -1440,7 +1441,7 @@
           "name_en": "Living Room Lights (3 Lights)",
           "description": "코콤 Theart 거실 조명 3개 설정입니다.",
           "description_en": "Kocom Theart living room with 3 lights.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1498,12 +1499,12 @@
           "name_en": "Elevator Call",
           "description": "코콤 Thinks 엘리베이터 호출 설정입니다. 층수 및 방향 센서 포함.",
           "description_en": "Kocom Thinks elevator with floor number and direction sensors.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
+            "button",
             "sensor",
-            "switch",
             "kocom",
             "thinks"
           ],
@@ -1524,7 +1525,7 @@
           "name_en": "Gas Valve",
           "description": "코콤 Thinks 가스밸브 설정입니다.",
           "description_en": "Kocom Thinks gas valve configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1571,7 +1572,7 @@
           "name_en": "Living Room Lights (3 Lights)",
           "description": "코콤 Thinks 거실 조명 3개 설정입니다.",
           "description_en": "Kocom Thinks living room with 3 lights.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1594,7 +1595,7 @@
           "name_en": "Navien Ventilator",
           "description": "코콤 Thinks 나비엔 환기팬 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Kocom Thinks Navien ventilator with 3-speed control.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",

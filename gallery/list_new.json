@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-16T02:14:54.393Z",
+  "generated_at": "2026-01-16T04:41:37.762Z",
   "vendors": [
     {
       "id": "bestin",
@@ -50,12 +50,74 @@
           "discovery": null
         },
         {
+          "file": "bestin/climate_new.yaml",
+          "name": "☑️Bestin 난방",
+          "name_en": "☑️Bestin Climate",
+          "description": "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다.",
+          "description_en": "Bestin climate with configurable room count. bestin1.0 bestin2.0 common.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "bestin"
+          ],
+          "parameters": [
+            {
+              "name": "room_count",
+              "type": "integer",
+              "default": 4,
+              "min": 1,
+              "max": 8,
+              "label": "방 개수",
+              "label_en": "Number of Rooms"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "scripts": 2,
+              "number": 1,
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                40,
+                16,
+                145
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_count",
+                "offset": 4
+              }
+            ],
+            "inference": {
+              "strategy": "max"
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heating",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
+        },
+        {
           "file": "bestin/doorlock.yaml",
           "name": "Bestin 도어락",
           "name_en": "Bestin Doorlock",
           "description": "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin doorlock. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -72,7 +134,24 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                65,
+                2
+              ],
+              "mask": [
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "도어락",
+              "label_en": "doorlock",
+              "summary": "도어락 발견됨",
+              "summary_en": "Doorlock discovered"
+            }
+          }
         },
         {
           "file": "bestin/energy485_AIO.yaml",
@@ -103,6 +182,114 @@
           "discovery": null
         },
         {
+          "file": "bestin/energy485_AIO_new.yaml",
+          "name": "☑️Bestin aio 조명 및 아웃렛 (energy485)",
+          "name_en": "☑️Bestin aio Light and Outlet (energy485)",
+          "description": "Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.",
+          "description_en": "Bestin aio gateway light and outlet. You can specify lights/outlets per room.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "outlet",
+            "bestin",
+            "aio"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "light_count": 4,
+                  "outlet_count": 2
+                },
+                {
+                  "room_id": 2,
+                  "light_count": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 5,
+                  "label": "방 번호",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 5,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 2,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "scripts": 3,
+              "number": 1,
+              "light": 1,
+              "switch": 1,
+              "binary_sensor": 1,
+              "sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                2,
+                80,
+                12,
+                145
+              ],
+              "mask": [
+                255,
+                240,
+                0,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 1,
+                "transform": "bitAnd(x, 0x0F)"
+              },
+              {
+                "parameter": "light_count",
+                "offset": 6,
+                "detect": "active_bits"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명/콘센트",
+              "label_en": "lights/outlets",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
+        },
+        {
           "file": "bestin/energy485_general.yaml",
           "name": "Bestin general 조명 및 아웃렛 (energy485)",
           "name_en": "Bestin general Light and Outlet (energy485)",
@@ -130,12 +317,121 @@
           "discovery": null
         },
         {
+          "file": "bestin/energy485_general_new.yaml",
+          "name": "☑️Bestin general 조명 및 아웃렛 (energy485)",
+          "name_en": "☑️Bestin general Light and Outlet (energy485)",
+          "description": "Bestin general gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.",
+          "description_en": "Bestin general gateway light and outlet. You can specify lights/outlets per room.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "outlet",
+            "bestin"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "light_count": 4,
+                  "outlet_count": 3
+                },
+                {
+                  "room_id": 2,
+                  "light_count": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "방 번호",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 8,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 4,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "scripts": 4,
+              "number": 1,
+              "light": 1,
+              "switch": 2,
+              "sensor": 2
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                49,
+                30,
+                145
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 4,
+                "transform": "bitAnd(x, 0x0F)"
+              },
+              {
+                "parameter": "light_count",
+                "offset": 5,
+                "detect": "active_bits"
+              },
+              {
+                "parameter": "outlet_count",
+                "offset": 6,
+                "detect": "active_bits"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명/콘센트",
+              "label_en": "lights/outlets",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
+        },
+        {
           "file": "bestin/fan.yaml",
           "name": "Bestin 환기팬",
           "name_en": "Bestin Ventilation Fan",
           "description": "Bestin 환기팬 설정입니다. 3단 속도(약/중/강)와 자연환기 모드를 지원합니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin ventilation fan with 3-speed control and natural ventilation mode. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -152,7 +448,24 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                97,
+                0
+              ],
+              "mask": [
+                255,
+                0
+              ]
+            },
+            "ui": {
+              "label": "환기팬",
+              "label_en": "ventilation fan",
+              "summary": "환기팬 발견됨",
+              "summary_en": "Ventilation fan discovered"
+            }
+          }
         },
         {
           "file": "bestin/sensors.yaml",
@@ -160,7 +473,7 @@
           "name_en": "Bestin General/Gen2 Energy Sensors",
           "description": "Bestin General/Gen2 게이트웨이용 에너지 센서 설정입니다.  전기, 수도, 온수, 가스, 난방 5개 요소의 총 사용량과 실시간 사용량을 제공합니다.",
           "description_en": "Bestin General/Gen2 gateway energy sensors configuration. Provides total and realtime usage for 5 elements: electric, water, hotwater, gas, heat.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "energy",
@@ -175,7 +488,24 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                2,
+                209
+              ],
+              "mask": [
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "에너지 센서",
+              "label_en": "energy sensors",
+              "summary": "에너지 센서 발견됨 (전기/수도/온수/가스/난방)",
+              "summary_en": "Energy sensors discovered (electric/water/hotwater/gas/heat)"
+            }
+          }
         },
         {
           "file": "bestin/sensors_AIO.yaml",
@@ -183,7 +513,7 @@
           "name_en": "Bestin AIO Energy Sensors",
           "description": "Bestin AIO 게이트웨이용 에너지 센서 설정입니다.  전기, 수도, 가스 3개 요소의 총 사용량과 실시간 사용량을 제공합니다.",
           "description_en": "Bestin AIO gateway energy sensors configuration. Provides total and realtime usage for 3 elements: electric, water, gas.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "energy",
@@ -199,7 +529,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                2,
+                209,
+                32
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "에너지 센서",
+              "label_en": "energy sensors",
+              "summary": "AIO 에너지 센서 발견됨 (전기/수도/가스)",
+              "summary_en": "AIO energy sensors discovered (electric/water/gas)"
+            }
+          }
         },
         {
           "file": "bestin/valve.yaml",
@@ -207,7 +556,7 @@
           "name_en": "Bestin Gas Valve",
           "description": "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin gas valve. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -224,7 +573,24 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                49,
+                2
+              ],
+              "mask": [
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스밸브",
+              "label_en": "gas valve",
+              "summary": "가스밸브 발견됨",
+              "summary_en": "Gas valve discovered"
+            }
+          }
         }
       ]
     },
@@ -278,6 +644,109 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "bestin2.0/dimming_and_outlets_new.yaml",
+          "name": "☑️Bestin2.0 디밍 조명 및 아웃렛",
+          "name_en": "☑️Bestin2.0 Dimming Light and Outlet",
+          "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 방 개수와 방별 조명/콘센트 개수를 설정할 수 있습니다. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
+          "description_en": "Bestin2.0 dimming light and outlet configuration. You can configure room count and lights/outlets per room. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "outlet",
+            "bestin2.0"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "light_count": 2,
+                  "outlet_count": 2
+                },
+                {
+                  "room_id": 2,
+                  "light_count": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "방 번호",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 4,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "scripts": 3,
+              "number": 1,
+              "light": 1,
+              "switch": 2,
+              "sensor": 2
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                0,
+                145
+              ],
+              "mask": [
+                240,
+                0,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 0,
+                "transform": "bitAnd(x, 0x0F)"
+              },
+              {
+                "parameter": "light_count",
+                "offset": 10
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명/콘센트",
+              "label_en": "lights/outlets",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         }
       ]
     },
@@ -812,7 +1281,7 @@
           "name_en": "Elevator Call",
           "description": "CVNet 엘리베이터 호출 버튼과 층수 센서 설정입니다.",
           "description_en": "CVNet elevator call button and floor sensor.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -829,7 +1298,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                32,
+                1,
+                34
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터",
+              "label_en": "elevator",
+              "summary": "엘리베이터 발견됨",
+              "summary_en": "Elevator discovered"
+            }
+          }
         },
         {
           "file": "cvnet/elevator_daerim.yaml",
@@ -863,7 +1351,7 @@
           "name_en": "Fan",
           "description": "CVNet 환기팬 설정입니다. 속도 조절을 지원합니다.",
           "description_en": "CVNet fan with speed control.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -877,7 +1365,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                32,
+                1,
+                113
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "환기팬",
+              "label_en": "fan",
+              "summary": "환기팬 발견됨",
+              "summary_en": "Fan discovered"
+            }
+          }
         },
         {
           "file": "cvnet/gas_valve.yaml",
@@ -885,7 +1392,7 @@
           "name_en": "Gas Valve",
           "description": "CVNet 가스밸브 설정입니다.",
           "description_en": "CVNet gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -900,7 +1407,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                32,
+                1,
+                17
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스밸브",
+              "label_en": "gas valve",
+              "summary": "가스밸브 발견됨",
+              "summary_en": "Gas valve discovered"
+            }
+          }
         },
         {
           "file": "cvnet/heaters.yaml",
@@ -927,6 +1453,65 @@
           "discovery": null
         },
         {
+          "file": "cvnet/heaters_new.yaml",
+          "name": "☑️난방 설정",
+          "name_en": "☑️Heaters",
+          "description": "CVNet 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다.",
+          "description_en": "CVNet heating thermostats. You can specify the number of thermostats.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "cvnet"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 4,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                32,
+                1,
+                74
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "heater_count",
+                "offset": 0
+              }
+            ],
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
+        },
+        {
           "file": "cvnet/lights.yaml",
           "name": "☑️조명 설정 (Room 0-1, 4개)",
           "name_en": "☑️Lights (Room 0-1, 4 Lights)",
@@ -947,6 +1532,93 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "cvnet/lights_new.yaml",
+          "name": "☑️조명 설정",
+          "name_en": "☑️Lights",
+          "description": "CVNet 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다.",
+          "description_en": "CVNet lights configuration. You can configure room count and lights per room.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "cvnet"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 0,
+                  "light_count": 3
+                },
+                {
+                  "room_id": 1,
+                  "light_count": 1
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 0,
+                  "max": 15,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 4,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                32,
+                1
+              ],
+              "mask": [
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 2,
+                "transform": "bitAnd(x, 0x0F)"
+              },
+              {
+                "parameter": "light_count",
+                "offset": 3
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명",
+              "label_en": "lights",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         }
       ]
     },
@@ -980,7 +1652,7 @@
           "name_en": "door auto open",
           "description": "Ezville 현관문열림자동 설정입니다. 벨울림 -> 통화시작, 문열기, 통화종료를 순차전송 ",
           "description_en": "Ezville door auto open configuration. Bell ring -> call start, door open, call end in sequence.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "gunfos",
           "tags": [
             "door auto open",
@@ -992,7 +1664,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                247,
+                64,
+                2,
+                147
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "현관문 자동 열림",
+              "label_en": "Door Auto Open",
+              "summary": "현관문 자동 열림 기능 발견됨",
+              "summary_en": "Door Auto Open feature discovered"
+            }
+          }
         },
         {
           "file": "ezville/elevator.yaml",
@@ -1000,7 +1693,7 @@
           "name_en": "Elevator Call",
           "description": "Ezville 엘리베이터 호출 버튼 설정입니다. 항상 활성화 옵션이 적용되어있습니다.",
           "description_en": "Ezville elevator call button. Always enabled option is applied.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1015,7 +1708,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                51,
+                1,
+                129
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터 호출",
+              "label_en": "Elevator Call",
+              "summary": "엘리베이터 호출 버튼 발견됨",
+              "summary_en": "Elevator Call Button discovered"
+            }
+          }
         },
         {
           "file": "ezville/energy_sensors.yaml",
@@ -1023,7 +1735,7 @@
           "name_en": "Energy Sensors",
           "description": "Ezville 에너지 사용량 센서 (전력, 수도, 가스) 설정입니다.",
           "description_en": "Ezville energy consumption sensors for power, water, and gas.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "sensor",
@@ -1041,7 +1753,22 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48
+              ],
+              "mask": [
+                255
+              ]
+            },
+            "ui": {
+              "label": "에너지 센서",
+              "label_en": "Energy Sensors",
+              "summary": "에너지 센서 발견됨",
+              "summary_en": "Energy Sensors discovered"
+            }
+          }
         },
         {
           "file": "ezville/fan.yaml",
@@ -1049,7 +1776,7 @@
           "name_en": "heat exchanger fan",
           "description": "Ezville 전열교환기 설정입니다.",
           "description_en": "Ezville heat exchanger fan configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "gunfos",
           "tags": [
             "heat exchanger fan",
@@ -1063,7 +1790,26 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                50,
+                1,
+                129
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "전열교환기",
+              "label_en": "Heat Exchanger Fan",
+              "summary": "전열교환기 발견됨",
+              "summary_en": "Heat Exchanger Fan discovered"
+            }
+          }
         },
         {
           "file": "ezville/gas_valve.yaml",
@@ -1071,7 +1817,7 @@
           "name_en": "Gas Valve",
           "description": "Ezville 가스밸브 설정입니다.",
           "description_en": "Ezville gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1086,7 +1832,26 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                18,
+                1,
+                129
+              ],
+              "mask": [
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스밸브",
+              "label_en": "Gas Valve",
+              "summary": "가스밸브 발견됨",
+              "summary_en": "Gas Valve discovered"
+            }
+          }
         },
         {
           "file": "ezville/heaters.yaml",
@@ -1113,6 +1878,59 @@
           "discovery": null
         },
         {
+          "file": "ezville/heaters_new.yaml",
+          "name": "☑️난방 설정",
+          "name_en": "☑️Heaters",
+          "description": "Ezville 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다. 0.5°C 단위 조절, 외출 모드 지원.",
+          "description_en": "Ezville heating thermostats configuration with count parameter. 0.5°C step and away preset mode.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "ezville"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 5,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                54,
+                31,
+                129
+              ],
+              "mask": [
+                255,
+                31,
+                255
+              ]
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
+        },
+        {
           "file": "ezville/lights.yaml",
           "name": "조명 설정 (Room 1-5, 12개)",
           "name_en": "Lights (Room 1-5, 12 Lights)",
@@ -1133,6 +1951,99 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "ezville/lights_new.yaml",
+          "name": "☑️조명 설정",
+          "name_en": "☑️Lights",
+          "description": "Ezville 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다.",
+          "description_en": "Ezville lights configuration. You can configure room count and lights per room.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "ezville"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "light_count": 5
+                },
+                {
+                  "room_id": 2,
+                  "light_count": 2
+                },
+                {
+                  "room_id": 3,
+                  "light_count": 1
+                },
+                {
+                  "room_id": 4,
+                  "light_count": 1
+                },
+                {
+                  "room_id": 5,
+                  "light_count": 1
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 15,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                14
+              ],
+              "mask": [
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 1,
+                "transform": "bitAnd(x, 0x0F)"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명",
+              "label_en": "lights",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         },
         {
           "file": "ezville/outlets.yaml",
@@ -1160,6 +2071,90 @@
           "discovery": null
         },
         {
+          "file": "ezville/outlets_new.yaml",
+          "name": "☑️스마트 콘센트 설정",
+          "name_en": "☑️Smart Outlets",
+          "description": "Ezville 스마트 콘센트 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다.",
+          "description_en": "Ezville smart outlets configuration. You can configure room count and outlets per room (with power meter).",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "outlet",
+            "power",
+            "ezville"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "outlet_count": 2
+                },
+                {
+                  "room_id": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 15,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 4,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 1,
+              "sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                57
+              ],
+              "mask": [
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 1,
+                "transform": "bitShiftRight(x, 4)"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "콘센트",
+              "label_en": "outlets",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
+        },
+        {
           "file": "ezville/smart_outlets_f750.yaml",
           "name": "스마트콘센트설정(10개)(F7 50으로 시작)",
           "name_en": "Smart Outlets (10 Outlets) F7 50",
@@ -1184,6 +2179,90 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "ezville/smart_outlets_f750_new.yaml",
+          "name": "☑️스마트 콘센트 (F7 50)",
+          "name_en": "☑️Smart Outlets (F7 50)",
+          "description": "Ezville 스마트 콘센트 (F7 50 타입) 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다.",
+          "description_en": "Ezville smart outlets (F7 50 type) configuration. Room count and outlets per room (with power meter).",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "outlet",
+            "power",
+            "ezville"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "outlet_count": 2
+                },
+                {
+                  "room_id": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 15,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 4,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 1,
+              "sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                80
+              ],
+              "mask": [
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 1,
+                "transform": "bitAnd(x, 0x0F)"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "스마트 콘센트 (F7)",
+              "label_en": "smart outlets (F7)",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         }
       ]
     },
@@ -1221,7 +2300,7 @@
           "name_en": "☑️Hyundai Telecom Elevator",
           "description": "현대통신 월패드용 엘리베이터 호출 및 상태 확인 설정입니다. 참고:https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C",
           "description_en": "Elevator call and status configuration for Hyundai Telecom wallpads. Reference: https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C",
-          "version": "1.0.5",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1237,7 +2316,30 @@
             "automations": 0,
             "scripts": 2
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                13,
+                1,
+                52,
+                1,
+                65
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터",
+              "label_en": "Elevator",
+              "summary": "엘리베이터 발견됨",
+              "summary_en": "Elevator discovered"
+            }
+          }
         },
         {
           "file": "hyundai_imazu/elevator2.yaml",
@@ -1269,7 +2371,7 @@
           "name_en": "Ventilation System",
           "description": "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Hyundai Imazu ventilation system with 3-speed control.",
-          "version": "1.0.2",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -1285,7 +2387,32 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                0,
+                1,
+                43,
+                4,
+                64,
+                17
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "환기시스템",
+              "label_en": "Ventilation System",
+              "summary": "환기시스템 발견됨",
+              "summary_en": "Ventilation System discovered"
+            }
+          }
         },
         {
           "file": "hyundai_imazu/heaters.yaml",
@@ -1311,6 +2438,64 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "hyundai_imazu/heaters_new.yaml",
+          "name": "☑️난방 설정",
+          "name_en": "☑️Heaters",
+          "description": "현대 이마주 난방 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다.",
+          "description_en": "Hyundai Imazu heating configuration with count parameter. Supports away mode.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "hyundai",
+            "imazu"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 5,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                0,
+                1,
+                24,
+                4,
+                69
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
         },
         {
           "file": "hyundai_imazu/lights.yaml",
@@ -1341,7 +2526,7 @@
           "name_en": "☑️All Lights Off Switch",
           "description": "현대 이마주 일괄소등 스위치 설정입니다. 일괄소등 ON/OFF만 지원합니다.",
           "description_en": "Hyundai Imazu all lights off switch configuration (ON/OFF only).",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "switch",
@@ -1357,7 +2542,32 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                0,
+                1,
+                42,
+                4,
+                64,
+                17
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "일괄소등 스위치",
+              "label_en": "All Lights Off Switch",
+              "summary": "일괄소등 스위치 발견됨",
+              "summary_en": "All Lights Off Switch discovered"
+            }
+          }
         },
         {
           "file": "hyundai_imazu/lights_hallway.yaml",
@@ -1381,6 +2591,96 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "hyundai_imazu/lights_new.yaml",
+          "name": "☑️조명 설정",
+          "name_en": "☑️Lights",
+          "description": "현대 이마주 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다.",
+          "description_en": "Hyundai Imazu lights configuration. You can configure room count and lights per room.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "hyundai",
+            "imazu"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "light_count": 4
+                },
+                {
+                  "room_id": 2,
+                  "light_count": 3
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "light_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 8,
+                  "label": "조명 개수",
+                  "label_en": "Light Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                0,
+                1,
+                25,
+                4,
+                64
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 5,
+                "transform": "bitShiftRight(x, 4)"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "조명",
+              "label_en": "lights",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         },
         {
           "file": "hyundai_imazu/periodic_update.yaml",
@@ -1448,6 +2748,100 @@
             "scripts": 0
           },
           "discovery": null
+        },
+        {
+          "file": "hyundai_imazu/plugs_new.yaml",
+          "name": "☑️스마트 콘센트 설정",
+          "name_en": "☑️Smart Plugs",
+          "description": "현대 이마주 스마트 콘센트 설정입니다. 방 개수와 방별 콘센트 개수(전력 측정 포함)를 설정할 수 있습니다.",
+          "description_en": "Hyundai Imazu smart plugs configuration. You can configure room count and plugs per room (with power meter).",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "plug",
+            "sensor",
+            "power",
+            "hyundai",
+            "imazu"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방별 설정",
+              "label_en": "Room Settings",
+              "default": [
+                {
+                  "room_id": 1,
+                  "outlet_count": 2
+                },
+                {
+                  "room_id": 2,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "room_id": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 15,
+                  "label": "방 번호 (ID)",
+                  "label_en": "Room ID"
+                },
+                "outlet_count": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 4,
+                  "label": "콘센트 개수",
+                  "label_en": "Outlet Count"
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 1,
+              "sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                0,
+                1,
+                31,
+                4,
+                64
+              ],
+              "mask": [
+                0,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_id",
+                "offset": 5,
+                "transform": "bitShiftRight(x, 4)"
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            },
+            "ui": {
+              "label": "스마트 콘센트",
+              "label_en": "smart plugs",
+              "summary": "{room_count}개 방 발견됨",
+              "summary_en": "{room_count} rooms discovered"
+            }
+          }
         }
       ]
     },
@@ -1545,7 +2939,7 @@
           "name_en": "Doorbell Set",
           "description": "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
           "description_en": "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "doorbell",
@@ -1563,7 +2957,28 @@
             "automations": 2,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                170,
+                85,
+                112,
+                144
+              ],
+              "mask": [
+                255,
+                255,
+                240,
+                240
+              ]
+            },
+            "ui": {
+              "label": "현관문세트",
+              "label_en": "Doorbell Set",
+              "summary": "현관문세트 발견됨",
+              "summary_en": "Doorbell Set discovered"
+            }
+          }
         },
         {
           "file": "kocom/elevator.yaml",
@@ -1571,7 +2986,7 @@
           "name_en": "Elevator Call",
           "description": "코콤 엘리베이터 호출 버튼과 층수/방향 센서 설정입니다.",
           "description_en": "Kocom elevator call button with floor and direction sensors.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1588,7 +3003,32 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                1,
+                0,
+                68
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터",
+              "label_en": "Elevator",
+              "summary": "엘리베이터 발견됨",
+              "summary_en": "Elevator discovered"
+            }
+          }
         },
         {
           "file": "kocom/gas_valve.yaml",
@@ -1596,7 +3036,7 @@
           "name_en": "Gas Valve",
           "description": "코콤 가스밸브 설정입니다.",
           "description_en": "Kocom gas valve configuration.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1611,7 +3051,28 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                44
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스밸브",
+              "label_en": "Gas Valve",
+              "summary": "가스밸브 발견됨",
+              "summary_en": "Gas Valve discovered"
+            }
+          }
         },
         {
           "file": "kocom/heaters.yaml",
@@ -1638,12 +3099,67 @@
           "discovery": null
         },
         {
+          "file": "kocom/heaters_new.yaml",
+          "name": "난방 설정",
+          "name_en": "Heaters",
+          "description": "코콤 난방 온도조절기 설정입니다. 난방 개수를 설정할 수 있습니다.",
+          "description_en": "Kocom heating thermostats configuration. You can configure the number of thermostats.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 4,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                54
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
+        },
+        {
           "file": "kocom/lights.yaml",
           "name": "조명 설정 (Room 0-3, 8개)",
           "name_en": "Lights (Room 0-3, 8 Lights)",
           "description": "코콤 조명 8개 설정입니다. (각 방 2개씩)",
           "description_en": "Kocom 8 lights configuration (2 per room).",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1657,7 +3173,28 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                14
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "조명",
+              "label_en": "lights",
+              "summary": "조명 시스템 발견",
+              "summary_en": "Lighting system discovered"
+            }
+          }
         }
       ]
     },
@@ -1700,11 +3237,12 @@
           "name_en": "Elevator Call",
           "description": "코콤 Theart 엘리베이터 호출 스위치 설정입니다.",
           "description_en": "Kocom Theart elevator call switch.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
-            "switch",
+            "button",
+            "sensor",
             "kocom",
             "theart"
           ],
@@ -1717,7 +3255,32 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                1,
+                0,
+                68
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터",
+              "label_en": "Elevator",
+              "summary": "엘리베이터 발견됨",
+              "summary_en": "Elevator discovered"
+            }
+          }
         },
         {
           "file": "kocom_theart/gas_burner_lock.yaml",
@@ -1725,7 +3288,7 @@
           "name_en": "Gas Burner Lock",
           "description": "코콤 Theart 가스버너 잠금 설정입니다.",
           "description_en": "Kocom Theart gas burner lock configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -1741,7 +3304,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                44
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스버너 잠금",
+              "label_en": "Gas Burner Lock",
+              "summary": "가스버너 잠금장치 발견됨",
+              "summary_en": "Gas Burner Lock discovered"
+            }
+          }
         },
         {
           "file": "kocom_theart/heaters.yaml",
@@ -1769,12 +3353,68 @@
           "discovery": null
         },
         {
+          "file": "kocom_theart/heaters_new.yaml",
+          "name": "난방 설정",
+          "name_en": "Heaters",
+          "description": "코콤 TheArt 난방 온도조절기 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다.",
+          "description_en": "Kocom TheArt heating thermostats with away preset mode. Configurable count.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom",
+            "theart"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 5,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 1,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                54
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
+        },
+        {
           "file": "kocom_theart/lights_livingroom.yaml",
           "name": "거실 조명 설정 (3개)",
           "name_en": "Living Room Lights (3 Lights)",
           "description": "코콤 Theart 거실 조명 3개 설정입니다.",
           "description_en": "Kocom Theart living room with 3 lights.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1790,7 +3430,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                14
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "거실 조명",
+              "label_en": "Living Room Lights",
+              "summary": "거실 조명 발견됨",
+              "summary_en": "Living Room Lights discovered"
+            }
+          }
         }
       ]
     },
@@ -1833,12 +3494,12 @@
           "name_en": "Elevator Call",
           "description": "코콤 Thinks 엘리베이터 호출 설정입니다. 층수 및 방향 센서 포함.",
           "description_en": "Kocom Thinks elevator with floor number and direction sensors.",
-          "version": "1.0.0",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
+            "button",
             "sensor",
-            "switch",
             "kocom",
             "thinks"
           ],
@@ -1852,7 +3513,32 @@
             "automations": 0,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                1,
+                0,
+                68
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "엘리베이터",
+              "label_en": "Elevator",
+              "summary": "엘리베이터 발견됨",
+              "summary_en": "Elevator discovered"
+            }
+          }
         },
         {
           "file": "kocom_thinks/gas_valve.yaml",
@@ -1860,7 +3546,7 @@
           "name_en": "Gas Valve",
           "description": "코콤 Thinks 가스밸브 설정입니다.",
           "description_en": "Kocom Thinks gas valve configuration.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -1876,7 +3562,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                44
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "가스밸브",
+              "label_en": "Gas Valve",
+              "summary": "가스밸브 발견됨",
+              "summary_en": "Gas Valve discovered"
+            }
+          }
         },
         {
           "file": "kocom_thinks/heaters.yaml",
@@ -1904,12 +3611,68 @@
           "discovery": null
         },
         {
+          "file": "kocom_thinks/heaters_new.yaml",
+          "name": "난방 설정",
+          "name_en": "Heaters",
+          "description": "코콤 Thinks 난방 온도조절기 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다.",
+          "description_en": "Kocom Thinks heating thermostats with away preset mode. Configurable count.",
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "heater",
+            "thermostat",
+            "kocom",
+            "thinks"
+          ],
+          "parameters": [
+            {
+              "name": "heater_count",
+              "type": "integer",
+              "default": 6,
+              "min": 1,
+              "max": 8,
+              "label": "난방 개수",
+              "label_en": "Number of Heaters"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 1,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                54
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "난방",
+              "label_en": "heaters",
+              "summary": "난방 시스템 발견됨",
+              "summary_en": "Heating system discovered"
+            }
+          }
+        },
+        {
           "file": "kocom_thinks/lights_livingroom.yaml",
           "name": "거실 조명 설정 (3개)",
           "name_en": "Living Room Lights (3 Lights)",
           "description": "코콤 Thinks 거실 조명 3개 설정입니다.",
           "description_en": "Kocom Thinks living room with 3 lights.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1925,7 +3688,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                14
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "거실 조명",
+              "label_en": "Living Room Lights",
+              "summary": "거실 조명 발견됨",
+              "summary_en": "Living Room Lights discovered"
+            }
+          }
         },
         {
           "file": "kocom_thinks/navien_ventilator.yaml",
@@ -1933,7 +3717,7 @@
           "name_en": "Navien Ventilator",
           "description": "코콤 Thinks 나비엔 환기팬 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Kocom Thinks Navien ventilator with 3-speed control.",
-          "version": "1.0.1",
+          "version": "2.0.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -1950,7 +3734,28 @@
             "automations": 1,
             "scripts": 0
           },
-          "discovery": null
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                72
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "ui": {
+              "label": "나비엔 환기팬",
+              "label_en": "Navien Ventilator",
+              "summary": "나비엔 환기팬 발견됨",
+              "summary_en": "Navien Ventilator discovered"
+            }
+          }
         }
       ]
     },

@@ -12,6 +12,7 @@
     "test": "vitest run --root ../.."
   },
   "dependencies": {
+    "@marcbachmann/cel-js": "^6.3.4",
     "@rs485-homenet/core": "workspace:*",
     "@types/js-yaml": "^4.0.9",
     "dotenv": "^16.4.5",

@@ -1,4 +1,5 @@
 type ParameterType = 'integer' | 'string' | 'integer[]' | 'object[]';
+import { Environment } from '@marcbachmann/cel-js';
 
 export interface GalleryParameterDefinition {
   name: string;
@@ -55,8 +56,6 @@ interface RepeatBlock {
 }
 
 const TEMPLATE_EXPRESSION = /{{\s*([^}]+)\s*}}/g;
-const UNSAFE_EXPRESSION = /__proto__|constructor|prototype/;
-const ALLOWED_EXPRESSION = /^[\w\s.+\-*/()]+$/;
 
 function resolveParameterValues(
   definitions: GalleryParameterDefinition[] | undefined,
@@ -139,15 +138,66 @@ function coerceInteger(value: unknown, name: string): number {
 }
 
 function evaluateExpression(expression: string, context: Record<string, unknown>): unknown {
-  if (UNSAFE_EXPRESSION.test(expression)) {
-    throw new Error(`[gallery] Unsafe expression: ${expression}`);
-  }
-  if (!ALLOWED_EXPRESSION.test(expression)) {
-    throw new Error(`[gallery] Unsupported expression: ${expression}`);
+  const env = new Environment();
+
+  // Register Core Helper Functions
+  // Helper: BCD to Int
+  env.registerFunction('bcd_to_int(int): int', (bcd: bigint) => {
+    const val = Number(bcd);
+    const res = (val >> 4) * 10 + (val & 0x0f);
+    return BigInt(res);
+  });
+
+  // Helper: Int to BCD
+  env.registerFunction('int_to_bcd(int): int', (val: bigint) => {
+    const v = Number(val);
+    const res = (Math.floor(v / 10) % 10 << 4) | v % 10;
+    return BigInt(res);
+  });
+
+  // Helper: Bitwise Operations
+  env.registerFunction('bitAnd(int, int): int', (a: bigint, b: bigint) => a & b);
+  env.registerFunction('bitOr(int, int): int', (a: bigint, b: bigint) => a | b);
+  env.registerFunction('bitXor(int, int): int', (a: bigint, b: bigint) => a ^ b);
+  env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
+  env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
+  env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
+
+  // Dynamically register variables from context
+  const safeContext: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(context)) {
+    let type = 'dyn'; // Default to dynamic
+    if (typeof value === 'number' && Number.isInteger(value)) {
+      type = 'int';
+      // CEL expects int as BigInt in execute
+      safeContext[key] = BigInt(value);
+    } else {
+      safeContext[key] = value;
+      if (typeof value === 'string') {
+        type = 'string';
+      } else if (Array.isArray(value)) {
+        type = 'list';
+      } else if (typeof value === 'object' && value !== null) {
+        type = 'map';
+      }
+    }
+    env.registerVariable(key, type);
   }
 
-  const evaluator = new Function('context', `with (context) { return (${expression}); }`);
-  return evaluator(context);
+  try {
+    const ast = env.parse(expression);
+    const result = ast(safeContext); // Use safeContext with BigInts
+
+    // Convert BigInt results from CEL back to Number
+    if (typeof result === 'bigint') {
+      return Number(result);
+    }
+    return result;
+  } catch (error) {
+    const err = error as Error;
+    throw new Error(`[gallery] CEL Evaluation failed for "${expression}": ${err.message}`);
+  }
 }
 
 function applyFilters(value: unknown, filters: string[]): unknown {

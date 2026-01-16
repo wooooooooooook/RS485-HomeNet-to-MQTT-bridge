@@ -7,6 +7,7 @@
   import PortToolbar from '../components/PortToolbar.svelte';
 
   const GALLERY_LIST_URL = './api/gallery/list';
+  const REQUEST_TIMEOUT_MS = 8000;
 
   interface ContentSummary {
     entities: Record<string, number>;
@@ -100,6 +101,9 @@
   let compatibilityRequestId = $state(0);
   let compatibilityCache = $state<Map<string, Record<string, boolean>>>(new Map());
   let compatibilityTimeoutId = $state<ReturnType<typeof setTimeout> | null>(null);
+  let galleryAbortController = $state<AbortController | null>(null);
+  let discoveryAbortController = $state<AbortController | null>(null);
+  let compatibilityAbortController = $state<AbortController | null>(null);
 
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
@@ -110,8 +114,14 @@
 
   async function loadDiscovery() {
     discoveryLoading = true;
+    if (discoveryAbortController) {
+      discoveryAbortController.abort();
+    }
+    const controller = new AbortController();
+    discoveryAbortController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch('./api/gallery/discovery');
+      const response = await fetch('./api/gallery/discovery', { signal: controller.signal });
       if (response.ok) {
         const data = await response.json();
         if (data.available && data.results) {
@@ -121,6 +131,10 @@
     } catch {
       // Ignore discovery errors - it's optional
     } finally {
+      clearTimeout(timeoutId);
+      if (discoveryAbortController === controller) {
+        discoveryAbortController = null;
+      }
       discoveryLoading = false;
     }
   }
@@ -128,13 +142,27 @@
   async function loadGallery() {
     loading = true;
     error = null;
+    if (galleryAbortController) {
+      galleryAbortController.abort();
+    }
+    const controller = new AbortController();
+    galleryAbortController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(GALLERY_LIST_URL);
+      const response = await fetch(GALLERY_LIST_URL, { signal: controller.signal });
       if (!response.ok) throw new Error('Failed to fetch gallery');
       galleryData = await response.json();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Unknown error';
+      if (e instanceof Error && e.name === 'AbortError') {
+        error = 'Request timeout';
+      } else {
+        error = e instanceof Error ? e.message : 'Unknown error';
+      }
     } finally {
+      clearTimeout(timeoutId);
+      if (galleryAbortController === controller) {
+        galleryAbortController = null;
+      }
       loading = false;
     }
   }
@@ -144,25 +172,27 @@
     loadDiscovery();
   });
 
-  async function loadCompatibility(portId: string, vendors: Vendor[]) {
-    const compatibleKey = `${portId}:${JSON.stringify(
-      vendors.map((vendor) => ({
-        id: vendor.id,
-        requirements: vendor.requirements ?? null,
-      })),
-    )}`;
+  async function loadCompatibility(portId: string, vendors: Vendor[], cacheKey: string) {
+    const compatibleKey = cacheKey;
     const cached = compatibilityCache.get(compatibleKey);
     if (cached) {
       compatibilityByVendor = cached;
       return;
     }
 
+    if (compatibilityAbortController) {
+      compatibilityAbortController.abort();
+    }
+    const controller = new AbortController();
+    compatibilityAbortController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     const requestId = compatibilityRequestId + 1;
     compatibilityRequestId = requestId;
     try {
       const response = await fetch('./api/gallery/compatibility', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           portId,
           vendors: vendors.map((vendor) => ({
@@ -183,7 +213,10 @@
       if (compatibilityRequestId !== requestId) return;
       compatibilityByVendor = {};
     } finally {
-      // no-op
+      clearTimeout(timeoutId);
+      if (compatibilityAbortController === controller) {
+        compatibilityAbortController = null;
+      }
     }
   }
 
@@ -194,6 +227,8 @@
     }
 
     const vendors = galleryData.vendors;
+    const vendorKey = vendors.map((vendor) => vendor.id).join('|');
+    const cacheKey = `${activePortId}:${galleryData.generated_at ?? 'unknown'}:${vendorKey}`;
 
     if (compatibilityTimeoutId) {
       clearTimeout(compatibilityTimeoutId);
@@ -201,7 +236,7 @@
     }
 
     const timeoutId = setTimeout(() => {
-      loadCompatibility(activePortId, vendors);
+      loadCompatibility(activePortId, vendors, cacheKey);
     }, 300);
     compatibilityTimeoutId = timeoutId;
 

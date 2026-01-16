@@ -114,6 +114,29 @@ function coerceInteger(value: unknown, name: string): number {
 function evaluateExpression(expression: string, context: Record<string, unknown>): unknown {
   const env = new Environment();
 
+  // Register Core Helper Functions
+  // Helper: BCD to Int
+  env.registerFunction('bcd_to_int(int): int', (bcd: bigint) => {
+    const val = Number(bcd);
+    const res = (val >> 4) * 10 + (val & 0x0f);
+    return BigInt(res);
+  });
+
+  // Helper: Int to BCD
+  env.registerFunction('int_to_bcd(int): int', (val: bigint) => {
+    const v = Number(val);
+    const res = (Math.floor(v / 10) % 10 << 4) | v % 10;
+    return BigInt(res);
+  });
+
+  // Helper: Bitwise Operations
+  env.registerFunction('bitAnd(int, int): int', (a: bigint, b: bigint) => a & b);
+  env.registerFunction('bitOr(int, int): int', (a: bigint, b: bigint) => a | b);
+  env.registerFunction('bitXor(int, int): int', (a: bigint, b: bigint) => a ^ b);
+  env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
+  env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
+  env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
+
   // Dynamically register variables from context
   const safeContext: Record<string, any> = {};
 
@@ -121,14 +144,7 @@ function evaluateExpression(expression: string, context: Record<string, unknown>
     let type = 'dyn'; // Default to dynamic
     if (typeof value === 'number' && Number.isInteger(value)) {
       type = 'int';
-      // CEL expects int as BigInt in execute (though some impls vary)
-      // cel-js usually works with BigInt for int type.
-      // But let's check what it expects. The library usually handles it if we pass number?
-      // Based on previous error "Variable 'num' is not of type 'int', got 'double'",
-      // it seems strictly checking JS number as double.
-      // So if we register as 'int', we MUST pass BigInt or use 'double' or 'dyn'.
-      // However, 'num * 2' with 'num' as int(10) works if we convert context value to BigInt.
-
+      // CEL expects int as BigInt in execute
       safeContext[key] = BigInt(value);
     } else {
       safeContext[key] = value;

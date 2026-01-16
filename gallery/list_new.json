@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-01-16T01:01:34.600Z",
+  "vendors": [
+    {
+      "id": "commax",
+      "name": "코맥스",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_length": 8,
+          "rx_checksum": "add",
+          "tx_checksum": "add",
+          "rx_header": [],
+          "tx_header": [],
+          "rx_footer": [],
+          "tx_footer": []
+        }
+      },
+      "items": [
+        {
+          "file": "commax/lights_new.yaml",
+          "name": "☑️조명 설정",
+          "name_en": "☑️Lights",
+          "description": "코맥스 조명 설정입니다. 개수를 지정할 수 있습니다.",
+          "description_en": null,
+          "version": "2.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "light",
+            "commax"
+          ],
+          "parameters": [
+            {
+              "name": "light_count",
+              "type": "integer",
+              "default": 4,
+              "min": 1,
+              "max": 9,
+              "label": "조명 개수",
+              "label_en": "Number of Lights"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "light": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        }
+      ]
+    }
+  ]
+}

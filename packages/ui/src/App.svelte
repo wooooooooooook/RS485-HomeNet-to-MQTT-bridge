@@ -516,8 +516,8 @@
 
   // Analysis 페이지 진입/이탈 시 자동으로 스트리밍 시작/중지
   $effect(() => {
-    // connectionStatus와 activeView를 의존성으로 사용하여 reactive하게 동작
-    if (connectionStatus !== 'connected') return;
+    // WebSocket 연결 상태와 activeView를 의존성으로 사용하여 reactive하게 동작
+    if (socket?.readyState !== WebSocket.OPEN) return;
 
     if (activeView === 'analysis' || isRecording) {
       // 스트리밍 시작 & 데이터 초기화 (처음 들어올 때만)
@@ -540,7 +540,7 @@
   });
 
   $effect(() => {
-    if (!isStreaming || connectionStatus !== 'connected') return;
+    if (!isStreaming || socket?.readyState !== WebSocket.OPEN) return;
     if (rawPacketStreamMode === lastAppliedRawPacketMode) return;
     lastAppliedRawPacketMode = rawPacketStreamMode;
     rawPackets = [];

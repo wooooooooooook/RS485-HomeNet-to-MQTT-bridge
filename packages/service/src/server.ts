@@ -25,10 +25,16 @@ import { createConfigEditorService } from './services/config-editor.service.js';
 
 import type {
   BridgeInstance,
+  BridgeErrorPayload,
   BridgeStatus,
   ConfigStatus,
   RawPacketStreamMode,
 } from './types/index.js';
+import {
+  createBridgeErrorPayload,
+  mapBridgeStartError,
+  mapConfigLoadError,
+} from './utils/bridge-errors.js';
 import {
   CONFIG_DIR,
   DEFAULT_CONFIG_FILENAME,
@@ -109,10 +115,10 @@ let currentConfigFiles: string[] = [];
 let currentConfigs: HomenetBridgeConfig[] = [];
 
 let currentRawConfigs: HomenetBridgeConfig[] = [];
-let currentConfigErrors: (string | null)[] = [];
+let currentConfigErrors: (BridgeErrorPayload | null)[] = [];
 let currentConfigStatuses: ConfigStatus[] = [];
 let bridgeStatus: BridgeStatus = 'idle';
-let bridgeError: string | null = null;
+let bridgeError: BridgeErrorPayload | null = null;
 let bridgeStartPromise: Promise<void> | null = null;
 
 // FrontendSettings functions are now imported from ./services/frontend-settings.service.js
@@ -412,7 +418,13 @@ async function loadAndStartBridges(filenames: string[]) {
         );
 
         bridgeStatus = 'error';
-        bridgeError = `Duplicate portId(s) auto-fixed (${fixedFiles.join(', ')}). Restarting...`;
+        bridgeError = createBridgeErrorPayload({
+          code: 'CORE_START_FAILED',
+          message: `Duplicate portId(s) auto-fixed (${fixedFiles.join(', ')}). Restarting...`,
+          source: 'core',
+          severity: 'warning',
+          retryable: true,
+        });
         bridgeStartPromise = null;
 
         // Trigger restart
@@ -439,15 +451,15 @@ async function loadAndStartBridges(filenames: string[]) {
     }
 
     // Load configs individually, capturing errors per config
-    const loadResults: { config: HomenetBridgeConfig | null; error: string | null }[] = [];
+    const loadResults: { config: HomenetBridgeConfig | null; error: BridgeErrorPayload | null }[] =
+      [];
     for (const configPath of resolvedPaths) {
       try {
         const config = await loadConfigFile(configPath);
         loadResults.push({ config, error: null });
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error loading config';
         logger.error({ err, configPath }, '[service] Failed to load config file');
-        loadResults.push({ config: null, error: errorMessage });
+        loadResults.push({ config: null, error: mapConfigLoadError(err) });
       }
     }
 
@@ -455,7 +467,13 @@ async function loadAndStartBridges(filenames: string[]) {
     const successfulConfigs = loadResults.filter((r) => r.config !== null);
     if (successfulConfigs.length === 0) {
       bridgeStatus = 'error';
-      bridgeError = 'All configuration files failed to load.';
+      bridgeError = createBridgeErrorPayload({
+        code: 'CORE_NO_VALID_CONFIG',
+        message: 'All configuration files failed to load.',
+        source: 'core',
+        severity: 'error',
+        retryable: false,
+      });
       // Still populate currentConfigFiles and errors for UI display
       currentConfigFiles = filenames;
       currentConfigs = [];
@@ -471,7 +489,7 @@ async function loadAndStartBridges(filenames: string[]) {
     const mqttPassword = process.env.MQTT_PASSWD?.trim() || undefined;
 
     const newBridges: BridgeInstance[] = [];
-    const newConfigErrors: (string | null)[] = [];
+    const newConfigErrors: (BridgeErrorPayload | null)[] = [];
     const newConfigStatuses: ('idle' | 'starting' | 'started' | 'error' | 'stopped')[] = [];
     const loadedConfigs: HomenetBridgeConfig[] = [];
     const loadedConfigFilesForCollector: { name: string; content: string; portIds?: string[] }[] =
@@ -569,8 +587,10 @@ async function loadAndStartBridges(filenames: string[]) {
           );
           if (originalIndex !== -1) {
             currentConfigStatuses[originalIndex] = 'error';
-            currentConfigErrors[originalIndex] =
-              err instanceof Error ? err.message : 'Unknown error during bridge start';
+            currentConfigErrors[originalIndex] = mapBridgeStartError(
+              err,
+              normalizePortId(instance.config.serial?.portId ?? 'unknown', 0),
+            );
           }
           // Remove failed bridge from the bridges array to prevent
           // "Bridge not initialized" errors when executing commands on other bridges
@@ -623,7 +643,13 @@ server.listen(port, async () => {
 
     if (initState.requiresInitialization) {
       bridgeStatus = 'error';
-      bridgeError = 'CONFIG_INITIALIZATION_REQUIRED';
+      bridgeError = createBridgeErrorPayload({
+        code: 'CONFIG_INITIALIZATION_REQUIRED',
+        message: 'Configuration initialization required.',
+        source: 'service',
+        severity: 'error',
+        retryable: false,
+      });
       currentConfigFiles = [];
       logger.warn(
         '[service] No default configuration found and .initialized is missing. Exposing example list for selection.',
@@ -656,7 +682,13 @@ server.listen(port, async () => {
     if (uniqueConfigFiles.length === 0) {
       // 설정 파일이 없으면 초기 설정 마법사 표시
       bridgeStatus = 'error';
-      bridgeError = 'CONFIG_INITIALIZATION_REQUIRED';
+      bridgeError = createBridgeErrorPayload({
+        code: 'CONFIG_INITIALIZATION_REQUIRED',
+        message: 'Configuration initialization required.',
+        source: 'service',
+        severity: 'error',
+        retryable: false,
+      });
       currentConfigFiles = [];
       logger.warn('[service] No configuration files found. Showing setup wizard.');
       return;
@@ -684,6 +716,12 @@ server.listen(port, async () => {
   } catch (err) {
     logger.error({ err }, '[service] Initial bridge start failed');
     bridgeStatus = 'error';
-    bridgeError = err instanceof Error ? err.message : 'Initial start failed.';
+    bridgeError = createBridgeErrorPayload({
+      code: 'CORE_START_FAILED',
+      message: err instanceof Error ? err.message : 'Initial start failed.',
+      source: 'core',
+      severity: 'error',
+      retryable: true,
+    });
   }
 });

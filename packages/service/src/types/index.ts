@@ -16,6 +16,19 @@ export type BridgeInstance = {
 
 export type BridgeStatus = 'idle' | 'starting' | 'started' | 'stopped' | 'error' | 'reconnecting';
 export type ConfigStatus = 'idle' | 'starting' | 'started' | 'error' | 'stopped' | 'reconnecting';
+export type BridgeErrorSource = 'serial' | 'core' | 'mqtt' | 'service';
+export type BridgeErrorSeverity = 'error' | 'warning';
+
+export type BridgeErrorPayload = {
+  code: string;
+  message?: string;
+  detail?: string;
+  source: BridgeErrorSource;
+  portId?: string;
+  severity: BridgeErrorSeverity;
+  retryable?: boolean;
+  timestamp: string;
+};
 
 // --- Config Types ---
 

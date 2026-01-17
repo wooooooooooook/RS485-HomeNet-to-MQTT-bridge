@@ -582,6 +582,11 @@
     "INITIALIZATION_NOT_ALLOWED": "이미 초기화가 완료되었습니다.",
     "INVALID_FILENAME": "잘못된 파일명입니다.",
     "SERIAL_PATH_REQUIRED": "시리얼 포트 경로를 입력해주세요.",
+    "SERIAL_PATH_MISSING": "시리얼 포트 경로가 필요합니다.",
+    "SERIAL_PATH_NOT_FOUND": "시리얼 포트 경로를 찾을 수 없습니다.",
+    "SERIAL_PERMISSION_DENIED": "시리얼 포트 접근 권한이 없습니다.",
+    "SERIAL_PORT_BUSY": "시리얼 포트가 다른 프로세스에서 사용 중입니다.",
+    "SERIAL_CONNECT_FAILED": "시리얼 포트 연결에 실패했습니다.",
     "EXAMPLE_NOT_FOUND": "예제 설정 파일을 찾을 수 없습니다.",
     "EXAMPLE_READ_FAILED": "예제 설정 파일을 읽을 수 없습니다.",
     "SERIAL_CONFIG_MISSING": "설정 파일에 serial 설정이 없습니다.",
@@ -593,7 +598,13 @@
     "SERIAL_PARITY_INVALID": "패리티 설정을 확인해주세요.",
     "SERIAL_STOP_BITS_INVALID": "스톱 비트 설정을 확인해주세요.",
     "SERIAL_PATH_DUPLICATE": "이미 사용 중인 시리얼 경로입니다. 다른 경로를 선택해주세요.",
-    "PORT_ID_DUPLICATE": "이미 사용 중인 포트 ID입니다. 다른 ID를 입력해주세요."
+    "PORT_ID_DUPLICATE": "이미 사용 중인 포트 ID입니다. 다른 ID를 입력해주세요.",
+    "CORE_CONFIG_LOAD_FAILED": "설정 파일을 불러오지 못했습니다.",
+    "CORE_NO_VALID_CONFIG": "모든 설정 파일을 불러오지 못했습니다.",
+    "CORE_START_FAILED": "브릿지 시작에 실패했습니다.",
+    "MQTT_CONNECT_FAILED": "MQTT 브로커 연결에 실패했습니다.",
+    "MQTT_AUTH_FAILED": "MQTT 인증에 실패했습니다.",
+    "MQTT_DISCONNECTED": "MQTT 연결이 끊어졌습니다."
   },
   "setup_wizard": {
     "title": "초기 설정",

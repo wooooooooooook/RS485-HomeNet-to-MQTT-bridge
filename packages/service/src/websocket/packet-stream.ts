@@ -22,6 +22,7 @@ import {
   isStateTopic,
   BASE_PREFIX_PARTS,
 } from '../utils/helpers.js';
+import { mapMqttDisconnect, mapMqttError } from '../utils/bridge-errors.js';
 import type {
   StreamEvent,
   StreamMessage,
@@ -216,6 +217,37 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
     eventBus.on('entity:error', (data: EntityErrorEvent) => {
       broadcastStreamEvent('entity-error', data);
     });
+
+    eventBus.on(
+      'mqtt:status',
+      (data: { state: 'connected' | 'connecting' | 'disconnected'; portId?: string }) => {
+        broadcastStreamEvent('status', {
+          state: data.state,
+        });
+      },
+    );
+
+    eventBus.on(
+      'mqtt:error',
+      (data: { message?: string; code?: string; portId?: string; error?: unknown }) => {
+        const payload = mapMqttError(
+          data.error ?? { message: data.message, code: data.code },
+          data.portId,
+        );
+        broadcastStreamEvent('status', {
+          state: 'error',
+          error: payload,
+        });
+      },
+    );
+
+    eventBus.on('mqtt:disconnected', (data: { portId?: string }) => {
+      const payload = mapMqttDisconnect(data.portId);
+      broadcastStreamEvent('status', {
+        state: 'disconnected',
+        error: payload,
+      });
+    });
   };
 
   const registerPacketStream = () => {
@@ -227,7 +259,7 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
       }
 
       sendStreamEvent(socket, 'status', {
-        state: 'connected',
+        state: 'connecting',
         mqttUrl: streamMqttUrl,
       });
       state.latestStates.forEach((s) => sendStreamEvent(socket, 'state-change', s));

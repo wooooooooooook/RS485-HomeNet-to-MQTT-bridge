@@ -5,6 +5,7 @@
   import './lib/i18n';
   import type {
     BridgeInfo,
+    BridgeErrorPayload,
     BridgeSerialInfo,
     BridgeStatus,
     MqttMessageEvent,
@@ -77,6 +78,18 @@
     } catch {
       return '';
     }
+  };
+
+  const resolveBridgeErrorMessage = (
+    error?: BridgeErrorPayload | string | null,
+  ): string | undefined => {
+    if (!error) return undefined;
+    if (typeof error === 'string') {
+      return get(t)(`errors.${error}`, { default: error });
+    }
+    return get(t)(`errors.${error.code}`, {
+      default: error.message || error.detail || error.code,
+    });
   };
 
   const normalizeSearchText = (...parts: Array<string | undefined>) =>
@@ -794,7 +807,7 @@
 
     socket = new WebSocket(url.toString());
 
-    const handleStatus = (data: Record<string, unknown>) => {
+    const handleStatus = (data: Record<string, unknown> & { error?: BridgeErrorPayload }) => {
       const state = data.state;
       if (state === 'connected') {
         connectionStatus = 'connected';
@@ -804,13 +817,20 @@
         statusMessage = { key: 'mqtt.subscribed', values: { topic: data.topic } };
       } else if (state === 'error') {
         connectionStatus = 'error';
-        // Error messages from server might be raw strings.
-        statusMessage = {
-          key: typeof data.message === 'string' ? data.message : 'mqtt.error',
-        };
+        if (data.error?.code) {
+          statusMessage = { key: `errors.${data.error.code}` };
+        } else {
+          // Error messages from server might be raw strings.
+          statusMessage = {
+            key: typeof data.message === 'string' ? data.message : 'mqtt.error',
+          };
+        }
       } else if (state === 'connecting') {
         connectionStatus = 'connecting';
         statusMessage = { key: 'mqtt.connecting' };
+      } else if (state === 'disconnected') {
+        connectionStatus = 'connecting';
+        statusMessage = { key: 'mqtt.disconnected' };
       }
     };
 
@@ -983,8 +1003,8 @@
     };
 
     socket.addEventListener('open', () => {
-      connectionStatus = 'connected';
-      statusMessage = { key: 'mqtt.connected' };
+      connectionStatus = 'connecting';
+      statusMessage = { key: 'mqtt.connecting' };
     });
 
     socket.addEventListener('message', (event) => {
@@ -1193,6 +1213,7 @@
   type PortMetadata = BridgeSerialInfo & {
     configFile: string;
     error?: string;
+    errorInfo?: BridgeErrorPayload | null;
     status?: 'idle' | 'starting' | 'started' | 'error' | 'stopped';
   };
 
@@ -1211,6 +1232,7 @@
             topic: '',
             configFile: bridge.configFile,
             error: bridge.error,
+            errorInfo: bridge.errorInfo ?? null,
             status: bridge.status,
           },
         ]);
@@ -1221,6 +1243,7 @@
             ...bridge.serial,
             configFile: bridge.configFile,
             error: bridge.error,
+            errorInfo: bridge.errorInfo ?? null,
             status: bridge.status,
           },
         ]);
@@ -1593,11 +1616,12 @@
     const defaultStatus = bridgeInfo?.status ?? 'idle';
     return portMetadata.map((port) => {
       // 1. If explicit startup error (from config loading/connect failure)
-      if (port.error) {
+      if (port.error || port.errorInfo) {
         return {
           portId: port.portId,
           status: 'error' as BridgeStatus,
-          message: port.error,
+          message: resolveBridgeErrorMessage(port.errorInfo ?? port.error),
+          errorInfo: port.errorInfo ?? null,
         };
       }
 
@@ -1607,6 +1631,7 @@
           portId: port.portId,
           status: port.status as BridgeStatus,
           message: undefined,
+          errorInfo: port.errorInfo ?? null,
         };
       }
 
@@ -1626,6 +1651,7 @@
         portId: port.portId,
         status: finalStatus,
         message: mqttStatus || undefined,
+        errorInfo: port.errorInfo ?? null,
       };
     });
   });

@@ -602,6 +602,26 @@ export class HomeNetBridge extends EventEmitter {
 
     this._mqttClient = new MqttClient(this.options.mqttUrl, mqttOptions);
     this.client = this._mqttClient.client; // Assign the client from the new MqttClient instance
+    const mqttPortId = normalizePortId(this.config.serial?.portId ?? 'default', 0);
+    const emitMqttStatus = (state: 'connected' | 'connecting' | 'disconnected') => {
+      eventBus.emit('mqtt:status', { state, portId: mqttPortId });
+    };
+
+    this.client.on('connect', () => emitMqttStatus('connected'));
+    this.client.on('reconnect', () => emitMqttStatus('connecting'));
+    this.client.on('offline', () => emitMqttStatus('connecting'));
+    this.client.on('close', () => {
+      eventBus.emit('mqtt:disconnected', { portId: mqttPortId });
+      emitMqttStatus('disconnected');
+    });
+    this.client.on('error', (error) => {
+      eventBus.emit('mqtt:error', {
+        message: error.message,
+        code: (error as { code?: string }).code,
+        portId: mqttPortId,
+        error,
+      });
+    });
 
     if (this.config.serial) {
       const serialConfig = this.config.serial;

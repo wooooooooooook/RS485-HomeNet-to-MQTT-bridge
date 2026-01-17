@@ -13,10 +13,12 @@ import { ENTITY_TYPE_KEYS } from '../utils/constants.js';
 import type { RateLimiter } from '../utils/rate-limiter.js';
 import type {
   BridgeInstance,
+  BridgeErrorPayload,
   CommandInfo,
   ConfigStatus,
   PersistableHomenetBridgeConfig,
 } from '../types/index.js';
+import { formatBridgeErrorMessage } from '../utils/bridge-errors.js';
 import { saveBackup } from '../services/backup.service.js';
 import yaml from 'js-yaml';
 
@@ -28,7 +30,7 @@ export interface ControlsRoutesContext {
   getCurrentConfigFiles: () => string[];
   getCurrentRawConfigs: () => HomenetBridgeConfig[];
   getCurrentConfigStatuses: () => ConfigStatus[];
-  getCurrentConfigErrors: () => (string | null)[];
+  getCurrentConfigErrors: () => (BridgeErrorPayload | null)[];
 
   // Config modification capability
   configDir: string;
@@ -301,8 +303,9 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       const currentConfigErrors = ctx.getCurrentConfigErrors();
 
       if (configIndex !== -1 && currentConfigStatuses[configIndex] === 'error') {
+        const errorMessage = formatBridgeErrorMessage(currentConfigErrors[configIndex]);
         return res.status(503).json({
-          error: `Bridge for this entity is not active: ${currentConfigErrors[configIndex] || 'Connection failed'}`,
+          error: `Bridge for this entity is not active: ${errorMessage || 'Connection failed'}`,
         });
       }
       return res.status(404).json({ error: 'Entity not found in loaded configs' });

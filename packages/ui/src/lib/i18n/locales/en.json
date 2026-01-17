@@ -579,6 +579,11 @@
     "INITIALIZATION_NOT_ALLOWED": "Initialization has already been completed.",
     "INVALID_FILENAME": "Invalid filename.",
     "SERIAL_PATH_REQUIRED": "Serial port path is required.",
+    "SERIAL_PATH_MISSING": "Serial port path is required.",
+    "SERIAL_PATH_NOT_FOUND": "Serial port path was not found.",
+    "SERIAL_PERMISSION_DENIED": "Permission denied for serial port.",
+    "SERIAL_PORT_BUSY": "Serial port is in use by another process.",
+    "SERIAL_CONNECT_FAILED": "Failed to connect to the serial port.",
     "EXAMPLE_NOT_FOUND": "Example configuration file not found.",
     "EXAMPLE_READ_FAILED": "Failed to read example configuration file.",
     "SERIAL_CONFIG_MISSING": "Serial configuration is missing from the config file.",
@@ -590,7 +595,13 @@
     "SERIAL_PARITY_INVALID": "Check the parity setting.",
     "SERIAL_STOP_BITS_INVALID": "Check the stop bits setting.",
     "SERIAL_PATH_DUPLICATE": "The serial path is already in use. Please choose another path.",
-    "PORT_ID_DUPLICATE": "The port ID is already in use. Please enter a different ID."
+    "PORT_ID_DUPLICATE": "The port ID is already in use. Please enter a different ID.",
+    "CORE_CONFIG_LOAD_FAILED": "Failed to load configuration file.",
+    "CORE_NO_VALID_CONFIG": "All configuration files failed to load.",
+    "CORE_START_FAILED": "Failed to start the bridge.",
+    "MQTT_CONNECT_FAILED": "Failed to connect to the MQTT broker.",
+    "MQTT_AUTH_FAILED": "MQTT authentication failed.",
+    "MQTT_DISCONNECTED": "MQTT connection lost."
   },
   "setup_wizard": {
     "title": "Initial Setup",

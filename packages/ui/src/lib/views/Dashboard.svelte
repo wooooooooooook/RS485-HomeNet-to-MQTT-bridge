@@ -7,6 +7,7 @@
     BridgeStatus,
     StatusMessage,
     EntityCategory,
+    BridgeErrorPayload,
   } from '../types';
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
@@ -49,6 +50,7 @@
       BridgeSerialInfo & {
         configFile: string;
         error?: string;
+        errorInfo?: BridgeErrorPayload | null;
         status?: 'idle' | 'starting' | 'started' | 'error' | 'stopped';
       }
     >;
@@ -63,7 +65,12 @@
     activityLogs: ActivityLog[];
     connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
     statusMessage?: StatusMessage | null;
-    portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
+    portStatuses?: {
+      portId: string;
+      status: BridgeStatus | 'unknown';
+      message?: string;
+      errorInfo?: BridgeErrorPayload | null;
+    }[];
     onSelect?: (entityId: string, portId: string | undefined, category: EntityCategory) => void;
     onToggleInactive?: () => void;
     onToggleEntities?: () => void;
@@ -103,10 +110,50 @@
 
   function getPortErrorMessage(portId: string): string | undefined {
     const portStatus = portStatuses.find(
-      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
-        p.portId === portId,
+      (p: {
+        portId: string;
+        status: BridgeStatus | 'unknown';
+        message?: string;
+        errorInfo?: BridgeErrorPayload | null;
+      }) => p.portId === portId,
     );
+    if (portStatus?.errorInfo) {
+      return $t(`errors.${portStatus.errorInfo.code}`, {
+        default:
+          portStatus.errorInfo.message ||
+          portStatus.errorInfo.detail ||
+          portStatus.errorInfo.code,
+      });
+    }
     return portStatus?.message;
+  }
+
+  function getBridgeErrorMessage(): string | undefined {
+    if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
+    return $t(`errors.${bridgeInfo.errorInfo.code}`, {
+      default:
+        bridgeInfo.errorInfo.message ||
+        bridgeInfo.errorInfo.detail ||
+        bridgeInfo.errorInfo.code,
+    });
+  }
+
+  function getPortMetadataErrorMessage(
+    port?: BridgeSerialInfo & {
+      error?: string;
+      errorInfo?: BridgeErrorPayload | null;
+    },
+  ): string | undefined {
+    if (!port) return undefined;
+    if (port.errorInfo) {
+      return $t(`errors.${port.errorInfo.code}`, {
+        default: port.errorInfo.message || port.errorInfo.detail || port.errorInfo.code,
+      });
+    }
+    if (port.error) {
+      return $t(`errors.${port.error}`, { default: port.error });
+    }
+    return undefined;
   }
 
   function handleSelect(entityId: string, portId: string | undefined, category: EntityCategory) {
@@ -142,7 +189,7 @@
     {#if bridgeInfo.error}
       <div class="bridge-error">
         <p class="error subtle">
-          {$t('dashboard.bridge_error', { values: { error: $t(`errors.${bridgeInfo.error}`) } })}
+          {$t('dashboard.bridge_error', { values: { error: getBridgeErrorMessage() } })}
         </p>
       </div>
     {/if}
@@ -196,11 +243,15 @@
             </div>
           </div>
         {/if}
-        {#if getPortStatus(activePortId) === 'error' && (getPortErrorMessage(activePortId) || activePortMetadata?.error)}
+        {#if getPortStatus(activePortId) === 'error' && (getPortErrorMessage(activePortId) || getPortMetadataErrorMessage(activePortMetadata))}
           <div class="port-error">
             <span class="error-text">
               {$t('dashboard.port_error', {
-                values: { error: getPortErrorMessage(activePortId) || activePortMetadata?.error },
+                values: {
+                  error:
+                    getPortErrorMessage(activePortId) ||
+                    getPortMetadataErrorMessage(activePortMetadata),
+                },
               })}
             </span>
           </div>

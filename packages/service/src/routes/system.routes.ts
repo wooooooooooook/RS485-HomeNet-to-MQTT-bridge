@@ -14,7 +14,7 @@ import {
   normalizeFrontendSettings,
 } from '../utils/helpers.js';
 import { RateLimiter } from '../utils/rate-limiter.js';
-import type { BridgeInstance, BridgeStatus, ConfigStatus } from '../types/index.js';
+import type { BridgeErrorPayload, BridgeInstance, BridgeStatus, ConfigStatus } from '../types/index.js';
 import { CONFIG_RESTART_FLAG, BASE_MQTT_PREFIX } from '../utils/constants.js';
 import {
   loadFrontendSettings,
@@ -29,10 +29,10 @@ export interface SystemRoutesContext {
   // Bridge Info Context
   getCurrentConfigs: () => HomenetBridgeConfig[];
   getCurrentConfigFiles: () => string[];
-  getCurrentConfigErrors: () => (string | null)[];
+  getCurrentConfigErrors: () => (BridgeErrorPayload | null)[];
   getCurrentConfigStatuses: () => ConfigStatus[];
   getBridgeStatus: () => BridgeStatus;
-  getBridgeError: () => string | null;
+  getBridgeError: () => BridgeErrorPayload | null;
   isBridgeStarting: () => boolean;
 }
 
@@ -40,6 +40,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
   const router = Router();
   const restartTokens = new Set<string>();
   const timezoneOverride = process.env.TIMEZONE?.trim();
+  const resolveErrorCode = (error?: BridgeErrorPayload | string | null) =>
+    typeof error === 'string' ? error : error?.code;
 
   // Helper to execute process restart
   const restartProcess = () => {
@@ -127,7 +129,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
         bridges: [],
         mqttUrl: maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883'),
         status: 'error',
-        error: bridgeError || 'BRIDGE_NOT_CONFIGURED',
+        error: resolveErrorCode(bridgeError) || 'BRIDGE_NOT_CONFIGURED',
+        errorInfo: bridgeError ?? null,
         topic: `${BASE_MQTT_PREFIX}/homedevice1/raw`,
         timezone: timezoneOverride || undefined,
       });
@@ -145,7 +148,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
           serial: null,
           mqttTopicPrefix: BASE_MQTT_PREFIX,
           topic: `${BASE_MQTT_PREFIX}/homedevice1/raw`,
-          error: configError || 'Config not loaded',
+          error: resolveErrorCode(configError) || 'Config not loaded',
+          errorInfo: configError ?? null,
           status: configStatus,
         };
       }
@@ -163,7 +167,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
         serial: serialInfo,
         mqttTopicPrefix: BASE_MQTT_PREFIX,
         topic: `${serialInfo?.topic || `${BASE_MQTT_PREFIX}/homedevice1`}/raw`,
-        error: configError || undefined,
+        error: resolveErrorCode(configError) || undefined,
+        errorInfo: configError ?? null,
         status: configStatus,
       };
     });
@@ -178,7 +183,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
       bridges: bridgesInfo,
       mqttUrl: maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883'),
       status: bridgeStatus,
-      error: bridgeError,
+      error: resolveErrorCode(bridgeError) ?? null,
+      errorInfo: bridgeError ?? null,
       topic: firstTopic,
       restartRequired,
       timezone: timezoneOverride || undefined,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import { onMount } from 'svelte';
-  import type { BridgeSerialInfo, BridgeStatus } from '../types';
+  import type { BridgeErrorPayload, BridgeSerialInfo, BridgeStatus } from '../types';
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
   import PortToolbar from '../components/PortToolbar.svelte';
@@ -76,7 +76,12 @@
     onPortChange,
   }: {
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
-    portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
+    portStatuses?: {
+      portId: string;
+      status: BridgeStatus | 'unknown';
+      message?: string;
+      errorInfo?: BridgeErrorPayload | null;
+    }[];
     selectedPortId: string | null;
     onPortChange?: (portId: string) => void;
   } = $props();

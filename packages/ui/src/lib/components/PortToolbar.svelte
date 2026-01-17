@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BridgeStatus } from '../types';
+  import type { BridgeErrorPayload, BridgeStatus } from '../types';
   import { t } from 'svelte-i18n';
   import HintBubble from './HintBubble.svelte';
 
@@ -13,7 +13,12 @@
   }: {
     portIds: string[];
     activePortId: string | null;
-    portStatuses?: { portId: string; status: BridgeStatus | 'unknown'; message?: string }[];
+    portStatuses?: {
+      portId: string;
+      status: BridgeStatus | 'unknown';
+      message?: string;
+      errorInfo?: BridgeErrorPayload | null;
+    }[];
     showAddButton?: boolean;
     onPortChange?: (portId: string) => void;
     onAddBridge?: () => void;
@@ -23,17 +28,33 @@
 
   function getPortStatus(portId: string): BridgeStatus | 'unknown' {
     const portStatus = portStatuses.find(
-      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
-        p.portId === portId,
+      (p: {
+        portId: string;
+        status: BridgeStatus | 'unknown';
+        message?: string;
+        errorInfo?: BridgeErrorPayload | null;
+      }) => p.portId === portId,
     );
     return portStatus?.status ?? 'unknown';
   }
 
   function getPortErrorMessage(portId: string): string | undefined {
     const portStatus = portStatuses.find(
-      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
-        p.portId === portId,
+      (p: {
+        portId: string;
+        status: BridgeStatus | 'unknown';
+        message?: string;
+        errorInfo?: BridgeErrorPayload | null;
+      }) => p.portId === portId,
     );
+    if (portStatus?.errorInfo) {
+      return $t(`errors.${portStatus.errorInfo.code}`, {
+        default:
+          portStatus.errorInfo.message ||
+          portStatus.errorInfo.detail ||
+          portStatus.errorInfo.code,
+      });
+    }
     return portStatus?.message;
   }
 

@@ -341,15 +341,23 @@
           const date = new Date(log.server_timestamp).toLocaleString('ko-KR');
           const item = document.createElement('div');
           item.className = 'log-item';
+
+          // Security: Escape all user-controlled data to prevent XSS
+          const safeVersion = escapeHtml(log.version || 'v?');
+          const safeId = escapeHtml(log.id ? log.id.substring(0, 8) : 'unknown');
+          const safeUid = log.uid ? escapeHtml(log.uid.substring(0, 8) + '...') : 'N/A';
+          // portInfo contains raw Port IDs from config
+          const safePortInfo = portInfo ? escapeHtml(portInfo) : '';
+
           item.innerHTML = `
                 <div class="log-meta">
-                    <span class="badge">${log.version || 'v?'}</span>
+                    <span class="badge">${safeVersion}</span>
                     ${date}
                 </div>
-                <div class="log-id">${log.id.substring(0, 8)}...</div>
+                <div class="log-id">${safeId}...</div>
                 <div class="log-meta" style="margin-top:4px;">
-                    ${portInfo ? `<strong>Port: ${portInfo}</strong><br>` : ''}
-                    UID: ${log.uid ? log.uid.substring(0, 8) + '...' : 'N/A'}
+                    ${safePortInfo ? `<strong>Port: ${safePortInfo}</strong><br>` : ''}
+                    UID: ${safeUid}
                 </div>
             `;
           item.onclick = () => loadDetail(log.id, item);

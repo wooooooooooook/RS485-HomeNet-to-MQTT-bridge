@@ -65,7 +65,7 @@ export class CommandGenerator {
    * @deprecated This method is currently unused in the command generation flow
    *             but is preserved for potential future symmetric use.
    */
-  // @ts-ignore - Preserved for future symmetric use
+  // Preserved for future symmetric use
   private _decodeValue(bytes: number[], schema: StateNumSchema): number | string | null {
     const {
       offset,
@@ -165,8 +165,8 @@ export class CommandGenerator {
       }
 
       switch (value_encode) {
-        case 'bcd':
-          let bcd = [];
+        case 'bcd': {
+          const bcd: number[] = [];
           let temp = Math.abs(numValue);
           while (temp > 0) {
             bcd.unshift((((temp % 100) / 10) << 4) | temp % 10);
@@ -174,6 +174,7 @@ export class CommandGenerator {
           }
           encodedBytes = bcd;
           break;
+        }
         case 'signed_byte_half_degree':
           let byteValue = Math.floor(Math.abs(numValue));
           if (numValue % 1 !== 0) {

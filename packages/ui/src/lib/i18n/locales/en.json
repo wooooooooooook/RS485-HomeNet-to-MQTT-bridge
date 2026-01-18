@@ -400,6 +400,7 @@
     "mqtt_waiting": "Waiting for MQTT stream...",
     "bridge_error": "Bridge Error: {error}",
     "port_error": "Port Error: {error}",
+    "mqtt_error": "MQTT Connection Error",
     "no_configured_ports": "No configured ports found.",
     "port_tabs_aria": "Select Port",
     "filter_section_aria": "Dashboard filters",
@@ -409,13 +410,15 @@
     "show_scripts": "Scripts",
     "show_inactive_entities": "Inactive items",
     "topology": {
-      "serial_device": "RS485 Serial Device",
+      "serial_device": "RS485-serial",
       "mqtt_broker": "MQTT Broker",
       "homenet2mqtt": "HomeNet2MQTT",
       "path": "PATH",
       "baud": "BAUD",
       "config": "CONFIG",
       "url": "URL",
+      "port": "PORT ID",
+      "subscription": "SUB",
       "status": "Status:"
     },
     "recent_activity": {

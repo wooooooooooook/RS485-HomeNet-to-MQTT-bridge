@@ -43,8 +43,16 @@
 
   const hasMqttError = $derived(mqttStatus === 'error' || !!mqttError);
 
+  const hasSerialWarning = $derived(!hasSerialError && isWarning(portMetadata?.status));
+  const hasCoreWarning = $derived(!hasCoreError && isWarning(bridgeStatus));
+  const hasMqttWarning = $derived(!hasMqttError && isWarning(mqttStatus));
+
   function isGreen(status: string | undefined) {
     return status === 'connected' || status === 'started';
+  }
+
+  function isWarning(status: string | undefined) {
+    return status === 'connecting' || status === 'starting' || status === 'reconnecting';
   }
 
   function getStatusColor(status: string | undefined, hasError: boolean) {
@@ -81,6 +89,7 @@
       <div
         class="node"
         class:error={hasSerialError}
+        class:warning={hasSerialWarning}
         style="--status-color: {getStatusColor(portMetadata?.status, hasSerialError)}"
       >
         <div class="icon-circle">
@@ -111,9 +120,12 @@
     </div>
 
     <!-- Link 1: Serial Connection -->
-    <div class="link-visual">
-      <div class="connection-line" class:active={portMetadata?.status === 'started'}></div>
-      <div class="link-label">RS485</div>
+    <div class="link-visual link-rs485">
+      <div
+        class="connection-line"
+        class:active={portMetadata?.status === 'started'}
+        class:warning={isWarning(portMetadata?.status)}
+      ></div>
     </div>
 
     <!-- Node 2: Core -->
@@ -121,6 +133,7 @@
       <div
         class="node"
         class:error={hasCoreError}
+        class:warning={hasCoreWarning}
         style="--status-color: {getStatusColor(bridgeStatus, hasCoreError)}"
       >
         <div class="icon-circle">
@@ -150,9 +163,12 @@
     </div>
 
     <!-- Link 2: MQTT Connection -->
-    <div class="link-visual">
-      <div class="connection-line" class:active={mqttStatus === 'connected'}></div>
-      <div class="link-label">MQTT</div>
+    <div class="link-visual link-mqtt">
+      <div
+        class="connection-line"
+        class:active={mqttStatus === 'connected'}
+        class:warning={isWarning(mqttStatus)}
+      ></div>
     </div>
 
     <!-- Node 3: MQTT Broker -->
@@ -160,6 +176,7 @@
       <div
         class="node"
         class:error={hasMqttError}
+        class:warning={hasMqttWarning}
         style="--status-color: {getStatusColor(mqttStatus, hasMqttError)}"
       >
         <div class="icon-circle">
@@ -196,13 +213,10 @@
 
     <!-- Details 1: Serial (Left aligned) -->
     <div class="details-column left">
-      <div class="detail-item" title={portMetadata?.path}>
-        <span class="label">{$t('dashboard.topology.path', { default: 'PATH' })}</span>
-        <span class="value">{portMetadata?.path || '-'}</span>
-      </div>
-      <div class="detail-item">
-        <span class="label">{$t('dashboard.topology.baud', { default: 'BAUD' })}</span>
-        <span class="value">{portMetadata?.baudRate || '-'}</span>
+      <div class="mobile-node-name">
+        <span class="value">
+          {$t('dashboard.topology.serial_device', { default: 'RS485 Serial Device' })}
+        </span>
       </div>
       {#if hasSerialError || !isGreen(portMetadata?.status)}
         <div class="detail-item">
@@ -217,6 +231,14 @@
           </span>
         </div>
       {/if}
+      <div class="detail-item" title={portMetadata?.path}>
+        <span class="label">{$t('dashboard.topology.path', { default: 'PATH' })}</span>
+        <span class="value">{portMetadata?.path || '-'}</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">{$t('dashboard.topology.baud', { default: 'BAUD' })}</span>
+        <span class="value">{portMetadata?.baudRate || '-'}</span>
+      </div>
     </div>
 
     <!-- Link Gap -->
@@ -224,9 +246,10 @@
 
     <!-- Details 2: Core (Center aligned) -->
     <div class="details-column center">
-      <div class="detail-item" title={portMetadata?.configFile}>
-        <span class="label">{$t('dashboard.topology.config', { default: 'CONFIG' })}</span>
-        <span class="value">{portMetadata?.configFile || '-'}</span>
+      <div class="mobile-node-name">
+        <span class="value">
+          {$t('dashboard.topology.homenet2mqtt', { default: 'HomeNet2MQTT' })}
+        </span>
       </div>
       {#if hasCoreError || !isGreen(bridgeStatus)}
         <div class="detail-item">
@@ -241,6 +264,14 @@
           </span>
         </div>
       {/if}
+      <div class="detail-item" title={portMetadata?.configFile}>
+        <span class="label">{$t('dashboard.topology.config', { default: 'CONFIG' })}</span>
+        <span class="value">{portMetadata?.configFile || '-'}</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">{$t('dashboard.topology.port', { default: 'PORT' })}</span>
+        <span class="value">{portMetadata?.portId || '-'}</span>
+      </div>
     </div>
 
     <!-- Link Gap -->
@@ -248,9 +279,10 @@
 
     <!-- Details 3: MQTT (Right aligned) -->
     <div class="details-column right">
-      <div class="detail-item" title={mqttUrl}>
-        <span class="label">{$t('dashboard.topology.url', { default: 'URL' })}</span>
-        <span class="value">{mqttUrl}</span>
+      <div class="mobile-node-name">
+        <span class="value">
+          {$t('dashboard.topology.mqtt_broker', { default: 'MQTT Broker' })}
+        </span>
       </div>
       {#if hasMqttError || !isGreen(mqttStatus)}
         <div class="detail-item">
@@ -265,6 +297,14 @@
           </span>
         </div>
       {/if}
+      <div class="detail-item" title={mqttUrl}>
+        <span class="label">{$t('dashboard.topology.url', { default: 'URL' })}</span>
+        <span class="value">{mqttUrl}</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">{$t('dashboard.topology.subscription', { default: 'SUB' })}</span>
+        <span class="value">{portMetadata?.topic ? portMetadata.topic + '/#' : '-'}</span>
+      </div>
     </div>
 
     <!-- Side Gutter -->
@@ -331,6 +371,10 @@
     animation: pulse-error 2s infinite;
   }
 
+  .node.warning .icon-circle {
+    animation: pulse-warning 2s infinite;
+  }
+
   .icon-circle svg {
     width: 32px;
     height: 32px;
@@ -393,31 +437,30 @@
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
   }
 
+  .connection-line.warning {
+    background: var(--status-warning, #f59e0b);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    animation: line-pulse-warning 2s infinite ease-in-out;
+  }
+
   .connection-line.active::after {
     content: '';
     position: absolute;
-    top: 0;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 6px white;
+    top: 50%;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.5) 50%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: flow 2s linear infinite;
-    opacity: 0.5;
+    transform: translate(-100%, -50%);
+    animation: move-dot-horizontal 2s linear infinite;
+    opacity: 0.8;
   }
 
-  .link-label {
-    position: absolute;
-    top: calc(50% + 0.5rem);
-    font-size: 0.7rem;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  /* Offset for MQTT link so they don't overlap */
+  .link-mqtt .connection-line.active::after {
+    animation-delay: 1s;
   }
 
   /* --- Bottom Section: Perfectly Aligned Flex --- */
@@ -426,7 +469,7 @@
     align-items: flex-start;
     justify-content: space-between;
     width: 100%;
-    padding-top: 2.5rem; /* Space for node labels */
+    padding-top: 0.5rem;
   }
 
   .detail-spacer {
@@ -496,12 +539,53 @@
     line-height: 1.2;
   }
 
-  @keyframes flow {
+  .mobile-node-name {
+    display: none;
+  }
+
+  @keyframes move-dot-horizontal {
     0% {
-      background-position: 200% 0;
+      left: 0;
+      transform: translate(-100%, -50%);
+      opacity: 0;
+    }
+    5% {
+      left: 5%;
+      transform: translate(-100%, -50%);
+      opacity: 0.8;
+    }
+    95% {
+      left: 98%;
+      transform: translate(0, -50%);
+      opacity: 0.8;
     }
     100% {
-      background-position: -200% 0;
+      left: 100%;
+      transform: translate(0, -50%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes move-dot-vertical {
+    0% {
+      top: 0;
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
+    5% {
+      top: 5%;
+      transform: translate(-50%, -100%);
+      opacity: 0.8;
+    }
+    95% {
+      top: 98%;
+      transform: translate(-50%, 0);
+      opacity: 0.8;
+    }
+    100% {
+      top: 100%;
+      transform: translate(-50%, 0);
+      opacity: 0;
     }
   }
 
@@ -514,6 +598,30 @@
     }
     100% {
       box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+
+  @keyframes pulse-warning {
+    0% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+  }
+
+  @keyframes line-pulse-warning {
+    0%,
+    100% {
+      opacity: 0.6;
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
     }
   }
 
@@ -541,8 +649,8 @@
     }
 
     .node-visual {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
       justify-content: center;
     }
 
@@ -557,13 +665,13 @@
     }
 
     .node-label {
-      display: none; /* Hide node labels to save width, detail items are descriptive */
+      display: none;
     }
 
     .link-visual,
     .link-visual.spacer {
       width: 2px;
-      height: 32px; /* Close spacing */
+      height: 28px;
       flex: none;
       padding: 0;
     }
@@ -573,13 +681,17 @@
       height: 100%;
     }
 
-    .link-label {
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.6rem;
-      white-space: nowrap;
-      color: rgba(148, 163, 184, 0.4);
+    .connection-line.active::after {
+      left: 50%;
+      top: 0;
+      transform: translate(-50%, -100%);
+      animation: move-dot-vertical 1s linear infinite;
+      background: white;
+      background-size: initial;
+    }
+
+    .link-mqtt .connection-line.active::after {
+      animation-delay: 0.5s;
     }
 
     .details-section {
@@ -602,10 +714,13 @@
 
     .details-column {
       width: 100%;
-      height: 56px; /* Match node-visual */
-      justify-content: center;
+      justify-content: flex-start;
       align-items: flex-start !important;
       text-align: left !important;
+      gap: 0;
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 1rem;
     }
 
     .details-column.left,
@@ -630,6 +745,20 @@
       font-size: 0.75rem;
       white-space: normal;
       word-break: break-all;
+    }
+
+    .mobile-node-name {
+      display: flex;
+      width: 100%;
+      margin-bottom: 0.25rem;
+    }
+
+    .mobile-node-name .value {
+      font-weight: 700 !important;
+      color: #e2e8f0 !important;
+      font-size: 0.85rem !important;
+      font-family: inherit !important;
+      word-break: keep-all;
     }
   }
 

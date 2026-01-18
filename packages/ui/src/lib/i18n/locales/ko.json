@@ -403,6 +403,7 @@
     "mqtt_waiting": "MQTT 스트림을 기다리는 중입니다.",
     "bridge_error": "브리지 오류: {error}",
     "port_error": "포트 오류: {error}",
+    "mqtt_error": "MQTT 연결 오류",
     "no_configured_ports": "구성된 포트가 없습니다.",
     "port_tabs_aria": "포트 선택",
     "filter_section_aria": "대시보드 필터",
@@ -412,13 +413,15 @@
     "show_scripts": "스크립트",
     "show_inactive_entities": "비활성화 항목",
     "topology": {
-      "serial_device": "RS485 시리얼 장치",
+      "serial_device": "RS485 시리얼",
       "mqtt_broker": "MQTT 브로커",
       "homenet2mqtt": "HomeNet2MQTT",
       "path": "경로 (PATH)",
       "baud": "속도 (BAUD)",
       "config": "설정 (CONFIG)",
       "url": "주소 (URL)",
+      "port": "포트 ID (PORT)",
+      "subscription": "구독 (SUB)",
       "status": "상태:"
     },
     "recent_activity": {

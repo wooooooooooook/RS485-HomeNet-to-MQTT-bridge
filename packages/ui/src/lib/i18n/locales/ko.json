@@ -305,7 +305,8 @@
   "header": {
     "toggle_menu": "메뉴 열기",
     "beta_badge_label": "베타 버전입니다. 기능이 불안정할 수 있습니다.",
-    "skip_to_content": "메인 콘텐츠로 건너뛰기"
+    "skip_to_content": "메인 콘텐츠로 건너뛰기",
+    "select_port": "포트 선택"
   },
   "sidebar": {
     "dashboard": "대시보드",
@@ -337,6 +338,7 @@
     "has_parameters": "파라미터 설정 가능",
     "tags": "태그",
     "incompatible_port": "포트 비호환",
+    "download_count": "다운로드 횟수",
     "view_details": "상세보기",
     "preview": {
       "title": "스니펫 미리보기",

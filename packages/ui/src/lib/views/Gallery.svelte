@@ -4,9 +4,9 @@
   import type { BridgeErrorPayload, BridgeSerialInfo, BridgeStatus } from '../types';
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
-  import PortToolbar from '../components/PortToolbar.svelte';
 
   const GALLERY_LIST_URL = './api/gallery/list';
+  const GALLERY_STATS_URL = './api/gallery/stats';
   const REQUEST_TIMEOUT_MS = 8000;
 
   interface ContentSummary {
@@ -72,8 +72,7 @@
   let {
     portMetadata,
     portStatuses = [],
-    selectedPortId,
-    onPortChange,
+    activePortId,
   }: {
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
     portStatuses?: {
@@ -82,8 +81,7 @@
       message?: string;
       errorInfo?: BridgeErrorPayload | null;
     }[];
-    selectedPortId: string | null;
-    onPortChange?: (portId: string) => void;
+    activePortId: string | null;
   } = $props();
 
   let galleryData: GalleryData | null = $state(null);
@@ -113,11 +111,11 @@
   let discoveryAbortController = $state<AbortController | null>(null);
   let compatibilityAbortController = $state<AbortController | null>(null);
 
+  // Download stats
+  let downloadStats = $state<Record<string, number>>({});
+
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
-  );
-  const activePortId = $derived.by<string | null>(() =>
-    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
 
   async function loadDiscovery(portId: string | null) {
@@ -187,8 +185,21 @@
     }
   }
 
+  async function loadStats() {
+    try {
+      const response = await fetch(GALLERY_STATS_URL);
+      if (response.ok) {
+        const data = await response.json();
+        downloadStats = data.stats ?? {};
+      }
+    } catch {
+      // Ignore stats errors - it's optional
+    }
+  }
+
   onMount(() => {
     loadGallery();
+    loadStats();
   });
 
   async function loadCompatibility(portId: string, vendors: Vendor[], cacheKey: string) {
@@ -401,8 +412,6 @@
       </button>
     </div>
   {:else if galleryData}
-    <PortToolbar {portIds} {activePortId} {portStatuses} {onPortChange} />
-
     <div class="filters">
       <div class="search-box">
         <input
@@ -453,6 +462,7 @@
           {item}
           isCompatible={item.isCompatible}
           discoveryResult={discoveryResults[item.file]}
+          downloadCount={downloadStats[item.file] ?? 0}
           onViewDetails={() => item.isCompatible && openPreview(item)}
         />
       {:else}

@@ -13,6 +13,7 @@ import {
   CONFIG_DIR,
   GALLERY_RAW_BASE_URL,
   GALLERY_LIST_URL,
+  GALLERY_STATS_URL,
   ENTITY_TYPE_KEYS,
 } from '../utils/constants.js';
 import { saveBackup } from '../services/backup.service.js';
@@ -38,6 +39,33 @@ export interface GalleryRoutesContext {
 
 export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
   const router = Router();
+
+  // Gallery snippet download stats API key (shared with log collector)
+  const STATS_API_KEY = process.env.LOG_COLLECTOR_API_KEY;
+
+  // Get gallery snippet download stats
+  router.get('/api/gallery/stats', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    try {
+      const response = await fetch(GALLERY_STATS_URL);
+      if (!response.ok) {
+        logger.warn(
+          { status: response.status },
+          '[gallery] Failed to fetch gallery stats from worker',
+        );
+        return res.status(response.status).json({ error: 'Stats not available' });
+      }
+
+      const statsData = await response.json();
+      res.json(statsData);
+    } catch (error) {
+      logger.error({ err: error }, '[gallery] Failed to load gallery stats');
+      res.status(500).json({ error: 'Failed to load stats' });
+    }
+  });
 
   // Get gallery list from GitHub
   router.get('/api/gallery/list', async (req, res) => {
@@ -854,6 +882,20 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       logger.info(
         `[gallery] Applied snippet from ${fileName || 'unknown'}. Added: ${addedEntities} entities, ${addedAutomations} automations, ${addedScripts} scripts. Updated: ${updatedEntities} entities, ${updatedAutomations} automations, ${updatedScripts} scripts. Skipped: ${skippedEntities} entities, ${skippedAutomations} automations, ${skippedScripts} scripts. Backup: ${path.basename(backupPath)}`,
       );
+
+      // Report download to stats worker (fire-and-forget, don't block response)
+      if (fileName && STATS_API_KEY) {
+        fetch(GALLERY_STATS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': STATS_API_KEY,
+          },
+          body: JSON.stringify({ snippetId: fileName }),
+        }).catch((err) => {
+          logger.warn({ err, snippetId: fileName }, '[gallery] Failed to report download stats');
+        });
+      }
 
       res.json({
         success: true,

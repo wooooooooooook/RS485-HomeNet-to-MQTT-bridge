@@ -10,7 +10,6 @@
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
-  import PortToolbar from '../components/PortToolbar.svelte';
 
   let {
     stats,
@@ -20,8 +19,7 @@
     packetDictionary,
     isStreaming,
     portMetadata,
-    selectedPortId,
-    onPortChange,
+    activePortId,
     onStart,
     onStop,
     validOnly = $bindable(false),
@@ -37,8 +35,7 @@
     packetDictionary: Record<string, string>;
     isStreaming: boolean;
     portMetadata: Array<BridgeSerialInfo & { configFile: string }>;
-    selectedPortId: string | null;
-    onPortChange?: (portId: string) => void;
+    activePortId: string | null;
     onStart?: () => void;
     onStop?: () => void;
     validOnly: boolean;
@@ -50,14 +47,9 @@
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
   );
-  const activePortId = $derived.by<string | null>(() =>
-    selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
-  );
 </script>
 
 <div class="analysis-view">
-  <PortToolbar {portIds} {activePortId} {onPortChange} />
-
   <PacketLog {commandPackets} {parsedPackets} />
   <RawPacketLog
     {rawPackets}

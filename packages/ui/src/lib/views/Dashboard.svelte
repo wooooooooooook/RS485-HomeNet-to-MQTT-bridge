@@ -15,7 +15,6 @@
   import SystemTopology from '../components/SystemTopology.svelte';
 
   import HintBubble from '$lib/components/HintBubble.svelte';
-  import PortToolbar from '$lib/components/PortToolbar.svelte';
   import { t } from 'svelte-i18n';
 
   import Button from '$lib/components/Button.svelte';
@@ -41,7 +40,6 @@
     onToggleEntities,
     onToggleAutomations,
     onToggleScripts,
-    onPortChange,
   }: {
     bridgeInfo: BridgeInfo | null;
     infoLoading: boolean;
@@ -75,7 +73,6 @@
     onToggleEntities?: () => void;
     onToggleAutomations?: () => void;
     onToggleScripts?: () => void;
-    onPortChange?: (portId: string) => void;
   } = $props();
 
   const portIds = $derived.by<string[]>(() =>
@@ -110,7 +107,6 @@
   // 여기서는 전달받은 entities를 그대로 사용합니다.
   const visibleEntities = $derived.by<UnifiedEntity[]>(() => entities);
   let hintDismissed = $state(false);
-  let showAddBridgeModal = $state(false);
 
   function getBridgeErrorMessage(): string | undefined {
     if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
@@ -225,16 +221,6 @@
       </div>
     {/if}
 
-    <!-- Toolbar Section -->
-    <PortToolbar
-      {portIds}
-      {activePortId}
-      {portStatuses}
-      showAddButton={true}
-      {onPortChange}
-      onAddBridge={() => (showAddBridgeModal = true)}
-    />
-
     <!-- System Topology Visualization -->
     <SystemTopology
       {mqttUrl}
@@ -342,10 +328,6 @@
         {/if}
       </div>
     {/if}
-  {/if}
-
-  {#if showAddBridgeModal}
-    <SetupWizard mode="add" onclose={() => (showAddBridgeModal = false)} />
   {/if}
 </div>
 

@@ -37,6 +37,7 @@
 
   import EntityDetail from './lib/components/EntityDetail.svelte';
   import ToastContainer from './lib/components/ToastContainer.svelte';
+  import SetupWizard from './lib/components/SetupWizard.svelte';
   import SettingsView from './lib/views/Settings.svelte';
   import { getTimeZone, setTimeZone, withTimeZone } from './lib/utils/time';
 
@@ -300,6 +301,7 @@
   let isRecording = $state(false);
   let recordingStartTime = $state<number | null>(null);
   let recordedFile = $state<{ filename: string; path: string } | null>(null);
+  let showAddBridgeModal = $state(false);
   type RawPacketStreamMode = 'all' | 'valid';
   const rawPacketStreamMode = $derived.by<RawPacketStreamMode>(() =>
     validRawPacketsOnly ? 'valid' : 'all',
@@ -1666,7 +1668,19 @@
 {:else}
   <a href="#main-content" class="skip-link">{$t('header.skip_to_content')}</a>
   <main class="app-container">
-    <Header onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)} />
+    <Header
+      onToggleSidebar={() => (isSidebarOpen = !isSidebarOpen)}
+      portIds={availablePortIds}
+      {activePortId}
+      {portStatuses}
+      onPortChange={(portId) => (selectedPortId = portId)}
+      onAddBridge={() => {
+        if (activeView !== 'dashboard') {
+          activeView = 'dashboard';
+        }
+        showAddBridgeModal = true;
+      }}
+    />
     <div class="content-body">
       <Sidebar bind:activeView isOpen={isSidebarOpen} onClose={() => (isSidebarOpen = false)} />
 
@@ -1694,7 +1708,6 @@
             onToggleEntities={toggleEntityCards}
             onToggleAutomations={toggleAutomationCards}
             onToggleScripts={toggleScriptCards}
-            onPortChange={(portId) => (selectedPortId = portId)}
           />
         {:else if activeView === 'analysis'}
           <Analysis
@@ -1705,8 +1718,7 @@
             {packetDictionary}
             {isStreaming}
             {portMetadata}
-            selectedPortId={activePortId}
-            onPortChange={(portId) => (selectedPortId = portId)}
+            {activePortId}
             onStart={handleRawRecordingStart}
             bind:validOnly={validRawPacketsOnly}
             bind:isRecording
@@ -1715,12 +1727,7 @@
             logRetentionEnabled={frontendSettings?.logRetention?.enabled ?? false}
           />
         {:else if activeView === 'gallery'}
-          <Gallery
-            {portMetadata}
-            {portStatuses}
-            selectedPortId={activePortId}
-            onPortChange={(portId) => (selectedPortId = portId)}
-          />
+          <Gallery {portMetadata} {portStatuses} {activePortId} />
         {:else if activeView === 'settings'}
           <SettingsView
             {frontendSettings}
@@ -1753,6 +1760,10 @@
         onUpdate={(updates) =>
           selectedEntity && handleEntityUpdate(selectedEntity.id, selectedEntity.portId, updates)}
       />
+    {/if}
+
+    {#if showAddBridgeModal}
+      <SetupWizard mode="add" onclose={() => (showAddBridgeModal = false)} />
     {/if}
   </main>
 {/if}

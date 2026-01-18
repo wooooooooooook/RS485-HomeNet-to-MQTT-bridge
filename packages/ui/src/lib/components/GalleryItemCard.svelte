@@ -43,11 +43,13 @@
     item,
     discoveryResult,
     isCompatible = true,
+    downloadCount = 0,
     onViewDetails,
   }: {
     item: GalleryItem;
     discoveryResult?: DiscoveryResult;
     isCompatible?: boolean;
+    downloadCount?: number;
     onViewDetails: () => void;
   } = $props();
 
@@ -104,7 +106,14 @@
         </span>
       {/if}
     </div>
-    <span class="version">v{item.version}</span>
+    <div class="card-badges">
+      <span class="version">v{item.version}</span>
+      {#if downloadCount > 0}
+        <span class="badge downloads" title={$t('gallery.download_count')}>
+          ⬇️ {downloadCount}
+        </span>
+      {/if}
+    </div>
   </div>
 
   <p class="description">{displayDescription}</p>
@@ -217,6 +226,19 @@
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
     white-space: nowrap;
+  }
+
+  .card-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+
+  .badge.downloads {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.3);
   }
 
   .description {

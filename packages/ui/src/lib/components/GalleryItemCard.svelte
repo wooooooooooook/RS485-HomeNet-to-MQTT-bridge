@@ -1,43 +1,6 @@
 <script lang="ts">
   import { t, locale } from 'svelte-i18n';
-
-  interface ContentSummary {
-    entities: Record<string, number>;
-    automations: number;
-    scripts?: number;
-  }
-
-  interface GalleryItem {
-    file: string;
-    name: string;
-    name_en?: string;
-    description: string;
-    description_en?: string;
-    version: string;
-    author: string;
-    tags: string[];
-    parameters?: { name: string }[];
-    content_summary: ContentSummary;
-    vendorId: string;
-    vendorName: string;
-    requirements?: {
-      serial?: Record<string, unknown>;
-      packet_defaults?: Record<string, unknown>;
-    };
-  }
-
-  interface DiscoveryResult {
-    matched: boolean;
-    matchedPacketCount: number;
-    parameterValues: Record<string, unknown>;
-    ui?: {
-      label?: string;
-      label_en?: string;
-      badge?: string;
-      summary?: string;
-      summary_en?: string;
-    };
-  }
+  import type { GalleryDiscoveryResult, GalleryItemWithVendor } from '../types';
 
   let {
     item,
@@ -46,8 +9,8 @@
     downloadCount = 0,
     onViewDetails,
   }: {
-    item: GalleryItem;
-    discoveryResult?: DiscoveryResult;
+    item: GalleryItemWithVendor;
+    discoveryResult?: GalleryDiscoveryResult;
     isCompatible?: boolean;
     downloadCount?: number;
     onViewDetails: () => void;

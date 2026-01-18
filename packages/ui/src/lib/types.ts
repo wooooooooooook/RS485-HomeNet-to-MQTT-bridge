@@ -276,3 +276,88 @@ export type PacketHistoryResponse<T> = {
   dictionary: Record<string, string>;
   logs: T[];
 };
+
+// Gallery types
+export interface GalleryContentSummary {
+  entities: Record<string, number>;
+  automations: number;
+  scripts?: number;
+}
+
+export interface GallerySchemaField {
+  type: 'integer' | 'string' | 'boolean';
+  min?: number;
+  max?: number;
+  label?: string;
+  label_en?: string;
+  description?: string;
+  description_en?: string;
+}
+
+export interface GalleryParameterDefinition {
+  name: string;
+  type: 'integer' | 'string' | 'integer[]' | 'object[]';
+  default?: unknown;
+  min?: number;
+  max?: number;
+  label?: string;
+  label_en?: string;
+  description?: string;
+  description_en?: string;
+  schema?: Record<string, GallerySchemaField>;
+}
+
+export interface GalleryItem {
+  file: string;
+  name: string;
+  name_en?: string;
+  description: string;
+  description_en?: string;
+  version: string;
+  author: string;
+  tags: string[];
+  parameters?: GalleryParameterDefinition[];
+  content_summary: GalleryContentSummary;
+}
+
+export interface GalleryDiscoveryResult {
+  matched: boolean;
+  matchedPacketCount: number;
+  parameterValues: Record<string, unknown>;
+  ui?: {
+    label?: string;
+    label_en?: string;
+    badge?: string;
+    summary?: string;
+    summary_en?: string;
+  };
+}
+
+export interface GalleryVendorRequirements {
+  serial?: Record<string, unknown>;
+  packet_defaults?: Record<string, unknown>;
+}
+
+export interface GalleryVendor {
+  id: string;
+  name: string;
+  requirements?: GalleryVendorRequirements;
+  items: GalleryItem[];
+}
+
+export interface GalleryData {
+  generated_at: string;
+  vendors: GalleryVendor[];
+}
+
+// Extended item types for UI components
+export type GalleryItemWithVendor = GalleryItem & {
+  vendorId: string;
+  vendorName: string;
+  vendorRequirements?: GalleryVendorRequirements;
+};
+
+export type GalleryItemForPreview = GalleryItem & {
+  vendorId: string;
+  vendorRequirements?: GalleryVendorRequirements;
+};

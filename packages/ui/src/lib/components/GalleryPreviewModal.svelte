@@ -3,54 +3,13 @@
   import { onMount } from 'svelte';
   import Button from './Button.svelte';
   import Modal from './Modal.svelte';
-
-  interface ContentSummary {
-    entities: Record<string, number>;
-    automations: number;
-    scripts?: number;
-  }
-
-  interface GalleryItem {
-    file: string;
-    name: string;
-    name_en?: string;
-    description: string;
-    description_en?: string;
-    version: string;
-    author: string;
-    tags: string[];
-    parameters?: GalleryParameterDefinition[];
-    content_summary: ContentSummary;
-    vendorId: string;
-  }
-
-  interface SchemaField {
-    type: 'integer' | 'string' | 'boolean';
-    min?: number;
-    max?: number;
-    label?: string;
-    label_en?: string;
-    description?: string;
-    description_en?: string;
-  }
-
-  interface GalleryParameterDefinition {
-    name: string;
-    type: 'integer' | 'string' | 'integer[]' | 'object[]';
-    default?: unknown;
-    min?: number;
-    max?: number;
-    label?: string;
-    label_en?: string;
-    description?: string;
-    description_en?: string;
-    schema?: Record<string, SchemaField>;
-  }
-
-  interface VendorRequirements {
-    serial?: Record<string, unknown>;
-    packet_defaults?: Record<string, unknown>;
-  }
+  import type {
+    GalleryDiscoveryResult,
+    GalleryItemForPreview,
+    GalleryParameterDefinition,
+    GallerySchemaField,
+    GalleryVendorRequirements,
+  } from '../types';
 
   interface CompatibilityResult {
     compatible: boolean;
@@ -71,19 +30,6 @@
     id: string;
   }
 
-  interface DiscoveryResult {
-    matched: boolean;
-    matchedPacketCount: number;
-    parameterValues: Record<string, unknown>;
-    ui?: {
-      label?: string;
-      label_en?: string;
-      badge?: string;
-      summary?: string;
-      summary_en?: string;
-    };
-  }
-
   const GALLERY_FILE_API = './api/gallery/file';
 
   let {
@@ -93,10 +39,10 @@
     discoveryResult,
     onClose,
   }: {
-    item: GalleryItem;
+    item: GalleryItemForPreview;
     portId: string | null;
-    vendorRequirements?: VendorRequirements;
-    discoveryResult?: DiscoveryResult;
+    vendorRequirements?: GalleryVendorRequirements;
+    discoveryResult?: GalleryDiscoveryResult;
     onClose: () => void;
   } = $props();
 
@@ -211,14 +157,14 @@
     return parameter.description || '';
   }
 
-  function resolveSchemaFieldLabel(field: SchemaField, fieldName: string): string {
+  function resolveSchemaFieldLabel(field: GallerySchemaField, fieldName: string): string {
     if ($locale?.startsWith('en')) {
       return field.label_en || field.label || fieldName;
     }
     return field.label || fieldName;
   }
 
-  function formatSchemaFieldType(field: SchemaField): string {
+  function formatSchemaFieldType(field: GallerySchemaField): string {
     const typeName =
       field.type === 'integer'
         ? $t('gallery.preview.parameters.type_integer')
@@ -230,7 +176,7 @@
     return typeName;
   }
 
-  function formatSchemaFieldConstraints(field: SchemaField): string {
+  function formatSchemaFieldConstraints(field: GallerySchemaField): string {
     const constraints: string[] = [];
     if (field.min !== undefined) {
       constraints.push(`${$t('gallery.preview.parameters.min')}: ${field.min}`);

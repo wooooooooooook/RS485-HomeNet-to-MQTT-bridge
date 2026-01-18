@@ -1,73 +1,22 @@
 <script lang="ts">
   import { t } from 'svelte-i18n';
   import { onMount } from 'svelte';
-  import type { BridgeErrorPayload, BridgeSerialInfo, BridgeStatus } from '../types';
+  import type {
+    BridgeErrorPayload,
+    BridgeSerialInfo,
+    BridgeStatus,
+    GalleryData,
+    GalleryDiscoveryResult,
+    GalleryItemForPreview,
+    GalleryItemWithVendor,
+    GalleryVendor,
+  } from '../types';
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
 
   const GALLERY_LIST_URL = './api/gallery/list';
   const GALLERY_STATS_URL = './api/gallery/stats';
   const REQUEST_TIMEOUT_MS = 8000;
-
-  interface ContentSummary {
-    entities: Record<string, number>;
-    automations: number;
-    scripts?: number;
-  }
-
-  interface GalleryItem {
-    file: string;
-    name: string;
-    name_en?: string;
-    description: string;
-    description_en?: string;
-    version: string;
-    author: string;
-    tags: string[];
-    parameters?: GalleryParameterDefinition[];
-    content_summary: ContentSummary;
-  }
-
-  interface DiscoveryResult {
-    matched: boolean;
-    matchedPacketCount: number;
-    parameterValues: Record<string, unknown>;
-    ui?: {
-      label?: string;
-      label_en?: string;
-      badge?: string;
-      summary?: string;
-      summary_en?: string;
-    };
-  }
-
-  interface GalleryParameterDefinition {
-    name: string;
-    type: 'integer' | 'string' | 'integer[]' | 'object[]';
-    default?: unknown;
-    min?: number;
-    max?: number;
-    label?: string;
-    label_en?: string;
-    description?: string;
-    description_en?: string;
-    schema?: Record<string, unknown>;
-  }
-
-  interface Vendor {
-    id: string;
-    name: string;
-    requirements?: {
-      serial?: Record<string, unknown>;
-      packet_defaults?: Record<string, unknown>;
-    };
-    items: GalleryItem[];
-  }
-
-  interface GalleryData {
-    generated_at: string;
-    vendors: Vendor[];
-  }
 
   let {
     portMetadata,
@@ -92,13 +41,11 @@
   let selectedVendor = $state<string | null>(null);
   let filterType = $state<'all' | 'entities' | 'automation' | 'scripts'>('all');
 
-  let selectedItem = $state<
-    (GalleryItem & { vendorId: string; vendorRequirements?: Vendor['requirements'] }) | null
-  >(null);
+  let selectedItem = $state<GalleryItemForPreview | null>(null);
   let showPreviewModal = $state(false);
 
   // Discovery results
-  let discoveryResults = $state<Record<string, DiscoveryResult>>({});
+  let discoveryResults = $state<Record<string, GalleryDiscoveryResult>>({});
   let discoveryLoading = $state(false);
   let compatibilityByVendor = $state<Record<string, boolean>>({});
   let compatibilityRequestId = $state(0);
@@ -202,7 +149,7 @@
     loadStats();
   });
 
-  async function loadCompatibility(portId: string, vendors: Vendor[], cacheKey: string) {
+  async function loadCompatibility(portId: string, vendors: GalleryVendor[], cacheKey: string) {
     const compatibleKey = cacheKey;
     const cached = compatibilityCache.get(compatibleKey);
     if (cached) {
@@ -316,11 +263,7 @@
   const filteredItems = $derived(() => {
     if (!galleryData) return { discovered: [], others: [] };
 
-    let items: (GalleryItem & {
-      vendorId: string;
-      vendorName: string;
-      vendorRequirements?: Vendor['requirements'];
-    })[] = [];
+    let items: GalleryItemWithVendor[] = [];
     for (const vendor of galleryData.vendors) {
       if (selectedVendor && vendor.id !== selectedVendor) continue;
       for (const item of vendor.items) {
@@ -390,9 +333,7 @@
     return { discovered, others };
   });
 
-  function openPreview(
-    item: GalleryItem & { vendorId: string; vendorRequirements?: Vendor['requirements'] },
-  ) {
+  function openPreview(item: GalleryItemForPreview) {
     selectedItem = item;
     showPreviewModal = true;
   }

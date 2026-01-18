@@ -55,6 +55,12 @@ export const mapSerialError = (error: unknown, portId?: string): BridgeErrorPayl
     errorCode = 'SERIAL_PERMISSION_DENIED';
   } else if (code === 'EBUSY') {
     errorCode = 'SERIAL_PORT_BUSY';
+  } else if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+    errorCode = 'SERIAL_HOST_NOT_FOUND';
+  } else if (code === 'ECONNREFUSED') {
+    errorCode = 'SERIAL_CONNECTION_REFUSED';
+  } else if (code === 'ETIMEDOUT') {
+    errorCode = 'SERIAL_CONNECTION_TIMEOUT';
   }
 
   return createBridgeErrorPayload({
@@ -117,7 +123,16 @@ export const mapMqttDisconnect = (portId?: string): BridgeErrorPayload => {
 export const mapBridgeStartError = (error: unknown, portId?: string): BridgeErrorPayload => {
   const message = normalizeMessage(error);
   const code = (error as { code?: string })?.code;
-  const serialErrorCodes = ['ENOENT', 'EACCES', 'EBUSY'];
+  // Include TCP socket errors (ENOTFOUND, ECONNREFUSED, ETIMEDOUT, EAI_AGAIN) as serial errors
+  const serialErrorCodes = [
+    'ENOENT',
+    'EACCES',
+    'EBUSY',
+    'ENOTFOUND',
+    'ECONNREFUSED',
+    'ETIMEDOUT',
+    'EAI_AGAIN',
+  ];
 
   if (
     message.includes('serial(') ||

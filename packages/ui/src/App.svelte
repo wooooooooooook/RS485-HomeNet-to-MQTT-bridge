@@ -1687,7 +1687,6 @@
             {hasInactiveEntities}
             activityLogs={filteredActivityLogs}
             {mqttConnectionStatus}
-            {statusMessage}
             {portStatuses}
             onSelect={(entityId, portId, category) =>
               (selectedEntityKey = makeEntityKey(portId, entityId, category))}

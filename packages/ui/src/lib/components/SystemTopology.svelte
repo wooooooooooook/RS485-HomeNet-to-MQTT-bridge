@@ -29,9 +29,7 @@
 
   // Helper to determine if a node has an error
   const hasSerialError = $derived(
-    portMetadata?.status === 'error' ||
-      (portMetadata?.errorInfo?.source === 'serial' &&
-        portMetadata.errorInfo.severity === 'error') ||
+    (portMetadata?.errorInfo?.source === 'serial' && portMetadata.errorInfo.severity === 'error') ||
       !!serialError,
   );
 
@@ -46,6 +44,27 @@
   const hasSerialWarning = $derived(!hasSerialError && isWarning(portMetadata?.status));
   const hasCoreWarning = $derived(!hasCoreError && isWarning(bridgeStatus));
   const hasMqttWarning = $derived(!hasMqttError && isWarning(mqttStatus));
+
+  // DEBUG: Log all error states for debugging
+  $effect(() => {
+    console.log('[SystemTopology] Error States Debug:', {
+      bridgeStatus,
+      mqttStatus,
+      portMetadataStatus: portMetadata?.status,
+      globalError,
+      mqttError,
+      serialError,
+      portMetadataError: portMetadata?.error,
+      portMetadataErrorInfo: portMetadata?.errorInfo,
+      // Derived states
+      hasSerialError,
+      hasCoreError,
+      hasMqttError,
+      hasSerialWarning,
+      hasCoreWarning,
+      hasMqttWarning,
+    });
+  });
 
   function isGreen(status: string | undefined) {
     return status === 'connected' || status === 'started';
@@ -166,7 +185,7 @@
     <div class="link-visual link-mqtt">
       <div
         class="connection-line"
-        class:active={mqttStatus === 'connected'}
+        class:active={mqttStatus === 'connected' && portMetadata?.status === 'started'}
         class:warning={isWarning(mqttStatus)}
       ></div>
     </div>

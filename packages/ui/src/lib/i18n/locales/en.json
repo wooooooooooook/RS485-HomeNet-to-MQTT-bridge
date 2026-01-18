@@ -287,6 +287,8 @@
     "delete": "Delete",
     "delete_confirm": "Are you sure?",
     "copied": "Copied!",
+    "loading": "Loading...",
+    "refresh": "Refresh",
     "status": {
       "idle": "Idle",
       "starting": "Starting",
@@ -427,6 +429,7 @@
     },
     "no_devices_found": "No devices detected or commands configured for the selected port.",
     "hint_inactive_performance": "Deleting inactive entities can improve performance",
+    "error_hint_restart": "A connection issue occurred. Please check your settings or refresh the page.",
     "entity_card": {
       "no_status": "No status info",
       "automation_badge": "Automation",
@@ -593,6 +596,9 @@
     "SERIAL_PERMISSION_DENIED": "Permission denied for serial port.",
     "SERIAL_PORT_BUSY": "Serial port is in use by another process.",
     "SERIAL_CONNECT_FAILED": "Failed to connect to the serial port.",
+    "SERIAL_HOST_NOT_FOUND": "Host address not found.",
+    "SERIAL_CONNECTION_REFUSED": "Connection was refused.",
+    "SERIAL_CONNECTION_TIMEOUT": "Connection timed out.",
     "EXAMPLE_NOT_FOUND": "Example configuration file not found.",
     "EXAMPLE_READ_FAILED": "Failed to read example configuration file.",
     "SERIAL_CONFIG_MISSING": "Serial configuration is missing from the config file.",

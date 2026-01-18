@@ -263,9 +263,16 @@ export function createStreamManager(ctx: StreamManagerContext) {
         streamMqttUrl = maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883');
       }
 
-      const isConnected = ctx.getBridges().some((b) => b.bridge.isMqttConnected);
+      const bridges = ctx.getBridges();
+      // If no bridges (failed to start), status is 'idle'. Otherwise check if any is connected.
+      const mqttState =
+        bridges.length === 0
+          ? 'idle'
+          : bridges.some((b) => b.bridge.isMqttConnected)
+            ? 'connected'
+            : 'connecting';
       sendStreamEvent(socket, 'status', {
-        state: isConnected ? 'connected' : 'connecting',
+        state: mqttState,
         mqttUrl: streamMqttUrl,
       });
       state.latestStates.forEach((s) => sendStreamEvent(socket, 'state-change', s));

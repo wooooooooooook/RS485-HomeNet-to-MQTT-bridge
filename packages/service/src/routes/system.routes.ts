@@ -148,8 +148,8 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
       const bridgeInstance = ctx.getBridges().find((b) => b.configFile === configFile);
       const mqttConnected = bridgeInstance?.bridge.isMqttConnected ?? false;
 
-      // Handle case where config failed to load (empty object or null)
-      if (configError || !config || !config.serial) {
+      // Handle case where config completely failed to load (empty object or null, no serial)
+      if (!config || !config.serial) {
         return {
           configFile,
           serial: null,
@@ -162,6 +162,7 @@ export function createSystemRoutes(ctx: SystemRoutesContext): Router {
         };
       }
 
+      // Config loaded successfully (serial info available), may or may not have runtime error
       const pId = normalizePortId(config.serial.portId, 0);
       const serialInfo = {
         portId: pId,

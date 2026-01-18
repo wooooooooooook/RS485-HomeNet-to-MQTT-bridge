@@ -35,7 +35,6 @@
     hasInactiveEntities = false,
     activityLogs,
     mqttConnectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
-    statusMessage = null,
     portStatuses = [],
     onSelect,
     onToggleInactive,
@@ -65,7 +64,6 @@
     hasInactiveEntities?: boolean;
     activityLogs: ActivityLog[];
     mqttConnectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
-    statusMessage?: StatusMessage | null;
     portStatuses?: {
       portId: string;
       status: BridgeStatus | 'unknown';
@@ -125,19 +123,17 @@
   const activeSerialErrorMessage = $derived.by<string | null>(() => {
     if (!activePortId) return null;
 
-    // 1. Check portStatuses (runtime status)
+    // 1. Check portStatuses (runtime status) - only show serial-source errors here
     const portStatus = portStatuses.find((p) => p.portId === activePortId);
-    if (portStatus?.errorInfo) {
+    if (portStatus?.errorInfo && portStatus.errorInfo.source === 'serial') {
       return $t(`errors.${portStatus.errorInfo.code}`, {
         default:
           portStatus.errorInfo.message || portStatus.errorInfo.detail || portStatus.errorInfo.code,
       });
     }
-    if (portStatus?.message) return portStatus.message;
 
-    // 2. Check portMetadata (config/initialization status)
-    if (activePortMetadata?.errorInfo) {
-      if (activePortMetadata.errorInfo.source !== 'serial') return null; // Should not happen for port errors usually
+    // 2. Check portMetadata (config/initialization status) - only show serial-source errors
+    if (activePortMetadata?.errorInfo && activePortMetadata.errorInfo.source === 'serial') {
       return $t(`errors.${activePortMetadata.errorInfo.code}`, {
         default:
           activePortMetadata.errorInfo.message ||
@@ -145,16 +141,58 @@
           activePortMetadata.errorInfo.code,
       });
     }
-    if (activePortMetadata?.error) {
-      // Typically 'CONFIG_ERROR' or similar keys
-      return $t(`errors.${activePortMetadata.error}`, { default: activePortMetadata.error });
-    }
 
     return null;
   });
 
+  // Check if there's a critical error (serial or core) that should hide entity sections
+  const hasCriticalError = $derived.by<boolean>(() => {
+    // Check activePortMetadata for errors
+    if (activePortMetadata?.status === 'error') return true;
+    if (activePortMetadata?.errorInfo) return true;
+    // Check bridgeInfo for core errors
+    if (bridgeInfo?.errorInfo?.source === 'core') return true;
+    if (bridgeInfo?.errorInfo?.source === 'service') return true;
+    return false;
+  });
+
   function handleSelect(entityId: string, portId: string | undefined, category: EntityCategory) {
     onSelect?.(entityId, portId, category);
+  }
+
+  // Restart functionality
+  let isRestarting = $state(false);
+
+  async function handleRestart() {
+    if (isRestarting) return;
+
+    if (!confirm($t('settings.app_control.restart_confirm'))) return;
+
+    isRestarting = true;
+    try {
+      // 1. Get One-time Token
+      const tokenRes = await fetch('./api/system/restart/token');
+      if (!tokenRes.ok) throw new Error('Failed to get restart token');
+      const { token } = await tokenRes.json();
+
+      // 2. Send Restart Request with Token
+      const res = await fetch('./api/system/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Restart failed');
+      }
+
+      // Auto-reload after 5 seconds
+      setTimeout(() => window.location.reload(), 5000);
+    } catch (err) {
+      console.error('Restart failed:', err);
+      isRestarting = false;
+    }
   }
 </script>
 
@@ -163,8 +201,6 @@
     <div class="loading-state">
       <p class="hint">{$t('dashboard.loading_bridge')}</p>
     </div>
-  {:else if infoError === 'CONFIG_INITIALIZATION_REQUIRED'}
-    <SetupWizard oncomplete={() => window.location.reload()} />
   {:else if infoError}
     <div class="error-state">
       <p class="error">{$t(`errors.${infoError}`)}</p>
@@ -178,9 +214,7 @@
     <div class="empty-state">
       <p class="empty">{$t('dashboard.no_bridge_info')}</p>
     </div>
-  {:else if bridgeInfo.error === 'CONFIG_INITIALIZATION_REQUIRED'}
-    <SetupWizard oncomplete={() => window.location.reload()} />
-  {:else if bridgeInfo.restartRequired}
+  {:else if bridgeInfo.error === 'CONFIG_INITIALIZATION_REQUIRED' || bridgeInfo.restartRequired}
     <SetupWizard oncomplete={() => window.location.reload()} />
   {:else}
     {#if bridgeInfo.error}
@@ -210,7 +244,9 @@
       globalError={bridgeInfo.errorInfo?.source === 'core' ||
       bridgeInfo.errorInfo?.source === 'service'
         ? bridgeInfo.errorInfo
-        : null}
+        : activePortMetadata?.errorInfo?.source === 'core'
+          ? activePortMetadata.errorInfo
+          : null}
       mqttError={bridgeInfo.errorInfo?.source === 'mqtt'
         ? bridgeInfo.errorInfo.message
         : mqttConnectionStatus === 'error'
@@ -219,76 +255,93 @@
       serialError={activeSerialErrorMessage}
     />
 
-    <!-- Recent Activity Section -->
-    {#if activePortId}
-      <RecentActivity activities={activityLogs} />
-    {/if}
-
-    <!-- Toggle for Inactive Entities -->
-    <div class="toggle-container" aria-label={$t('dashboard.filter_section_aria')}>
-      <div class="toggle-header">
-        <span class="toggle-title">{$t('dashboard.filter_title')}</span>
-      </div>
-      {#if hasInactiveEntities && !hintDismissed}
-        <HintBubble onDismiss={() => (hintDismissed = true)} autoCloseMs={10000}>
-          {$t('dashboard.hint_inactive_performance')}
-        </HintBubble>
-      {/if}
-      <div class="toggle-group">
-        <button
-          type="button"
-          class:active={showEntities}
-          class="filter-chip"
-          aria-pressed={showEntities}
-          onclick={() => onToggleEntities?.()}
-        >
-          {$t('dashboard.show_entities')}
-        </button>
-        <button
-          type="button"
-          class:active={showAutomations}
-          class="filter-chip"
-          aria-pressed={showAutomations}
-          onclick={() => onToggleAutomations?.()}
-        >
-          {$t('dashboard.show_automations')}
-        </button>
-        <button
-          type="button"
-          class:active={showScripts}
-          class="filter-chip"
-          aria-pressed={showScripts}
-          onclick={() => onToggleScripts?.()}
-        >
-          {$t('dashboard.show_scripts')}
-        </button>
-        <button
-          type="button"
-          class:active={showInactive}
-          class="filter-chip"
-          aria-pressed={showInactive}
-          onclick={() => onToggleInactive?.()}
-        >
-          {$t('dashboard.show_inactive_entities')}
-        </button>
-      </div>
-    </div>
-
-    <!-- Entity Grid Section -->
-    <div class="entity-grid">
-      {#if visibleEntities.length === 0 && !infoLoading}
-        <div class="empty-grid">
-          <p class="empty full-width">{$t('dashboard.no_devices_found')}</p>
+    {#if hasCriticalError}
+      <!-- Error State: Show refresh and restart buttons -->
+      <div class="error-action-container">
+        <p class="error-hint">{$t('dashboard.error_hint_restart')}</p>
+        <div class="error-buttons">
+          <Button variant="secondary" onclick={() => window.location.reload()}>
+            {$t('common.refresh')}
+          </Button>
+          <Button variant="primary" onclick={handleRestart} isLoading={isRestarting}>
+            {isRestarting
+              ? $t('settings.app_control.restarting')
+              : $t('settings.app_control.restart')}
+          </Button>
         </div>
-      {:else}
-        {#each visibleEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
-          <EntityCard
-            {entity}
-            onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
-          />
-        {/each}
+      </div>
+    {:else}
+      <!-- Recent Activity Section -->
+      {#if activePortId}
+        <RecentActivity activities={activityLogs} />
       {/if}
-    </div>
+
+      <!-- Toggle for Inactive Entities -->
+      <div class="toggle-container" aria-label={$t('dashboard.filter_section_aria')}>
+        <div class="toggle-header">
+          <span class="toggle-title">{$t('dashboard.filter_title')}</span>
+        </div>
+        {#if hasInactiveEntities && !hintDismissed}
+          <HintBubble onDismiss={() => (hintDismissed = true)} autoCloseMs={10000}>
+            {$t('dashboard.hint_inactive_performance')}
+          </HintBubble>
+        {/if}
+        <div class="toggle-group">
+          <button
+            type="button"
+            class:active={showEntities}
+            class="filter-chip"
+            aria-pressed={showEntities}
+            onclick={() => onToggleEntities?.()}
+          >
+            {$t('dashboard.show_entities')}
+          </button>
+          <button
+            type="button"
+            class:active={showAutomations}
+            class="filter-chip"
+            aria-pressed={showAutomations}
+            onclick={() => onToggleAutomations?.()}
+          >
+            {$t('dashboard.show_automations')}
+          </button>
+          <button
+            type="button"
+            class:active={showScripts}
+            class="filter-chip"
+            aria-pressed={showScripts}
+            onclick={() => onToggleScripts?.()}
+          >
+            {$t('dashboard.show_scripts')}
+          </button>
+          <button
+            type="button"
+            class:active={showInactive}
+            class="filter-chip"
+            aria-pressed={showInactive}
+            onclick={() => onToggleInactive?.()}
+          >
+            {$t('dashboard.show_inactive_entities')}
+          </button>
+        </div>
+      </div>
+
+      <!-- Entity Grid Section -->
+      <div class="entity-grid">
+        {#if visibleEntities.length === 0 && !infoLoading}
+          <div class="empty-grid">
+            <p class="empty full-width">{$t('dashboard.no_devices_found')}</p>
+          </div>
+        {:else}
+          {#each visibleEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
+            <EntityCard
+              {entity}
+              onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
+            />
+          {/each}
+        {/if}
+      </div>
+    {/if}
   {/if}
 
   {#if showAddBridgeModal}
@@ -386,5 +439,30 @@
 
   .bridge-error {
     margin-top: 1rem;
+  }
+
+  .error-action-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+  }
+
+  .error-hint {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .error-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 </style>

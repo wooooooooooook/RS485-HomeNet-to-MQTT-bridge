@@ -4,6 +4,8 @@
   import { fade } from 'svelte/transition';
   import Button from './Button.svelte';
 
+  let { portId = null }: { portId?: string | null } = $props();
+
   let data = $state<PacketDictionaryFullResponse | null>(null);
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -14,7 +16,10 @@
     loading = true;
     error = null;
     try {
-      const response = await fetch('./api/packets/dictionary/full');
+      const url = portId
+        ? `./api/packets/dictionary/full?portId=${encodeURIComponent(portId)}`
+        : './api/packets/dictionary/full';
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -26,8 +31,10 @@
     }
   }
 
-  // Fetch on mount
+  // Fetch on mount and when portId changes
   $effect(() => {
+    // Reading portId to track changes
+    const _portId = portId;
     fetchData();
   });
 

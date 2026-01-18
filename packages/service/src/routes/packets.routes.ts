@@ -61,11 +61,12 @@ export function createPacketToolsRoutes(ctx: PacketToolsRoutesContext): Router {
   });
 
   // Full dictionary view (dictionary + unmatched packets + stats + parsed entities)
-  router.get('/api/packets/dictionary/full', (_req, res) => {
+  router.get('/api/packets/dictionary/full', (req, res) => {
+    const portId = typeof req.query.portId === 'string' ? req.query.portId : undefined;
     res.json({
-      dictionary: ctx.logRetentionService.getPacketDictionary(),
-      unmatchedPackets: ctx.logRetentionService.getUnmatchedPackets(),
-      parsedPacketEntities: ctx.logRetentionService.getParsedPacketEntities(),
+      dictionary: ctx.logRetentionService.getPacketDictionary(portId),
+      unmatchedPackets: ctx.logRetentionService.getUnmatchedPackets(portId),
+      parsedPacketEntities: ctx.logRetentionService.getParsedPacketEntities(portId),
       stats: ctx.logRetentionService.getStats(),
     });
   });

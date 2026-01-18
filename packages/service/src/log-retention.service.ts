@@ -66,8 +66,8 @@ export class LogRetentionService {
   private commandPacketLogs: CommandLogEntry[] = [];
   private activityLogs: ActivityLogEntry[] = [];
 
-  // Dictionary for valid but unparsed packets (unique packet hex strings)
-  private validButUnparsedPackets = new Set<string>();
+  // Dictionary for valid but unparsed packets (Map: portId -> Set<packet hex>)
+  private validButUnparsedPackets = new Map<string, Set<string>>();
 
   // Timers
   private cleanupTimer: NodeJS.Timeout | null = null;
@@ -175,25 +175,65 @@ export class LogRetentionService {
     return this.commandPacketLogs;
   }
 
-  public getPacketDictionary(): Record<string, string> {
+  public getPacketDictionary(portId?: string): Record<string, string> {
+    // If no portId filter, return all dictionary entries
+    if (!portId) {
+      const dict: Record<string, string> = {};
+      this.packetDictionaryReverse.forEach((payload, id) => {
+        dict[id] = payload;
+      });
+      return dict;
+    }
+
+    // Collect packet IDs used by this port
+    const usedPacketIds = new Set<string>();
+    for (const log of this.parsedPacketLogs) {
+      if (log.portId === portId) {
+        usedPacketIds.add(log.packetId);
+      }
+    }
+    for (const log of this.commandPacketLogs) {
+      if (log.portId === portId) {
+        usedPacketIds.add(log.packetId);
+      }
+    }
+
     const dict: Record<string, string> = {};
-    this.packetDictionaryReverse.forEach((payload, id) => {
-      dict[id] = payload;
-    });
+    for (const packetId of usedPacketIds) {
+      const payload = this.packetDictionaryReverse.get(packetId);
+      if (payload) {
+        dict[packetId] = payload;
+      }
+    }
     return dict;
   }
 
-  public getUnmatchedPackets(): string[] {
-    return Array.from(this.validButUnparsedPackets);
+  public getUnmatchedPackets(portId?: string): string[] {
+    if (!portId) {
+      // Return all unmatched packets from all ports
+      const allPackets = new Set<string>();
+      for (const packets of this.validButUnparsedPackets.values()) {
+        for (const pkt of packets) {
+          allPackets.add(pkt);
+        }
+      }
+      return Array.from(allPackets);
+    }
+    const portPackets = this.validButUnparsedPackets.get(portId);
+    return portPackets ? Array.from(portPackets) : [];
   }
 
   /**
    * Returns a mapping of packet hex -> array of entity IDs that parsed this packet
+   * @param portId Optional port ID to filter packets by
    */
-  public getParsedPacketEntities(): Record<string, string[]> {
+  public getParsedPacketEntities(portId?: string): Record<string, string[]> {
     const result: Record<string, string[]> = {};
 
     for (const log of this.parsedPacketLogs) {
+      // Filter by portId if specified
+      if (portId && log.portId !== portId) continue;
+
       const packetHex = this.packetDictionaryReverse.get(log.packetId);
       if (!packetHex) continue;
 
@@ -300,7 +340,7 @@ export class LogRetentionService {
   private clearLogs(): void {
     this.parsedPacketLogs = [];
     this.commandPacketLogs = [];
-    this.validButUnparsedPackets.clear();
+    this.validButUnparsedPackets = new Map<string, Set<string>>();
     this.activityLogs = [];
   }
 
@@ -438,8 +478,14 @@ export class LogRetentionService {
     };
     if (!pkt.packet) return;
 
-    // Add the raw packet hex to the set (unique values only)
-    this.validButUnparsedPackets.add(pkt.packet);
+    // Add the raw packet hex to the port-specific set (unique values only)
+    const portKey = pkt.portId || 'unknown';
+    let portSet = this.validButUnparsedPackets.get(portKey);
+    if (!portSet) {
+      portSet = new Set<string>();
+      this.validButUnparsedPackets.set(portKey, portSet);
+    }
+    portSet.add(pkt.packet);
   };
 
   private setupListeners() {
@@ -502,13 +548,19 @@ export class LogRetentionService {
       dict[id] = payload;
     });
 
+    // Convert validButUnparsedPackets Map to a serializable object
+    const unmatchedByPort: Record<string, string[]> = {};
+    for (const [portId, packets] of this.validButUnparsedPackets.entries()) {
+      unmatchedByPort[portId] = Array.from(packets);
+    }
+
     const data = {
       exportedAt: getLocalTimestamp(),
       stats: this.getStats(),
       packetDictionary: dict,
       parsedPacketLogs: this.parsedPacketLogs,
       commandPacketLogs: this.commandPacketLogs,
-      validButUnparsedPackets: Array.from(this.validButUnparsedPackets),
+      validButUnparsedPackets: unmatchedByPort,
       activityLogs: this.activityLogs,
     };
 

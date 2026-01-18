@@ -19,8 +19,10 @@ export const globalSecurityHeaders = (_req: Request, res: Response, next: NextFu
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
   // Enhanced Security Headers
-  // HSTS: 180일간 HTTPS 강제 (서브도메인 포함)
-  res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  // HSTS: 180일간 HTTPS 강제 (서브도메인 포함) - Opt-in via env
+  if (process.env.ENABLE_HSTS === 'true') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
   // XSS Protection: 브라우저 기본 XSS 필터 비활성화 (CSP가 더 강력함, 구형 브라우저 버그 방지)
   res.setHeader('X-XSS-Protection', '0');
   // Origin-Agent-Cluster: 출처 간 격리 강화

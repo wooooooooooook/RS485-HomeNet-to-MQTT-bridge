@@ -34,12 +34,24 @@ describe('Security Headers', () => {
     expect(res.headers['content-security-policy']).toContain("form-action 'self'");
 
     // Enhanced headers
-    expect(res.headers['strict-transport-security']).toBe('max-age=15552000; includeSubDomains');
     expect(res.headers['x-xss-protection']).toBe('0');
     expect(res.headers['origin-agent-cluster']).toBe('?1');
     expect(res.headers['x-dns-prefetch-control']).toBe('off');
     expect(res.headers['x-download-options']).toBe('noopen');
     expect(res.headers['x-permitted-cross-domain-policies']).toBe('none');
+  });
+
+  it('should enable HSTS when ENABLE_HSTS is set', async () => {
+    process.env.ENABLE_HSTS = 'true';
+    const res = await request(app).get('/');
+    expect(res.headers['strict-transport-security']).toBe('max-age=15552000; includeSubDomains');
+    delete process.env.ENABLE_HSTS;
+  });
+
+  it('should NOT enable HSTS by default', async () => {
+    delete process.env.ENABLE_HSTS;
+    const res = await request(app).get('/');
+    expect(res.headers['strict-transport-security']).toBeUndefined();
   });
 
   it('should disable x-powered-by', async () => {

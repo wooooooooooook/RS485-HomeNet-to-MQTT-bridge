@@ -285,6 +285,7 @@
     "cancel": "취소",
     "confirm": "확인",
     "apply": "적용",
+    "error": "오류",
     "success": "성공",
     "delete": "삭제",
     "delete_confirm": "삭제하시겠습니까?",

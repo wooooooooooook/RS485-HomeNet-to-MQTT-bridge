@@ -285,6 +285,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "apply": "Apply",
+    "error": "Error",
     "success": "Success",
     "delete": "Delete",
     "delete_confirm": "Are you sure?",

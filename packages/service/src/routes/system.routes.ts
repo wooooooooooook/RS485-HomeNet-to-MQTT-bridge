@@ -14,7 +14,12 @@ import {
   normalizeFrontendSettings,
 } from '../utils/helpers.js';
 import { RateLimiter } from '../utils/rate-limiter.js';
-import type { BridgeErrorPayload, BridgeInstance, BridgeStatus, ConfigStatus } from '../types/index.js';
+import type {
+  BridgeErrorPayload,
+  BridgeInstance,
+  BridgeStatus,
+  ConfigStatus,
+} from '../types/index.js';
 import { CONFIG_RESTART_FLAG, BASE_MQTT_PREFIX } from '../utils/constants.js';
 import {
   loadFrontendSettings,

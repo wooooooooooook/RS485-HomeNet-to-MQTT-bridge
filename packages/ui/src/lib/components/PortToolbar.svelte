@@ -50,9 +50,7 @@
     if (portStatus?.errorInfo) {
       return $t(`errors.${portStatus.errorInfo.code}`, {
         default:
-          portStatus.errorInfo.message ||
-          portStatus.errorInfo.detail ||
-          portStatus.errorInfo.code,
+          portStatus.errorInfo.message || portStatus.errorInfo.detail || portStatus.errorInfo.code,
       });
     }
     return portStatus?.message;

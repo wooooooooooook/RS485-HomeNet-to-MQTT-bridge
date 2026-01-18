@@ -120,9 +120,7 @@
     if (portStatus?.errorInfo) {
       return $t(`errors.${portStatus.errorInfo.code}`, {
         default:
-          portStatus.errorInfo.message ||
-          portStatus.errorInfo.detail ||
-          portStatus.errorInfo.code,
+          portStatus.errorInfo.message || portStatus.errorInfo.detail || portStatus.errorInfo.code,
       });
     }
     return portStatus?.message;
@@ -132,9 +130,7 @@
     if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
     return $t(`errors.${bridgeInfo.errorInfo.code}`, {
       default:
-        bridgeInfo.errorInfo.message ||
-        bridgeInfo.errorInfo.detail ||
-        bridgeInfo.errorInfo.code,
+        bridgeInfo.errorInfo.message || bridgeInfo.errorInfo.detail || bridgeInfo.errorInfo.code,
     });
   }
 

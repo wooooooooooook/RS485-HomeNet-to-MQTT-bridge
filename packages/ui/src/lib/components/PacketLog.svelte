@@ -261,7 +261,6 @@
     font-size: 0.75rem;
     padding: 0.1rem 0.3rem;
     border-radius: 4px;
-    width: 24px;
     text-align: center;
   }
 

@@ -249,6 +249,7 @@
   type DeviceStateEntry = { payload: string; portId?: string };
   let deviceStates = $state(new Map<string, DeviceStateEntry>());
   let socket = $state<WebSocket | null>(null);
+  let isSocketOpen = $state(false); // WebSocket 연결 상태 (raw 패킷 스트리밍용)
   let connectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle');
   let statusMessage = $state<StatusMessage | null>(null);
   let isStreaming = $state(false);
@@ -517,7 +518,7 @@
   // Analysis 페이지 진입/이탈 시 자동으로 스트리밍 시작/중지
   $effect(() => {
     // WebSocket 연결 상태와 activeView를 의존성으로 사용하여 reactive하게 동작
-    if (socket?.readyState !== WebSocket.OPEN) return;
+    if (!isSocketOpen) return;
 
     if (activeView === 'analysis' || isRecording) {
       // 스트리밍 시작 & 데이터 초기화 (처음 들어올 때만)
@@ -540,7 +541,7 @@
   });
 
   $effect(() => {
-    if (!isStreaming || socket?.readyState !== WebSocket.OPEN) return;
+    if (!isStreaming || !isSocketOpen) return;
     if (rawPacketStreamMode === lastAppliedRawPacketMode) return;
     lastAppliedRawPacketMode = rawPacketStreamMode;
     rawPackets = [];
@@ -1003,6 +1004,7 @@
     };
 
     socket.addEventListener('open', () => {
+      isSocketOpen = true;
       connectionStatus = 'connecting';
       statusMessage = { key: 'mqtt.connecting' };
     });
@@ -1066,6 +1068,7 @@
       socketErrorHandler = null;
     }
     connectionStatus = 'idle';
+    isSocketOpen = false;
     statusMessage = null;
     packetStatsByPort = new Map();
     hasIntervalPackets = false;

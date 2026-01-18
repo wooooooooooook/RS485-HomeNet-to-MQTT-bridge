@@ -39,7 +39,6 @@ export const GALLERY_RAW_BASE_URL =
 export const GALLERY_LIST_URL = `${GALLERY_RAW_BASE_URL}/list_new.json`;
 export const GALLERY_STATS_URL = 'https://h2m-gallery-stats.nubiz.workers.dev/';
 
-
 // --- Entity Type Keys ---
 
 export const ENTITY_TYPE_KEYS: (keyof HomenetBridgeConfig)[] = [

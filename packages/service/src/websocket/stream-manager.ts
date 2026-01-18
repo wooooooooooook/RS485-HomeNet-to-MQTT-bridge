@@ -42,7 +42,7 @@ export interface StreamManagerContext {
 interface StreamManagerState {
   latestStates: Map<string, StateChangeEvent>;
   topicPrefixToPortId: Map<string, string>;
-  
+
   // Subscribers who explicitly requested raw packet stream
   rawPacketSubscribers: Map<WebSocket, RawPacketStreamMode>;
 }

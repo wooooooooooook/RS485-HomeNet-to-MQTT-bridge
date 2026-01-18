@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정 (4개)"
-  name_en: "☑️Heaters (4 Thermostats)"
+  name: "난방 설정 (4개)"
+  name_en: "Heaters (4 Thermostats)"
   description: "삼성 SDS 난방 온도조절기 4개 설정입니다. heating/idle 액션 상태 표시 지원."
   description_en: "Samsung SDS 4 heating thermostats with heating/idle action status."
   version: "1.1.0"

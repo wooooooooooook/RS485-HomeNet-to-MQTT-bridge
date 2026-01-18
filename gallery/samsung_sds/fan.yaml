@@ -11,11 +11,6 @@ discovery:
   match:
     data: [0xB0, 0x4E]
     mask: [0xFF, 0xFF]
-  ui:
-    label: "환기팬"
-    label_en: "Ventilator"
-    summary: "환기팬 발견됨"
-    summary_en: "Ventilator discovered"
 
 entities:
   fan:

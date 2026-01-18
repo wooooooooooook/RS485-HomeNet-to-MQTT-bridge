@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정"
-  name_en: "☑️Heaters"
+  name: "난방 설정"
+  name_en: "Heaters"
   description: "현대 이마주 난방 설정입니다. 난방 개수를 설정할 수 있습니다. 외출 모드를 지원합니다."
   description_en: "Hyundai Imazu heating configuration with count parameter. Supports away mode."
   version: "2.0.0"
@@ -20,11 +20,6 @@ discovery:
   match:
     data: [0x00, 0x01, 0x18, 0x04, 0x45]
     mask: [0x00, 0xff, 0xff, 0xff, 0xff]
-  ui:
-    label: "난방"
-    label_en: "heaters"
-    summary: "난방 시스템 발견됨"
-    summary_en: "Heating system discovered"
 
 entities:
   climate:

@@ -11,9 +11,6 @@ discovery:
   match:
     data: [0x90]
   dimensions: []
-  ui:
-    label: "가스밸브"
-    label_en: "Gas Valve"
 
 entities:
   #상태      Head,   ON,   ID, 0x00, 0x00, 0x00, 0x00, add checksum

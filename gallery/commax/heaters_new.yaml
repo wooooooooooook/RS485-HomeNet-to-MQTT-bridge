@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정"
-  name_en: "☑️Heaters"
+  name: "난방 설정"
+  name_en: "Heaters"
   description: "코맥스 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다."
   description_en: "Commax heating thermostats with temperature control. You can specify the count."
   version: "2.0.0"
@@ -23,11 +23,7 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "난방기"
-    label_en: "heaters"
-    summary: "{heater_count}개 난방기 발견됨"
-    summary_en: "{heater_count} heaters discovered"
+
 entities:
   #상태      Head,   ON,   ID,  Cur,  Tar, 0x00, 0x00, add checksum
   #상태 ON   0x82, 0x81, 0x01, 0xXX, 0xXX, 0x00, 0x00, add checksum

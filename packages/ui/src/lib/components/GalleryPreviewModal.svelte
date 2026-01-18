@@ -512,7 +512,7 @@
 
         {#if hasParameters}
           <div class="parameter-section">
-            <h4>{$t('gallery.preview.parameters.title')}</h4>
+            <h4 class="parameter-section-title">{$t('gallery.preview.parameters.title')}</h4>
             <div class="parameter-list">
               {#each item.parameters as parameter (parameter.name)}
                 <div class="parameter-item">
@@ -830,6 +830,13 @@
     border-radius: 8px;
     border: 1px solid rgba(148, 163, 184, 0.2);
     background: rgba(15, 23, 42, 0.6);
+  }
+
+  .parameter-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin: 0 0 0.5rem 0;
   }
 
   .parameter-list {

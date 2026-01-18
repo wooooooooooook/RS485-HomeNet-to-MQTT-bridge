@@ -1,6 +1,6 @@
 meta:
-  name: "☑️주기적 난방 상태요청 자동화"
-  name_en: "☑️Periodic climate state request automation"
+  name: "주기적 난방 상태요청 자동화"
+  name_en: "Periodic climate state request automation"
   description: "상태 갱신을 위한 주기적 난방 상태요청 자동화입니다."
   description_en: "Periodic climate state request automation for Hyundai Telecom wallpads."
   version: "1.0.0"

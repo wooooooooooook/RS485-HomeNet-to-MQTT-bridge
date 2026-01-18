@@ -67,43 +67,20 @@
   const scriptCount = $derived(item.content_summary.scripts ?? 0);
   const hasScripts = $derived(scriptCount > 0);
   const hasParameters = $derived((item.parameters?.length ?? 0) > 0);
-  const isDiscovered = $derived(discoveryResult?.matched ?? false);
-
-  // Get discovery badge text
-  const discoveryBadgeText = $derived(() => {
-    if (!discoveryResult?.matched) return '';
-    const values = Object.values(discoveryResult.parameterValues).filter(
-      (v) => typeof v === 'number',
-    );
-    if (values.length > 0) {
-      const count = Math.max(...(values as number[]));
-      const label = $locale?.startsWith('en')
-        ? discoveryResult.ui?.label_en || discoveryResult.ui?.label || 'devices'
-        : discoveryResult.ui?.label || 'devices';
-      return `${count} ${label}`;
-    }
-    return $locale?.startsWith('en') ? 'Discovered' : '발견됨';
-  });
 </script>
 
 <div class="card" class:disabled={!isCompatible} aria-disabled={!isCompatible}>
   <div class="card-header">
     <div class="title-row">
       <h3 class="card-title">{displayName}</h3>
-      {#if isDiscovered}
-        <span class="badge discovery" title="패킷이 감지되었습니다">
-          🔍 {discoveryBadgeText()}
-        </span>
-      {/if}
+
       {#if !isCompatible}
         <span class="badge incompatible" title={$t('gallery.incompatible_port')}>
           ⚠️ {$t('gallery.incompatible_port')}
         </span>
       {/if}
       {#if hasParameters}
-        <span class="badge parameter" title={$t('gallery.has_parameters')}>
-          ⚙️ {$t('gallery.parameters')}
-        </span>
+        <span class="badge parameter" title={$t('gallery.has_parameters')}> ⚙️ </span>
       {/if}
     </div>
     <div class="card-badges">
@@ -328,12 +305,6 @@
     background: rgba(251, 191, 36, 0.15);
     color: #fbbf24;
     border: 1px solid rgba(251, 191, 36, 0.3);
-  }
-
-  .badge.discovery {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.3);
   }
 
   .badge.incompatible {

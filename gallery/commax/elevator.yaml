@@ -1,6 +1,6 @@
 meta:
-  name: "☑️엘리베이터 호출 설정"
-  name_en: "☑️Elevator Call"
+  name: "엘리베이터 호출 설정"
+  name_en: "Elevator Call"
   description: "코맥스 엘리베이터 호출 버튼과 현재 층수 센서 설정입니다."
   description_en: "Commax elevator call button and current floor sensor."
   version: "2.0.0"
@@ -10,9 +10,6 @@ discovery:
   match:
     data: [0x23]
   dimensions: []
-  ui:
-    label: "엘리베이터"
-    label_en: "Elevator"
 
 entities:
   #상태 ELV 0x23, 0x01, 0xXX, 0x00, 0x00, 0x00, 0x00, add checksum

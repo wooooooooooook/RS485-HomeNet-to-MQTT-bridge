@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정"
-  name_en: "☑️Heaters"
+  name: "난방 설정"
+  name_en: "Heaters"
   description: "Ezville 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다. 0.5°C 단위 조절, 외출 모드 지원."
   description_en: "Ezville heating thermostats configuration with count parameter. 0.5°C step and away preset mode."
   version: "2.0.0"
@@ -23,12 +23,7 @@ discovery:
   dimensions:
     - parameter: "heater_count"
       offset: 6
-  ui:
-    label: "난방"
-    label_en: "heaters"
-    summary: "난방 {{heater_count}}개 발견됨"
-    summary_en: "{{heater_count}} heaters discovered"
-
+      
 entities:
   climate:
     - $repeat:

@@ -30,26 +30,16 @@ export interface DiscoveryInference {
   output?: string; // For unique_tuples/grouped, the output parameter name
 }
 
-export interface DiscoveryUI {
-  label?: string;
-  label_en?: string;
-  badge?: string;
-  summary?: string;
-  summary_en?: string;
-}
-
 export interface DiscoverySchema {
   match: DiscoveryMatch;
   dimensions: DiscoveryDimension[];
   inference?: DiscoveryInference;
-  ui?: DiscoveryUI;
 }
 
 export interface DiscoveryResult {
   matched: boolean;
   matchedPacketCount: number;
   parameterValues: Record<string, unknown>;
-  ui?: DiscoveryUI;
 }
 
 // ============================================================================
@@ -154,7 +144,7 @@ function matchesPacket(packet: number[], match: DiscoveryMatch, defaultOffset?: 
 /**
  * Evaluate transform expression using CEL
  */
-function evaluateTransform(value: number, transform: string): number {
+function evaluateTransform(value: number, transform: string, packet?: number[]): number {
   if (!transform) return value;
 
   // Optimization: Handle simple 'x' quickly
@@ -163,7 +153,12 @@ function evaluateTransform(value: number, transform: string): number {
   }
 
   try {
-    const result = CelExecutor.shared().execute(transform, { x: value });
+    const context: Record<string, any> = { x: value };
+    if (packet) {
+      context.data = packet;
+      context.len = packet.length;
+    }
+    const result = CelExecutor.shared().execute(transform, context);
     return Number(result);
   } catch (e) {
     // Fallback or error logging? For now returning original value to be safe,
@@ -192,7 +187,7 @@ function extractDimensionValue(packet: number[], dimension: DiscoveryDimension):
 
   // Apply transform if specified (CEL)
   if (transform) {
-    value = evaluateTransform(value, transform);
+    value = evaluateTransform(value, transform, packet);
   }
 
   // Handle special detect modes
@@ -239,7 +234,6 @@ export function evaluateDiscovery(
       matched: false,
       matchedPacketCount: 0,
       parameterValues: {},
-      ui: discovery.ui,
     };
   }
 
@@ -350,6 +344,5 @@ export function evaluateDiscovery(
     matched: true,
     matchedPacketCount: matchedPackets.length,
     parameterValues,
-    ui: discovery.ui,
   };
 }

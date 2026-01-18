@@ -182,13 +182,6 @@ discovery:
   # 추론 전략
   inference:
     strategy: "count"         # 고유값 개수 세기
-
-  # UI 표시
-  ui:
-    label: "조명"
-    label_en: "Light"
-    summary: "{light_count}개 조명 발견됨"
-    summary_en: "{light_count} lights discovered"
 ```
 
 ### match (패킷 매칭)
@@ -266,5 +259,3 @@ inference:
   strategy: "unique_tuples"
   output: "room_lights"       # object[] 파라미터로 출력
 ```
-
-### 엣지 케이스 처리 및 UI 예시는 기존과 동일합니다.

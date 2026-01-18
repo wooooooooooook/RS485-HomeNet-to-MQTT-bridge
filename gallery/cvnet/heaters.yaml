@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정 (4개)"
-  name_en: "☑️Heaters (4 Thermostats)"
+  name: "난방 설정 (4개)"
+  name_en: "Heaters (4 Thermostats)"
   description: "CVNet 난방 온도조절기 4개 설정입니다."
   description_en: "CVNet 4 heating thermostats."
   version: "1.0.0"

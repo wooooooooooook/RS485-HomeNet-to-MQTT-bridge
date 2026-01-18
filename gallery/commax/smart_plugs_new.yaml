@@ -1,6 +1,6 @@
 meta:
-  name: "☑️스마트 콘센트 설정"
-  name_en: "☑️Smart Plugs"
+  name: "스마트 콘센트 설정"
+  name_en: "Smart Plugs"
   description: "코맥스 스마트 콘센트 설정입니다. 개수를 지정할 수 있습니다. 전력 사용량 센서도 포함되어 있습니다."
   description_en: "Commax smart plugs with power consumption sensors. You can specify the count."
   version: "2.0.0"
@@ -23,11 +23,7 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "스마트 콘센트"
-    label_en: "plugs"
-    summary: "{plug_count}개 콘센트 발견됨"
-    summary_en: "{plug_count} plugs discovered"
+
 entities:
   #스마트 콘센트 (Plugs)
   #상태      Head,   PWR,  ID,   TYPE,  D1,   D2,   D3,   add checksum

@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정"
-  name_en: "☑️Lights"
+  name: "조명 설정"
+  name_en: "Lights"
   description: "코콤 조명 설정입니다. 방 개수를 설정할 수 있으며, 방당 2개 조명이 생성됩니다."
   description_en: "Kocom lights configuration. Configure room count, with 2 lights per room."
   version: "2.0.0"
@@ -27,11 +27,6 @@ discovery:
   inference:
     strategy: "count"
     output: "rooms"
-  ui:
-    label: "조명"
-    label_en: "lights"
-    summary: "{room_count}개 방 발견됨"
-    summary_en: "{room_count} rooms discovered"
 
 entities:
   light:

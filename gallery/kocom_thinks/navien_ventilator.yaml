@@ -11,12 +11,7 @@ discovery:
   match:
     data: [0x30, 0xd0, 0x00, 0x48]
     mask: [0xFF, 0xFF, 0xFF, 0xFF]
-  ui:
-    label: "나비엔 환기팬"
-    label_en: "Navien Ventilator"
-    summary: "나비엔 환기팬 발견됨"
-    summary_en: "Navien Ventilator discovered"
-
+    
 entities:
   fan:
     - id: 'navien_ventilator'

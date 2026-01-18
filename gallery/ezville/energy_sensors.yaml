@@ -12,11 +12,6 @@ discovery:
     data: [0x30]
     mask: [0xFF]
     # 0x30 헤더를 사용하는 에너지 센서들 (전력, 수도, 가스)
-  ui:
-    label: "에너지 센서"
-    label_en: "Energy Sensors"
-    summary: "에너지 센서 발견됨"
-    summary_en: "Energy Sensors discovered"
 
 entities:
   sensor:

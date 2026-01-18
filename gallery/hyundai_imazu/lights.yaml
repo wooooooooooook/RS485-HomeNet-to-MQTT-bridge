@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정 (1번방 4개 2번방 3개)"
-  name_en: "☑️Lights (Room 1: 4, Room 2: 3)"
+  name: "조명 설정 (1번방 4개 2번방 3개)"
+  name_en: "Lights (Room 1: 4, Room 2: 3)"
   description: "현대 이마주 조명 7개 설정입니다. (Room 1: 4개, Room 2: 3개)"
   description_en: "Hyundai Imazu 7 lights configuration (Room 1: 4, Room 2: 3)."
   version: "1.0.0"

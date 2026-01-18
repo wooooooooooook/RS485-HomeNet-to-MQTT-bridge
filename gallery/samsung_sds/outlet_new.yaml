@@ -25,11 +25,6 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "대기전력차단 콘센트"
-    label_en: "outlets"
-    summary: "{{outlet_count}}개 콘센트 발견됨"
-    summary_en: "{{outlet_count}} outlets discovered"
 
 entities:
   switch:

@@ -1,6 +1,6 @@
 meta:
-  name: "☑️주기적 조명 상태요청 자동화 (1번방)"
-  name_en: "☑️Periodic light state request automation (Room 1)"
+  name: "주기적 조명 상태요청 자동화 (1번방)"
+  name_en: "Periodic light state request automation (Room 1)"
   description: "상태 갱신을 위한 주기적 조명 상태요청 자동화입니다. 다른 방도 필요한 경우 복사하여 수정하시면 됩니다."
   description_en: "Periodic light state request automation for Hyundai Telecom wallpads."
   version: "1.0.2"

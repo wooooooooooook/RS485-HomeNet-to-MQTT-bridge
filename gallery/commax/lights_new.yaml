@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정"
-  name_en: "☑️Lights"
+  name: "조명 설정"
+  name_en: "Lights"
   description: "코맥스 조명 설정입니다. 개수를 지정할 수 있습니다."
   version: "2.0.0"
   author: "wooooooooooook"
@@ -22,11 +22,7 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "조명"
-    label_en: "lights"
-    summary: "{light_count}개 조명 발견됨"
-    summary_en: "{light_count} lights discovered"
+
 entities:
   light:
     - $repeat:

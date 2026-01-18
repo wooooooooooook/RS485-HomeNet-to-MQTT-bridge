@@ -11,11 +11,6 @@ discovery:
   match:
     data: [0x41, 0x02]
     mask: [0xFF, 0xFF]
-  ui:
-    label: "도어락"
-    label_en: "doorlock"
-    summary: "도어락 발견됨"
-    summary_en: "Doorlock discovered"
 
 entities:
   scripts:

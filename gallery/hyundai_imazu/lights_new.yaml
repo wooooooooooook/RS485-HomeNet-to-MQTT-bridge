@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정"
-  name_en: "☑️Lights"
+  name: "조명 설정"
+  name_en: "Lights"
   description: "현대 이마주 조명 설정입니다. 방 개수와 방별 조명 개수를 설정할 수 있습니다."
   description_en: "Hyundai Imazu lights configuration. You can configure room count and lights per room."
   version: "2.0.0"
@@ -33,11 +33,6 @@ discovery:
   inference:
     strategy: "unique_tuples"
     output: "rooms"
-  ui:
-    label: "조명"
-    label_en: "lights"
-    summary: "{room_count}개 방 발견됨"
-    summary_en: "{room_count} rooms discovered"
 
 entities:
   light:

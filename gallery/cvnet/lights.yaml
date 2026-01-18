@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정 (Room 0-1, 4개)"
-  name_en: "☑️Lights (Room 0-1, 4 Lights)"
+  name: "조명 설정 (Room 0-1, 4개)"
+  name_en: "Lights (Room 0-1, 4 Lights)"
   description: "CVNet 조명 4개 설정입니다. (Room 0: 3개, Room 1: 1개)"
   description_en: "CVNet 4 lights configuration (Room 0: 3, Room 1: 1)."
   version: "1.0.0"

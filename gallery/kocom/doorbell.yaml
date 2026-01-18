@@ -11,11 +11,6 @@ discovery:
   match:
     data: [0xAA, 0x55, 0x70, 0x90]
     mask: [0xFF, 0xFF, 0xF0, 0xF0]
-  ui:
-    label: "현관문세트"
-    label_en: "Doorbell Set"
-    summary: "현관문세트 발견됨"
-    summary_en: "Doorbell Set discovered"
 
 entities:
   # 벨 울림 감지 (개인현관)

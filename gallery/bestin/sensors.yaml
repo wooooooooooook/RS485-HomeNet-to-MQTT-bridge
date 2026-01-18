@@ -15,12 +15,6 @@ discovery:
   match:
     data: [0x02, 0xD1]
     mask: [0xFF, 0xFF]
-  ui:
-    label: "에너지 센서"
-    label_en: "energy sensors"
-    summary: "에너지 센서 발견됨 (전기/수도/온수/가스/난방)"
-    summary_en: "Energy sensors discovered (electric/water/hotwater/gas/heat)"
-
 
 # 에너지 상태패킷 구조 (General/Gen2, 53바이트):
 # 02 D1 33 91 A8 00 00 00 00 XX XX XX XX [realtime 데이터...] [checksum]

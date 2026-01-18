@@ -11,12 +11,7 @@ discovery:
   match:
     data: [0x20, 0x01, 0x11]
     mask: [0xFF, 0xFF, 0xFF]
-  ui:
-    label: "가스밸브"
-    label_en: "gas valve"
-    summary: "가스밸브 발견됨"
-    summary_en: "Gas valve discovered"
-
+    
 entities:
   valve:
     - id: 'gas_valve'

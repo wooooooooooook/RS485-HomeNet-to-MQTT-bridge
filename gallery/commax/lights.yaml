@@ -1,6 +1,6 @@
 meta:
-  name: "☑️조명 설정 (4개)"
-  name_en: "☑️Lights (4 Lights)"
+  name: "조명 설정 (4개)"
+  name_en: "Lights (4 Lights)"
   description: "코맥스 조명 4개 설정입니다."
   description_en: "Commax 4 lights."
   version: "1.0.1"

@@ -1,6 +1,6 @@
 meta:
-  name: "☑️일괄소등"
-  name_en: "☑️Light Breaker"
+  name: "일괄소등"
+  name_en: "Light Breaker"
   description: "코맥스 일괄소등 스위치 설정입니다."
   description_en: "Commax light breaker switch."
   version: "2.0.0"
@@ -12,9 +12,6 @@ discovery:
     data: [0xA0, 0x00, 0x01]
     mask: [0xF0, 0x00, 0xFF]
   dimensions: []
-  ui:
-    label: "일괄소등"
-    label_en: "Light Breaker"
 
 entities:
   light:

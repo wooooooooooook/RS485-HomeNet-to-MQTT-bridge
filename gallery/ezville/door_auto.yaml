@@ -11,12 +11,7 @@ discovery:
   match:
     data: [0xF7, 0x40, 0x02, 0x93]
     mask: [0xFF, 0xFF, 0xFF, 0xFF]
-  ui:
-    label: "현관문 자동 열림"
-    label_en: "Door Auto Open"
-    summary: "현관문 자동 열림 기능 발견됨"
-    summary_en: "Door Auto Open feature discovered"
-
+    
 automation:
   - id: 'door_auto'
     trigger:

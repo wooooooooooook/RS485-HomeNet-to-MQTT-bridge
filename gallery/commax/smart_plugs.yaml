@@ -1,6 +1,6 @@
 meta:
-  name: "☑️스마트 콘센트 설정 (4개)"
-  name_en: "☑️Smart Plugs (4 Outlets)"
+  name: "스마트 콘센트 설정 (4개)"
+  name_en: "Smart Plugs (4 Outlets)"
   description: "코맥스 스마트 콘센트 4개 설정입니다. 전력 사용량 센서도 포함되어 있습니다."
   description_en: "Commax 4 smart plugs with power consumption sensors."
   version: "1.0.1"

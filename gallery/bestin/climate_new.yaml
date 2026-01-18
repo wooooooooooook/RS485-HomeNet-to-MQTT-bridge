@@ -1,6 +1,6 @@
 meta:
-  name: "☑️Bestin 난방"
-  name_en: "☑️Bestin Climate"
+  name: "Bestin 난방"
+  name_en: "Bestin Climate"
   description: "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin climate with configurable room count. bestin1.0 bestin2.0 common."
   version: "2.0.0"
@@ -25,11 +25,6 @@ discovery:
       offset: 4
   inference:
     strategy: max
-  ui:
-    label: "난방"
-    label_en: "heating"
-    summary: "{room_count}개 방 발견됨"
-    summary_en: "{room_count} rooms discovered"
 
 entities:
   scripts:

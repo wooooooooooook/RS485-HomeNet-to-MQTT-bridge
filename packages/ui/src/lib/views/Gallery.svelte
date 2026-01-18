@@ -314,7 +314,7 @@
   }
 
   const filteredItems = $derived(() => {
-    if (!galleryData) return [];
+    if (!galleryData) return { discovered: [], others: [] };
 
     let items: (GalleryItem & {
       vendorId: string;
@@ -360,24 +360,34 @@
       isCompatible: resolveCompatibility(item.vendorId),
     }));
 
-    // Sort: compatible items first, then items with discovery, then items with parameters
-    decoratedItems.sort((a, b) => {
+    // Split into discovered and others
+    const discovered: typeof decoratedItems = [];
+    const others: typeof decoratedItems = [];
+
+    for (const item of decoratedItems) {
+      if (discoveryResults[item.file]?.matched) {
+        discovered.push(item);
+      } else {
+        others.push(item);
+      }
+    }
+
+    // Sort function
+    const sortFn = (a: (typeof decoratedItems)[0], b: (typeof decoratedItems)[0]) => {
       const aCompatible = a.isCompatible ? 1 : 0;
       const bCompatible = b.isCompatible ? 1 : 0;
       if (bCompatible !== aCompatible) return bCompatible - aCompatible;
-
-      // Discovery match takes priority
-      const aDiscovered = discoveryResults[a.file]?.matched ? 2 : 0;
-      const bDiscovered = discoveryResults[b.file]?.matched ? 2 : 0;
-      if (bDiscovered !== aDiscovered) return bDiscovered - aDiscovered;
 
       // Then items with parameters
       const aHasParams = (a.parameters?.length ?? 0) > 0 ? 1 : 0;
       const bHasParams = (b.parameters?.length ?? 0) > 0 ? 1 : 0;
       return bHasParams - aHasParams;
-    });
+    };
 
-    return decoratedItems;
+    discovered.sort(sortFn);
+    others.sort(sortFn);
+
+    return { discovered, others };
   });
 
   function openPreview(
@@ -456,20 +466,54 @@
       </div>
     </div>
 
-    <div class="items-grid">
-      {#each filteredItems() as item (item.file)}
-        <GalleryItemCard
-          {item}
-          isCompatible={item.isCompatible}
-          discoveryResult={discoveryResults[item.file]}
-          downloadCount={downloadStats[item.file] ?? 0}
-          onViewDetails={() => item.isCompatible && openPreview(item)}
-        />
-      {:else}
+    <div class="items-grid-container">
+      {#if filteredItems().discovered.length > 0}
+        <section class="items-section discovered-section">
+          <div class="section-header">
+            <h2>✨ {$t('gallery.discovered_items')}</h2>
+            <span class="section-badge">{filteredItems().discovered.length}</span>
+          </div>
+          <div class="items-grid">
+            {#each filteredItems().discovered as item (item.file)}
+              <GalleryItemCard
+                {item}
+                isCompatible={item.isCompatible}
+                discoveryResult={discoveryResults[item.file]}
+                downloadCount={downloadStats[item.file] ?? 0}
+                onViewDetails={() => item.isCompatible && openPreview(item)}
+              />
+            {/each}
+          </div>
+        </section>
+      {/if}
+
+      {#if filteredItems().others.length > 0}
+        <section class="items-section">
+          {#if filteredItems().discovered.length > 0}
+            <div class="section-header">
+              <h2>{$t('gallery.other_items')}</h2>
+              <span class="section-badge">{filteredItems().others.length}</span>
+            </div>
+          {/if}
+          <div class="items-grid">
+            {#each filteredItems().others as item (item.file)}
+              <GalleryItemCard
+                {item}
+                isCompatible={item.isCompatible}
+                discoveryResult={discoveryResults[item.file]}
+                downloadCount={downloadStats[item.file] ?? 0}
+                onViewDetails={() => item.isCompatible && openPreview(item)}
+              />
+            {/each}
+          </div>
+        </section>
+      {/if}
+
+      {#if filteredItems().discovered.length === 0 && filteredItems().others.length === 0}
         <div class="no-items">
           <p>{$t('gallery.no_items')}</p>
         </div>
-      {/each}
+      {/if}
     </div>
   {/if}
 </div>
@@ -639,6 +683,56 @@
     text-align: center;
     padding: 3rem;
     color: #64748b;
+  }
+
+  .items-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .items-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .discovered-section {
+    background: rgba(34, 197, 94, 0.05);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin: 0;
+  }
+
+  .section-badge {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+  }
+
+  .discovered-section .section-header h2 {
+    color: #4ade80;
+  }
+
+  .discovered-section .section-badge {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
   }
 
   @media (max-width: 768px) {

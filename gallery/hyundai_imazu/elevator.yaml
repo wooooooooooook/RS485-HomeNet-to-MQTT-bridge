@@ -1,6 +1,6 @@
 meta:
-  name: "☑️현대통신 엘리베이터"
-  name_en: "☑️Hyundai Telecom Elevator"
+  name: "현대통신 엘리베이터"
+  name_en: "Hyundai Telecom Elevator"
   description: "현대통신 월패드용 엘리베이터 호출 및 상태 확인 설정입니다. 참고:https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C"
   description_en: "Elevator call and status configuration for Hyundai Telecom wallpads. Reference: https://yogyui.tistory.com/entry/%ED%98%84%EB%8C%80%ED%86%B5%EC%8B%A0-%EC%9B%94%ED%8C%A8%EB%93%9C-RS-485-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C-%EC%97%98%EB%A6%AC%EB%B2%A0%EC%9D%B4%ED%84%B0-%ED%98%B8%EC%B6%9C"
   version: "2.0.0"
@@ -11,11 +11,6 @@ discovery:
   match:
     data: [0x0D, 0x01, 0x34, 0x01, 0x41]
     mask: [0x00, 0xff, 0xff, 0xff, 0xff]
-  ui:
-    label: "엘리베이터"
-    label_en: "Elevator"
-    summary: "엘리베이터 발견됨"
-    summary_en: "Elevator discovered"
 
 scripts:
   - id: 'elevator_call_down_script'

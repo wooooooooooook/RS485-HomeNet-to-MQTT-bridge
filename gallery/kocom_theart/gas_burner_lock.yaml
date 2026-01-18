@@ -11,12 +11,7 @@ discovery:
   match:
     data: [0x30, 0xd0, 0x00, 0x2c]
     mask: [0xFF, 0xFF, 0xFF, 0xFF]
-  ui:
-    label: "가스버너 잠금"
-    label_en: "Gas Burner Lock"
-    summary: "가스버너 잠금장치 발견됨"
-    summary_en: "Gas Burner Lock discovered"
-
+    
 entities:
   lock:
     - id: 'gas_burner_lock'

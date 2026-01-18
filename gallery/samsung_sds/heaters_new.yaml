@@ -25,12 +25,7 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "난방"
-    label_en: "heaters"
-    summary: "{{heater_count}}개 난방기 발견됨"
-    summary_en: "{{heater_count}} heaters discovered"
-
+    
 entities:
   climate:
     - $repeat:

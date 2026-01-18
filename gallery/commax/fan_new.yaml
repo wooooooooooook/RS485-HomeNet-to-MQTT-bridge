@@ -1,6 +1,6 @@
 meta:
-  name: "☑️환기팬 설정"
-  name_en: "☑️Ventilation Fans"
+  name: "환기팬 설정"
+  name_en: "Ventilation Fans"
   description: "코맥스 환기팬 설정입니다. 개수를 지정할 수 있습니다. 3단 속도와 Auto/Night 모드를 지원합니다."
   description_en: "Commax ventilation fans with 3-speed control and Auto/Night preset modes. You can specify the count."
   version: "2.0.0"
@@ -23,11 +23,7 @@ discovery:
       offset: 2
   inference:
     strategy: max
-  ui:
-    label: "환기팬"
-    label_en: "fans"
-    summary: "{fan_count}개 환기팬 발견됨"
-    summary_en: "{fan_count} fans discovered"
+
 entities:
   #상태      Head,   ON,   ID,  SPD, 0x00, 0x00, 0x00, add checksum
   #상태 OFF  0xF6, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, add checksum

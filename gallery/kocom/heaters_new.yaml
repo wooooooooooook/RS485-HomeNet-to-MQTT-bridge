@@ -20,11 +20,6 @@ discovery:
   match:
     data: [0x30, 0xd0, 0x00, 0x36]
     mask: [0xFF, 0xFF, 0xFF, 0xFF]
-  ui:
-    label: "난방"
-    label_en: "heaters"
-    summary: "난방 시스템 발견됨"
-    summary_en: "Heating system discovered"
 
 entities:
   climate:

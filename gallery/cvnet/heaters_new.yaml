@@ -1,6 +1,6 @@
 meta:
-  name: "☑️난방 설정"
-  name_en: "☑️Heaters"
+  name: "난방 설정"
+  name_en: "Heaters"
   description: "CVNet 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다."
   description_en: "CVNet heating thermostats. You can specify the number of thermostats."
   version: "2.0.0"
@@ -23,15 +23,10 @@ discovery:
   dimensions:
     - parameter: "heater_count"
       offset: 0
-      # CVNet 난방 패킷은 [0x20, 0x01, 0x4A...] 하나에 모든 정보가 담겨있는 것으로 보임
-      # 패킷 길이 또는 데이터 구조로 개수를 파악해야 함.
-      # 우선 기본값 사용 유도하거나, 사용자가 설정하도록 함.
-      # 여기서는 단순히 패턴 매칭만 수행.
-  ui:
-    label: "난방"
-    label_en: "heaters"
-    summary: "난방 시스템 발견됨"
-    summary_en: "Heating system discovered"
+      # CVNet 난방 패킷은 [0xF7, 0x20, 0x01, 0x4A, 0x81 ...] 형태이며 heater당 2바이트 데이터
+      # Header(5)+Footer(1)+CS(1)? Overhead 7 bytes assumed per user request.
+      # 공식: (전체길이 - 7) / 2
+      transform: "int((len(data) - 7) / 2)"
 
 entities:
   climate:
@@ -48,15 +43,15 @@ entities:
       state:
         data: [0x20, 0x01, 0x4A]
       state_temperature_current:
-        offset: '{{3 + i * 2}}'
+        offset: '{{4 + i * 2}}'
       state_temperature_target: >-
-        bitAnd(data[{{2 + i * 2}}], 0x7F)
+        bitAnd(data[{{3 + i * 2}}], 0x7F)
       state_off:
-        offset: '{{2 + i * 2}}'
+        offset: '{{3 + i * 2}}'
         data: [0x00]
         mask: [0x80]
       state_heat:
-        offset: '{{2 + i * 2}}'
+        offset: '{{3 + i * 2}}'
         data: [0x80]
         mask: [0x80]
       command_off: >-

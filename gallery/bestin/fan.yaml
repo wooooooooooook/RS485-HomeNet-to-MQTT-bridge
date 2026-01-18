@@ -11,11 +11,6 @@ discovery:
   match:
     data: [0x61, 0x00]
     mask: [0xFF, 0x00]
-  ui:
-    label: "환기팬"
-    label_en: "ventilation fan"
-    summary: "환기팬 발견됨"
-    summary_en: "Ventilation fan discovered"
 
 entities:
   scripts:

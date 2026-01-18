@@ -901,10 +901,17 @@
         <div role="tabpanel" id="panel-config" aria-labelledby="tab-config" tabindex="0">
           <div class="section config-section">
             {#if configLoading}
-              <div class="loading">{$t('entity_detail.config.loading')}</div>
+              <div class="loading" role="status" aria-live="polite">
+                {$t('entity_detail.config.loading')}
+              </div>
             {:else}
               <div class="config-editor-container">
-                <textarea class="config-editor" bind:value={editingConfig} spellcheck="false"
+                <textarea
+                  class="config-editor"
+                  bind:value={editingConfig}
+                  spellcheck="false"
+                  aria-label={$t('entity_detail.tabs.config')}
+                  aria-busy={isSaving}
                 ></textarea>
                 <div class="config-actions">
                   <Button
@@ -918,10 +925,14 @@
                     {$t('entity_detail.config.save')}
                   </Button>
                   {#if saveMessage}
-                    <span class="save-message success">{saveMessage}</span>
+                    <span class="save-message success" role="status" aria-live="polite">
+                      {saveMessage}
+                    </span>
                   {/if}
                   {#if configError}
-                    <span class="save-message error">{configError}</span>
+                    <span class="save-message error" role="alert" aria-live="assertive">
+                      {configError}
+                    </span>
                   {/if}
                 </div>
               </div>

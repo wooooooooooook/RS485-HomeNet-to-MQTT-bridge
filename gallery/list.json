@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-18T11:57:41.222Z",
+  "generated_at": "2026-01-18T12:30:10.308Z",
   "vendors": [
     {
       "id": "bestin",
@@ -669,6 +669,30 @@
       },
       "items": [
         {
+          "file": "ezville/air_quality_sensors.yaml",
+          "name": "공기질 센서 (CO2/PM)",
+          "name_en": "Air Quality Sensors (CO2/PM)",
+          "description": "Ezville 공기질 센서 설정입니다. 거실과 안방의 CO2 농도 및 미세먼지(PM) 측정값을 제공합니다.",
+          "description_en": "Ezville air quality sensors for CO2 concentration and PM (particulate matter) readings in the living room and main bedroom.",
+          "version": "1.0.0",
+          "author": "햇님이다",
+          "tags": [
+            "sensor",
+            "air_quality",
+            "co2",
+            "pm",
+            "ezville"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 4
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
           "file": "ezville/door_auto.yaml",
           "name": "현관문열림자동",
           "name_en": "door auto open",
@@ -944,6 +968,28 @@
             },
             "automations": 0,
             "scripts": 2
+          }
+        },
+        {
+          "file": "hyundai_imazu/elevator_arrived_state.yaml",
+          "name": "현대통신 엘리베이터 도착 상태",
+          "name_en": "Hyundai Telecom Elevator Arrived State",
+          "description": "현대통신 월패드용 엘리베이터 도착(Arrived), 이동 중(Moving), 대기(Idle) 상태 센서입니다.",
+          "description_en": "Elevator arrived state sensor for Hyundai Telecom wallpads. Shows Arrived, Moving, or Idle status.",
+          "version": "1.0.0",
+          "author": "2277",
+          "tags": [
+            "elevator",
+            "hyundai",
+            "imazu"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "text_sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
           }
         },
         {

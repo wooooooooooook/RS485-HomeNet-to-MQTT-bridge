@@ -46,7 +46,7 @@ import { fileExists, parseEnvList, triggerRestart } from './utils/helpers.js';
 import { initializeBackupDir, saveBackup } from './services/backup.service.js';
 import { loadFrontendSettings } from './services/frontend-settings.service.js';
 import { registerRoutes } from './routes/index.js';
-import { createPacketStreamHandler } from './websocket/packet-stream.js';
+import { createStreamManager } from './websocket/stream-manager.js';
 import { globalSecurityHeaders, apiSecurityHeaders } from './middleware/security.js';
 
 // --- Path Constants ---
@@ -67,7 +67,7 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({
   server,
-  path: '/api/packets/stream',
+  path: '/api/stream',
   // Security: Limit max payload to 64KB to prevent DoS via large WebSocket frames
   maxPayload: 64 * 1024,
 });
@@ -194,26 +194,26 @@ registerRoutes(app, {
   configEditorService,
 });
 
-// WebSocket handling is now in websocket/packet-stream.ts
-const packetStreamHandler = createPacketStreamHandler({
+// WebSocket handling is now in websocket/stream-manager.ts
+const streamManager = createStreamManager({
   wss,
   getBridges: () => bridges,
   getCurrentConfigs: () => currentConfigs,
 });
 
-// Export rebuildPortMappings from packetStreamHandler
-const rebuildPortMappings = packetStreamHandler.rebuildPortMappings;
-const latestStates = packetStreamHandler.getLatestStates();
+// Export rebuildPortMappings from streamManager
+const rebuildPortMappings = streamManager.rebuildPortMappings;
+const latestStates = streamManager.getLatestStates();
 
 // Helper to get raw packet mode
 const getRawPacketMode = (value: unknown): RawPacketStreamMode => {
   return value === 'valid' ? 'valid' : 'all';
 };
 
-packetStreamHandler.registerGlobalEventHandlers();
-packetStreamHandler.registerPacketStream();
+streamManager.registerGlobalEventHandlers();
+streamManager.registerWebSocketHandlers();
 
-app.get('/api/packets/stream', (_req, res) => {
+app.get('/api/stream', (_req, res) => {
   res.status(426).json({ error: '이 엔드포인트는 WebSocket 전용입니다.' });
 });
 

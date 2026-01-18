@@ -297,7 +297,9 @@
       "stopped": "중지됨",
       "error": "오류",
       "unknown": "알 수 없음",
-      "reconnecting": "재접속 중"
+      "reconnecting": "재접속 중",
+      "connecting": "연결 중",
+      "connected": "연결됨"
     }
   },
   "header": {
@@ -409,10 +411,14 @@
     "show_automations": "자동화",
     "show_scripts": "스크립트",
     "show_inactive_entities": "비활성화 항목",
-    "port_meta": {
-      "path": "경로 (Path):",
-      "baud": "속도 (Baud):",
-      "file": "설정파일:",
+    "topology": {
+      "serial_device": "RS485 시리얼 장치",
+      "mqtt_broker": "MQTT 브로커",
+      "homenet2mqtt": "HomeNet2MQTT",
+      "path": "경로 (PATH)",
+      "baud": "속도 (BAUD)",
+      "config": "설정 (CONFIG)",
+      "url": "주소 (URL)",
       "status": "상태:"
     },
     "recent_activity": {

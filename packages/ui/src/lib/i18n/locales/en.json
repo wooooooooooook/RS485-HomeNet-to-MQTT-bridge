@@ -294,7 +294,9 @@
       "stopped": "Stopped",
       "error": "Error",
       "unknown": "Unknown",
-      "reconnecting": "Reconnecting"
+      "reconnecting": "Reconnecting",
+      "connecting": "Connecting",
+      "connected": "Connected"
     }
   },
   "header": {
@@ -406,10 +408,14 @@
     "show_automations": "Automations",
     "show_scripts": "Scripts",
     "show_inactive_entities": "Inactive items",
-    "port_meta": {
-      "path": "Path:",
-      "baud": "Baud:",
-      "file": "File:",
+    "topology": {
+      "serial_device": "RS485 Serial Device",
+      "mqtt_broker": "MQTT Broker",
+      "homenet2mqtt": "HomeNet2MQTT",
+      "path": "PATH",
+      "baud": "BAUD",
+      "config": "CONFIG",
+      "url": "URL",
       "status": "Status:"
     },
     "recent_activity": {

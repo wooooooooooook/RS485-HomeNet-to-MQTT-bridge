@@ -1,6 +1,7 @@
 /**
- * WebSocket packet stream handler
- * Manages real-time packet streaming to UI clients
+ * WebSocket Stream Manager
+ * Manages real-time communication between server and UI/Clients
+ * Handles: MQTT Status, Device States, Raw Packets, Logs
  */
 
 import { WebSocket, WebSocketServer } from 'ws';
@@ -32,20 +33,22 @@ import type {
   BridgeInstance,
 } from '../types/index.js';
 
-export interface PacketStreamContext {
+export interface StreamManagerContext {
   wss: WebSocketServer;
   getBridges: () => BridgeInstance[];
   getCurrentConfigs: () => HomenetBridgeConfig[];
 }
 
-interface PacketStreamState {
+interface StreamManagerState {
   latestStates: Map<string, StateChangeEvent>;
   topicPrefixToPortId: Map<string, string>;
+  
+  // Subscribers who explicitly requested raw packet stream
   rawPacketSubscribers: Map<WebSocket, RawPacketStreamMode>;
 }
 
-export function createPacketStreamHandler(ctx: PacketStreamContext) {
-  const state: PacketStreamState = {
+export function createStreamManager(ctx: StreamManagerContext) {
+  const state: StreamManagerState = {
     latestStates: new Map(),
     topicPrefixToPortId: new Map(),
     rawPacketSubscribers: new Map(),
@@ -61,6 +64,8 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
     });
     state.topicPrefixToPortId = nextMap;
   };
+
+  // ... (keeping helper functions as is, will rely on context)
 
   const extractPortIdFromTopic = (topic: string) => {
     const parts = normalizeTopicParts(topic);
@@ -250,7 +255,7 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
     });
   };
 
-  const registerPacketStream = () => {
+  const registerWebSocketHandlers = () => {
     ctx.wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
       const requestUrl = getRequestUrl(req);
       let streamMqttUrl = requestUrl?.searchParams.get('mqttUrl') ?? '';
@@ -258,8 +263,9 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
         streamMqttUrl = maskMqttPassword(process.env.MQTT_URL?.trim() || 'mqtt://mq:1883');
       }
 
+      const isConnected = ctx.getBridges().some((b) => b.bridge.isMqttConnected);
       sendStreamEvent(socket, 'status', {
-        state: 'connecting',
+        state: isConnected ? 'connected' : 'connecting',
         mqttUrl: streamMqttUrl,
       });
       state.latestStates.forEach((s) => sendStreamEvent(socket, 'state-change', s));
@@ -313,7 +319,7 @@ export function createPacketStreamHandler(ctx: PacketStreamContext) {
 
   return {
     registerGlobalEventHandlers,
-    registerPacketStream,
+    registerWebSocketHandlers,
     rebuildPortMappings,
     getLatestStates: () => state.latestStates,
   };

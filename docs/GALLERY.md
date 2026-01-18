@@ -132,7 +132,7 @@ entities:
 템플릿 표현식은 **[Common Expression Language (CEL)](https://github.com/google/cel-spec)**을 사용합니다.
 - JavaScript 문법과 유사하지만 더 엄격하며 안전합니다.
 - `process`, `window`, `require` 등 글로벌 객체에 접근할 수 없습니다.
-- `Math` 함수는 지원되지 않으므로 기본 사칙연산만 사용해야 합니다.
+- `Math` 함수는 지원되지 않으므로 기본 사칙연산과 제공된 헬퍼 함수만 사용해야 합니다.
 
 지원 표현식 예시:
 
@@ -144,6 +144,13 @@ entities:
 | `{{room.name}}` | 객체 속성 접근 | `"거실"` |
 | `{{hex(i)}}` | 헬퍼 함수: 16진수 변환 | `"0x01"` |
 | `{{pad(i, 2)}}` | 헬퍼 함수: 자릿수 패딩 | `"01"` |
+| `{{bcd_to_int(i)}}` | BCD → 정수 변환 | `0x12` → `12` |
+| `{{int_to_bcd(i)}}` | 정수 → BCD 변환 | `12` → `0x12` |
+| `{{bitAnd(i, 0x0F)}}` | 비트 AND | `0x1F` → `0x0F` |
+| `{{bitOr(i, 0x80)}}` | 비트 OR | `0x01` → `0x81` |
+| `{{bitXor(i, 0xFF)}}` | 비트 XOR (반전) | `0x00` → `0xFF` |
+| `{{bitShiftLeft(i, 4)}}` | 비트 Left Shift | `0x01` → `0x10` |
+| `{{bitShiftRight(i, 4)}}` | 비트 Right Shift | `0x10` → `0x01` |
 
 **주의사항:**
 - 변수는 `parameters`나 `$repeat`에서 정의된 것만 사용할 수 있습니다.

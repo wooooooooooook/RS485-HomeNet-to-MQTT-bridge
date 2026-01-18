@@ -1,8 +1,4 @@
-import type {
-  BridgeErrorPayload,
-  BridgeErrorSeverity,
-  BridgeErrorSource,
-} from '../types/index.js';
+import type { BridgeErrorPayload, BridgeErrorSeverity, BridgeErrorSource } from '../types/index.js';
 
 const normalizeMessage = (value: unknown): string => {
   if (value instanceof Error) return value.message;
@@ -92,10 +88,7 @@ export const mapMqttError = (error: unknown, portId?: string): BridgeErrorPayloa
 
   if (message.toLowerCase().includes('not authorized')) {
     errorCode = 'MQTT_AUTH_FAILED';
-  } else if (
-    code &&
-    ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN'].includes(code)
-  ) {
+  } else if (code && ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN'].includes(code)) {
     errorCode = 'MQTT_CONNECT_FAILED';
   }
 

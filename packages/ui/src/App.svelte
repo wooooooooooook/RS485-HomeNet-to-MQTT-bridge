@@ -249,8 +249,8 @@
   type DeviceStateEntry = { payload: string; portId?: string };
   let deviceStates = $state(new Map<string, DeviceStateEntry>());
   let socket = $state<WebSocket | null>(null);
-  let isSocketOpen = $state(false); // WebSocket 연결 상태 (raw 패킷 스트리밍용)
-  let connectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle');
+  let isSocketOpen = $state(false); // WebSocket 연결 상태 (UI-서버 간 실시간 통신용)
+  let mqttConnectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle'); // MQTT 브로커 연결 상태
   let statusMessage = $state<StatusMessage | null>(null);
   let isStreaming = $state(false);
 
@@ -616,9 +616,9 @@
         selectedPortId = defaultPortId;
       }
 
-      // Initialize connectionStatus from API response (for cases where MQTT is already connected)
+      // Initialize mqttConnectionStatus from API response (for cases where MQTT is already connected)
       if ((data as any).mqttConnected) {
-        connectionStatus = 'connected';
+        mqttConnectionStatus = 'connected';
       }
 
       connectWebSocket();
@@ -800,12 +800,9 @@
 
     closeStream();
 
-    connectionStatus = 'connecting';
-    statusMessage = { key: 'mqtt.connecting' };
-
     // ingress 환경에서는 window.location을 기준으로 해야 Supervisor 토큰이 포함된다
     const baseUrl = typeof window !== 'undefined' ? window.location.href : document.baseURI;
-    const url = new URL('./api/packets/stream', baseUrl);
+    const url = new URL('./api/stream', baseUrl);
     if (bridgeInfo.mqttUrl.trim().length > 0) {
       url.searchParams.set('mqttUrl', bridgeInfo.mqttUrl.trim());
     }
@@ -816,13 +813,13 @@
     const handleStatus = (data: Record<string, unknown> & { error?: BridgeErrorPayload }) => {
       const state = data.state;
       if (state === 'connected') {
-        connectionStatus = 'connected';
+        mqttConnectionStatus = 'connected';
         statusMessage = { key: 'mqtt.connected' };
       } else if (state === 'subscribed') {
-        connectionStatus = 'connected';
+        mqttConnectionStatus = 'connected';
         statusMessage = { key: 'mqtt.subscribed', values: { topic: data.topic } };
       } else if (state === 'error') {
-        connectionStatus = 'error';
+        mqttConnectionStatus = 'error';
         if (data.error?.code) {
           statusMessage = { key: `errors.${data.error.code}` };
         } else {
@@ -832,10 +829,10 @@
           };
         }
       } else if (state === 'connecting') {
-        connectionStatus = 'connecting';
+        mqttConnectionStatus = 'connecting';
         statusMessage = { key: 'mqtt.connecting' };
       } else if (state === 'disconnected') {
-        connectionStatus = 'connecting';
+        mqttConnectionStatus = 'connecting';
         statusMessage = { key: 'mqtt.disconnected' };
       }
     };
@@ -1023,7 +1020,8 @@
     });
 
     const handleDisconnect = () => {
-      connectionStatus = 'connecting';
+      // WebSocket disconnected - MQTT status becomes unknown, show as connecting
+      mqttConnectionStatus = 'connecting';
       statusMessage = { key: 'mqtt.disconnected' };
       socket = null;
       socketCloseHandler = null;
@@ -1070,7 +1068,7 @@
       socketCloseHandler = null;
       socketErrorHandler = null;
     }
-    connectionStatus = 'idle';
+    mqttConnectionStatus = 'idle';
     isSocketOpen = false;
     statusMessage = null;
     packetStatsByPort = new Map();
@@ -1688,7 +1686,7 @@
             showScripts={showScriptCards}
             {hasInactiveEntities}
             activityLogs={filteredActivityLogs}
-            {connectionStatus}
+            {mqttConnectionStatus}
             {statusMessage}
             {portStatuses}
             onSelect={(entityId, portId, category) =>

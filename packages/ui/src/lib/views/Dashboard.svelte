@@ -12,6 +12,7 @@
   import EntityCard from '../components/EntityCard.svelte';
   import RecentActivity from '../components/RecentActivity.svelte';
   import SetupWizard from '../components/SetupWizard.svelte';
+  import SystemTopology from '../components/SystemTopology.svelte';
 
   import HintBubble from '$lib/components/HintBubble.svelte';
   import PortToolbar from '$lib/components/PortToolbar.svelte';
@@ -33,7 +34,7 @@
     showScripts,
     hasInactiveEntities = false,
     activityLogs,
-    connectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
+    mqttConnectionStatus = 'idle' as 'idle' | 'connecting' | 'connected' | 'error',
     statusMessage = null,
     portStatuses = [],
     onSelect,
@@ -63,7 +64,7 @@
     showScripts: boolean;
     hasInactiveEntities?: boolean;
     activityLogs: ActivityLog[];
-    connectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
+    mqttConnectionStatus?: 'idle' | 'connecting' | 'connected' | 'error';
     statusMessage?: StatusMessage | null;
     portStatuses?: {
       portId: string;
@@ -93,68 +94,64 @@
   const activePortId = $derived.by<string | null>(() =>
     selectedPortId && portIds.includes(selectedPortId) ? selectedPortId : (portIds[0] ?? null),
   );
+
+  const activePortMetadata = $derived.by<
+    | (BridgeSerialInfo & {
+        configFile: string;
+        error?: string;
+        errorInfo?: BridgeErrorPayload | null;
+        status?: 'idle' | 'starting' | 'started' | 'error' | 'stopped';
+      })
+    | undefined
+  >(() => {
+    if (!activePortId) return undefined;
+    return portMetadata.find((p) => p.portId === activePortId);
+  });
+
   // App.svelte에서 이미 dashboardEntities로 포트별 필터링을 완료하여 전달하므로,
   // 여기서는 전달받은 entities를 그대로 사용합니다.
   const visibleEntities = $derived.by<UnifiedEntity[]>(() => entities);
   let hintDismissed = $state(false);
   let showAddBridgeModal = $state(false);
 
-  // portStatuses에서 해당 포트의 상태를 가져오는 헬퍼 함수
-  function getPortStatus(portId: string): BridgeStatus | 'unknown' {
-    const portStatus = portStatuses.find(
-      (p: { portId: string; status: BridgeStatus | 'unknown'; message?: string }) =>
-        p.portId === portId,
-    );
-    return portStatus?.status ?? 'unknown';
-  }
-
-  function getPortErrorMessage(portId: string): string | undefined {
-    const portStatus = portStatuses.find(
-      (p: {
-        portId: string;
-        status: BridgeStatus | 'unknown';
-        message?: string;
-        errorInfo?: BridgeErrorPayload | null;
-      }) => p.portId === portId,
-    );
-    if (portStatus?.errorInfo) {
-      return $t(`errors.${portStatus.errorInfo.code}`, {
-        default:
-          portStatus.errorInfo.message ||
-          portStatus.errorInfo.detail ||
-          portStatus.errorInfo.code,
-      });
-    }
-    return portStatus?.message;
-  }
-
   function getBridgeErrorMessage(): string | undefined {
     if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
     return $t(`errors.${bridgeInfo.errorInfo.code}`, {
       default:
-        bridgeInfo.errorInfo.message ||
-        bridgeInfo.errorInfo.detail ||
-        bridgeInfo.errorInfo.code,
+        bridgeInfo.errorInfo.message || bridgeInfo.errorInfo.detail || bridgeInfo.errorInfo.code,
     });
   }
 
-  function getPortMetadataErrorMessage(
-    port?: BridgeSerialInfo & {
-      error?: string;
-      errorInfo?: BridgeErrorPayload | null;
-    },
-  ): string | undefined {
-    if (!port) return undefined;
-    if (port.errorInfo) {
-      return $t(`errors.${port.errorInfo.code}`, {
-        default: port.errorInfo.message || port.errorInfo.detail || port.errorInfo.code,
+  const activeSerialErrorMessage = $derived.by<string | null>(() => {
+    if (!activePortId) return null;
+
+    // 1. Check portStatuses (runtime status)
+    const portStatus = portStatuses.find((p) => p.portId === activePortId);
+    if (portStatus?.errorInfo) {
+      return $t(`errors.${portStatus.errorInfo.code}`, {
+        default:
+          portStatus.errorInfo.message || portStatus.errorInfo.detail || portStatus.errorInfo.code,
       });
     }
-    if (port.error) {
-      return $t(`errors.${port.error}`, { default: port.error });
+    if (portStatus?.message) return portStatus.message;
+
+    // 2. Check portMetadata (config/initialization status)
+    if (activePortMetadata?.errorInfo) {
+      if (activePortMetadata.errorInfo.source !== 'serial') return null; // Should not happen for port errors usually
+      return $t(`errors.${activePortMetadata.errorInfo.code}`, {
+        default:
+          activePortMetadata.errorInfo.message ||
+          activePortMetadata.errorInfo.detail ||
+          activePortMetadata.errorInfo.code,
+      });
     }
-    return undefined;
-  }
+    if (activePortMetadata?.error) {
+      // Typically 'CONFIG_ERROR' or similar keys
+      return $t(`errors.${activePortMetadata.error}`, { default: activePortMetadata.error });
+    }
+
+    return null;
+  });
 
   function handleSelect(entityId: string, portId: string | undefined, category: EntityCategory) {
     onSelect?.(entityId, portId, category);
@@ -204,60 +201,23 @@
       onAddBridge={() => (showAddBridgeModal = true)}
     />
 
-    <!-- Compact Info Panel -->
-    <div class="info-panel">
-      <div class="info-row">
-        <div class="mqtt-info">
-          <span class="label">{$t('dashboard.mqtt_label')}</span>
-          <span class="value">{mqttUrl}</span>
-        </div>
-        <div class="mqtt-status" data-state={connectionStatus}>
-          <span class="dot"></span>
-          {#if statusMessage}
-            <span class="status-text"
-              >{$t(statusMessage.key, { values: statusMessage.values })}</span
-            >
-          {:else}
-            <span class="status-text">{$t('dashboard.mqtt_waiting')}</span>
-          {/if}
-        </div>
-      </div>
-      {#if activePortId}
-        {@const activePortMetadata = portMetadata.find((p) => p.portId === activePortId)}
-        {#if activePortMetadata && (activePortMetadata.path || activePortMetadata.configFile)}
-          <div class="info-row port-info">
-            <div class="meta-item">
-              <span class="label">{$t('dashboard.port_meta.file')}</span>
-              <span class="value">{activePortMetadata.configFile}</span>
-            </div>
-            <div class="meta-item">
-              <span class="label">{$t('dashboard.port_meta.path')}</span>
-              <span class="value">{activePortMetadata.path || 'N/A'}</span>
-            </div>
-            <div class="meta-item">
-              <span class="label">{$t('dashboard.port_meta.status')}</span>
-              <span class="value bridge-status-value" data-state={getPortStatus(activePortId)}>
-                <span class="status-dot"></span>
-                {$t(`common.status.${getPortStatus(activePortId)}`)}
-              </span>
-            </div>
-          </div>
-        {/if}
-        {#if getPortStatus(activePortId) === 'error' && (getPortErrorMessage(activePortId) || getPortMetadataErrorMessage(activePortMetadata))}
-          <div class="port-error">
-            <span class="error-text">
-              {$t('dashboard.port_error', {
-                values: {
-                  error:
-                    getPortErrorMessage(activePortId) ||
-                    getPortMetadataErrorMessage(activePortMetadata),
-                },
-              })}
-            </span>
-          </div>
-        {/if}
-      {/if}
-    </div>
+    <!-- System Topology Visualization -->
+    <SystemTopology
+      {mqttUrl}
+      mqttStatus={mqttConnectionStatus}
+      portMetadata={activePortMetadata}
+      bridgeStatus={bridgeInfo.status}
+      globalError={bridgeInfo.errorInfo?.source === 'core' ||
+      bridgeInfo.errorInfo?.source === 'service'
+        ? bridgeInfo.errorInfo
+        : null}
+      mqttError={bridgeInfo.errorInfo?.source === 'mqtt'
+        ? bridgeInfo.errorInfo.message
+        : mqttConnectionStatus === 'error'
+          ? $t('dashboard.mqtt_error')
+          : null}
+      serialError={activeSerialErrorMessage}
+    />
 
     <!-- Recent Activity Section -->
     {#if activePortId}
@@ -396,123 +356,6 @@
     box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   }
 
-  .info-panel {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    color: #94a3b8;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .info-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .info-row.port-info {
-    gap: 1.5rem;
-    justify-content: flex-start;
-  }
-
-  .mqtt-info {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  .label {
-    color: #64748b;
-    font-weight: 500;
-  }
-
-  .value {
-    color: #cbd5e1;
-    font-family: monospace;
-    font-size: 0.9rem;
-  }
-
-  .mqtt-status {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .mqtt-status .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background-color: #64748b;
-    flex-shrink: 0;
-  }
-
-  .mqtt-status[data-state='connected'] .dot {
-    background-color: #10b981;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
-  }
-
-  .mqtt-status[data-state='connecting'] .dot {
-    background-color: #f59e0b;
-    animation: pulse 2s infinite;
-  }
-
-  .mqtt-status[data-state='error'] .dot {
-    background-color: #ef4444;
-  }
-
-  .mqtt-status .status-text {
-    color: #94a3b8;
-  }
-
-  .mqtt-status[data-state='connected'] .status-text {
-    color: #10b981;
-  }
-
-  .mqtt-status[data-state='error'] .status-text {
-    color: #ef4444;
-  }
-
-  .port-error {
-    padding-top: 0.2rem;
-  }
-
-  .port-error .error-text {
-    color: #ef4444;
-    font-size: 0.65rem;
-  }
-
-  @keyframes pulse {
-    0% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-
-  .bridge-error {
-    margin-top: 1rem;
-  }
-
-  .port-error {
-    margin-bottom: 0.5rem;
-  }
-
   .error {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
@@ -541,48 +384,7 @@
     padding: 2rem;
   }
 
-  /* Bridge Status Styles */
-  .bridge-status-value {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .bridge-status-value .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #64748b;
-  }
-
-  .bridge-status-value[data-state='started'] .status-dot {
-    background-color: #10b981;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
-  }
-
-  .bridge-status-value[data-state='starting'] .status-dot {
-    background-color: #f59e0b;
-    animation: pulse 2s infinite;
-  }
-
-  .bridge-status-value[data-state='reconnecting'] .status-dot {
-    background-color: #f59e0b;
-    animation: pulse 1s infinite;
-  }
-
-  .bridge-status-value[data-state='error'] .status-dot {
-    background-color: #ef4444;
-  }
-
-  .bridge-status-value[data-state='started'] {
-    color: #10b981;
-  }
-
-  .bridge-status-value[data-state='reconnecting'] {
-    color: #f59e0b;
-  }
-
-  .bridge-status-value[data-state='error'] {
-    color: #ef4444;
+  .bridge-error {
+    margin-top: 1rem;
   }
 </style>

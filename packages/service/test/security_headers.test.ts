@@ -32,6 +32,14 @@ describe('Security Headers', () => {
     expect(res.headers['content-security-policy']).toContain("object-src 'none'");
     expect(res.headers['content-security-policy']).toContain("base-uri 'self'");
     expect(res.headers['content-security-policy']).toContain("form-action 'self'");
+
+    // Enhanced headers
+    expect(res.headers['strict-transport-security']).toBe('max-age=15552000; includeSubDomains');
+    expect(res.headers['x-xss-protection']).toBe('0');
+    expect(res.headers['origin-agent-cluster']).toBe('?1');
+    expect(res.headers['x-dns-prefetch-control']).toBe('off');
+    expect(res.headers['x-download-options']).toBe('noopen');
+    expect(res.headers['x-permitted-cross-domain-policies']).toBe('none');
   });
 
   it('should disable x-powered-by', async () => {

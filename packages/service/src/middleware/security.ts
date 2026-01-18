@@ -17,6 +17,21 @@ export const globalSecurityHeaders = (_req: Request, res: Response, next: NextFu
   );
   // 민감한 브라우저 기능 비활성화
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  // Enhanced Security Headers
+  // HSTS: 180일간 HTTPS 강제 (서브도메인 포함)
+  res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  // XSS Protection: 브라우저 기본 XSS 필터 비활성화 (CSP가 더 강력함, 구형 브라우저 버그 방지)
+  res.setHeader('X-XSS-Protection', '0');
+  // Origin-Agent-Cluster: 출처 간 격리 강화
+  res.setHeader('Origin-Agent-Cluster', '?1');
+  // DNS Prefetch Control: DNS 미리 가져오기 제어 (개인정보 보호)
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  // Download Options: IE8 파일 열기 방지
+  res.setHeader('X-Download-Options', 'noopen');
+  // Cross-Domain Policies: Flash/Adobe 십자 도메인 정책 파일 로드 방지
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+
   next();
 };
 

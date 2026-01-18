@@ -1,4 +1,5 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge)
+[github wiki](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/wiki/%EC%8B%9C%EC%9E%91%ED%95%98%EA%B8%B0)
 
 # RS485 HomeNet to MQTT Bridge (H2M)
 

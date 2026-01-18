@@ -587,10 +587,21 @@ async function loadAndStartBridges(filenames: string[]) {
           );
           if (originalIndex !== -1) {
             currentConfigStatuses[originalIndex] = 'error';
-            currentConfigErrors[originalIndex] = mapBridgeStartError(
+            const mappedError = mapBridgeStartError(
               err,
               normalizePortId(instance.config.serial?.portId ?? 'unknown', 0),
             );
+            currentConfigErrors[originalIndex] = mappedError;
+            if (!bridgeError && mappedError.source === 'serial') {
+              bridgeError = createBridgeErrorPayload({
+                code: 'CORE_START_FAILED',
+                message: 'Bridge start failed.',
+                detail: mappedError.message || mappedError.detail || mappedError.code,
+                source: 'core',
+                severity: 'error',
+                retryable: true,
+              });
+            }
           }
           // Remove failed bridge from the bridges array to prevent
           // "Bridge not initialized" errors when executing commands on other bridges

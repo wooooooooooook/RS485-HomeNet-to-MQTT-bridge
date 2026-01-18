@@ -1,0 +1,26 @@
+meta:
+  name: "현대통신 엘리베이터 도착 상태"
+  name_en: "Hyundai Telecom Elevator Arrived State"
+  description: "현대통신 월패드용 엘리베이터 도착(Arrived), 이동 중(Moving), 대기(Idle) 상태 센서입니다."
+  description_en: "Elevator arrived state sensor for Hyundai Telecom wallpads. Shows Arrived, Moving, or Idle status."
+  version: "1.0.0"
+  author: "2277"
+  tags: ["elevator", "hyundai", "imazu"]
+
+discovery:
+  match:
+    data: [0x0D, 0x01, 0x34, 0x01, 0x41, 0x10, 0x00]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
+entities:
+  text_sensor:
+    - id: 'elevator_arrived_state'
+      name: 'Elevator Arrived/Moving/Idle'
+      icon: 'mdi:elevator-passenger'
+      state:
+        data: [0x0D, 0x01, 0x34, 0x01, 0x41, 0x10, 0x00]
+        mask: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+      state_text: >
+        bitAnd(data[8], 0x0F) == 0x1 ? 'Arrived' :
+        (bitAnd(data[8], 0x0F) == 0x5 || bitAnd(data[8], 0x0F) == 0x6 ? 'Moving' :
+        (bitAnd(data[8], 0x0F) == 0x0 ? 'Idle' : 'Unknown'))

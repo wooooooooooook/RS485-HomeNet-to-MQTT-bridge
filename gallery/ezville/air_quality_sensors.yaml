@@ -1,0 +1,64 @@
+meta:
+  name: "공기질 센서 (CO2/PM)"
+  name_en: "Air Quality Sensors (CO2/PM)"
+  description: "Ezville 공기질 센서 설정입니다. 거실과 안방의 CO2 농도 및 미세먼지(PM) 측정값을 제공합니다."
+  description_en: "Ezville air quality sensors for CO2 concentration and PM (particulate matter) readings in the living room and main bedroom."
+  version: "1.0.0"
+  author: "햇님이다"
+  tags: ["sensor", "air_quality", "co2", "pm", "ezville"]
+
+discovery:
+  match:
+    data: [0x61]
+    mask: [0xFF]
+    # 0x61 헤더를 사용하는 공기질 센서들 (CO2, PM)
+
+entities:
+  sensor:
+    # CO2 센서들
+    - id: room1_co2
+      name: 'Co2(거실)'
+      state:
+        data: [0x61, 0x01, 0x81]
+      unit_of_measurement: 'ppm'
+      accuracy_decimals: 0
+      state_number:
+        offset: 11
+        length: 2
+        signed: false
+
+    - id: room2_co2
+      name: 'Co2(안방)'
+      state:
+        data: [0x61, 0x02, 0x81]
+      unit_of_measurement: 'ppm'
+      accuracy_decimals: 0
+      state_number:
+        offset: 11
+        length: 2
+        signed: false
+
+    # PM(미세먼지) 센서들
+    - id: room1_pm
+      name: 'PM(거실)'
+      state:
+        data: [0x61, 0x01, 0x81]
+      unit_of_measurement: '㎍/㎥'
+      accuracy_decimals: 0
+      state_number:
+        offset: 10
+        length: 1
+        signed: false
+        decode: bcd
+
+    - id: room2_pm
+      name: 'PM(안방)'
+      state:
+        data: [0x61, 0x02, 0x81]
+      unit_of_measurement: '㎍/㎥'
+      accuracy_decimals: 0
+      state_number:
+        offset: 10
+        length: 1
+        signed: false
+        decode: bcd

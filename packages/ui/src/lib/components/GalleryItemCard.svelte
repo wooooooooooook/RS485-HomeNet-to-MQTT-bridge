@@ -30,6 +30,15 @@
   const scriptCount = $derived(item.content_summary.scripts ?? 0);
   const hasScripts = $derived(scriptCount > 0);
   const hasParameters = $derived((item.parameters?.length ?? 0) > 0);
+
+  function handleViewDetails(e: MouseEvent) {
+    if (!isCompatible) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    onViewDetails();
+  }
 </script>
 
 <div class="card" class:disabled={!isCompatible} aria-disabled={!isCompatible}>
@@ -102,7 +111,12 @@
     </div>
   {/if}
 
-  <button class="view-btn" onclick={onViewDetails} disabled={!isCompatible}>
+  <button
+    class="view-btn"
+    onclick={handleViewDetails}
+    aria-disabled={!isCompatible}
+    title={!isCompatible ? $t('gallery.incompatible_port') : undefined}
+  >
     {$t('gallery.view_details')}
   </button>
 </div>
@@ -302,12 +316,13 @@
     transition: all 0.2s;
   }
 
-  .view-btn:hover {
+  .view-btn:hover:not([aria-disabled='true']) {
     background: rgba(59, 130, 246, 0.25);
     border-color: #3b82f6;
   }
 
-  .view-btn:disabled {
+  .view-btn:disabled,
+  .view-btn[aria-disabled='true'] {
     cursor: not-allowed;
     background: rgba(15, 23, 42, 0.4);
     border-color: rgba(148, 163, 184, 0.2);

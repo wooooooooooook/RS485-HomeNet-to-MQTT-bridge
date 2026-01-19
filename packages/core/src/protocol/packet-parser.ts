@@ -30,6 +30,7 @@ export class PacketParser {
   // Optimization: Use Uint8Array (0 or 1) for fast O(1) array access instead of Set.has()
   // This provides ~4x faster lookups in hot loops
   private validHeadersTable: Uint8Array | null = null;
+  private validHeaderCount: number = 0;
   private isStandard1Byte: boolean = false;
   private isStandard2Byte: boolean = false;
 
@@ -75,9 +76,11 @@ export class PacketParser {
     }
     if (this.defaults.rx_valid_headers && this.defaults.rx_valid_headers.length > 0) {
       this.validHeadersTable = new Uint8Array(256);
+      this.validHeaderCount = 0;
       for (const byte of this.defaults.rx_valid_headers) {
         if (byte >= 0 && byte <= 255) {
           this.validHeadersTable[byte] = 1;
+          this.validHeaderCount++;
         }
       }
     }
@@ -274,7 +277,14 @@ export class PacketParser {
           const headerLen = this.defaults.rx_header?.length || 0;
           const footerLen = this.defaults.rx_footer?.length || 0;
 
-          if (this.isStandard1Byte && !isBestinSum) {
+          // Optimization: Disable sliding window if we have a sparse validHeadersTable.
+          // If the validHeadersTable is sparse (few valid headers), we will skip most bytes.
+          // In this case, maintaining the sliding window checksum is overhead for skipped bytes.
+          // It's faster to skip (O(1)) and calculate full checksum on demand (O(Length)) when a valid header is found.
+          // Threshold 16 is empirically determined (256/16 = 16x skips per match).
+          const useSparseScan = this.validHeaderCount > 0 && this.validHeaderCount < 16;
+
+          if (!useSparseScan && this.isStandard1Byte && !isBestinSum) {
             useSlidingWindow = true;
             const isNoHeader =
               typeStr.includes('no_header') || isSamsungRx || isSamsungTx || isSamsungXor;
@@ -309,7 +319,7 @@ export class PacketParser {
                 }
               }
             }
-          } else if (this.isStandard2Byte) {
+          } else if (!useSparseScan && this.isStandard2Byte) {
             useSlidingWindow = true;
             // xor_add (checksum2)
             // Always includes header (no _no_header variant currently for checksum2)

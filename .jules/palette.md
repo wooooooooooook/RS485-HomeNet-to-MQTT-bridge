@@ -5,3 +5,7 @@
 ## 2024-05-24 - Editor Component Accessibility
 **Learning:** Code or configuration editors (textareas) often lack visible labels to maximize screen real estate. This makes them inaccessible to screen readers.
 **Action:** Use `aria-label` with a descriptive string (e.g. "Configuration Editor") and `aria-busy` for loading/saving states to ensure screen reader users understand the component's purpose and status.
+
+## 2026-01-19 - Tooltips on Disabled Buttons
+**Learning:** The native `disabled` attribute on buttons suppresses mouse events in most browsers, preventing `title` tooltips from appearing. Users often need to know *why* a button is disabled.
+**Action:** Use `aria-disabled="true"` instead of the `disabled` attribute when a tooltip explanation is required. Ensure click handlers manually check the disabled state and prevent action.

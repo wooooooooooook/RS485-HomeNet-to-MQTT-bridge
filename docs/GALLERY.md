@@ -148,7 +148,8 @@ entities:
 | `{{int_to_bcd(i)}}` | 정수 → BCD 변환 | `12` → `0x12` |
 | `{{bitAnd(i, 0x0F)}}` | 비트 AND | `0x1F` → `0x0F` |
 | `{{bitOr(i, 0x80)}}` | 비트 OR | `0x01` → `0x81` |
-| `{{bitXor(i, 0xFF)}}` | 비트 XOR (반전) | `0x00` → `0xFF` |
+| `{{bitXor(i, 0xFF)}}` | 비트 XOR | `0x00` → `0xFF` |
+| `{{bitNot(i)}}` | 비트 NOT | `0` → `-1` |
 | `{{bitShiftLeft(i, 4)}}` | 비트 Left Shift | `0x01` → `0x10` |
 | `{{bitShiftRight(i, 4)}}` | 비트 Right Shift | `0x10` → `0x01` |
 

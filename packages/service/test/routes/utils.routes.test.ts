@@ -37,11 +37,9 @@ describe('Utils Routes', () => {
   });
 
   it('should return 400 for empty script', async () => {
-    const response = await request(app)
-      .post('/api/cel/evaluate')
-      .send({
-        script: '',
-      });
+    const response = await request(app).post('/api/cel/evaluate').send({
+      script: '',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('script must be a non-empty string');
@@ -49,11 +47,9 @@ describe('Utils Routes', () => {
 
   it('should return 400 for script exceeding max length', async () => {
     const longScript = 'a'.repeat(2049);
-    const response = await request(app)
-      .post('/api/cel/evaluate')
-      .send({
-        script: longScript,
-      });
+    const response = await request(app).post('/api/cel/evaluate').send({
+      script: longScript,
+    });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('Script length exceeds limit');
@@ -61,11 +57,9 @@ describe('Utils Routes', () => {
 
   it('should return 429 if rate limit exceeded', async () => {
     mockRateLimiter.check = vi.fn().mockReturnValue(false);
-    const response = await request(app)
-      .post('/api/cel/evaluate')
-      .send({
-        script: 'true',
-      });
+    const response = await request(app).post('/api/cel/evaluate').send({
+      script: 'true',
+    });
 
     expect(response.status).toBe(429);
   });

@@ -128,7 +128,7 @@ state_value:
 | `signed` | `boolean` | `false` | 부호 있는 정수로 인코딩할지 여부. |
 | `value_encode` | `DecodeEncodeType` | `'none'` | `bcd`, `ascii`, `signed_byte_half_degree` 등. |
 | `multiply_factor` | `number` | `1` | 값에 곱할 계수. 예: `multiply_factor: 10`이면 `2.5` → `25`. |
-| `low_priority` | `boolean` | `false` | `true`면 일반 큐가 비어 있을 때만 전송합니다. |
+| `low_priority` | `boolean` | `false` | `true`면 일반 큐가 비어 있을 때만 전송합니다. (Schedule 트리거 사용 시 기본값 `true`로 강제됨) |
 | `script` | `string` | - | 재사용 가능한 스크립트 ID 참조. [SCRIPTS.md](../SCRIPTS.md) 참고. |
 
 ### ACK 동작 방식

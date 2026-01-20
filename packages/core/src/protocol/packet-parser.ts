@@ -338,7 +338,10 @@ export class PacketParser {
 
           while (currentOffset <= maxOffset) {
             // Optimization: Check header first before expensive checksum
-            if (this.validHeadersTable && this.validHeadersTable[this.buffer[currentOffset]] === 0) {
+            if (
+              this.validHeadersTable &&
+              this.validHeadersTable[this.buffer[currentOffset]] === 0
+            ) {
               // Even if we skip, we MUST update the sliding window checksum for the shift
               if (useSlidingWindow) {
                 const leavingByte = this.buffer[currentOffset + windowStartRel];
@@ -459,7 +462,10 @@ export class PacketParser {
 
         if (bufferLength >= minLen && this.footerBuffer) {
           // Optimization: Check header first to skip invalid start bytes immediately
-          if (this.validHeadersTable && this.validHeadersTable[this.buffer[this.readOffset]] === 0) {
+          if (
+            this.validHeadersTable &&
+            this.validHeadersTable[this.buffer[this.readOffset]] === 0
+          ) {
             this.consumeBytes(1);
             this.lastScannedLength = 0;
             continue;
@@ -581,7 +587,10 @@ export class PacketParser {
         const minLen = headerLen + checksumLen;
         if (checksumLen > 0 && bufferLength >= minLen) {
           // Optimization: Pre-check valid headers to avoid expensive calculations and skip invalid starts immediately
-          if (this.validHeadersTable && this.validHeadersTable[this.buffer[this.readOffset]] === 0) {
+          if (
+            this.validHeadersTable &&
+            this.validHeadersTable[this.buffer[this.readOffset]] === 0
+          ) {
             this.consumeBytes(1);
             this.lastScannedLength = 0;
             continue;

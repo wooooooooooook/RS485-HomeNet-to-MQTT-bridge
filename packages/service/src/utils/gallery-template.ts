@@ -65,7 +65,6 @@ const TEMPLATE_EXPRESSION = /{{\s*([^}]+)\s*}}/g;
 function resolveParameterValues(
   definitions: GalleryParameterDefinition[] | undefined,
   providedValues: Record<string, unknown> | undefined,
-  discoveryResult?: DiscoveryResult,
 ): Record<string, unknown> {
   if (!definitions || definitions.length === 0) return {};
 
@@ -346,7 +345,7 @@ export function expandGalleryTemplate(
   parameterValues?: Record<string, unknown>,
   discoveryResult?: DiscoveryResult,
 ): GallerySnippet {
-  const parameters = resolveParameterValues(snippet.parameters, parameterValues, discoveryResult);
+  const parameters = resolveParameterValues(snippet.parameters, parameterValues);
   const context = { ...parameters };
 
   const expandedEntities = snippet.entities

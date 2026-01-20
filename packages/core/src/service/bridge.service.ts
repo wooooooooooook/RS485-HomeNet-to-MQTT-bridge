@@ -2,7 +2,6 @@
 
 import { Duplex } from 'stream';
 import mqtt from 'mqtt';
-import { performance } from 'node:perf_hooks';
 
 import { logger } from '../utils/logger.js';
 import {

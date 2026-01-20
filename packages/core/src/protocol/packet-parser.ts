@@ -266,13 +266,6 @@ export class PacketParser {
             !isSamsungTx &&
             !isSamsungXor &&
             !isBestinSum;
-          const isXor =
-            typeStr &&
-            typeStr.startsWith('xor') &&
-            !isSamsungRx &&
-            !isSamsungTx &&
-            !isSamsungXor &&
-            !isBestinSum;
 
           const headerLen = this.defaults.rx_header?.length || 0;
           const footerLen = this.defaults.rx_footer?.length || 0;

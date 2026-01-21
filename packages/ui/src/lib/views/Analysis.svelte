@@ -13,6 +13,13 @@
   import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
 
+  type AnalyzerStateOption = {
+    id: string;
+    label: string;
+    state: Record<string, unknown>;
+    portId?: string;
+  };
+
   let {
     stats,
     parsedPackets, // Legacy prop, kept for compatibility if needed elsewhere
@@ -31,6 +38,8 @@
     logRetentionEnabled,
     parsedLogs = [],
     commandLogs = [],
+    statesSnapshot,
+    stateOptions,
   }: {
     stats: PacketStatsType | null;
     parsedPackets: ParsedPacket[];
@@ -49,6 +58,8 @@
     logRetentionEnabled: boolean;
     parsedLogs: PacketLogEntry[];
     commandLogs: CommandLogEntry[];
+    statesSnapshot: Record<string, Record<string, unknown>>;
+    stateOptions: AnalyzerStateOption[];
   } = $props();
   const portIds = $derived.by<string[]>(() =>
     portMetadata.map((port: BridgeSerialInfo & { configFile: string }) => port.portId),
@@ -73,7 +84,7 @@
   {#if logRetentionEnabled}
     <PacketDictionaryView portId={activePortId} />
   {/if}
-  <CelAnalyzerCard />
+  <CelAnalyzerCard {statesSnapshot} {stateOptions} />
 </div>
 
 <style>

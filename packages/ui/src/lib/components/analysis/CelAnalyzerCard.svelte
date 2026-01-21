@@ -2,6 +2,12 @@
   import { t } from 'svelte-i18n';
 
   type ModeValue = 'state' | 'command' | 'automation' | 'checksum';
+  type AnalyzerStateOption = {
+    id: string;
+    label: string;
+    state: Record<string, unknown>;
+    portId?: string;
+  };
 
   const modes: { value: ModeValue; label: string; hint: string }[] = [
     {
@@ -26,6 +32,11 @@
     },
   ];
 
+  let { statesSnapshot, stateOptions } = $props<{
+    statesSnapshot: Record<string, Record<string, unknown>>;
+    stateOptions: AnalyzerStateOption[];
+  }>();
+
   let mode = $state<ModeValue>('state');
   let expression = $state('');
   let dataInput = $state('');
@@ -34,9 +45,20 @@
   let stateInput = $state('');
   let statesInput = $state('');
   let triggerInput = $state('');
+  let selectedStateId = $state('');
   let result = $state<string | null>(null);
   let error = $state<string | null>(null);
   let isLoading = $state(false);
+
+  const hasStateOptions = $derived.by(() => stateOptions.length > 0);
+  const hasStatesSnapshot = $derived.by(() => Object.keys(statesSnapshot).length > 0);
+
+  $effect(() => {
+    if (!selectedStateId) return;
+    if (!stateOptions.some((option: AnalyzerStateOption) => option.id === selectedStateId)) {
+      selectedStateId = '';
+    }
+  });
 
   const formatResult = (value: unknown) => {
     if (value === undefined) return 'undefined';
@@ -134,6 +156,19 @@
       throw new Error($t('analysis.cel_analyzer.invalid_number'));
     }
     return value;
+  };
+
+  const handleLoadStates = () => {
+    error = null;
+    if (!hasStatesSnapshot) return;
+    statesInput = JSON.stringify(statesSnapshot, null, 2);
+  };
+
+  const handleLoadState = () => {
+    error = null;
+    const target = stateOptions.find((option: AnalyzerStateOption) => option.id === selectedStateId);
+    if (!target) return;
+    stateInput = JSON.stringify(target.state, null, 2);
   };
 
   const handleEvaluate = async () => {
@@ -259,6 +294,22 @@
           bind:value={stateInput}
           placeholder={$t('analysis.cel_analyzer.state_placeholder')}
         ></textarea>
+        <div class="inline-actions">
+          <select bind:value={selectedStateId} disabled={!hasStateOptions}>
+            <option value="" disabled>{$t('analysis.cel_analyzer.state_select_placeholder')}</option>
+            {#each stateOptions as option (option.id)}
+              <option value={option.id}>{option.label}</option>
+            {/each}
+          </select>
+          <button
+            type="button"
+            class="ghost"
+            onclick={handleLoadState}
+            disabled={!selectedStateId}
+          >
+            {$t('analysis.cel_analyzer.state_fetch')}
+          </button>
+        </div>
       </label>
       <label>
         <span class="label">{$t('analysis.cel_analyzer.states_label')}</span>
@@ -267,6 +318,14 @@
           bind:value={statesInput}
           placeholder={$t('analysis.cel_analyzer.states_placeholder')}
         ></textarea>
+        <button
+          type="button"
+          class="ghost"
+          onclick={handleLoadStates}
+          disabled={!hasStatesSnapshot}
+        >
+          {$t('analysis.cel_analyzer.states_fetch')}
+        </button>
       </label>
       <label>
         <span class="label">{$t('analysis.cel_analyzer.trigger_label')}</span>
@@ -393,11 +452,33 @@
     font-size: 0.78rem;
   }
 
+  .inline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
   .action-row {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
+  }
+
+  .ghost {
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .primary {

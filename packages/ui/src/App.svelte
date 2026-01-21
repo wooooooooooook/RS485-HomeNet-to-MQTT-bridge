@@ -313,7 +313,15 @@
   });
 
   type DeviceStateEntry = { payload: string; portId?: string };
+  type ParsedStateEntry = { entityId: string; state: Record<string, unknown>; portId?: string };
+  type AnalyzerStateOption = {
+    id: string;
+    label: string;
+    state: Record<string, unknown>;
+    portId?: string;
+  };
   let deviceStates = $state(new Map<string, DeviceStateEntry>());
+  let parsedStates = $state(new Map<string, ParsedStateEntry>());
   let socket = $state<WebSocket | null>(null);
   let isSocketOpen = $state(false); // WebSocket 연결 상태 (UI-서버 간 실시간 통신용)
   let mqttConnectionStatus = $state<'idle' | 'connecting' | 'connected' | 'error'>('idle'); // MQTT 브로커 연결 상태
@@ -670,6 +678,7 @@
       bridgeStatusByPort = new Map();
       rawPackets = [];
       deviceStates.clear();
+      parsedStates.clear();
       entityErrorsByKey = new Map();
       packetStatsByPort = new Map();
 
@@ -1024,11 +1033,22 @@
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
+      const portId = getExplicitPortId(data.portId, data.topic);
       deviceStates.set(data.topic, {
         payload: data.payload,
-        portId: getExplicitPortId(data.portId, data.topic),
+        portId,
       });
       deviceStates = new Map(deviceStates);
+      if (data.state && typeof data.state === 'object' && !Array.isArray(data.state)) {
+        const entityId = extractEntityIdFromTopic(data.topic);
+        const stateKey = makeEntityKey(portId, entityId, 'entity');
+        parsedStates.set(stateKey, {
+          entityId,
+          portId,
+          state: data.state as Record<string, unknown>,
+        });
+        parsedStates = new Map(parsedStates);
+      }
 
       if (!isToastEnabled('state')) return;
 
@@ -1550,6 +1570,51 @@
     return availablePortIds[0] ?? null;
   });
 
+  const isMultiPortAnalysis = $derived.by<boolean>(
+    () => !activePortId && availablePortIds.length > 1,
+  );
+
+  const getAnalyzerStateKey = (portId: string | undefined, entityId: string) =>
+    isMultiPortAnalysis ? `${portId ?? 'unknown'}:${entityId}` : entityId;
+
+  const analysisStateSnapshot = $derived.by<Record<string, Record<string, unknown>>>(() => {
+    const snapshot: Record<string, Record<string, unknown>> = {};
+    for (const entry of parsedStates.values()) {
+      if (activePortId && entry.portId && entry.portId !== activePortId) continue;
+      const key = getAnalyzerStateKey(entry.portId, entry.entityId);
+      snapshot[key] = entry.state;
+    }
+    return snapshot;
+  });
+
+  const analysisStateOptions = $derived.by<AnalyzerStateOption[]>(() => {
+    const labelMap = new Map<string, string>();
+    for (const entity of allUnifiedEntities) {
+      if (entity.category !== 'entity') continue;
+      if (activePortId && entity.portId && entity.portId !== activePortId) continue;
+      const key = getAnalyzerStateKey(entity.portId, entity.id);
+      const label =
+        isMultiPortAnalysis && entity.portId
+          ? `${entity.displayName} (${entity.portId})`
+          : entity.displayName;
+      labelMap.set(key, label);
+    }
+
+    const options: AnalyzerStateOption[] = [];
+    for (const entry of parsedStates.values()) {
+      if (activePortId && entry.portId && entry.portId !== activePortId) continue;
+      const key = getAnalyzerStateKey(entry.portId, entry.entityId);
+      options.push({
+        id: key,
+        label: labelMap.get(key) ?? entry.entityId,
+        state: entry.state,
+        portId: entry.portId,
+      });
+    }
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  });
+
   $effect(() => {
     if (availablePortIds.length === 0) {
       selectedPortId = null;
@@ -1808,6 +1873,8 @@
             {isStreaming}
             {portMetadata}
             {activePortId}
+            stateOptions={analysisStateOptions}
+            statesSnapshot={analysisStateSnapshot}
             onStart={handleRawRecordingStart}
             bind:validOnly={validRawPacketsOnly}
             bind:isRecording

@@ -263,7 +263,7 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 
 ```yaml
 - action: if
-  condition: "states['sensor_temp']['value'] < 18"
+  condition: "get_from_states('sensor_temp', 'value') < 18"
   then:
     - action: command
       target: id(heater_1).command_on()
@@ -279,15 +279,15 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 ```yaml
 - action: choose
   choices:
-    - condition: "states['door_state']['state'] == 'D_IDLE'"
+    - condition: "get_from_states('door_state', 'state') == 'D_IDLE'"
       then:
         - action: send_packet
           data: [0xB0, 0x41, 0x00]
-    - condition: "states['door_state']['state'] == 'D_CALL'"
+    - condition: "get_from_states('door_state', 'state') == 'D_CALL'"
       then:
         - action: send_packet
           data: [0xB0, 0x36, 0x01]
-    - condition: "states['door_state']['state'] == 'D_OPEN'"
+    - condition: "get_from_states('door_state', 'state') == 'D_OPEN'"
       then:
         - action: send_packet
           data: [0xB0, 0x3B, 0x00]
@@ -304,7 +304,7 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 
 ```yaml
 - action: if
-  condition: "states['safety_mode']['state'] == 'on'"
+  condition: "get_from_states('safety_mode', 'state') == 'on'"
   then:
     - action: stop
       reason: '안전 모드에서는 실행하지 않음' # 선택사항 - 로그에 기록됨
@@ -338,7 +338,7 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 
 ```yaml
 - action: repeat
-  while: "states['switch_1']['power'] == 'on'"
+  while: "get_from_states('switch_1', 'power') == 'on'"
   max: 10 # 안전을 위한 최대 횟수 (필수, 기본값: 100)
   actions:
     - action: send_packet
@@ -355,7 +355,7 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 
 ```yaml
 - action: wait_until
-  condition: "states['binary_sensor_1']['state'] == 'off'"
+  condition: "get_from_states('binary_sensor_1', 'state') == 'off'"
   timeout: 5s # 선택사항. 기본값: 30s
   check_interval: 200 # 선택사항. 폴링 간격(ms). 기본값: 100ms
 ```
@@ -364,7 +364,7 @@ CEL 표현식을 평가하여 조건에 따라 다른 액션을 실행합니다.
 
 ```yaml
 - action: wait_until
-  condition: "states['doorbell']['state'] == 'off'"
+  condition: "get_from_states('doorbell', 'state') == 'off'"
   timeout: 10s
 - action: delay
   milliseconds: 1000
@@ -385,7 +385,7 @@ automation:
       - type: state
         entity_id: sensor_lux
     # 조도 센서 값이 100 미만일 때만 실행
-    guard: "states['sensor_lux']['illuminance'] < 100"
+    guard: "get_from_states('sensor_lux', 'illuminance') < 100"
     then:
       - action: command
         target: id(light_1).command_on()
@@ -435,7 +435,7 @@ automation:
   level: info
   message: '자동화 시작: 조도 값 확인'
 - action: if
-  condition: "states['sensor_lux']['illuminance'] < 100"
+  condition: "get_from_states('sensor_lux', 'illuminance') < 100"
   then:
     - action: log
       message: '조건 충족: 조명 켜기 실행'

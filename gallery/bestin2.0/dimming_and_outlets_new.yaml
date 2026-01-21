@@ -7,7 +7,7 @@ meta:
   description_en: >- 
     Bestin2.0 dimming light and outlet configuration. You can configure room count and lights/outlets per room.
     If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin2.0"]
 
@@ -50,7 +50,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "get_from_state('number') != null ? bitAnd(int(get_from_state('number')) + 1, 0xFF) : 0"
 
     - id: "make_light_packet"
       name: "Light Packet Make"
@@ -67,7 +67,7 @@ entities:
           data: >- 
             [bitOr(0x30, args.room_number),
             0x0E, 0x21, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0), 
             0x01, 0x00, 
             int(args.position), int(has(args.ONOFF)?args.ONOFF:1), 
             int(has(args.BRIGHTNESS)?args.BRIGHTNESS:0xFF), 
@@ -92,7 +92,7 @@ entities:
         - action: send_packet
           data: >- 
             [bitOr(0x30, args.room_number), 0x09, 0x22, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0), 
             0x01, 
             int(args.position), 
             int(args.ONOFF)]

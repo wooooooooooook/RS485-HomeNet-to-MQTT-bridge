@@ -5,7 +5,7 @@ meta:
     Bestin general gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.
   description_en: >- 
     Bestin general gateway light and outlet. You can specify lights/outlets per room.
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin"]
 
@@ -52,7 +52,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "get_from_state('number') != null ? bitAnd(int(get_from_state('number')) + 1, 0xFF) : 0"
 
     - id: "make_light_packet"
       name: "Light Packet Make"
@@ -66,7 +66,7 @@ entities:
         - action: send_packet
           data: >- 
             [0x31, 0x0D, 0x01, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0), 
             int(args.room_number),
             int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
             0x00, 0x00, 0x00, 0x00,
@@ -90,7 +90,7 @@ entities:
         - action: send_packet
           data: >- 
             [0x31, 0x0D, 0x01, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0), 
             int(args.room_number),
             0x00,
             int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
@@ -114,7 +114,7 @@ entities:
         - action: send_packet
           data: >- 
             [0x31, 0x0D, 0x01, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0), 
             int(args.room_number),
             0x00, 0x00,
             int(args.ONOFF ? 0x83 : 0x03),

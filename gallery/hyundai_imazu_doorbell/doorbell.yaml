@@ -3,7 +3,7 @@ meta:
   name_en: "Doorbell Set"
   description: "현대 이마주 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다. 주방폰에 baud_rate 3880으로 연결이 필요하다고 생각됩니다."
   description_en: "Hyundai Imazu doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances. It is thought that it needs to connect to the kitchen phone with baud_rate 3880."
-  version: "1.0.0"
+  version: "1.1.0"
   author: "wooooooooooook"
   tags: ["doorbell", "hyundai", "switch", "button"]
 
@@ -130,7 +130,7 @@ automation:
         to: 'on'
     then:
       - action: if
-        condition: "states['doorbell_auto_open_common']['state'] == 'on'"
+        condition: "get_from_states('doorbell_auto_open_common', 'state') == 'on'"
         then:
           - action: delay
             milliseconds: 5000
@@ -154,7 +154,7 @@ automation:
         to: 'on'
     then:
       - action: if
-        condition: "states['doorbell_auto_open_private']['state'] == 'on'"
+        condition: "get_from_states('doorbell_auto_open_private', 'state') == 'on'"
         then:
           - action: delay
             milliseconds: 5000

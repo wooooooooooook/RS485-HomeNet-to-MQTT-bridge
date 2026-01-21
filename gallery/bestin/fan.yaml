@@ -3,7 +3,7 @@ meta:
   name_en: "Bestin Ventilation Fan"
   description: "Bestin 환기팬 설정입니다. 3단 속도(약/중/강)와 자연환기 모드를 지원합니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin ventilation fan with 3-speed control and natural ventilation mode. bestin1.0 bestin2.0 common."
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["fan", "ventilation", "bestin"]
 
@@ -20,7 +20,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "get_from_state('number') != null ? bitAnd(int(get_from_state('number')) + 1, 0xFF) : 0"
 
     - id: "make_fan_packet"
       name: "Fan Packet Make"
@@ -34,7 +34,7 @@ entities:
           data: >-
             [0x61,
             int(args.command_type),
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0),
             0x00,
             args.command_type == 0x03 ? 0x00 : int(args.value),
             args.command_type == 0x03 ? int(args.value) : (args.command_type == 0x01 ? 0x01 : 0x00),

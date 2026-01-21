@@ -5,7 +5,7 @@ meta:
     Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다.
   description_en: >- 
     Bestin aio gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets.
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin"]
 
@@ -17,7 +17,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "get_from_state('number') != null ? bitAnd(int(get_from_state('number')) + 1, 0xFF) : 0"
 
     - id: "make_light_packet"
       name: "Light Packet Make"
@@ -43,7 +43,7 @@ entities:
             [0x02, 
             int(0x50 + args.room_number),
             0x0A, 0x12,
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0),
             int(args.ONOFF ? 0x01 : 0x00),
             int(args.position == 4 ? 0x10 : bitShiftLeft(0x01, args.position)),
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -79,7 +79,7 @@ entities:
             [0x02, 
             int(0x50 + args.room_number),
             0x0C, 0x12,
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number') != null ? get_from_states('sequence_number', 'number') : 0),
             0x00, 0x00, 0x00,
             0x01,
             int(args.position + 1),

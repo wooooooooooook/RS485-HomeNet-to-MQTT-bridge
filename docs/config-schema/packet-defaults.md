@@ -64,7 +64,7 @@
 > 예: `rx_checksum: "data[0] + data[1]"`
 >
 > **사용 가능한 컨텍스트 변수**:
-> * `data`: 패킷 데이터 (List of int)
+> * `data`: 패킷 데이터 (List of int, 헤더 포함)
 > * `len`: 패킷 길이 (int)
 > * 상세 내용은 [CEL 가이드](../CEL_GUIDE.md#6-체크섬-계산-rx_checksum-tx_checksum)를 참고하세요.
 

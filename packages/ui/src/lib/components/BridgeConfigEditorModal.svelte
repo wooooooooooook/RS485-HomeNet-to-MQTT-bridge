@@ -90,6 +90,8 @@
       handleSave(false);
     }
   };
+
+  const hintId = `editor-hint-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -127,12 +129,15 @@
         bind:value={content}
         spellcheck="false"
         disabled={isLoading}
+        aria-label={$t('settings.bridge_config.edit_title')}
+        aria-describedby={hintId}
+        aria-busy={isLoading || isSaving}
         placeholder="homenet_bridge:
   serial:
     ..."
       ></textarea>
 
-      <div class="editor-hint">
+      <div id={hintId} class="editor-hint">
         {$t('settings.bridge_config.edit_hint')}
       </div>
     </div>

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-18T12:30:10.311Z",
+  "generated_at": "2026-01-21T01:14:16.623Z",
   "vendors": [
     {
       "id": "bestin",
@@ -3113,9 +3113,9 @@
           "file": "kocom/lights_new.yaml",
           "name": "조명 설정",
           "name_en": "Lights",
-          "description": "코콤 조명 설정입니다. 방 개수를 설정할 수 있으며, 방당 2개 조명이 생성됩니다.",
-          "description_en": "Kocom lights configuration. Configure room count, with 2 lights per room.",
-          "version": "2.0.0",
+          "description": "코콤 조명 설정입니다. 방별 조명 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.15.0 이상에서 사용 가능합니다.",
+          "description_en": "Kocom lights configuration. Configure light count per room (max 4). Available from v1.15.0.",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -3124,18 +3124,43 @@
           "parameters": [
             {
               "name": "rooms",
-              "type": "integer[]",
-              "label": "방 번호 목록",
-              "label_en": "Room ID List",
+              "type": "object[]",
+              "label": "방 설정",
+              "label_en": "Room Configuration",
               "default": [
-                0,
-                1,
-                2,
-                3
+                {
+                  "room_idx": 0,
+                  "light_count": 3
+                },
+                {
+                  "room_idx": 1,
+                  "light_count": 2
+                },
+                {
+                  "room_idx": 2,
+                  "light_count": 2
+                },
+                {
+                  "room_idx": 3,
+                  "light_count": 2
+                }
               ],
               "schema": {
-                "min": 0,
-                "max": 15
+                "properties": {
+                  "room_idx": {
+                    "type": "integer",
+                    "label": "방 번호",
+                    "min": 0,
+                    "max": 15
+                  },
+                  "light_count": {
+                    "type": "integer",
+                    "label": "조명 개수",
+                    "default": 2,
+                    "min": 1,
+                    "max": 4
+                  }
+                }
               }
             }
           ],
@@ -3143,7 +3168,7 @@
             "entities": {
               "light": 1
             },
-            "automations": 0,
+            "automations": 1,
             "scripts": 0
           },
           "discovery": {
@@ -3164,11 +3189,101 @@
             "dimensions": [
               {
                 "parameter": "room_idx",
-                "offset": 4
+                "offset": 6
               }
             ],
             "inference": {
-              "strategy": "count",
+              "strategy": "unique_tuples",
+              "output": "rooms"
+            }
+          }
+        },
+        {
+          "file": "kocom/outlets.yaml",
+          "name": "콘센트 설정",
+          "name_en": "Outlets",
+          "description": "코콤 콘센트 설정입니다. 방별 콘센트 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.15.0 이상에서 사용 가능합니다.",
+          "description_en": "Kocom outlets configuration. Configure outlet count per room (max 4). Available from v1.15.0.",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "switch",
+            "outlet",
+            "kocom"
+          ],
+          "parameters": [
+            {
+              "name": "rooms",
+              "type": "object[]",
+              "label": "방 설정",
+              "label_en": "Room Configuration",
+              "default": [
+                {
+                  "room_idx": 0,
+                  "outlet_count": 2
+                },
+                {
+                  "room_idx": 1,
+                  "outlet_count": 2
+                },
+                {
+                  "room_idx": 2,
+                  "outlet_count": 2
+                },
+                {
+                  "room_idx": 3,
+                  "outlet_count": 2
+                }
+              ],
+              "schema": {
+                "properties": {
+                  "room_idx": {
+                    "type": "integer",
+                    "label": "방 번호",
+                    "min": 0,
+                    "max": 15
+                  },
+                  "outlet_count": {
+                    "type": "integer",
+                    "label": "콘센트 개수",
+                    "default": 2,
+                    "min": 1,
+                    "max": 4
+                  }
+                }
+              }
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "switch": 1
+            },
+            "automations": 1,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                59
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "room_idx",
+                "offset": 6
+              }
+            ],
+            "inference": {
+              "strategy": "unique_tuples",
               "output": "rooms"
             }
           }

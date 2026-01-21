@@ -41,6 +41,8 @@ interface ScriptCacheEntry {
   usesTrigger: boolean;
   usesArgs: boolean;
   usesLen: boolean;
+  usesGetFromState: boolean;
+  usesGetFromStates: boolean;
 }
 
 /**
@@ -141,6 +143,8 @@ export class CelExecutor {
   // Cache for parsed scripts to avoid expensive re-parsing
   private scriptCache: Map<string, ScriptCacheEntry> = new Map();
   private readonly MAX_CACHE_SIZE = 1000;
+  private currentStateContext?: Record<string, any>;
+  private currentStatesContext?: Record<string, any>;
 
   // Pre-allocate BigInts for bytes 0-255 to avoid constructor overhead in hot paths
   private readonly BIGINT_CACHE: bigint[] = new Array(256).fill(0).map((_, i) => BigInt(i));
@@ -205,6 +209,12 @@ export class CelExecutor {
     this.env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
     this.env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
     this.env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
+    this.env.registerFunction('get_from_states(string, string): dyn', (entityId: string, key: string) =>
+      this.getFromStates(entityId, key),
+    );
+    this.env.registerFunction('get_from_state(string): dyn', (key: string) =>
+      this.getFromState(key),
+    );
   }
 
   /**
@@ -239,8 +249,10 @@ export class CelExecutor {
       execute: (contextData: Record<string, any>) => {
         try {
           const safeContext = this.createSafeContext(contextData, entry);
-          const res = entry.parsed(safeContext);
-          return this.convertResult(res);
+          return this.runWithContext(safeContext, () => {
+            const res = entry.parsed(safeContext);
+            return this.convertResult(res);
+          });
         } catch (error) {
           this.handleError(error, script);
           return null;
@@ -248,8 +260,10 @@ export class CelExecutor {
       },
       executeRaw: (contextData: Record<string, any>) => {
         try {
-          const res = entry.parsed(contextData);
-          return this.convertResult(res);
+          return this.runWithContext(contextData, () => {
+            const res = entry.parsed(contextData);
+            return this.convertResult(res);
+          });
         } catch (error) {
           this.handleError(error, script);
           return null;
@@ -258,8 +272,10 @@ export class CelExecutor {
       executeWithDiagnostics: (contextData: Record<string, any>) => {
         try {
           const safeContext = this.createSafeContext(contextData, entry);
-          const res = entry.parsed(safeContext);
-          return { result: this.convertResult(res) };
+          return this.runWithContext(safeContext, () => {
+            const res = entry.parsed(safeContext);
+            return { result: this.convertResult(res) };
+          });
         } catch (error) {
           const errorMessage = this.handleError(error, script);
           return { result: null, error: errorMessage };
@@ -302,10 +318,12 @@ export class CelExecutor {
       const safeContext = this.createSafeContext(contextData, entry);
 
       // Execute using cached script function
-      const res = entry.parsed(safeContext);
+      return this.runWithContext(safeContext, () => {
+        const res = entry.parsed(safeContext);
 
-      // Post-process result: Convert BigInt back to Number, List to Array
-      return { result: this.convertResult(res) };
+        // Post-process result: Convert BigInt back to Number, List to Array
+        return { result: this.convertResult(res) };
+      });
     } catch (error) {
       const errorMessage = this.handleError(error, script);
       return { result: null, error: errorMessage };
@@ -327,8 +345,20 @@ export class CelExecutor {
       const usesTrigger = script.includes('trigger');
       const usesArgs = script.includes('args');
       const usesLen = script.includes('len');
+      const usesGetFromState = script.includes('get_from_state');
+      const usesGetFromStates = script.includes('get_from_states');
 
-      entry = { parsed, usesData, usesState, usesStates, usesTrigger, usesArgs, usesLen };
+      entry = {
+        parsed,
+        usesData,
+        usesState,
+        usesStates,
+        usesTrigger,
+        usesArgs,
+        usesLen,
+        usesGetFromState,
+        usesGetFromStates,
+      };
       this.scriptCache.set(script, entry);
     }
     return entry;
@@ -377,11 +407,11 @@ export class CelExecutor {
 
     // Optimization: Only create objects for complex types if the script actually uses them.
     // This saves 3-4 object allocations per execution in hot paths (like packet parsing).
-    if (entry.usesState) {
+    if (entry.usesState || entry.usesGetFromState) {
       safeContext.state = contextData.state || {};
     }
 
-    if (entry.usesStates) {
+    if (entry.usesStates || entry.usesGetFromStates) {
       safeContext.states = contextData.states || {};
     }
 
@@ -398,6 +428,58 @@ export class CelExecutor {
     }
 
     return safeContext;
+  }
+
+  private runWithContext<T>(contextData: Record<string, any>, action: () => T): T {
+    this.currentStateContext = this.normalizeMap(contextData.state);
+    this.currentStatesContext = this.normalizeMap(contextData.states);
+    try {
+      return action();
+    } finally {
+      this.currentStateContext = undefined;
+      this.currentStatesContext = undefined;
+    }
+  }
+
+  private normalizeMap(
+    value: Map<string, any> | Record<string, any> | undefined,
+  ): Record<string, any> | undefined {
+    if (!value) {
+      return undefined;
+    }
+    if (value instanceof Map) {
+      return Object.fromEntries(value);
+    }
+    if (typeof value === 'object') {
+      return value;
+    }
+    return undefined;
+  }
+
+  private getFromStates(entityId: string, key: string): any {
+    const states = this.currentStatesContext;
+    if (!states) {
+      return undefined;
+    }
+    const entity = states[entityId];
+    if (!entity || typeof entity !== 'object') {
+      return undefined;
+    }
+    if (!Object.prototype.hasOwnProperty.call(entity, key)) {
+      return undefined;
+    }
+    return entity[key];
+  }
+
+  private getFromState(key: string): any {
+    const state = this.currentStateContext;
+    if (!state || typeof state !== 'object') {
+      return undefined;
+    }
+    if (!Object.prototype.hasOwnProperty.call(state, key)) {
+      return undefined;
+    }
+    return state[key];
   }
 
   /**

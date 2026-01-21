@@ -63,6 +63,8 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 *   `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
 *   `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
 *   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `has(state.value)`)
+*   `get_from_states(entity_id, attribute)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `undefined`)
+*   `get_from_state(attribute)`: 현재 `state` 맵에서 속성을 안전하게 조회 (없으면 `undefined`)
 
 ## 사용 예시 (Config Examples)
 

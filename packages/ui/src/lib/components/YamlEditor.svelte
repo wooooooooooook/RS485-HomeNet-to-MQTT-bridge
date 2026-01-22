@@ -4,7 +4,8 @@
   import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
   import type { CompletionContext } from '@codemirror/autocomplete';
   import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-  import { indentUnit, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+  import { indentUnit, syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+  import { tags } from '@lezer/highlight';
   import { lintGutter, linter, type Diagnostic } from '@codemirror/lint';
   import { EditorState, Compartment } from '@codemirror/state';
   import { EditorView, keymap, highlightActiveLine, placeholder } from '@codemirror/view';
@@ -74,7 +75,7 @@
 
     if (doc.errors.length > 0) {
       doc.errors.forEach((error) => {
-        const pos = Array.isArray(error.pos) ? error.pos[0] : error.pos ?? 0;
+        const pos = Array.isArray(error.pos) ? error.pos[0] : (error.pos ?? 0);
         nextDiagnostics.push({
           from: Math.max(0, pos),
           to: Math.min(text.length, Math.max(0, pos + 1)),
@@ -276,42 +277,89 @@
 
     if (!data || typeof data !== 'object') return custom;
 
-    const bridge = data.homenet_bridge;
-    if (!bridge || typeof bridge !== 'object') {
-      custom.push({
-        from: 0,
-        to: Math.min(1, text.length),
-        severity: 'warning',
-        message: $t('editor.yaml_missing_bridge'),
-      });
-      return custom;
-    }
+    if (mode === 'bridge') {
+      const bridge = data.homenet_bridge;
+      if (!bridge || typeof bridge !== 'object') {
+        custom.push({
+          from: 0,
+          to: Math.min(1, text.length),
+          severity: 'warning',
+          message: $t('editor.yaml_missing_bridge'),
+        });
+        return custom;
+      }
 
-    if (bridge.serial && typeof bridge.serial === 'object' && !bridge.serial.path) {
-      const range = findRangeForPath(doc, '/homenet_bridge/serial');
-      custom.push({
-        from: range?.from ?? 0,
-        to: range?.to ?? Math.min(1, text.length),
-        severity: 'warning',
-        message: $t('editor.yaml_missing_serial_path'),
-      });
+      if (bridge.serial && typeof bridge.serial === 'object' && !bridge.serial.path) {
+        const range = findRangeForPath(doc, '/homenet_bridge/serial');
+        custom.push({
+          from: range?.from ?? 0,
+          to: range?.to ?? Math.min(1, text.length),
+          severity: 'warning',
+          message: $t('editor.yaml_missing_serial_path'),
+        });
+      }
     }
 
     return custom;
   };
 
+  const customHighlightStyle = HighlightStyle.define([
+    { tag: tags.keyword, color: '#ff79c6' },
+    {
+      tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
+      color: '#8be9fd',
+    },
+    { tag: [tags.function(tags.variableName), tags.labelName], color: '#50fa7b' },
+    { tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)], color: '#bd93f9' },
+    { tag: [tags.definition(tags.name), tags.separator], color: '#f8f8f2' },
+    {
+      tag: [
+        tags.typeName,
+        tags.className,
+        tags.number,
+        tags.changed,
+        tags.annotation,
+        tags.modifier,
+        tags.self,
+        tags.namespace,
+      ],
+      color: '#bd93f9',
+    },
+    {
+      tag: [
+        tags.operator,
+        tags.operatorKeyword,
+        tags.url,
+        tags.escape,
+        tags.regexp,
+        tags.link,
+        tags.special(tags.string),
+      ],
+      color: '#ff79c6',
+    },
+    { tag: [tags.meta, tags.comment], color: '#6272a4' },
+    { tag: tags.strong, fontWeight: 'bold' },
+    { tag: tags.emphasis, fontStyle: 'italic' },
+    { tag: tags.strikethrough, textDecoration: 'line-through' },
+    { tag: tags.link, color: '#6272a4', textDecoration: 'underline' },
+    { tag: tags.heading, fontWeight: 'bold', color: '#f1fa8c' },
+    { tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: '#bd93f9' },
+    { tag: [tags.processingInstruction, tags.string, tags.inserted], color: '#f1fa8c' },
+    { tag: tags.invalid, color: '#ff5555' },
+  ]);
+
   const theme = EditorView.theme(
     {
       '&': {
         height: '100%',
-        color: '#e2e8f0',
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        color: '#f8f8f2',
+        backgroundColor: '#282a36',
         borderRadius: '8px',
         border: '1px solid rgba(148, 163, 184, 0.2)',
         fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+        fontSize: '0.85rem',
       },
       '.cm-content': {
-        fontSize: '0.85rem',
         lineHeight: '1.6',
         padding: '1rem',
       },
@@ -319,20 +367,23 @@
         overflow: 'auto',
       },
       '.cm-gutters': {
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        backgroundColor: '#282a36',
         borderRight: '1px solid rgba(148, 163, 184, 0.15)',
-        color: '#94a3b8',
+        color: '#6272a4',
       },
       '.cm-activeLine': {
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        backgroundColor: 'rgba(68, 71, 90, 0.4)',
       },
       '.cm-activeLineGutter': {
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        backgroundColor: 'rgba(68, 71, 90, 0.4)',
       },
       '&.cm-focused': {
         outline: 'none',
         borderColor: 'rgba(59, 130, 246, 0.5)',
         boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+      },
+      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
+        backgroundColor: '#44475a',
       },
     },
     { dark: true },
@@ -353,7 +404,7 @@
         yamlLinter,
         autocompletion({ override: [completionSource] }),
         closeBrackets(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(customHighlightStyle, { fallback: true }),
         theme,
         editableCompartment.of(EditorView.editable.of(!disabled)),
         placeholderCompartment.of(placeholder(placeholderText ?? '')),

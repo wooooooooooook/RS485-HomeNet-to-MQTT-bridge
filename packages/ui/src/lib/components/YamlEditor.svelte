@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { t } from 'svelte-i18n';
-  import Ajv from 'ajv';
   import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
   import type { CompletionContext } from '@codemirror/autocomplete';
   import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -19,8 +18,8 @@
     packetDefaultKeys,
     serialKeys,
     serialValueSuggestions,
-    yamlConfigSchema,
   } from '../utils/yamlEditorConfig';
+  import validateYamlConfig from '../utils/yamlConfigValidator';
 
   let {
     value = $bindable(''),
@@ -45,8 +44,14 @@
   const editableCompartment = new Compartment();
   const placeholderCompartment = new Compartment();
 
-  const ajv = new Ajv({ allErrors: true, strict: false, allowUnionTypes: true });
-  const validateSchema = ajv.compile(yamlConfigSchema);
+  type SchemaValidationError = {
+    instancePath: string;
+    message?: string;
+  };
+
+  const schemaValidator = validateYamlConfig as typeof validateYamlConfig & {
+    errors?: SchemaValidationError[];
+  };
 
   const buildDiagnostics = (text: string) => {
     const doc = parseDocument(text, { prettyErrors: false });
@@ -66,10 +71,10 @@
     }
 
     const data = doc.toJS({});
-    const valid = validateSchema(data);
+    const valid = schemaValidator(data);
 
-    if (!valid && validateSchema.errors) {
-      validateSchema.errors.forEach((error) => {
+    if (!valid && schemaValidator.errors) {
+      schemaValidator.errors.forEach((error) => {
         const range = findRangeForPath(doc, error.instancePath);
         nextDiagnostics.push({
           from: range?.from ?? 0,

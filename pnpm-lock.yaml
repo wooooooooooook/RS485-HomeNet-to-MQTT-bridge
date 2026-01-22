@@ -162,9 +162,6 @@ importers:
       '@humanspeak/svelte-virtual-list':
         specifier: ^0.3.6
         version: 0.3.6(svelte@5.45.8)
-      ajv:
-        specifier: ^8.17.1
-        version: 8.17.1
       svelte:
         specifier: ^5.0.0
         version: 5.45.8
@@ -181,6 +178,9 @@ importers:
       '@tsconfig/svelte':
         specifier: ^5.0.3
         version: 5.0.5
+      ajv:
+        specifier: ^8.17.1
+        version: 8.17.1
       i18n-unused:
         specifier: ^0.19.0
         version: 0.19.0

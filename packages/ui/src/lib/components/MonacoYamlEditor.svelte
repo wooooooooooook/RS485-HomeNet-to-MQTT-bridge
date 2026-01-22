@@ -39,6 +39,11 @@
 
       // Now import Monaco editor and configure yaml
       const monacoModule = await import('monaco-editor/esm/vs/editor/editor.api');
+      await import('monaco-editor/esm/vs/editor/contrib/hover/browser/hover');
+      await import('monaco-editor/esm/vs/editor/contrib/suggest/browser/suggest');
+      await import('monaco-editor/esm/vs/editor/contrib/wordHighlighter/browser/wordHighlighter');
+      await import('monaco-editor/esm/vs/editor/contrib/parameterHints/browser/parameterHints');
+      await import('monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution');
       const { configureMonacoYaml } = await import('monaco-yaml');
 
       const WIN = window as any;
@@ -86,6 +91,34 @@
   let modelChangeDisposable: IDisposable | null = null;
   let monaco: MonacoInstance | null = null;
   let isApplyingExternalChange = false;
+
+  const layoutEditor = async () => {
+    if (!editor || !editorHost) return;
+
+    const runLayout = () => {
+      if (!editor || !editorHost) return;
+      const { width, height } = editorHost.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        editor.layout();
+      }
+    };
+
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    await nextFrame();
+    await nextFrame();
+    runLayout();
+
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      try {
+        await document.fonts.ready;
+      } catch {
+        // ignore font loading failures and still attempt layout
+      }
+      await nextFrame();
+      runLayout();
+    }
+  };
 
   const initializeEditor = async () => {
     if (isLoading || isReady || !editorHost) return;
@@ -143,8 +176,8 @@
       existingModel.dispose();
     }
 
-    // Pass undefined as languageId to let Monaco detect it from the URI extension (.yaml)
-    const model = monacoModule.editor.createModel(props.value, undefined, modelUri);
+    // Explicitly set the language to ensure hover/suggest widgets are created for YAML
+    const model = monacoModule.editor.createModel(props.value, 'yaml', modelUri);
 
     editor = monacoModule.editor.create(editorHost, {
       model,
@@ -163,6 +196,9 @@
 
     // Ensure readOnly state is correct after creation
     editor.updateOptions({ readOnly: props.readOnly ?? false });
+    layoutEditor().catch((err) => {
+      console.warn('Failed to layout editor', err);
+    });
 
     modelChangeDisposable = editor.onDidChangeModelContent(() => {
       if (isApplyingExternalChange) return;
@@ -250,11 +286,18 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
+    touch-action: manipulation;
   }
 
   .monaco-host.ready {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .monaco-host,
+  .monaco-host * {
+    -webkit-user-select: text !important;
+    user-select: text !important;
   }
 
   .fallback-textarea {

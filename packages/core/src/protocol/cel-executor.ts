@@ -211,7 +211,7 @@ export class CelExecutor {
     this.env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
     this.env.registerFunction(
       'get_from_states(string, string): dyn',
-      (entityId: string, key: string) => this.getFromStates(entityId, key),
+      (entityId: string, key: string) => this.getFromStates(entityId, key) ?? null,
     );
     this.env.registerFunction(
       'get_from_states(string, string, dyn): dyn',
@@ -221,7 +221,7 @@ export class CelExecutor {
       },
     );
     this.env.registerFunction('get_from_state(string): dyn', (key: string) =>
-      this.getFromState(key),
+      this.getFromState(key) ?? null,
     );
     this.env.registerFunction('get_from_state(string, dyn): dyn', (key: string, fallback: any) => {
       const value = this.getFromState(key);

@@ -258,7 +258,7 @@ automation:
       - action: command
         target: id(door_state).command_set('D_BELL')
       - action: if
-        condition: "get_from_states('doorbell_auto_open_private', 'state') == 'on'"
+        condition: "get_from_states('doorbell_auto_open_private', 'state', 'off') == 'on'"
         then:
           - action: delay
             milliseconds: 2s
@@ -290,7 +290,7 @@ automation:
       - action: command
         target: id(door_state).command_set('D_BELL')
       - action: if
-        condition: "get_from_states('doorbell_auto_open_public', 'state') == 'on'"
+        condition: "get_from_states('doorbell_auto_open_public', 'state', 'off') == 'on'"
         then:
           - action: delay
             milliseconds: 2s

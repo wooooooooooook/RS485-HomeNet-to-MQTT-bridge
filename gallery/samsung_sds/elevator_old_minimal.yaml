@@ -24,7 +24,7 @@ automation:
         match:
           data: [0xAD, 0x41, 0x00, 0x6C]
           offset: 0
-    guard: "get_from_states('elevator_call', 'state') == 'on'"
+    guard: "get_from_states('elevator_call', 'state', 'off') == 'on'"
     then:
       - action: send_packet
         data: [0xB0, 0x2F, 0x01, 0x1E]

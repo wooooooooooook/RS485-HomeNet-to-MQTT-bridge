@@ -40,7 +40,7 @@ automation:
           offset: 0
     then:
       - action: send_packet
-        data: "get_from_states('elevator_call', 'state') == 'on' ? [0xB0, 0x10, 0x01, 0x01, 0x20] : [0xB0, 0x41, 0x01, 0x00, 0x70]"
+        data: "get_from_states('elevator_call', 'state', 'off') == 'on' ? [0xB0, 0x10, 0x01, 0x01, 0x20] : [0xB0, 0x41, 0x01, 0x00, 0x70]"
         checksum: false
       - action: delay
         milliseconds: 20s

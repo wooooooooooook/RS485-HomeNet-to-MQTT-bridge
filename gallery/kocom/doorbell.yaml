@@ -106,7 +106,7 @@ automation:
         to: 'on'
     then:
       - action: if
-        condition: "get_from_states('doorbell_auto_open_common', 'state') == 'on'"
+        condition: "get_from_states('doorbell_auto_open_common', 'state', 'off') == 'on'"
         then:
           - action: delay
             milliseconds: 1000
@@ -130,7 +130,7 @@ automation:
         to: 'on'
     then:
       - action: if
-        condition: "get_from_states('doorbell_auto_open_private', 'state') == 'on'"
+        condition: "get_from_states('doorbell_auto_open_private', 'state', 'off') == 'on'"
         then:
           - action: delay
             milliseconds: 1000

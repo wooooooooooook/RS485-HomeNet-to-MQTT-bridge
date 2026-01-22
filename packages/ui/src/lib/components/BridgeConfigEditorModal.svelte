@@ -226,7 +226,7 @@
     display: flex;
     flex-direction: column;
     padding: 1rem 1.5rem;
-    overflow: hidden;
+    /* overflow: hidden removed to allow monaco widgets to be visible */
     gap: 0.75rem;
   }
 
@@ -274,14 +274,13 @@
     line-height: 1.6;
     padding: 1rem;
     tab-size: 2;
-    overflow: hidden;
+    /* overflow: hidden removed to allow monaco widgets to be visible */
   }
 
   :global(.yaml-editor:focus-within) {
     border-color: rgba(59, 130, 246, 0.5);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
 
   .editor-hint {
     color: #64748b;

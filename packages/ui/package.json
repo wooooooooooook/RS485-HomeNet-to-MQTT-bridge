@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@humanspeak/svelte-virtual-list": "^0.3.6",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "0.44.0",
     "monaco-yaml": "^5.4.0",
     "svelte": "^5.0.0",
     "svelte-i18n": "^4.0.1"

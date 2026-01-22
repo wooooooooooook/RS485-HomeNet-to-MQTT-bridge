@@ -39,6 +39,11 @@
 
       // Now import Monaco editor and configure yaml
       const monacoModule = await import('monaco-editor/esm/vs/editor/editor.api');
+      await import('monaco-editor/esm/vs/editor/editor.main.css');
+      await import('monaco-editor/esm/vs/editor/contrib/hover/hover');
+      await import('monaco-editor/esm/vs/editor/contrib/suggest/suggest');
+      await import('monaco-editor/esm/vs/editor/contrib/wordHighlighter/wordHighlighter');
+      await import('monaco-editor/esm/vs/editor/contrib/parameterHints/parameterHints');
       await import('monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution');
       const { configureMonacoYaml } = await import('monaco-yaml');
 

@@ -39,6 +39,7 @@
 
       // Now import Monaco editor and configure yaml
       const monacoModule = await import('monaco-editor/esm/vs/editor/editor.api');
+      await import('monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution');
       const { configureMonacoYaml } = await import('monaco-yaml');
 
       const WIN = window as any;
@@ -143,8 +144,8 @@
       existingModel.dispose();
     }
 
-    // Pass undefined as languageId to let Monaco detect it from the URI extension (.yaml)
-    const model = monacoModule.editor.createModel(props.value, undefined, modelUri);
+    // Explicitly set the language to ensure hover/suggest widgets are created for YAML
+    const model = monacoModule.editor.createModel(props.value, 'yaml', modelUri);
 
     editor = monacoModule.editor.create(editorHost, {
       model,

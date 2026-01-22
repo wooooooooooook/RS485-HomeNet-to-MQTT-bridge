@@ -3,7 +3,7 @@ meta:
   name_en: "Elevator - New Style mode "
   description: "현관스위치 헤더가 CC인 신형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하고 사용해야합니다."
   description_en: "Samsung SDS elevator. Use with new-style doorbell with header CC. Remove doorbell and use."
-  version: "1.0.0"
+  version: "1.1.0"
   author: "wooooooooooook"
   tags: ["elevator", "switch", "samsung", "sds"]
 
@@ -39,7 +39,7 @@ automation:
           offset: 0
     then:
       - action: send_packet
-        data: "states['elevator_call']['state'] == 'on' ? [0xB0, 0x10, 0x01, 0x01, 0x20] : [0xB0, 0x41, 0x01, 0x00, 0x70]"
+        data: "get_from_states('elevator_call', 'state') == 'on' ? [0xB0, 0x10, 0x01, 0x01, 0x20] : [0xB0, 0x41, 0x01, 0x00, 0x70]"
         checksum: false
       - action: delay
         milliseconds: 20s

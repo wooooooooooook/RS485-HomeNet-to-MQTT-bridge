@@ -5,7 +5,7 @@ meta:
     Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.
   description_en: >- 
     Bestin aio gateway light and outlet. You can specify lights/outlets per room.
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin", "aio"]
 
@@ -49,7 +49,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "bitAnd(int(get_from_state('number', -1)) + 1, 0xFF)"
 
     - id: "make_light_packet"
       name: "Light Packet Make"
@@ -65,7 +65,7 @@ entities:
             [0x02, 
             int(0x50 + args.room_number),
             0x0A, 0x12,
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number', 0)),
             int(args.ONOFF ? 0x01 : 0x00),
             int(args.position == 4 ? 0x10 : bitShiftLeft(0x01, args.position)),
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -90,7 +90,7 @@ entities:
             [0x02, 
             int(0x50 + args.room_number),
             0x0C, 0x12,
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number', 0)),
             0x00, 0x00, 0x00,
             0x01,
             int(args.position + 1),

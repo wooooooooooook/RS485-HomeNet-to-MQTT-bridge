@@ -141,7 +141,7 @@ automation:
           offset: 0
     then:
       - action: send_packet
-        data: "states['elevator_call']['state'] == 'on' ? [0xB0, 0x2F, 0x01, 0x1E] : [0xB0, 0x41, 0x00, 0x71]"
+        data: "get_from_states('elevator_call', 'state') == 'on' ? [0xB0, 0x2F, 0x01, 0x1E] : [0xB0, 0x41, 0x00, 0x71]"
         checksum: false
       - action: delay
         milliseconds: 20s
@@ -211,7 +211,7 @@ automation:
       - action: command
         target: id(door_state).command_set('D_BELL')
       - action: if
-        condition: "states['doorbell_auto_open_private']['state'] == 'on'"
+        condition: "get_from_states('doorbell_auto_open_private', 'state') == 'on'"
         then:
           - action: delay
             milliseconds: 2s
@@ -232,14 +232,14 @@ automation:
           offset: 0
     then:
       - action: if
-        condition: "states['door_state']['state'] == 'D_CALL'"
+        condition: "get_from_states('door_state', 'state') == 'D_CALL'"
         then:
           - action: send_packet
             data: [0xB0, 0x36, 0x01]  # 개인현관 통화
             checksum: true
         else:
           - action: if
-            condition: "states['door_state']['state'] == 'D_OPEN'"
+            condition: "get_from_states('door_state', 'state') == 'D_OPEN'"
             then:
               - action: send_packet
                 data: [0xB0, 0x3B, 0x00]  # 개인현관 문열기

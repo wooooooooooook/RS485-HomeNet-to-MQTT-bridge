@@ -3,7 +3,7 @@ meta:
   name_en: "Bestin Gas Valve"
   description: "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin gas valve. bestin1.0 bestin2.0 common."
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["valve", "gas", "bestin"]
 
@@ -20,7 +20,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "bitAnd(int(get_from_state('number', -1)) + 1, 0xFF)"
 
     - id: "make_gas_packet"
       name: "Gas Valve Packet Make"
@@ -31,7 +31,7 @@ entities:
         - action: send_packet
           data: >-
             [0x31, 0x02,
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0),
+            int(get_from_states('sequence_number', 'number', 0)),
             0x00, 0x00, 0x00, 0x00, 0x00]
           ack: >-
             [0x31, 0x82]

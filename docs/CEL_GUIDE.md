@@ -28,7 +28,7 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 
 *   `data`: 수신된 패킷 데이터의 바이트 배열 (List of int). 예: `data[4]`
 *   `state`: 해당 장치의 현재 상태 맵 (Map). 키 이름은 `state_` 접두사를 제거한 값입니다. 예: `state_value` → `state['value']`, `state_temperature_target` → `state['temperature_target']`. `state['value']`는 이전 값이 없으면 `null`입니다.
-*   `states`: 전체 엔티티의 상태 맵 (Map). 예: `states['entity_id']['value']`
+*   `states`: 전체 엔티티의 상태 맵 (Map). 예: `states['entity_id']['value']` (안전하게 사용하려면 `get_from_states('entity_id', 'value')` 권장)
 
 ### 2. 명령 생성 (`command_*`)
 
@@ -43,7 +43,7 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 
 자동화 실행 여부를 결정하는 조건식에서 사용합니다.
 
-*   `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다.
+*   `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다. (안전하게 사용하려면 `get_from_states('entity_id', 'property')` 권장)
 *   `trigger`: 자동화를 유발한 트리거 정보 (Map).
     *   `trigger.type`: 트리거 유형 (`state`, `packet`, `schedule`, `startup` 등)
     *   `trigger.state`: (state 트리거인 경우) 변경된 상태 맵
@@ -62,9 +62,9 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 *   `bitShiftLeft(int, int)`: 비트 왼쪽 시프트 (`<<`)
 *   `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
 *   `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
-*   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `has(state.value)`)
-*   `get_from_states(entity_id, attribute)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `undefined`)
-*   `get_from_state(attribute)`: 현재 `state` 맵에서 속성을 안전하게 조회 (없으면 `undefined`)
+*   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `get_from_state('value') != null`)
+*   `get_from_states(entity_id, attribute, default?)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `undefined`, 기본값을 넘기면 해당 값 반환)
+*   `get_from_state(attribute, default?)`: 현재 `state` 맵에서 속성을 안전하게 조회 (없으면 `undefined`, 기본값을 넘기면 해당 값 반환)
 
 > **Tip**: `states['id']['field']`나 `state['field']`처럼 직접 접근하면 키가 없을 때 오류가 날 수 있습니다. 조건 분기나 기본값 처리가 필요하다면 `get_from_states`, `get_from_state`를 사용하는 편이 안전합니다.
 
@@ -130,7 +130,7 @@ sensor:
   - id: 'meter_1'
     # ...
     state_value: >-
-      data[1] == 0x01 && has(state['value']) ? state['value'] : ""
+      data[1] == 0x01 && get_from_state('value') != null ? get_from_state('value') : ""
 ```
 
 ### 6. 체크섬 계산 (`rx_checksum`, `tx_checksum`)
@@ -181,16 +181,16 @@ packet_defaults:
 
 ### 리스트 내 타입 혼용 오류 (`List elements must have the same type`)
 
-CEL에서 리스트(배열)를 생성할 때, 모든 요소는 동일한 타입이어야 합니다. `0x02`와 같은 숫자는 `int` 타입이지만, `states['...']`와 같은 맵 접근이나 일부 함수의 반환값은 `dyn` (동적) 타입으로 추론될 수 있습니다.
+CEL에서 리스트(배열)를 생성할 때, 모든 요소는 동일한 타입이어야 합니다. `0x02`와 같은 숫자는 `int` 타입이지만, `get_from_states('...', 'value')` 같은 맵 접근이나 일부 함수의 반환값은 `dyn` (동적) 타입으로 추론될 수 있습니다.
 
 이 경우 `int(...)`를 사용하여 명시적으로 타입을 변환(캐스팅)해주어야 합니다.
 
 **❌ 잘못된 예시 (오류 발생)**
 ```yaml
-# 0x02는 int, states['light_1']['value']는 dyn 타입이므로 오류 발생
+# 0x02는 int, get_from_states('light_1', 'value')는 dyn 타입이므로 오류 발생
 command_on:
   - action: send_packet
-    data: "[0x02, 0x80, states['light_1']['value']]"
+    data: "[0x02, 0x80, get_from_states('light_1', 'value')]"
 ```
 
 **✅ 올바른 예시**
@@ -198,7 +198,7 @@ command_on:
 # int()로 감싸서 모든 요소를 int 타입으로 통일
 command_on:
   - action: send_packet
-    data: "[0x02, 0x80, int(states['light_1']['value'])]"
+    data: "[0x02, 0x80, int(get_from_states('light_1', 'value'))]"
 ```
 
 ## 제한 사항 (Limitations)

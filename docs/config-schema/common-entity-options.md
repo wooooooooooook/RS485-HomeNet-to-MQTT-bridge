@@ -96,7 +96,7 @@ Home Assistant Discovery와 H2M 대시보드에서 해당 엔티티를 숨깁니
 
 - **타입**: `boolean`
 - **기본값**: `false`
-- **설명**: `true`로 설정하면 해당 엔티티가 Home Assistant에 등록되지 않으며, H2M 대시보드의 명령 목록에도 표시되지 않습니다. MQTT를 통한 상태 발행은 정상적으로 이루어지며, 자동화에서 `states['entity_id']`로 접근할 수 있습니다.
+- **설명**: `true`로 설정하면 해당 엔티티가 Home Assistant에 등록되지 않으며, H2M 대시보드의 명령 목록에도 표시되지 않습니다. MQTT를 통한 상태 발행은 정상적으로 이루어지며, 자동화에서 `get_from_states('entity_id', 'state')`로 접근할 수 있습니다.
 
 ```yaml
 text:

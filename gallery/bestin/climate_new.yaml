@@ -3,7 +3,7 @@ meta:
   name_en: "Bestin Climate"
   description: "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다."
   description_en: "Bestin climate with configurable room count. bestin1.0 bestin2.0 common."
-  version: "2.0.0"
+  version: "2.1.0"
   author: "wooooooooooook"
   tags: ["climate", "bestin"]
 
@@ -34,7 +34,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: 'has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0'
+            state_number: "bitAnd(int(get_from_state('number', -1)) + 1, 0xFF)"
 
     - id: "make_heating_packet"
       name: "Heating Packet Make"
@@ -48,7 +48,7 @@ entities:
         - action: send_packet
           data: >- 
             [0x28, 0x0E, 0x12, 
-            int(has(states.sequence_number.number) ? states.sequence_number.number : 0), 
+            int(get_from_states('sequence_number', 'number', 0)), 
             bitAnd(args.room_id, 0x0F), 
             int(args.power), 
             has(args.temp)?(int(args.temp) + (int(args.temp * 10) % 10 >= 5 ? 0x40 : 0)):0,

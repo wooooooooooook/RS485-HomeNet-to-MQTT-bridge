@@ -212,9 +212,20 @@ export class CelExecutor {
     this.env.registerFunction('get_from_states(string, string): dyn', (entityId: string, key: string) =>
       this.getFromStates(entityId, key),
     );
+    this.env.registerFunction(
+      'get_from_states(string, string, dyn): dyn',
+      (entityId: string, key: string, fallback: any) => {
+        const value = this.getFromStates(entityId, key);
+        return value === undefined ? fallback : value;
+      },
+    );
     this.env.registerFunction('get_from_state(string): dyn', (key: string) =>
       this.getFromState(key),
     );
+    this.env.registerFunction('get_from_state(string, dyn): dyn', (key: string, fallback: any) => {
+      const value = this.getFromState(key);
+      return value === undefined ? fallback : value;
+    });
   }
 
   /**

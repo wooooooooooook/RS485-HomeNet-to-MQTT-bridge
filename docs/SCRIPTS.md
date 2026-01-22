@@ -87,7 +87,7 @@ automation:
           target_temp: 24
           mode: heating
           # CEL을 사용하여 동적 값 전달 가능
-          is_active: "has(states.climate_main.state) && states.climate_main.state == 'ON'"
+          is_active: "get_from_states('climate_main', 'state') == 'ON'"
 ```
 
 ### 스크립트 정의에서 사용

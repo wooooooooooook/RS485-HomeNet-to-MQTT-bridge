@@ -31,7 +31,7 @@
           "name_en": "Bestin Climate",
           "description": "Bestin 난방 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin climate. bestin1.0 bestin2.0 common.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -54,7 +54,7 @@
           "name_en": "Bestin Doorlock",
           "description": "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin doorlock. bestin1.0 bestin2.0 common.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -78,7 +78,7 @@
           "name_en": "Bestin aio Light and Outlet (energy485)",
           "description": "Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다.",
           "description_en": "Bestin aio gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -105,7 +105,7 @@
           "name_en": "Bestin general Light and Outlet (energy485)",
           "description": "Bestin general gateway용 조명 및 아웃렛 설정입니다. 방1은 조명4개+콘센트3개, 방2는 조명2개+콘센트2개입니다.",
           "description_en": "Bestin general gateway light and outlet. Room 1 has 4 lights + 3 outlets, Room 2 has 2 lights + 2 outlets.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -131,7 +131,7 @@
           "name_en": "Bestin Ventilation Fan",
           "description": "Bestin 환기팬 설정입니다. 3단 속도(약/중/강)와 자연환기 모드를 지원합니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin ventilation fan with 3-speed control and natural ventilation mode. bestin1.0 bestin2.0 common.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -200,7 +200,7 @@
           "name_en": "Bestin Gas Valve",
           "description": "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin gas valve. bestin1.0 bestin2.0 common.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -250,7 +250,7 @@
           "name_en": "Bestin2.0 Dimming Light and Outlet (2 rooms, 2 lights and 2 outlets each)",
           "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 더 필요한 방, 조명 등은 추가하여 사용하세요. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
           "description_en": "Bestin2.0 dimming light and outlet configuration. Add more rooms or lights as needed. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -604,7 +604,7 @@
           "name_en": "Heaters (4 Thermostats)",
           "description": "CVNet 난방 온도조절기 4개 설정입니다.",
           "description_en": "CVNet 4 heating thermostats.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -1206,7 +1206,7 @@
           "name_en": "Doorbell Set",
           "description": "현대 이마주 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다. 주방폰에 baud_rate 3880으로 연결이 필요하다고 생각됩니다.",
           "description_en": "Hyundai Imazu doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances. It is thought that it needs to connect to the kitchen phone with baud_rate 3880.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "doorbell",
@@ -1265,7 +1265,7 @@
           "name_en": "Doorbell Set",
           "description": "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다.",
           "description_en": "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances.",
-          "version": "2.0.0",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "doorbell",
@@ -1380,7 +1380,7 @@
           "name_en": "Lights (Room 0-3, 8 Lights)",
           "description": "코콤 조명 8개 설정입니다. (각 방 2개씩)",
           "description_en": "Kocom 8 lights configuration (2 per room).",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1430,7 +1430,7 @@
           "name_en": "Doorbell Set",
           "description": "삼성 SDS 현관문 세트 설정입니다. https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/DOCS_PACKETS.md#%EC%9D%B8%ED%84%B0%ED%8F%B0-A1A6",
           "description_en": "Samsung SDS doorbell set.",
-          "version": "1.1.0",
+          "version": "1.2.0",
           "author": "wooooooooooook",
           "tags": [
             "doorbell",
@@ -1455,7 +1455,7 @@
           "name_en": "Elevator - New Style mode ",
           "description": "현관스위치 헤더가 CC인 신형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하고 사용해야합니다.",
           "description_en": "Samsung SDS elevator. Use with new-style doorbell with header CC. Remove doorbell and use.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1478,7 +1478,7 @@
           "name_en": "Elevator - Old Style full mode",
           "description": "현관스위치 헤더가 AD인 구형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하고 사용해야합니다.",
           "description_en": "Samsung SDS elevator. Use with old-style doorbell with header AD. Remove doorbell and use.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -1501,7 +1501,7 @@
           "name_en": "Elevator - Old Style minimal mode",
           "description": "현관스위치 헤더가 AD인 구형현관스위치를 사용하는 삼성 SDS 엘레베이터 설정입니다. 현관스위치를 제거하지 않은 상태에서 사용합니다. 성공률이 낮습니다.",
           "description_en": "Samsung SDS elevator. Use with old-style doorbell with header AD. Success rate is low.",
-          "version": "1.0.0",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "elevator",

@@ -3,7 +3,7 @@ meta:
   name_en: "Doorbell Set"
   description: "삼성 SDS 현관문 세트 설정입니다. https://github.com/n-andflash/ha_addons/blob/master/sds_wallpad/DOCS_PACKETS.md#%EC%9D%B8%ED%84%B0%ED%8F%B0-A1A6"
   description_en: "Samsung SDS doorbell set."
-  version: "1.1.0"
+  version: "1.2.0"
   author: "wooooooooooook"
   tags: ["doorbell", "switch", "samsung", "sds"]
 
@@ -80,33 +80,33 @@ automation:
     then:
       - action: choose
         choices:
-          - condition: "states['door_state']['state'] == 'D_IDLE'"
+          - condition: "get_from_states('door_state', 'state') == 'D_IDLE'"
             then:
               - action: send_packet
                 data: [0xB0, 0x41, 0x00]
                 checksum: true
-          - condition: "states['door_state']['state'] == 'D_CALL'"
+          - condition: "get_from_states('door_state', 'state') == 'D_CALL'"
             then:
               - action: send_packet
                 data: [0xB0, 0x36, 0x01]  # 개인현관 통화
                 checksum: true
               - action: command
                 target: id(door_state).command_set('D_CALLED')
-          - condition: "states['door_state']['state'] == 'D_CALL_P'"
+          - condition: "get_from_states('door_state', 'state') == 'D_CALL_P'"
             then:
               - action: send_packet
                 data: [0xB0, 0x36, 0x02]  # 공용현관 통화
                 checksum: true
               - action: command
                 target: id(door_state).command_set('D_CALLED')
-          - condition: "states['door_state']['state'] == 'D_OPEN'"
+          - condition: "get_from_states('door_state', 'state') == 'D_OPEN'"
             then:
               - action: send_packet
                 data: [0xB0, 0x3B, 0x00]  # 개인현관 문열기
                 checksum: true
               - action: command
                 target: id(door_state).command_set('D_OPENED')
-          - condition: "states['door_state']['state'] == 'D_OPEN_P'"
+          - condition: "get_from_states('door_state', 'state') == 'D_OPEN_P'"
             then:
               - action: send_packet
                 data: [0xB0, 0x3B, 0x01]  # 공동현관 문열기 (GY: 01)
@@ -257,7 +257,7 @@ automation:
       - action: command
         target: id(door_state).command_set('D_BELL')
       - action: if
-        condition: "states['doorbell_auto_open_private']['state'] == 'on'"
+        condition: "get_from_states('doorbell_auto_open_private', 'state') == 'on'"
         then:
           - action: delay
             milliseconds: 2s
@@ -289,7 +289,7 @@ automation:
       - action: command
         target: id(door_state).command_set('D_BELL')
       - action: if
-        condition: "states['doorbell_auto_open_public']['state'] == 'on'"
+        condition: "get_from_states('doorbell_auto_open_public', 'state') == 'on'"
         then:
           - action: delay
             milliseconds: 2s

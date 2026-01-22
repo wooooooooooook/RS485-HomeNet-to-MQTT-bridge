@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-22T00:42:17.927Z",
+  "generated_at": "2026-01-22T13:11:32.353Z",
   "vendors": [
     {
       "id": "bestin",
@@ -31,7 +31,7 @@
           "name_en": "Bestin Climate",
           "description": "Bestin 난방 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin climate. bestin1.0 bestin2.0 common.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -55,7 +55,7 @@
           "name_en": "Bestin Climate",
           "description": "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin climate with configurable room count. bestin1.0 bestin2.0 common.",
-          "version": "2.1.1",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -576,7 +576,7 @@
           "name_en": "Bestin2.0 Dimming Light and Outlet (2 rooms, 2 lights and 2 outlets each)",
           "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 더 필요한 방, 조명 등은 추가하여 사용하세요. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
           "description_en": "Bestin2.0 dimming light and outlet configuration. Add more rooms or lights as needed. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -603,7 +603,7 @@
           "name_en": "Bestin2.0 Dimming Light and Outlet",
           "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 방 개수와 방별 조명/콘센트 개수를 설정할 수 있습니다. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
           "description_en": "Bestin2.0 dimming light and outlet configuration. You can configure room count and lights/outlets per room. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
-          "version": "2.1.1",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -1322,7 +1322,7 @@
           "name_en": "Heaters (4 Thermostats)",
           "description": "CVNet 난방 온도조절기 4개 설정입니다.",
           "description_en": "CVNet 4 heating thermostats.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -1346,7 +1346,7 @@
           "name_en": "Heaters",
           "description": "CVNet 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다.",
           "description_en": "CVNet heating thermostats. You can specify the number of thermostats.",
-          "version": "2.1.1",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -3152,7 +3152,7 @@
           "name_en": "Lights",
           "description": "코콤 조명 설정입니다. 방별 조명 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.16.0 이상에서 사용 가능합니다.",
           "description_en": "Kocom lights configuration. Configure light count per room (max 4). Available from v1.16.0.",
-          "version": "2.2.0",
+          "version": "2.2.1",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -3239,7 +3239,7 @@
           "name_en": "Outlets",
           "description": "코콤 콘센트 설정입니다. 방별 콘센트 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.16.0 이상에서 사용 가능합니다.",
           "description_en": "Kocom outlets configuration. Configure outlet count per room (max 4). Available from v1.16.0.",
-          "version": "1.1.0",
+          "version": "1.1.1",
           "author": "wooooooooooook",
           "tags": [
             "switch",

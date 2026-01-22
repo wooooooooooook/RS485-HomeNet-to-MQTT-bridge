@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-22T00:42:17.924Z",
+  "generated_at": "2026-01-22T13:11:32.350Z",
   "vendors": [
     {
       "id": "bestin",
@@ -31,7 +31,7 @@
           "name_en": "Bestin Climate",
           "description": "Bestin 난방 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin climate. bestin1.0 bestin2.0 common.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -54,7 +54,7 @@
           "name_en": "Bestin Doorlock",
           "description": "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin doorlock. bestin1.0 bestin2.0 common.",
-          "version": "2.1.1",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -250,7 +250,7 @@
           "name_en": "Bestin2.0 Dimming Light and Outlet (2 rooms, 2 lights and 2 outlets each)",
           "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 더 필요한 방, 조명 등은 추가하여 사용하세요. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
           "description_en": "Bestin2.0 dimming light and outlet configuration. Add more rooms or lights as needed. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -604,7 +604,7 @@
           "name_en": "Heaters (4 Thermostats)",
           "description": "CVNet 난방 온도조절기 4개 설정입니다.",
           "description_en": "CVNet 4 heating thermostats.",
-          "version": "1.1.1",
+          "version": "1.1.0",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -1392,129 +1392,6 @@
               "light": 8
             },
             "automations": 0,
-            "scripts": 0
-          }
-        },
-        {
-          "file": "kocom/lights_new.yaml",
-          "name": "조명 설정",
-          "name_en": "Lights",
-          "description": "코콤 조명 설정입니다. 방별 조명 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.16.0 이상에서 사용 가능합니다.",
-          "description_en": "Kocom lights configuration. Configure light count per room (max 4). Available from v1.16.0.",
-          "version": "2.2.0",
-          "author": "wooooooooooook",
-          "tags": [
-            "light",
-            "kocom"
-          ],
-          "parameters": [
-            {
-              "name": "rooms",
-              "type": "object[]",
-              "label": "방 설정",
-              "label_en": "Room Configuration",
-              "default": [
-                {
-                  "room_idx": 0,
-                  "light_count": 3
-                },
-                {
-                  "room_idx": 1,
-                  "light_count": 2
-                },
-                {
-                  "room_idx": 2,
-                  "light_count": 2
-                },
-                {
-                  "room_idx": 3,
-                  "light_count": 2
-                }
-              ],
-              "schema": {
-                "room_idx": {
-                  "type": "integer",
-                  "label": "방 번호",
-                  "min": 0,
-                  "max": 15
-                },
-                "light_count": {
-                  "type": "integer",
-                  "label": "조명 개수",
-                  "default": 2,
-                  "min": 1,
-                  "max": 4
-                }
-              }
-            }
-          ],
-          "content_summary": {
-            "entities": {
-              "light": 1
-            },
-            "automations": 1,
-            "scripts": 0
-          }
-        },
-        {
-          "file": "kocom/outlets.yaml",
-          "name": "콘센트 설정",
-          "name_en": "Outlets",
-          "description": "코콤 콘센트 설정입니다. 방별 콘센트 개수를 다르게 설정할 수 있습니다 (최대 4개). v1.16.0 이상에서 사용 가능합니다.",
-          "description_en": "Kocom outlets configuration. Configure outlet count per room (max 4). Available from v1.16.0.",
-          "version": "1.1.0",
-          "author": "wooooooooooook",
-          "tags": [
-            "switch",
-            "outlet",
-            "kocom"
-          ],
-          "parameters": [
-            {
-              "name": "rooms",
-              "type": "object[]",
-              "label": "방 설정",
-              "label_en": "Room Configuration",
-              "default": [
-                {
-                  "room_idx": 0,
-                  "outlet_count": 2
-                },
-                {
-                  "room_idx": 1,
-                  "outlet_count": 2
-                },
-                {
-                  "room_idx": 2,
-                  "outlet_count": 2
-                },
-                {
-                  "room_idx": 3,
-                  "outlet_count": 2
-                }
-              ],
-              "schema": {
-                "room_idx": {
-                  "type": "integer",
-                  "label": "방 번호",
-                  "min": 0,
-                  "max": 15
-                },
-                "outlet_count": {
-                  "type": "integer",
-                  "label": "콘센트 개수",
-                  "default": 2,
-                  "min": 1,
-                  "max": 4
-                }
-              }
-            }
-          ],
-          "content_summary": {
-            "entities": {
-              "switch": 1
-            },
-            "automations": 1,
             "scripts": 0
           }
         }

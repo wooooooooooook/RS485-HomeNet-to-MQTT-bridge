@@ -49,7 +49,7 @@ entities:
         - action: update_state
           target_id: "sequence_number"
           state:
-            state_number: "get_from_state('number') == null ? 0 : bitAnd(int(get_from_state('number')) + 1, 0xFF)"
+            state_number: "has(state.number) ? bitAnd(state.number + 1, 0xFF) : 0"
 
     - id: "make_light_packet"
       name: "Light Packet Make"

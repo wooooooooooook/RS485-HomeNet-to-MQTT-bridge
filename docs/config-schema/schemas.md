@@ -77,7 +77,7 @@ state:
 | `endian` | `'big'` \| `'little'` | `'big'` | 다바이트일 때 바이트 순서. |
 | `signed` | `boolean` | `false` | 부호 있는 정수로 해석할지 여부. |
 | `precision` | `number` | `0` | 소수점 자리수. `precision: 1`이면 `123` → `12.3`. |
-| `decode` | `DecodeEncodeType` | `'none'` | `bcd`, `ascii`, `signed_byte_half_degree`, `multiply`, `add_0x80` 등. |
+| `decode` | `DecodeEncodeType` | `'none'` | `bcd`, `ascii`, `signed_byte_half_degree` 등. |
 | `mapping` | `Object` | - | `{ 원시값: 결과 }` 형태로 값을 치환 (예: `{0: "Off", 1: "On"}`). |
 
 ### 활용 예시

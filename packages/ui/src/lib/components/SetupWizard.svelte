@@ -655,9 +655,19 @@
     <div class="wizard-card" class:modal-view={mode === 'add'}>
       <div class="wizard-header">
         {#if mode === 'add'}
-          <button class="header-close-btn" onclick={onclose} aria-label="Close">×</button>
+          <button
+            class="header-close-btn"
+            onclick={onclose}
+            aria-label={$t('common.close') || 'Close setup wizard'}
+          >
+            ×
+          </button>
         {:else}
-          <button class="lang-toggle" onclick={toggleLocale}>
+          <button
+            class="lang-toggle"
+            onclick={toggleLocale}
+            aria-label={currentLocale === 'ko' ? 'Switch to English' : '한국어로 변경'}
+          >
             {currentLocale === 'ko' ? 'EN' : '한국어'}
           </button>
         {/if}
@@ -898,7 +908,7 @@
             {/if}
 
             {#if error}
-              <div class="error-message">{error}</div>
+              <div class="error-message" role="alert" aria-live="assertive">{error}</div>
             {/if}
 
             <div class="button-group">
@@ -1290,16 +1300,16 @@
           </div>
         </div>
       {:else if currentStep === 'complete'}
-        <div class="success-state">
+        <div class="success-state" role="status" aria-live="polite">
           {#if requiresManualUpdate}
-            <div class="warning-icon">!</div>
+            <div class="warning-icon" aria-hidden="true">!</div>
             <p class="warning-message">
               {$t('setup_wizard.manual_config_update_required', {
                 values: { filename: createdFilename },
               })}
             </p>
           {:else}
-            <div class="success-icon">✓</div>
+            <div class="success-icon" aria-hidden="true">✓</div>
             <p class="success-message">{$t('setup_wizard.success_message')}</p>
             <p class="hint">{$t('setup_wizard.restarting')}</p>
             <div class="restart-action">

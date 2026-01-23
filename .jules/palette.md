@@ -9,3 +9,7 @@
 ## 2026-01-19 - Tooltips on Disabled Buttons
 **Learning:** The native `disabled` attribute on buttons suppresses mouse events in most browsers, preventing `title` tooltips from appearing. Users often need to know *why* a button is disabled.
 **Action:** Use `aria-disabled="true"` instead of the `disabled` attribute when a tooltip explanation is required. Ensure click handlers manually check the disabled state and prevent action.
+
+## 2026-01-20 - Hiding Decorative Text Icons
+**Learning:** Text-based icons (like `✓` or `!`) are often read as random characters or punctuation by screen readers, creating noise.
+**Action:** Use `aria-hidden="true"` on decorative text icons when the surrounding text already conveys the meaning (e.g. "Success" message next to a checkmark).

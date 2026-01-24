@@ -8,20 +8,9 @@
   }>();
 
   let packetInput = $state('');
-  let selectedPortId = $state('');
   let isLoading = $state(false);
   let error = $state<string | null>(null);
   let result = $state<PacketAnalysisResult | null>(null);
-
-  $effect(() => {
-    if (!selectedPortId) {
-      selectedPortId = activePortId ?? portIds[0] ?? '';
-      return;
-    }
-    if (selectedPortId && !portIds.includes(selectedPortId)) {
-      selectedPortId = activePortId ?? portIds[0] ?? '';
-    }
-  });
 
   const formatState = (state: unknown) => {
     try {
@@ -45,10 +34,11 @@
     isLoading = true;
 
     try {
+      const targetPortId = activePortId ?? portIds[0] ?? '';
       const response = await fetch('./api/tools/packet/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: packetInput, portId: selectedPortId || undefined }),
+        body: JSON.stringify({ input: packetInput, portId: targetPortId || undefined }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -73,19 +63,9 @@
   </div>
 
   <div class="card-body">
-    <div class="grid">
-      <label>
-        <span class="label">{$t('analysis.packet_analyzer.port_label')}</span>
-        <select bind:value={selectedPortId} disabled={portIds.length <= 1}>
-          {#each portIds as portId}
-            <option value={portId}>{portId}</option>
-          {/each}
-        </select>
-      </label>
-      <div class="format-hint">
-        <span class="label">{$t('analysis.packet_analyzer.format_label')}</span>
-        <span class="inline-hint">{$t('analysis.packet_analyzer.format_hint')}</span>
-      </div>
+    <div class="format-hint">
+      <span class="label">{$t('analysis.packet_analyzer.format_label')}</span>
+      <span class="inline-hint">{$t('analysis.packet_analyzer.format_hint')}</span>
     </div>
 
     <div class="form-row full">
@@ -289,12 +269,6 @@
     min-height: 110px;
   }
 
-  .grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-
   label {
     display: flex;
     flex-direction: column;
@@ -303,8 +277,7 @@
     font-size: 0.85rem;
   }
 
-  textarea,
-  select {
+  textarea {
     padding: 0.6rem 0.75rem;
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid rgba(148, 163, 184, 0.2);
@@ -338,17 +311,17 @@
     gap: 1rem;
   }
 
-  button.primary {
-    border-radius: 999px;
-    padding: 0.55rem 1.5rem;
-    border: none;
-    background: #3b82f6;
-    color: #fff;
-    font-weight: 600;
+  .primary {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.6);
+    background: rgba(59, 130, 246, 0.2);
+    color: #bfdbfe;
     cursor: pointer;
+    font-weight: 600;
   }
 
-  button.primary:disabled {
+  .primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }

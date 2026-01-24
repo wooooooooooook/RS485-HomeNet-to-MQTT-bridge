@@ -455,6 +455,7 @@
     "show_automations": "Automations",
     "show_scripts": "Scripts",
     "show_inactive_entities": "Inactive items",
+    "search_placeholder": "Search by name or ID",
     "topology": {
       "serial_device": "RS485-serial",
       "mqtt_broker": "MQTT Broker",

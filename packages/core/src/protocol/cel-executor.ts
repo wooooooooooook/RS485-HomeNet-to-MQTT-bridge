@@ -126,10 +126,13 @@ export class ReusableBufferView {
  *
  * **Available Variables in Context:**
  * - `x` (int): The primary input value (e.g., a candidate byte or current state).
+ * - `xstr` (string): The string representation of the input value (e.g. for custom modes).
  * - `data` (list<int>): The raw packet data buffer as a list of integers.
+ * - `len` (int): The length of the data buffer (useful in checksum/length expressions).
  * - `state` (map): The current entity's state object.
  * - `states` (map): The global state map of all entities.
  * - `trigger` (map): Context specific to automation triggers.
+ * - `args` (map): Additional arguments passed to the script (context specific).
  *
  * **Available Helper Functions:**
  * - `bcd_to_int(int) -> int`: Converts a BCD encoded byte to an integer (e.g., `0x12` -> `12`).
@@ -140,6 +143,8 @@ export class ReusableBufferView {
  * - `bitNot(int) -> int`: Bitwise NOT (`~`).
  * - `bitShiftLeft(int, int) -> int`: Bitwise Left Shift (`<<`).
  * - `bitShiftRight(int, int) -> int`: Bitwise Right Shift (`>>`).
+ * - `get_from_state(key, default?) -> dyn`: Safely retrieve a value from the current entity's state.
+ * - `get_from_states(entity_id, key, default?) -> dyn`: Safely retrieve a value from any entity's state.
  * - `double(value) -> double`: Converts a number to a double (Standard CEL).
  * - `has(expr) -> bool`: Checks if a field exists in a map (Standard CEL macro).
  *
@@ -228,8 +233,9 @@ export class CelExecutor {
         return value === undefined ? fallback : value;
       },
     );
-    this.env.registerFunction('get_from_state(string): dyn', (key: string) =>
-      this.getFromState(key) ?? null,
+    this.env.registerFunction(
+      'get_from_state(string): dyn',
+      (key: string) => this.getFromState(key) ?? null,
     );
     this.env.registerFunction('get_from_state(string, dyn): dyn', (key: string, fallback: any) => {
       const value = this.getFromState(key);

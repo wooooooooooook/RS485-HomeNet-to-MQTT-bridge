@@ -23,3 +23,31 @@ export function validateGalleryEntityIds(
 
   return missing;
 }
+
+export function validateGalleryAutomationIds(automation: unknown[] | undefined): string[] {
+  return validateIdList(automation, 'automation');
+}
+
+export function validateGalleryScriptIds(scripts: unknown[] | undefined): string[] {
+  return validateIdList(scripts, 'scripts');
+}
+
+function validateIdList(items: unknown[] | undefined, label: string): string[] {
+  if (!items) return [];
+
+  const missing: string[] = [];
+
+  items.forEach((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      missing.push(`${label}[${index}]`);
+      return;
+    }
+
+    const itemId = (item as Record<string, unknown>).id;
+    if (typeof itemId !== 'string' || itemId.trim().length === 0) {
+      missing.push(`${label}[${index}]`);
+    }
+  });
+
+  return missing;
+}

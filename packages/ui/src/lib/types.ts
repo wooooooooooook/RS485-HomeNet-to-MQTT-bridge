@@ -218,6 +218,44 @@ export type UnifiedEntity = {
   errorCount?: number;
 };
 
+export type PacketAnalysisEntityMatch = {
+  entityId: string;
+  entityName: string;
+  entityType: string;
+  state: Record<string, unknown>;
+};
+
+export type PacketAnalysisPacket = {
+  hex: string;
+  bytes: number[];
+  matches: PacketAnalysisEntityMatch[];
+};
+
+export type PacketAnalysisUnmatchedPacket = {
+  hex: string;
+  bytes: number[];
+};
+
+export type PacketAnalysisAutomationMatch = {
+  automationId: string;
+  name?: string;
+  description?: string;
+  triggerType: 'packet' | 'state';
+  triggerIndex: number;
+  packetIndex: number;
+  packetHex: string;
+  entityId?: string;
+  property?: string;
+  matchedValue?: unknown;
+};
+
+export type PacketAnalysisResult = {
+  packets: PacketAnalysisPacket[];
+  unmatchedPackets: PacketAnalysisUnmatchedPacket[];
+  automationMatches: PacketAnalysisAutomationMatch[];
+  errors: string[];
+};
+
 export type ParsedPayloadEntry = {
   key: string;
   value: string;

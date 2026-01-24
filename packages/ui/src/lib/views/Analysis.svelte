@@ -12,6 +12,7 @@
   import RawPacketLog from '../components/RawPacketLog.svelte';
   import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
+  import PacketAnalyzerCard from '../components/analysis/PacketAnalyzerCard.svelte';
 
   type AnalyzerStateOption = {
     id: string;
@@ -84,6 +85,7 @@
   {#if logRetentionEnabled}
     <PacketDictionaryView portId={activePortId} />
   {/if}
+  <PacketAnalyzerCard {portIds} activePortId={activePortId} />
   <CelAnalyzerCard {statesSnapshot} {stateOptions} />
 </div>
 

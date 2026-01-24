@@ -224,6 +224,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 1rem;
   }
 
@@ -232,6 +234,7 @@
     align-items: center;
     gap: 1.5rem;
     flex-wrap: wrap; /* Handle small screens */
+    flex: 1 1 320px;
   }
 
   .description {
@@ -245,6 +248,11 @@
     align-items: center;
     font-size: 0.9rem;
     color: #94a3b8;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1 1 200px;
   }
 
   .search-box input {
@@ -254,7 +262,7 @@
     padding: 0.3rem 0.6rem;
     color: #e2e8f0;
     font-size: 0.85rem;
-    width: 200px;
+    width: 100%;
   }
 
   .search-box input:focus {
@@ -372,6 +380,13 @@
   .header-right {
     display: flex;
     align-items: center;
+  }
+
+  @media (max-width: 600px) {
+    .header-right {
+      width: 100%;
+      justify-content: flex-end;
+    }
   }
 
   .pause-btn {

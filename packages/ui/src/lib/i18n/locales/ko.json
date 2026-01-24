@@ -456,6 +456,7 @@
     "show_automations": "자동화",
     "show_scripts": "스크립트",
     "show_inactive_entities": "비활성화 항목",
+    "search_placeholder": "이름 또는 ID 검색",
     "topology": {
       "serial_device": "RS485 시리얼",
       "mqtt_broker": "MQTT 브로커",

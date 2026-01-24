@@ -106,7 +106,34 @@
   // App.svelte에서 이미 dashboardEntities로 포트별 필터링을 완료하여 전달하므로,
   // 여기서는 전달받은 entities를 그대로 사용합니다.
   const visibleEntities = $derived.by<UnifiedEntity[]>(() => entities);
+  let searchText = $state('');
+  let debouncedSearchText = $state('');
+  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let isSearchExpanded = $state(false);
+  let searchInput = $state<HTMLInputElement | null>(null);
   let hintDismissed = $state(false);
+
+  const isSearchActive = $derived.by<boolean>(
+    () => isSearchExpanded || searchText.trim().length > 0,
+  );
+
+  const searchedEntities = $derived.by<UnifiedEntity[]>(() => {
+    const query = debouncedSearchText.trim().toLowerCase();
+    if (!query) return visibleEntities;
+    return visibleEntities.filter((entity) => {
+      const searchText = [
+        entity.displayName,
+        entity.id,
+        entity.description,
+        entity.category,
+        entity.portId,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchText.includes(query);
+    });
+  });
 
   function getBridgeErrorMessage(): string | undefined {
     if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
@@ -156,8 +183,46 @@
     onSelect?.(entityId, portId, category);
   }
 
+  function handleSearchFocus() {
+    isSearchExpanded = true;
+  }
+
+  function handleSearchBlur() {
+    if (!searchText.trim()) {
+      isSearchExpanded = false;
+    }
+  }
+
+  function handleSearchChipClick() {
+    isSearchExpanded = true;
+    searchInput?.focus();
+  }
+
+  function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSearchChipClick();
+    }
+  }
+
   // Restart functionality
   let isRestarting = $state(false);
+
+  $effect(() => {
+    const nextValue = searchText;
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+    searchDebounceTimer = setTimeout(() => {
+      debouncedSearchText = nextValue;
+    }, 250);
+
+    return () => {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+    };
+  });
 
   async function handleRestart() {
     if (isRestarting) return;
@@ -273,6 +338,29 @@
           </HintBubble>
         {/if}
         <div class="toggle-group">
+          <div
+            class="filter-chip search-chip"
+            class:expanded={isSearchActive}
+            role="button"
+            tabindex="0"
+            onclick={handleSearchChipClick}
+            onkeydown={handleSearchKeydown}
+          >
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="16.5" y1="16.5" x2="21" y2="21" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder={$t('dashboard.search_placeholder')}
+              bind:value={searchText}
+              bind:this={searchInput}
+              onfocus={handleSearchFocus}
+              onblur={handleSearchBlur}
+            />
+          </div>
           <button
             type="button"
             class:active={showEntities}
@@ -314,12 +402,12 @@
 
       <!-- Entity Grid Section -->
       <div class="entity-grid">
-        {#if visibleEntities.length === 0 && !infoLoading}
+        {#if searchedEntities.length === 0 && !infoLoading}
           <div class="empty-grid">
             <p class="empty full-width">{$t('dashboard.no_devices_found')}</p>
           </div>
         {:else}
-          {#each visibleEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
+          {#each searchedEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
             <EntityCard
               {entity}
               onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
@@ -377,6 +465,43 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+  }
+
+  .search-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    min-width: 2.4rem;
+    overflow: hidden;
+  }
+
+  .search-chip input {
+    width: 0;
+    opacity: 0;
+    border: none;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    outline: none;
+    transition: width 0.2s ease, opacity 0.2s ease;
+  }
+
+  .search-chip.expanded input {
+    width: 10rem;
+    opacity: 1;
+  }
+
+  .search-chip input::placeholder {
+    color: rgba(203, 213, 245, 0.6);
+  }
+
+  .search-icon {
+    display: inline-flex;
+    align-items: center;
+    width: 1rem;
+    height: 1rem;
   }
 
   .filter-chip:hover {

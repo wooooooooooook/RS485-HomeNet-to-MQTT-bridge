@@ -9,6 +9,7 @@ import yaml from 'js-yaml';
 import { HomenetBridgeConfig, logger, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
 import { dumpConfigToYaml } from '../utils/yaml-dumper.js';
 import { expandGalleryTemplate, type GallerySnippet } from '../utils/gallery-template.js';
+import { validateGalleryEntityIds } from '../utils/gallery-validation.js';
 import { getAppVersion, checkMinVersion } from '../utils/version-utils.js';
 import {
   CONFIG_DIR,
@@ -397,6 +398,13 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       const expandedGalleryYaml = expandGalleryTemplate(galleryYaml, parameterValues);
+      const missingEntityIds = validateGalleryEntityIds(expandedGalleryYaml.entities);
+      if (missingEntityIds.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid gallery content',
+          message: `Gallery entities must include id. Missing: ${missingEntityIds.join(', ')}`,
+        });
+      }
 
       const currentConfig = currentConfigs[configIndex];
       const conflicts: Array<{
@@ -676,6 +684,13 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       }
 
       const expandedGalleryYaml = expandGalleryTemplate(galleryYaml, parameterValues);
+      const missingEntityIds = validateGalleryEntityIds(expandedGalleryYaml.entities);
+      if (missingEntityIds.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid gallery content',
+          message: `Gallery entities must include id. Missing: ${missingEntityIds.join(', ')}`,
+        });
+      }
 
       // Read the current config file
       const configPath = path.join(CONFIG_DIR, targetConfigFile);

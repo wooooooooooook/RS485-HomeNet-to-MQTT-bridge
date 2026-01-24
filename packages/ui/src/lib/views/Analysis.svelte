@@ -85,7 +85,7 @@
   {#if logRetentionEnabled}
     <PacketDictionaryView portId={activePortId} />
   {/if}
-  <PacketAnalyzerCard {portIds} activePortId={activePortId} />
+  <PacketAnalyzerCard {portIds} {activePortId} />
   <CelAnalyzerCard {statesSnapshot} {stateOptions} />
 </div>
 

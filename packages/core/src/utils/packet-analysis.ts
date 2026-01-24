@@ -1,6 +1,5 @@
 import { Buffer } from 'buffer';
 import type {
-  AutomationConfig,
   AutomationTriggerPacket,
   AutomationTriggerState,
   HomenetBridgeConfig,

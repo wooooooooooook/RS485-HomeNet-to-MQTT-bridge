@@ -118,7 +118,9 @@
     {#if result}
       <div class="result">
         <div class="result-header">
-          {$t('analysis.packet_analyzer.valid_packets', { values: { count: result.packets.length } })}
+          {$t('analysis.packet_analyzer.valid_packets', {
+            values: { count: result.packets.length },
+          })}
         </div>
         {#if result.packets.length === 0}
           <p class="empty">{$t('analysis.packet_analyzer.empty')}</p>
@@ -127,14 +129,22 @@
             {#each result.packets as packet, index}
               <div class="packet-card">
                 <div class="packet-title">
-                  <span>{$t('analysis.packet_analyzer.packet_label', { values: { index: index + 1 } })}</span>
+                  <span
+                    >{$t('analysis.packet_analyzer.packet_label', {
+                      values: { index: index + 1 },
+                    })}</span
+                  >
                   <code>{packet.hex}</code>
                 </div>
                 <div class="packet-meta">
-                  <span class="badge">{$t('analysis.packet_analyzer.bytes_label')}: {formatBytes(packet)}</span>
+                  <span class="badge"
+                    >{$t('analysis.packet_analyzer.bytes_label')}: {formatBytes(packet)}</span
+                  >
                 </div>
                 <div class="packet-section">
-                  <div class="section-title">{$t('analysis.packet_analyzer.entity_match_title')}</div>
+                  <div class="section-title">
+                    {$t('analysis.packet_analyzer.entity_match_title')}
+                  </div>
                   {#if packet.matches.length === 0}
                     <p class="empty">{$t('analysis.packet_analyzer.entity_match_empty')}</p>
                   {:else}
@@ -165,7 +175,11 @@
           <ul class="compact-list">
             {#each result.unmatchedPackets as packet, index}
               <li>
-                <span>{$t('analysis.packet_analyzer.packet_label', { values: { index: index + 1 } })}</span>
+                <span
+                  >{$t('analysis.packet_analyzer.packet_label', {
+                    values: { index: index + 1 },
+                  })}</span
+                >
                 <code>{packet.hex}</code>
               </li>
             {/each}
@@ -194,16 +208,18 @@
                       values: { index: match.triggerIndex + 1 },
                     })}</span
                   >
-                  <span class="badge">{$t('analysis.packet_analyzer.packet_ref', {
-                    values: { index: match.packetIndex + 1 },
-                  })}</span>
+                  <span class="badge"
+                    >{$t('analysis.packet_analyzer.packet_ref', {
+                      values: { index: match.packetIndex + 1 },
+                    })}</span
+                  >
                 </div>
                 {#if match.entityId}
                   <div class="automation-detail">
                     {$t('analysis.packet_analyzer.state_match', {
                       values: {
                         entityId: match.entityId,
-                        property: match.property ?? '-'
+                        property: match.property ?? '-',
                       },
                     })}
                   </div>

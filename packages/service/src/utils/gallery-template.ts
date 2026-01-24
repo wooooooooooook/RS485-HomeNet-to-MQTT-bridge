@@ -1,6 +1,5 @@
 type ParameterType = 'integer' | 'string' | 'integer[]' | 'object[]';
 import { Environment } from '@marcbachmann/cel-js';
-import type { DiscoveryResult } from '../services/discovery.service.js';
 
 export interface GalleryParameterDefinition {
   name: string;
@@ -387,7 +386,6 @@ function expandNode(node: unknown, context: Record<string, unknown>): unknown {
 export function expandGalleryTemplate(
   snippet: GallerySnippet,
   parameterValues?: Record<string, unknown>,
-  discoveryResult?: DiscoveryResult,
 ): GallerySnippet {
   const parameters = resolveParameterValues(snippet.parameters, parameterValues);
   const context = { ...parameters };

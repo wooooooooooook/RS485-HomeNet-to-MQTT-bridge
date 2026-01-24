@@ -113,6 +113,7 @@
           bind:value={senderHex}
           placeholder={$t('analysis.raw_log.sender.hex_input_placeholder')}
           class="hex-input"
+          aria-invalid={!!sendError}
         />
       </label>
     </div>
@@ -171,10 +172,10 @@
       </Button>
 
       {#if sendError}
-        <span class="error-msg" transition:fade>{sendError}</span>
+        <span class="error-msg" transition:fade role="alert">{sendError}</span>
       {/if}
       {#if sendSuccessMsg}
-        <span class="success-msg" transition:fade>{sendSuccessMsg}</span>
+        <span class="success-msg" transition:fade role="status">{sendSuccessMsg}</span>
       {/if}
     </div>
   </div>

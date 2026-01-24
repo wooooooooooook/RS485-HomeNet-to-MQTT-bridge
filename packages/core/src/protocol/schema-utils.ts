@@ -39,92 +39,121 @@ export const extractFromSchema = (packet: Buffer, schema: StateSchema | StateNum
     }
   }
 
-  // 2. Extract Value
-  const extractedBytes: number[] = [];
-  for (let i = 0; i < length; i++) {
-    let val = packet[offset + i];
-    let mByte = 0xff;
-    if (mask) {
-      if (Array.isArray(mask)) {
-        mByte = mask[i] ?? 0xff;
-      } else {
-        mByte = mask;
-      }
-    }
-
-    // Apply Inverted (bitwise NOT before mask)
-    if (inverted) {
-      val = ~val;
-    }
-
-    val = val & mByte;
-    extractedBytes.push(val);
-  }
-
-  // 3. Process as Number (if StateNumSchema)
-  const endian = numSchema.endian || 'big';
+  // 2. Extract Value (Optimized to avoid array allocation)
   const decode = numSchema.decode || 'none';
+  const endian = numSchema.endian || 'big';
   const signed = numSchema.signed || false;
   const precision = numSchema.precision || 0;
 
-  // Handle byte order
-  if (endian === 'little') {
-    extractedBytes.reverse();
+  // Handle ASCII separately (string creation)
+  if (decode === 'ascii') {
+    const extractedBytes: number[] = [];
+    for (let i = 0; i < length; i++) {
+      let val = packet[offset + i];
+      if (mask || inverted) {
+        let mByte = 0xff;
+        if (mask) {
+          if (Array.isArray(mask)) {
+            mByte = mask[i] ?? 0xff;
+          } else {
+            mByte = mask;
+          }
+        }
+        if (inverted) {
+          val = ~val;
+        }
+        val = val & mByte;
+      }
+      extractedBytes.push(val);
+    }
+    if (endian === 'little') {
+      extractedBytes.reverse();
+    }
+    return String.fromCharCode(...extractedBytes);
   }
 
-  let value: number | string = 0;
+  let value = 0;
 
-  // Decoding Logic
-  if (decode === 'ascii') {
-    value = String.fromCharCode(...extractedBytes);
-    return value;
-  } else if (decode === 'bcd') {
-    let bcdVal = 0;
-    for (const b of extractedBytes) {
-      bcdVal = bcdVal * 100 + (b >> 4) * 10 + (b & 0x0f);
+  if (decode === 'signed_byte_half_degree') {
+    // Only considers the MSB of the extraction window
+    // Big Endian: byte at offset
+    // Little Endian: byte at offset + length - 1
+    const idx = endian === 'little' ? length - 1 : 0;
+    let val = packet[offset + idx];
+
+    if (mask || inverted) {
+      let mByte = 0xff;
+      if (mask) {
+        if (Array.isArray(mask)) {
+          mByte = mask[idx] ?? 0xff;
+        } else {
+          mByte = mask;
+        }
+      }
+      if (inverted) {
+        val = ~val;
+      }
+      val = val & mByte;
     }
-    value = bcdVal;
-  } else if (decode === 'signed_byte_half_degree') {
-    const b = extractedBytes[0];
-    // Note: This logic assumes 'b' is the processed byte (masked/inverted).
-    // Standard usage implies raw byte, but here we applied mask/invert.
-    // Assuming consistent schema configuration.
-    let val = b & 0x7f;
-    if ((b & 0x80) !== 0) {
-      val += 0.5;
+
+    let res = val & 0x7f;
+    if ((val & 0x80) !== 0) {
+      res += 0.5;
     }
-    if (signed && (b & 0x40) !== 0) {
-      val = -val;
+    if (signed && (val & 0x40) !== 0) {
+      res = -res;
     }
-    value = val;
+    value = res;
   } else {
-    // 'none' or default integer combination
-    // Use * 256 to avoid 32-bit signed overflow during shift
-    let intVal = 0;
-    for (const b of extractedBytes) {
-      intVal = intVal * 256 + b;
+    // Numeric types: 'none' (integer) or 'bcd'
+    // Big Endian: iterate 0 to length-1 (MSB first)
+    // Little Endian: iterate length-1 to 0 (MSB is at the end of the packet segment)
+    const start = endian === 'little' ? length - 1 : 0;
+    const end = endian === 'little' ? -1 : length;
+    const step = endian === 'little' ? -1 : 1;
+
+    for (let i = start; i !== end; i += step) {
+      let val = packet[offset + i];
+
+      if (mask || inverted) {
+        let mByte = 0xff;
+        if (mask) {
+          if (Array.isArray(mask)) {
+            mByte = mask[i] ?? 0xff;
+          } else {
+            mByte = mask;
+          }
+        }
+        if (inverted) {
+          val = ~val;
+        }
+        val = val & mByte;
+      }
+
+      if (decode === 'bcd') {
+        value = value * 100 + (val >> 4) * 10 + (val & 0x0f);
+      } else {
+        value = value * 256 + val;
+      }
     }
-    value = intVal;
   }
 
   // Signed integer handling (Two's complement)
-  if (typeof value === 'number' && signed && decode === 'none') {
+  if (decode === 'none' && signed) {
     const bitLen = length * 8;
-    // Calculate max unsigned value for this bit length
     const maxUnsigned = Math.pow(2, bitLen);
-    // If sign bit is set (value >= maxUnsigned / 2)
     if (value >= maxUnsigned / 2) {
       value = value - maxUnsigned;
     }
   }
 
   // Precision
-  if (typeof value === 'number' && precision > 0) {
+  if (precision > 0) {
     value = parseFloat((value / Math.pow(10, precision)).toFixed(precision));
   }
 
   // Mapping
-  if (typeof value === 'number' && numSchema.mapping) {
+  if (numSchema.mapping) {
     if (value in numSchema.mapping) {
       return numSchema.mapping[value];
     }

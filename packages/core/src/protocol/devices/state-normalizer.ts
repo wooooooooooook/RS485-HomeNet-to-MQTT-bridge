@@ -48,44 +48,45 @@ const extractValue = (bytes: Uint8Array, schema: StateNumSchema): number | strin
     return null;
   }
 
-  const valueBytes: number[] = [];
-  if (endian === 'little') {
-    for (let i = offset + length - 1; i >= offset; i -= 1) {
-      valueBytes.push(bytes[i]);
+  // Handle ASCII
+  if (decode === 'ascii') {
+    const valueBytes: number[] = [];
+    for (let i = 0; i < length; i++) {
+      valueBytes.push(bytes[offset + i]);
     }
-  } else {
-    for (let i = offset; i < offset + length; i += 1) {
-      valueBytes.push(bytes[i]);
+    if (endian === 'little') {
+      valueBytes.reverse();
     }
+    return String.fromCharCode(...valueBytes);
   }
 
-  let value: number | string = 0;
-  if (decode === 'ascii') {
-    value = String.fromCharCode(...valueBytes);
-    return value;
-  }
-  if (decode === 'bcd') {
-    let bcdVal = 0;
-    for (const b of valueBytes) {
-      bcdVal = bcdVal * 100 + (b >> 4) * 10 + (b & 0x0f);
+  let value = 0;
+
+  if (decode === 'signed_byte_half_degree') {
+    const idx = endian === 'little' ? offset + length - 1 : offset;
+    const val = bytes[idx];
+
+    let res = val & 0x7f;
+    if ((val & 0x80) !== 0) {
+      res += 0.5;
     }
-    value = bcdVal;
-  } else if (decode === 'signed_byte_half_degree') {
-    const b = valueBytes[0];
-    let val = b & 0x7f;
-    if ((b & 0x80) !== 0) {
-      val += 0.5;
+    if (signed && (val & 0x40) !== 0) {
+      res = -res;
     }
-    if (signed && (b & 0x40) !== 0) {
-      val = -val;
-    }
-    value = val;
+    value = res;
   } else {
-    let intVal = 0;
-    for (const b of valueBytes) {
-      intVal = intVal * 256 + b;
+    const start = endian === 'little' ? length - 1 : 0;
+    const end = endian === 'little' ? -1 : length;
+    const step = endian === 'little' ? -1 : 1;
+
+    for (let i = start; i !== end; i += step) {
+      const val = bytes[offset + i];
+      if (decode === 'bcd') {
+        value = value * 100 + (val >> 4) * 10 + (val & 0x0f);
+      } else {
+        value = value * 256 + val;
+      }
     }
-    value = intVal;
   }
 
   if (typeof value === 'number' && signed && decode === 'none') {

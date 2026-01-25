@@ -125,6 +125,15 @@ export class ReusableBufferView {
  * helper functions tailored for byte-level protocol manipulation.
  *
  * **Available Variables in Context:**
+ * The set of available variables depends on where the CEL expression is used:
+ *
+ * 1. **State Parsing (`state_*`)**: `data`, `state`, `states`
+ * 2. **Command Generation (`command_*`)**: `x`, `xstr`, `state`, `states`
+ * 3. **Checksums (`rx_checksum`, `tx_checksum`)**: `data`, `len` (**Note**: `state` and `states` are NOT available)
+ * 4. **Packet Length (`rx_length_expr`)**: `data`, `len`
+ * 5. **Automation (`guard`, `condition`)**: `states`, `trigger`
+ *
+ * **Variable Definitions:**
  * - `x` (int): The primary input value (e.g., a candidate byte or current state).
  * - `xstr` (string): The string representation of the input value (e.g. for custom modes).
  * - `data` (list<int>): The raw packet data buffer as a list of integers.

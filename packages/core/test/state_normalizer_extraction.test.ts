@@ -52,7 +52,7 @@ describe('normalizeDeviceState extraction', () => {
         offset: 0,
         length: 1,
         decode: 'signed_byte_half_degree',
-        signed: true
+        signed: true,
       },
     };
     // 0x18 = 24.0
@@ -77,7 +77,7 @@ describe('normalizeDeviceState extraction', () => {
   });
 
   it('should extract signed integer (negative)', () => {
-     const config = {
+    const config = {
       type: 'sensor',
       state_number: {
         offset: 0,
@@ -85,7 +85,7 @@ describe('normalizeDeviceState extraction', () => {
         signed: true,
       },
     };
-    const payload = Buffer.from([0xFF]); // -1
+    const payload = Buffer.from([0xff]); // -1
     const normalized = normalizeDeviceState(config, payload, {});
     expect(normalized.value).toBe(-1);
   });

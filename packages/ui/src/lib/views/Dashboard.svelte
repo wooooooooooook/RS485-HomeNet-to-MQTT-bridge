@@ -498,6 +498,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
   }
 
   .search-chip {
@@ -551,8 +553,12 @@
 
   .inactive-chip-wrapper {
     position: relative;
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .inactive-chip-wrapper .filter-chip {
+    height: 100%;
   }
 
   .error {

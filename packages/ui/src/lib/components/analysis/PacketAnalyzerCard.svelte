@@ -374,6 +374,10 @@
   .packet-title code {
     font-size: 0.85rem;
     color: #7dd3fc;
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-all;
   }
 
   .packet-meta {
@@ -434,11 +438,15 @@
   .compact-list li {
     display: flex;
     gap: 0.5rem;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .compact-list code {
     color: #7dd3fc;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-all;
   }
 
   .automation-list {

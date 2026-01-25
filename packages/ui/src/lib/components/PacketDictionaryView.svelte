@@ -105,19 +105,19 @@
         variant={viewMode === 'all' ? 'primary' : 'secondary'}
         onclick={() => (viewMode = 'all')}
       >
-        {$t('analysis.packet_dictionary.tab_all')}
+        <span class="tab-label">{$t('analysis.packet_dictionary.tab_all')}</span>
       </Button>
       <Button
         variant={viewMode === 'parsed' ? 'primary' : 'secondary'}
         onclick={() => (viewMode = 'parsed')}
       >
-        {$t('analysis.packet_dictionary.tab_parsed')}
+        <span class="tab-label">{$t('analysis.packet_dictionary.tab_parsed')}</span>
       </Button>
       <Button
         variant={viewMode === 'unmatched' ? 'primary' : 'secondary'}
         onclick={() => (viewMode = 'unmatched')}
       >
-        {$t('analysis.packet_dictionary.tab_unmatched')}
+        <span class="tab-label">{$t('analysis.packet_dictionary.tab_unmatched')}</span>
       </Button>
       <div class="separator"></div>
       <Button
@@ -234,6 +234,11 @@
   .view-tabs {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tab-label {
+    white-space: nowrap;
   }
 
   .packet-list {

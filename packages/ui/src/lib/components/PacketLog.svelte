@@ -281,6 +281,7 @@
     .search-box {
       flex: 1 1 100%;
       max-width: none;
+      min-width: 0;
     }
   }
 

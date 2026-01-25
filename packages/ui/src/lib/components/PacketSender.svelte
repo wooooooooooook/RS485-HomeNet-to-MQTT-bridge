@@ -216,6 +216,7 @@
   .input-row {
     display: flex;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
   .full-width {
@@ -239,6 +240,8 @@
     padding: 0.75rem;
     font-family: monospace;
     font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .hex-input:focus {
@@ -302,6 +305,7 @@
   .setting-inputs {
     display: flex;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
   .setting-inputs label {
@@ -310,6 +314,8 @@
     gap: 0.25rem;
     font-size: 0.85rem;
     color: #cbd5e1;
+    min-width: 120px;
+    flex: 1 1 120px;
   }
 
   .setting-inputs input {
@@ -318,7 +324,9 @@
     color: #e2e8f0;
     border-radius: 6px;
     padding: 0.4rem;
-    width: 80px;
+    width: 100%;
+    max-width: 120px;
+    box-sizing: border-box;
   }
 
   .preview-row {

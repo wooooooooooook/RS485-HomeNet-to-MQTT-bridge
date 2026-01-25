@@ -1,6 +1,4 @@
-export function validateGalleryEntityIds(
-  entities: Record<string, unknown> | undefined,
-): string[] {
+export function validateGalleryEntityIds(entities: Record<string, unknown> | undefined): string[] {
   if (!entities) return [];
 
   const missing: string[] = [];

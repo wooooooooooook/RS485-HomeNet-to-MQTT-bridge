@@ -405,11 +405,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       const missingEntityIds = validateGalleryEntityIds(expandedGalleryYaml.entities);
       const missingAutomationIds = validateGalleryAutomationIds(expandedGalleryYaml.automation);
       const missingScriptIds = validateGalleryScriptIds(expandedGalleryYaml.scripts);
-      const missingIds = [
-        ...missingEntityIds,
-        ...missingAutomationIds,
-        ...missingScriptIds,
-      ];
+      const missingIds = [...missingEntityIds, ...missingAutomationIds, ...missingScriptIds];
       if (missingIds.length > 0) {
         return res.status(400).json({
           error: 'Invalid gallery content',
@@ -698,11 +694,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       const missingEntityIds = validateGalleryEntityIds(expandedGalleryYaml.entities);
       const missingAutomationIds = validateGalleryAutomationIds(expandedGalleryYaml.automation);
       const missingScriptIds = validateGalleryScriptIds(expandedGalleryYaml.scripts);
-      const missingIds = [
-        ...missingEntityIds,
-        ...missingAutomationIds,
-        ...missingScriptIds,
-      ];
+      const missingIds = [...missingEntityIds, ...missingAutomationIds, ...missingScriptIds];
       if (missingIds.length > 0) {
         return res.status(400).json({
           error: 'Invalid gallery content',

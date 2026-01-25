@@ -520,7 +520,9 @@
     font-size: 0.8rem;
     font-weight: 600;
     outline: none;
-    transition: width 0.2s ease, opacity 0.2s ease;
+    transition:
+      width 0.2s ease,
+      opacity 0.2s ease;
   }
 
   .search-chip.expanded input {

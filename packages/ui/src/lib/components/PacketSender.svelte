@@ -20,6 +20,9 @@
   let sendError = $state<string | null>(null);
   let sendSuccessMsg = $state<string | null>(null);
 
+  const hexInputId = `hex-input-${Math.random().toString(36).slice(2, 9)}`;
+  const errorMsgId = `error-msg-${Math.random().toString(36).slice(2, 9)}`;
+
   async function updatePreview() {
     if (!senderHex.trim() || !portId) {
       senderPreview = null;
@@ -106,14 +109,16 @@
 
   <div class="sender-body">
     <div class="input-row">
-      <label class="full-width">
+      <label class="full-width" for={hexInputId}>
         <span class="label-text">{$t('analysis.raw_log.sender.hex_input_label')}</span>
         <input
+          id={hexInputId}
           type="text"
           bind:value={senderHex}
           placeholder={$t('analysis.raw_log.sender.hex_input_placeholder')}
           class="hex-input"
           aria-invalid={!!sendError}
+          aria-describedby={sendError ? errorMsgId : undefined}
         />
       </label>
     </div>
@@ -178,13 +183,19 @@
         variant="primary"
         onclick={sendPacket}
         disabled={!senderHex.trim()}
+        title={!senderHex.trim() ? $t('analysis.packet_analyzer.input_required') : undefined}
         isLoading={isSending}
       >
         {$t('analysis.raw_log.sender.send_btn')}
       </Button>
 
       {#if sendError}
-        <span class="error-msg" transition:fade role="alert">{sendError}</span>
+        <span
+          id={errorMsgId}
+          class="error-msg"
+          transition:fade
+          role="alert"
+        >{sendError}</span>
       {/if}
       {#if sendSuccessMsg}
         <span class="success-msg" transition:fade role="status">{sendSuccessMsg}</span>

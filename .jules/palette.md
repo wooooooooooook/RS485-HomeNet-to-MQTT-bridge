@@ -13,3 +13,7 @@
 ## 2026-01-20 - Hiding Decorative Text Icons
 **Learning:** Text-based icons (like `✓` or `!`) are often read as random characters or punctuation by screen readers, creating noise.
 **Action:** Use `aria-hidden="true"` on decorative text icons when the surrounding text already conveys the meaning (e.g. "Success" message next to a checkmark).
+
+## 2026-01-25 - Conditional Error Messages
+**Learning:** Error messages that appear dynamically are best associated with their inputs using `aria-describedby`. This ensures that when the user returns focus to the input to correct the mistake, the error context is announced.
+**Action:** Dynamically bind `aria-describedby` to the error message element's ID when an error state is present, alongside `aria-invalid="true"`.

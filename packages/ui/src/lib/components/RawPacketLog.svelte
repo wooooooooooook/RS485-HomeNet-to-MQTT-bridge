@@ -549,10 +549,15 @@
         bind:value={filterText}
       />
     </label>
-    <label class="filter-toggle">
-      <input type="checkbox" bind:checked={validOnly} />
-      <span>{$t('analysis.raw_log.valid_only_label')}</span>
-    </label>
+    <button
+      type="button"
+      class="filter-chip"
+      class:active={validOnly}
+      aria-pressed={validOnly}
+      onclick={() => (validOnly = !validOnly)}
+    >
+      {$t('analysis.raw_log.valid_only_label')}
+    </button>
     {#if isFiltering}
       <Button variant="secondary" onclick={() => (filterText = '')}>
         {$t('analysis.raw_log.clear_filter')}
@@ -778,20 +783,28 @@
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
   }
 
-  .filter-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    color: #cbd5e1;
-    font-size: 0.85rem;
-    padding: 0.2rem 0.4rem;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(148, 163, 184, 0.2);
+  .filter-chip {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5f5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .filter-toggle input {
-    accent-color: #38bdf8;
+  .filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    color: #e2e8f0;
+  }
+
+  .filter-chip.active {
+    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(59, 130, 246, 0.2);
+    color: #eff6ff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   }
 
   .filter-hint {

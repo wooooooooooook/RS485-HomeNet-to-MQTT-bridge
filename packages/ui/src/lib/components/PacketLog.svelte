@@ -140,14 +140,24 @@
             aria-label={$t('analysis.packet_log.search_placeholder')}
           />
         </div>
-        <label>
-          <input type="checkbox" bind:checked={showRx} />
+        <button
+          type="button"
+          class="filter-chip"
+          class:active={showRx}
+          aria-pressed={showRx}
+          onclick={() => (showRx = !showRx)}
+        >
           {$t('analysis.packet_log.rx')}
-        </label>
-        <label>
-          <input type="checkbox" bind:checked={showTx} />
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          class:active={showTx}
+          aria-pressed={showTx}
+          onclick={() => (showTx = !showTx)}
+        >
           {$t('analysis.packet_log.tx')}
-        </label>
+        </button>
       </div>
     </div>
 
@@ -270,15 +280,28 @@
     border-color: #3b82f6;
   }
 
-  .filters label {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
+  .filter-chip {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 0.3rem 0.65rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5f5;
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .filters input[type='checkbox'] {
-    cursor: pointer;
+  .filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    color: #e2e8f0;
+  }
+
+  .filter-chip.active {
+    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(59, 130, 246, 0.2);
+    color: #eff6ff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   }
 
   h2 {

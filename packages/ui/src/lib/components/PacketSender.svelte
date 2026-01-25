@@ -121,22 +121,34 @@
     <div class="options-row">
       <div class="opt-group">
         <span class="group-label">{$t('analysis.raw_log.sender.options_label')}</span>
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={senderOptions.header} />
-          <span>{$t('analysis.raw_log.sender.option_header')}</span>
-        </label>
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            bind:checked={senderOptions.footer}
-            disabled={!senderOptions.checksum}
-          />
-          <span>{$t('analysis.raw_log.sender.option_footer')}</span>
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={senderOptions.checksum} />
-          <span>{$t('analysis.raw_log.sender.option_checksum')}</span>
-        </label>
+        <button
+          type="button"
+          class="filter-chip"
+          class:active={senderOptions.header}
+          aria-pressed={senderOptions.header}
+          onclick={() => (senderOptions.header = !senderOptions.header)}
+        >
+          {$t('analysis.raw_log.sender.option_header')}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          class:active={senderOptions.footer}
+          aria-pressed={senderOptions.footer}
+          onclick={() => (senderOptions.footer = !senderOptions.footer)}
+          disabled={!senderOptions.checksum}
+        >
+          {$t('analysis.raw_log.sender.option_footer')}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          class:active={senderOptions.checksum}
+          aria-pressed={senderOptions.checksum}
+          onclick={() => (senderOptions.checksum = !senderOptions.checksum)}
+        >
+          {$t('analysis.raw_log.sender.option_checksum')}
+        </button>
       </div>
 
       <div class="settings-group">
@@ -257,16 +269,33 @@
     margin-bottom: 0.25rem;
   }
 
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #cbd5e1;
-    font-size: 0.9rem;
+  .filter-chip {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5f5;
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
   }
 
-  .checkbox-label input:disabled + span {
+  .filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    color: #e2e8f0;
+  }
+
+  .filter-chip.active {
+    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(59, 130, 246, 0.2);
+    color: #eff6ff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+  }
+
+  .filter-chip:disabled {
+    cursor: not-allowed;
     opacity: 0.5;
   }
 

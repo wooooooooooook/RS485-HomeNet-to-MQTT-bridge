@@ -692,7 +692,7 @@
     .link-visual,
     .link-visual.spacer {
       width: 2px;
-      height: 28px;
+      height: 36px;
       flex: none;
       padding: 0;
     }
@@ -719,7 +719,7 @@
       flex-direction: column;
       flex: 1;
       padding-top: 0;
-      gap: 0;
+      gap: 16px;
       justify-content: flex-start;
     }
 

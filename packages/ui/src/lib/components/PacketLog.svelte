@@ -274,13 +274,14 @@
     padding: 0.3rem 0.6rem;
     color: #e2e8f0;
     font-size: 0.85rem;
-    width: 100%;
+    width: 90%;
   }
 
   @media (max-width: 640px) {
     .search-box {
       flex: 1 1 100%;
       max-width: none;
+      min-width: 0;
     }
   }
 

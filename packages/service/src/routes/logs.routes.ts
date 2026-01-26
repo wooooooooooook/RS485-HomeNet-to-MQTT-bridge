@@ -112,7 +112,7 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
       } else {
         // Fallback to server-side stats (may be empty if listener wasn't active)
         bridges.forEach((b) => {
-          const bridgeStats = (b.bridge as any).getPacketIntervalStats?.() || {};
+          const bridgeStats = b.bridge.getPacketIntervalStats?.() || {};
           Object.assign(stats, bridgeStats);
         });
       }

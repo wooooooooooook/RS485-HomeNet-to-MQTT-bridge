@@ -285,22 +285,22 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
       if (type === 'automation' && targetBridge) {
         const updatedAutomation = newEntity as AutomationConfig;
         if (updatedAutomation.id && updatedAutomation.id !== entityId) {
-          (targetBridge.bridge as any).removeAutomation(entityId);
+          targetBridge.bridge.removeAutomation(entityId);
         }
         if (updatedAutomation.enabled === false) {
-          (targetBridge.bridge as any).removeAutomation(updatedAutomation.id ?? entityId);
+          targetBridge.bridge.removeAutomation(updatedAutomation.id ?? entityId);
         } else {
-          (targetBridge.bridge as any).upsertAutomation(updatedAutomation);
+          targetBridge.bridge.upsertAutomation(updatedAutomation);
         }
       }
 
       if (type === 'script' && targetBridge) {
         const updatedScript = newEntity as ScriptConfig;
         if (updatedScript.id && updatedScript.id !== entityId) {
-          (targetBridge.bridge as any).removeScript(entityId);
+          targetBridge.bridge.removeScript(entityId);
         }
         if (updatedScript.id) {
-          (targetBridge.bridge as any).upsertScript(updatedScript);
+          targetBridge.bridge.upsertScript(updatedScript);
         }
       }
 

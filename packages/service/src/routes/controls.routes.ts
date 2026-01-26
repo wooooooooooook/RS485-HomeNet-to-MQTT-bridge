@@ -377,8 +377,7 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     }
 
     try {
-      // Using any cast to bypass potential type mismatch if HomeNetBridge definition is outdated in types
-      const result = await (targetBridge.bridge as any).runAutomationThen(automation);
+      const result = await targetBridge.bridge.runAutomationThen(automation);
       if (result.success) {
         res.json({ success: true });
       } else {
@@ -454,9 +453,9 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
       if (targetBridge) {
         if (enabled) {
-          (targetBridge.bridge as any).upsertAutomation(automation);
+          targetBridge.bridge.upsertAutomation(automation);
         } else {
-          (targetBridge.bridge as any).removeAutomation(automationId);
+          targetBridge.bridge.removeAutomation(automationId);
         }
       }
 
@@ -526,7 +525,7 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     }
 
     try {
-      const result = await (targetBridge.bridge as any).runScript(scriptId);
+      const result = await targetBridge.bridge.runScript(scriptId);
       if (result.success) {
         res.json({ success: true });
       } else {
@@ -594,8 +593,7 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       const bridges = ctx.getBridges();
       const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
       if (targetBridge) {
-        // Any cast to bypass potential type mismatch
-        (targetBridge.bridge as any).removeAutomation(automationId);
+        targetBridge.bridge.removeAutomation(automationId);
       }
 
       logger.info(
@@ -664,16 +662,9 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       const bridges = ctx.getBridges();
       const targetBridge = bridges.find((instance) => instance.configFile === targetConfigFile);
       if (targetBridge) {
-        // Using removeScript if available, otherwise just remove from config is enough
-        // But bridge might have loaded scripts.
-        // Assuming removeScript exists or we need to reload.
-        // Since removeAutomation exists, removeScript likely exists.
-        // Or just reloading bridge config via some mechanism?
-        // In original code, did it remove from bridge?
-        // Let's assume yes and use any cast. If not exists, it will throw in runtime? No, undefined function.
         // Safe check: if method exists call it.
-        if (typeof (targetBridge.bridge as any).removeScript === 'function') {
-          (targetBridge.bridge as any).removeScript(scriptId);
+        if (typeof targetBridge.bridge.removeScript === 'function') {
+          targetBridge.bridge.removeScript(scriptId);
         }
       }
 

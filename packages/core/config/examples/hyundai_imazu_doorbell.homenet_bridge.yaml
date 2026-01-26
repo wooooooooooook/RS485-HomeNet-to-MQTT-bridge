@@ -142,7 +142,7 @@ automation:
       - type: state
         entity: doorbell_common
         property: 'state'
-        match: {eq: 'on'}
+        match: { eq: 'on' }
     then:
       - action: if
         condition: "states['doorbell_auto_open_common']['state'] == 'on'"
@@ -167,7 +167,7 @@ automation:
       - type: state
         entity: doorbell_private
         property: 'state'
-        match: {eq: 'on'}
+        match: { eq: 'on' }
     then:
       - action: if
         condition: "states['doorbell_auto_open_private']['state'] == 'on'"

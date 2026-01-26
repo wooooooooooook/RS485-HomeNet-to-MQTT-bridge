@@ -28,7 +28,7 @@ entities:
         as: i
         start: 1
       id: 'heater_{{i}}'
-      name: 'Room 1 Heater {{i}}'
+      name: 'Heater {{i}}'
       # 다 0x1X라서 Room 1로 가정? 아니면 Room ID 개념이 없나?
       # 원본 heaters.yaml: "Room 1 Heater 1" (0x10), "Room 1 Heater 2" (0x11)
       # 0x1X가 방 번호라기 보단 그냥 난방기 Index인 듯. (0x10 ~ 0x14)

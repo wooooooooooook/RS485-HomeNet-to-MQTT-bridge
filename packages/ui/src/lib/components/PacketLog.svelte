@@ -3,6 +3,8 @@
   import type { CommandLogEntry, PacketLogEntry } from '../types';
   import VirtualList from '@humanspeak/svelte-virtual-list';
   import { formatTime } from '../utils/time';
+  import { fade } from 'svelte/transition';
+  import Button from './Button.svelte';
 
   let {
     parsedLogs = [],
@@ -19,7 +21,7 @@
   let isPaused = $state(false);
   let searchQuery = $state('');
   let debouncedQuery = $state('');
-  const SEARCH_DEBOUNCE_MS = 200;
+  const SEARCH_DEBOUNCE_MS = 300;
   let searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   type MergedPacket = { type: 'rx'; data: PacketLogEntry } | { type: 'tx'; data: CommandLogEntry };
@@ -28,9 +30,6 @@
     packet.timestampMs ?? new Date(packet.timestamp).getTime();
 
   const mergePackets = (rxPackets: PacketLogEntry[], txPackets: CommandLogEntry[]) => {
-    // Snapshot or use raw arrays to avoid excessive proxy overhead if passed as proxies
-    // However, since we just iterate and push to a new array, the overhead is mainly in property access.
-    // If the arrays are huge, using $state.snapshot might be better, but let's first rely on the logic change.
     const merged: MergedPacket[] = [];
     let rxIndex = 0;
     let txIndex = 0;
@@ -73,13 +72,61 @@
     };
   });
 
+  function getSearchPattern(filter: string) {
+    if (!filter) return null;
+    const parts = filter.split(/(\*+)/);
+    const patternParts = parts.reduce((acc, part) => {
+      if (!part) return acc;
+      if (part.startsWith('*')) {
+        acc.push('.*?');
+      } else {
+        const searchChars = part.split('').filter((char) => char.trim().length > 0);
+        const mappedChars = searchChars.map((char) => {
+          if (char === '?') return '.';
+          return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        });
+        if (mappedChars.length > 0) {
+          acc.push(mappedChars.join('\\s*'));
+        }
+      }
+      return acc;
+    }, [] as string[]);
+    if (patternParts.length === 0) return null;
+    return `(${patternParts.join('')})`;
+  }
+
+  function getHighlightedParts(text: string, filter: string) {
+    if (!filter) return [{ text, highlight: false }];
+    const pattern = getSearchPattern(filter);
+    if (!pattern) return [{ text, highlight: false }];
+    const regex = new RegExp(pattern, 'gi');
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ text: text.slice(lastIndex, match.index), highlight: false });
+      }
+      parts.push({ text: match[0], highlight: true });
+      lastIndex = regex.lastIndex;
+      if (match.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+    }
+    if (lastIndex < text.length) {
+      parts.push({ text: text.slice(lastIndex), highlight: false });
+    }
+    return parts;
+  }
+
+  const normalizedFilter = $derived(debouncedQuery);
+
   // Calculate merged logs normally
   const displayPackets = $derived.by(() => {
     const query = debouncedQuery;
     const rxPackets = showRx ? parsedLogs : [];
     const txPackets = showTx ? commandLogs : [];
 
-    // Use searchText pre-calculated in logs for filtering
     const filteredRx = query
       ? rxPackets.filter((packet: PacketLogEntry) => packet.searchText?.includes(query))
       : rxPackets;
@@ -90,8 +137,6 @@
     return mergePackets(filteredRx, filteredTx);
   });
 
-  // When not paused, sync viewPackets with displayPackets
-  // When paused, viewPackets remains properly frozen
   let viewPackets = $state<MergedPacket[]>([]);
 
   $effect(() => {
@@ -99,6 +144,8 @@
       viewPackets = displayPackets;
     }
   });
+
+  const getPayloadText = (packetId: string) => (packetDictionary[packetId] || '').toUpperCase();
 </script>
 
 {#snippet renderPacketItem(packet: MergedPacket, _index: number)}
@@ -107,101 +154,121 @@
 
     {#if packet.type === 'rx'}
       <span class="direction rx">RX</span>
-      <span class="entity">{packet.data.entityId}</span>
-      <span class="payload">{(packetDictionary[packet.data.packetId] || '').toUpperCase()}</span>
+      <span class="entity">
+        {#each getHighlightedParts(packet.data.entityId, normalizedFilter) as part, index (`ent-${index}`)}
+          {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+      </span>
+      <code class="payload">
+        {#each getHighlightedParts(getPayloadText(packet.data.packetId), normalizedFilter) as part, index (`pay-${index}`)}
+          {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+      </code>
       {#if (packet.data as PacketLogEntry).state}
         <span class="state-preview">→ {JSON.stringify((packet.data as PacketLogEntry).state)}</span>
       {/if}
     {:else}
       <span class="direction tx">TX</span>
-      <span class="entity">{packet.data.entityId}</span>
-      <span class="payload">{(packetDictionary[packet.data.packetId] || '').toUpperCase()}</span>
+      <span class="entity">
+        {#each getHighlightedParts(packet.data.entityId, normalizedFilter) as part, index (`ent-${index}`)}
+          {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+      </span>
+      <code class="payload">
+        {#each getHighlightedParts(getPayloadText(packet.data.packetId), normalizedFilter) as part, index (`pay-${index}`)}
+          {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+      </code>
       <span class="command-info">
-        {(packet.data as CommandLogEntry).command}
-        {#if (packet.data as CommandLogEntry).value !== undefined}<span class="value"
-            >({(packet.data as CommandLogEntry).value})</span
-          >{/if}
+        {#each getHighlightedParts((packet.data as CommandLogEntry).command, normalizedFilter) as part, index (`cmd-${index}`)}
+          {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+        {#if (packet.data as CommandLogEntry).value !== undefined}
+          <span class="value">
+            ({#each getHighlightedParts(String((packet.data as CommandLogEntry).value), normalizedFilter) as part, index (`val-${index}`)}
+              {#if part.highlight}<mark>{part.text}</mark>{:else}{part.text}{/if}
+            {/each})
+          </span>
+        {/if}
       </span>
     {/if}
   </div>
 {/snippet}
 
-<!-- Unified Packet Log Section -->
-<div class="log-section">
+<div id="packet-log" class="log-section">
   <div class="log-header">
     <div class="header-left">
       <h2>{$t('analysis.packet_log.title')}</h2>
-      <div class="filters">
-        <div class="search-box">
-          <input
-            type="text"
-            bind:value={searchQuery}
-            placeholder={$t('analysis.packet_log.search_placeholder')}
-            aria-label={$t('analysis.packet_log.search_placeholder')}
-          />
-        </div>
-        <button
-          type="button"
-          class="filter-chip"
-          class:active={showRx}
-          aria-pressed={showRx}
-          onclick={() => (showRx = !showRx)}
-        >
-          {$t('analysis.packet_log.rx')}
-        </button>
-        <button
-          type="button"
-          class="filter-chip"
-          class:active={showTx}
-          aria-pressed={showTx}
-          onclick={() => (showTx = !showTx)}
-        >
-          {$t('analysis.packet_log.tx')}
-        </button>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <button
-        class="pause-btn"
-        class:paused={isPaused}
-        onclick={() => (isPaused = !isPaused)}
-        title={isPaused ? $t('common.resume') : $t('common.pause')}
-      >
-        {#if isPaused}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="16"
-            height="16"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          {$t('common.resume', { default: 'Resume' })}
-        {:else}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="16"
-            height="16"
-          >
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-          </svg>
-          {$t('common.pause', { default: 'Pause' })}
-        {/if}
-      </button>
     </div>
   </div>
+
   <p class="description">{$t('analysis.packet_log.desc')}</p>
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div
-    class="log-list unified-list"
-    tabindex="0"
-    role="log"
-    aria-label={$t('analysis.packet_log.title')}
-  >
+
+  <div class="filter-row">
+    <label class="filter-label">
+      <span>{$t('analysis.packet_log.search_placeholder')}</span>
+      <input
+        type="text"
+        placeholder={$t('analysis.packet_log.search_placeholder')}
+        bind:value={searchQuery}
+      />
+    </label>
+    <button
+      type="button"
+      class="filter-chip"
+      class:active={showRx}
+      aria-pressed={showRx}
+      onclick={() => (showRx = !showRx)}
+    >
+      {$t('analysis.packet_log.rx')}
+    </button>
+    <button
+      type="button"
+      class="filter-chip"
+      class:active={showTx}
+      aria-pressed={showTx}
+      onclick={() => (showTx = !showTx)}
+    >
+      {$t('analysis.packet_log.tx')}
+    </button>
+    {#if searchQuery}
+      <Button variant="secondary" onclick={() => (searchQuery = '')}>
+        {$t('analysis.raw_log.clear_filter')}
+      </Button>
+    {/if}
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem;">
+    <Button variant="secondary" onclick={() => (isPaused = !isPaused)}>
+      {#if isPaused}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16"
+          style="margin-right: 0.4rem;"
+        >
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        {$t('common.resume', { default: 'Resume' })}
+      {:else}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16"
+          style="margin-right: 0.4rem;"
+        >
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+        </svg>
+        {$t('common.pause', { default: 'Pause' })}
+      {/if}
+    </Button>
+  </div>
+
+  <div class="log-list unified-list" role="log" aria-label={$t('analysis.packet_log.title')}>
     {#if viewPackets.length === 0}
       <p class="empty">{$t('analysis.packet_log.empty')}</p>
     {:else}
@@ -234,89 +301,96 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
     margin-bottom: 1rem;
+    gap: 1rem;
   }
 
   .header-left {
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    flex-wrap: wrap; /* Handle small screens */
-    flex: 1 1 320px;
-  }
-
-  .description {
-    color: #94a3b8;
-    font-size: 0.9rem;
-  }
-
-  .filters {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    font-size: 0.9rem;
-    color: #94a3b8;
     flex-wrap: wrap;
-  }
-
-  .search-box {
-    min-width: 200px;
-    max-width: 280px;
-  }
-
-  .search-box input {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 4px;
-    padding: 0.3rem 0.6rem;
-    color: #e2e8f0;
-    font-size: 0.85rem;
-    width: 90%;
-  }
-
-  @media (max-width: 640px) {
-    .search-box {
-      flex: 1 1 100%;
-      max-width: none;
-      min-width: 0;
-    }
-  }
-
-  .search-box input:focus {
-    outline: none;
-    border-color: #3b82f6;
-  }
-
-  .filter-chip {
-    border: 1px solid rgba(148, 163, 184, 0.35);
-    border-radius: 999px;
-    padding: 0.3rem 0.65rem;
-    background: rgba(15, 23, 42, 0.6);
-    color: #cbd5f5;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .filter-chip:hover {
-    border-color: rgba(148, 163, 184, 0.6);
-    color: #e2e8f0;
-  }
-
-  .filter-chip.active {
-    border-color: rgba(59, 130, 246, 0.7);
-    background: rgba(59, 130, 246, 0.2);
-    color: #eff6ff;
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   }
 
   h2 {
     font-size: 1.1rem;
     margin: 0;
     color: #e2e8f0;
+  }
+
+  .description {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin: 0.75rem 0 1rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .filter-label span {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-label input {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+
+  .filter-label input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .filter-chip {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 38px;
+    display: flex;
+    align-items: center;
+  }
+
+  .filter-chip:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    color: #e2e8f0;
+    background: rgba(30, 41, 59, 0.6);
+  }
+
+  .filter-chip.active {
+    border-color: rgba(59, 130, 246, 0.6);
+    background: rgba(59, 130, 246, 0.15);
+    color: #eff6ff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
   }
 
   .log-list {
@@ -337,13 +411,7 @@
     border-bottom: 1px solid rgba(148, 163, 184, 0.05);
     align-items: center;
     color: #cbd5e1;
-  }
-
-  @media (max-width: 480px) {
-    .log-item {
-      gap: 0.5rem;
-      padding: 0.4rem 0.3rem;
-    }
+    min-height: 32px;
   }
 
   .log-item:last-child {
@@ -358,19 +426,20 @@
 
   .direction {
     font-weight: bold;
-    font-size: 0.75rem;
-    padding: 0.1rem 0.3rem;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
     border-radius: 4px;
     text-align: center;
+    min-width: 28px;
   }
 
   .direction.rx {
-    background: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.15);
     color: #10b981;
   }
 
   .direction.tx {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(245, 158, 11, 0.15);
     color: #f59e0b;
   }
 
@@ -382,12 +451,14 @@
   .payload {
     color: #10b981;
     font-weight: 600;
-    font-family: monospace;
+    background: rgba(16, 185, 129, 0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
   }
 
   .command-info {
     color: #a855f7;
-    margin-left: 0.5rem;
+    margin-left: 0.25rem;
   }
 
   .value {
@@ -408,49 +479,10 @@
     font-style: italic;
   }
 
-  /* Right-side actions */
-  .header-right {
-    display: flex;
-    align-items: center;
-  }
-
-  @media (max-width: 600px) {
-    .header-right {
-      width: 100%;
-      justify-content: flex-end;
-    }
-  }
-
-  .pause-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    color: #e2e8f0;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .pause-btn:hover {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(148, 163, 184, 0.4);
-  }
-
-  .pause-btn.paused {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.4);
-    color: #fbbf24;
-  }
-
-  .pause-btn.paused:hover {
-    background: rgba(245, 158, 11, 0.25);
-  }
-
-  .pause-btn svg {
-    flex-shrink: 0;
+  mark {
+    background: rgba(250, 204, 21, 0.3);
+    color: #fde047;
+    border-radius: 2px;
+    padding: 0 1px;
   }
 </style>

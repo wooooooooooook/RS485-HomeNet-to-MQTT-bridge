@@ -261,7 +261,7 @@
       "desc": "Analyze input packets through the core parser path to inspect valid packets and matches.",
       "port_label": "Target port",
       "format_label": "Input format",
-      "format_hint": "Supports hex strings or [int] arrays.",
+      "format_hint": "Supports hex strings or [int] arrays. You can paste values copied from raw packet logs or the packet dictionary.",
       "input_label": "Packet input",
       "input_placeholder": "e.g. AA 0B 01 FF or [170, 11, 1, 255]",
       "input_hint": "Whitespace/newlines are ignored. 0x prefixes are supported.",
@@ -283,6 +283,7 @@
       "trigger_label": "Trigger #{index}",
       "packet_ref": "Packet #{index}",
       "state_match": "State trigger: {entityId} · {property}",
+      "toggle_yaml_preview": "Toggle YAML configuration preview",
       "errors_title": "Parse errors"
     },
     "packet_dictionary": {

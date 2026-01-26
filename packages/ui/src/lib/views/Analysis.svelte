@@ -13,6 +13,7 @@
   import PacketDictionaryView from '../components/PacketDictionaryView.svelte';
   import CelAnalyzerCard from '../components/analysis/CelAnalyzerCard.svelte';
   import PacketAnalyzerCard from '../components/analysis/PacketAnalyzerCard.svelte';
+  import AnalysisChipBar from '../components/analysis/AnalysisChipBar.svelte';
 
   type AnalyzerStateOption = {
     id: string;
@@ -68,7 +69,12 @@
 </script>
 
 <div class="analysis-view">
-  <PacketLog {commandLogs} {parsedLogs} {packetDictionary} />
+  <AnalysisChipBar {logRetentionEnabled} />
+
+  <div id="packet-log">
+    <PacketLog {commandLogs} {parsedLogs} {packetDictionary} />
+  </div>
+
   <RawPacketLog
     {rawPackets}
     {packetDictionary}
@@ -82,11 +88,20 @@
     bind:recordedFile
     portId={activePortId}
   />
+
   {#if logRetentionEnabled}
-    <PacketDictionaryView portId={activePortId} />
+    <div id="packet-dictionary">
+      <PacketDictionaryView portId={activePortId} />
+    </div>
   {/if}
-  <PacketAnalyzerCard {portIds} {activePortId} />
-  <CelAnalyzerCard {statesSnapshot} {stateOptions} />
+
+  <div id="packet-analyzer">
+    <PacketAnalyzerCard {portIds} {activePortId} />
+  </div>
+
+  <div id="cel-analyzer">
+    <CelAnalyzerCard {statesSnapshot} {stateOptions} />
+  </div>
 </div>
 
 <style>

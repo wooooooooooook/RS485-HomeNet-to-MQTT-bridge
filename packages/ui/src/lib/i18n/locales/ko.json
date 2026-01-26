@@ -261,7 +261,7 @@
       "desc": "입력한 패킷을 core 파서 경로로 해석해 유효 패킷과 매칭 결과를 확인합니다.",
       "port_label": "대상 포트",
       "format_label": "입력 형식",
-      "format_hint": "Hex 문자열 또는 [int] 배열을 입력할 수 있습니다.",
+      "format_hint": "Hex 문자열 또는 [int] 배열을 입력할 수 있습니다. raw패킷로그의 패킷녹화나 패킷딕셔너리에서 복사한 값을 붙여넣어도 됩니다.",
       "input_label": "패킷 입력",
       "input_placeholder": "예: AA 0B 01 FF 또는 [170, 11, 1, 255]",
       "input_hint": "공백/줄바꿈 무관, 0x 접두어도 지원됩니다.",
@@ -283,6 +283,7 @@
       "trigger_label": "트리거 #{index}",
       "packet_ref": "패킷 #{index}",
       "state_match": "상태 트리거: {entityId} · {property}",
+      "toggle_yaml_preview": "YAML 설정 미리보기 토글",
       "errors_title": "해석 오류"
     },
     "packet_dictionary": {

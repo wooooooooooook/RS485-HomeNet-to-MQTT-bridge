@@ -21,6 +21,15 @@
     }
   };
 
+  const splitToBytes = (hex: string) => {
+    const raw = hex.replace(/\s+/g, '');
+    const bytes: string[] = [];
+    for (let i = 0; i < raw.length; i += 2) {
+      bytes.push(raw.slice(i, i + 2));
+    }
+    return bytes;
+  };
+
   const handleAnalyze = async () => {
     error = null;
     result = null;
@@ -49,6 +58,38 @@
       error = err instanceof Error ? err.message : $t('analysis.packet_analyzer.request_failed');
     } finally {
       isLoading = false;
+    }
+  };
+
+  // --- YAML Preview Toggle Support ---
+  let expandedEntityId = $state<string | null>(null);
+  let isYamlLoading = $state(false);
+  let yamlCache = new Map<string, string>();
+
+  const fetchEntityYaml = async (id: string, category: 'entity' | 'automation' | 'script') => {
+    // Toggle off if same id clicked
+    if (expandedEntityId === id) {
+      expandedEntityId = null;
+      return;
+    }
+
+    // Set active id immediately for UI feedback
+    expandedEntityId = id;
+
+    if (yamlCache.has(id)) {
+      return;
+    }
+
+    isYamlLoading = true;
+    try {
+      const res = await fetch(`./api/config/raw/${category}/${id}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      yamlCache.set(id, data.yaml);
+    } catch {
+      yamlCache.set(id, 'Failed to load configuration');
+    } finally {
+      isYamlLoading = false;
     }
   };
 </script>
@@ -102,6 +143,7 @@
         {:else}
           <div class="packet-list">
             {#each result.packets as packet, index}
+              {@const bytes = splitToBytes(packet.hex)}
               <div class="packet-card">
                 <div class="packet-title">
                   <span
@@ -109,7 +151,18 @@
                       values: { index: index + 1 },
                     })}</span
                   >
-                  <code>{packet.hex}</code>
+                  <div class="packet-hex-container">
+                    <div class="hex-row">
+                      {#each bytes as byte}
+                        <span class="byte">{byte}</span>
+                      {/each}
+                    </div>
+                    <div class="offset-row">
+                      {#each bytes as _, i}
+                        <span class="offset">{i}</span>
+                      {/each}
+                    </div>
+                  </div>
                 </div>
                 <div class="packet-section">
                   <div class="section-title">
@@ -121,8 +174,31 @@
                     <ul>
                       {#each packet.matches as match}
                         <li>
-                          <strong>{match.entityName}</strong>
+                          <button
+                            class="entity-preview-btn"
+                            class:active={expandedEntityId === match.entityId}
+                            onclick={() => fetchEntityYaml(match.entityId, 'entity')}
+                            aria-expanded={expandedEntityId === match.entityId}
+                            title={$t('analysis.packet_analyzer.toggle_yaml_preview')}
+                          >
+                            <strong>{match.entityName}</strong>
+                          </button>
                           <span class="muted">({match.entityType} · {match.entityId})</span>
+
+                          {#if expandedEntityId === match.entityId}
+                            <div class="yaml-preview-block">
+                              {#if isYamlLoading && !yamlCache.has(match.entityId)}
+                                <div class="loading-inline">
+                                  <span class="loading-spinner"></span>
+                                  <span>Loading...</span>
+                                </div>
+                              {:else}
+                                <pre class="yaml-code"><code>{yamlCache.get(match.entityId)}</code
+                                  ></pre>
+                              {/if}
+                            </div>
+                          {/if}
+
                           <pre>{formatState(match.state)}</pre>
                         </li>
                       {/each}
@@ -144,13 +220,25 @@
         {:else}
           <ul class="compact-list">
             {#each result.unmatchedPackets as packet, index}
+              {@const bytes = splitToBytes(packet.hex)}
               <li>
                 <span
                   >{$t('analysis.packet_analyzer.packet_label', {
                     values: { index: index + 1 },
                   })}</span
                 >
-                <code>{packet.hex}</code>
+                <div class="packet-hex-container compact">
+                  <div class="hex-row">
+                    {#each bytes as byte}
+                      <span class="byte">{byte}</span>
+                    {/each}
+                  </div>
+                  <div class="offset-row">
+                    {#each bytes as _, i}
+                      <span class="offset">{i}</span>
+                    {/each}
+                  </div>
+                </div>
               </li>
             {/each}
           </ul>
@@ -168,9 +256,30 @@
             {#each result.automationMatches as match}
               <li>
                 <div class="automation-title">
-                  <strong>{match.name || match.automationId}</strong>
+                  <button
+                    class="entity-preview-btn"
+                    class:active={expandedEntityId === match.automationId}
+                    onclick={() => fetchEntityYaml(match.automationId, 'automation')}
+                    aria-expanded={expandedEntityId === match.automationId}
+                    title={$t('analysis.packet_analyzer.toggle_yaml_preview')}
+                  >
+                    <strong>{match.name || match.automationId}</strong>
+                  </button>
                   <span class="muted">({match.automationId})</span>
                 </div>
+
+                {#if expandedEntityId === match.automationId}
+                  <div class="yaml-preview-block">
+                    {#if isYamlLoading && !yamlCache.has(match.automationId)}
+                      <div class="loading-inline">
+                        <span class="loading-spinner"></span>
+                        <span>Loading...</span>
+                      </div>
+                    {:else}
+                      <pre class="yaml-code"><code>{yamlCache.get(match.automationId)}</code></pre>
+                    {/if}
+                  </div>
+                {/if}
                 <div class="automation-meta">
                   <span class="badge">{match.triggerType}</span>
                   <span class="badge"
@@ -346,13 +455,47 @@
     color: #e2e8f0;
   }
 
-  .packet-title code {
-    font-size: 0.85rem;
+  .packet-hex-container {
+    background: rgba(15, 23, 42, 0.4);
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-family: 'Fira Code', monospace;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .packet-hex-container.compact {
+    flex: 1;
+    margin-top: 0;
+    padding: 0.5rem;
+  }
+
+  .hex-row,
+  .offset-row {
+    display: flex;
+    gap: 0.4rem;
+    min-width: max-content;
+  }
+
+  .byte,
+  .offset {
+    width: 1.6rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .byte {
     color: #7dd3fc;
-    display: block;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    word-break: break-all;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .offset {
+    color: #64748b;
+    font-size: 0.7rem;
   }
 
   .badge {
@@ -409,15 +552,8 @@
   .compact-list li {
     display: flex;
     gap: 0.5rem;
-    align-items: flex-start;
-  }
-
-  .compact-list code {
-    color: #7dd3fc;
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    word-break: break-all;
+    align-items: center;
+    margin-bottom: 0.75rem;
   }
 
   .automation-list {
@@ -451,7 +587,78 @@
     margin: 0.25rem 0 0;
   }
 
-  code {
-    font-family: 'Fira Code', monospace;
+  /* YAML Preview Styles */
+  .entity-preview-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.4);
+    transition: all 0.2s;
+  }
+
+  .entity-preview-btn:hover,
+  .entity-preview-btn.active {
+    color: #7dd3fc;
+    border-bottom-color: #7dd3fc;
+  }
+
+  .yaml-preview-block {
+    margin: 0.5rem 0;
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .yaml-code {
+    margin: 0;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.8);
+    font-size: 0.8rem;
+    max-height: 400px;
+    overflow-y: auto;
+    border: none;
+  }
+
+  .loading-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .loading-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

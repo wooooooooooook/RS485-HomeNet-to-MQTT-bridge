@@ -260,80 +260,96 @@
       </label>
     </div>
 
-    <div class="grid">
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.x_label')}</span>
-        <input
-          type="text"
-          inputmode="decimal"
-          bind:value={xInput}
-          placeholder={$t('analysis.cel_analyzer.x_placeholder')}
-        />
-      </label>
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.xstr_label')}</span>
-        <input
-          type="text"
-          bind:value={xstrInput}
-          placeholder={$t('analysis.cel_analyzer.xstr_placeholder')}
-        />
-      </label>
-    </div>
+    {#if mode === 'command'}
+      <div class="grid">
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.x_label')}</span>
+          <input
+            type="text"
+            inputmode="decimal"
+            bind:value={xInput}
+            placeholder={$t('analysis.cel_analyzer.x_placeholder')}
+          />
+        </label>
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.xstr_label')}</span>
+          <input
+            type="text"
+            bind:value={xstrInput}
+            placeholder={$t('analysis.cel_analyzer.xstr_placeholder')}
+          />
+        </label>
+      </div>
+    {/if}
 
     <div class="grid">
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.data_label')}</span>
-        <textarea
-          rows="2"
-          bind:value={dataInput}
-          placeholder={$t('analysis.cel_analyzer.data_placeholder')}
-        ></textarea>
-        <span class="inline-hint">{$t('analysis.cel_analyzer.data_hint')}</span>
-      </label>
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.state_label')}</span>
-        <textarea
-          rows="2"
-          bind:value={stateInput}
-          placeholder={$t('analysis.cel_analyzer.state_placeholder')}
-        ></textarea>
-        <div class="inline-actions">
-          <select bind:value={selectedStateId} disabled={!hasStateOptions}>
-            <option value="" disabled>{$t('analysis.cel_analyzer.state_select_placeholder')}</option
+      {#if mode === 'state' || mode === 'checksum'}
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.data_label')}</span>
+          <textarea
+            rows="2"
+            bind:value={dataInput}
+            placeholder={$t('analysis.cel_analyzer.data_placeholder')}
+          ></textarea>
+          <span class="inline-hint">{$t('analysis.cel_analyzer.data_hint')}</span>
+        </label>
+      {/if}
+
+      {#if mode !== 'checksum'}
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.state_label')}</span>
+          <textarea
+            rows="2"
+            bind:value={stateInput}
+            placeholder={$t('analysis.cel_analyzer.state_placeholder')}
+          ></textarea>
+          <div class="inline-actions">
+            <select bind:value={selectedStateId} disabled={!hasStateOptions}>
+              <option value="" disabled
+                >{$t('analysis.cel_analyzer.state_select_placeholder')}</option
+              >
+              {#each stateOptions as option (option.id)}
+                <option value={option.id}>{option.label}</option>
+              {/each}
+            </select>
+            <button
+              type="button"
+              class="ghost"
+              onclick={handleLoadState}
+              disabled={!selectedStateId}
             >
-            {#each stateOptions as option (option.id)}
-              <option value={option.id}>{option.label}</option>
-            {/each}
-          </select>
-          <button type="button" class="ghost" onclick={handleLoadState} disabled={!selectedStateId}>
-            {$t('analysis.cel_analyzer.state_fetch')}
+              {$t('analysis.cel_analyzer.state_fetch')}
+            </button>
+          </div>
+        </label>
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.states_label')}</span>
+          <textarea
+            rows="2"
+            bind:value={statesInput}
+            placeholder={$t('analysis.cel_analyzer.states_placeholder')}
+          ></textarea>
+          <button
+            type="button"
+            class="ghost"
+            onclick={handleLoadStates}
+            disabled={!hasStatesSnapshot}
+          >
+            {$t('analysis.cel_analyzer.states_fetch')}
           </button>
-        </div>
-      </label>
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.states_label')}</span>
-        <textarea
-          rows="2"
-          bind:value={statesInput}
-          placeholder={$t('analysis.cel_analyzer.states_placeholder')}
-        ></textarea>
-        <button
-          type="button"
-          class="ghost"
-          onclick={handleLoadStates}
-          disabled={!hasStatesSnapshot}
-        >
-          {$t('analysis.cel_analyzer.states_fetch')}
-        </button>
-      </label>
-      <label>
-        <span class="label">{$t('analysis.cel_analyzer.trigger_label')}</span>
-        <textarea
-          rows="2"
-          bind:value={triggerInput}
-          placeholder={$t('analysis.cel_analyzer.trigger_placeholder')}
-        ></textarea>
-      </label>
+        </label>
+      {/if}
+
+      {#if mode === 'automation'}
+        <label>
+          <span class="label">{$t('analysis.cel_analyzer.trigger_label')}</span>
+          <textarea
+            rows="2"
+            bind:value={triggerInput}
+            placeholder={$t('analysis.cel_analyzer.trigger_placeholder')}
+          ></textarea>
+        </label>
+      {/if}
     </div>
 
     <div class="action-row">

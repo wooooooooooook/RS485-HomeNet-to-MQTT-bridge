@@ -517,10 +517,12 @@
 
 <!-- Packet Sender Section -->
 {#if portId}
-  <PacketSender {portId} />
+  <div id="packet-sender">
+    <PacketSender {portId} />
+  </div>
 {/if}
 
-<div class="log-section">
+<div id="raw-packet-log" class="log-section">
   <div class="log-header">
     <div class="header-left">
       <h2>{$t('analysis.raw_log.title')}</h2>

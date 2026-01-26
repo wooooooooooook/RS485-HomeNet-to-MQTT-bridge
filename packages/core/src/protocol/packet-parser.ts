@@ -560,6 +560,58 @@ export class PacketParser {
               // Footer found but checksum failed. Continue searching after this footer.
               searchIdx = foundIdx + 1;
             }
+          } else if (this.isStandard2Byte) {
+            // Incremental Checksum Strategy for 2-byte Footer Delimited
+            // Currently only supports 'xor_add' as it's the only standard 2-byte type
+
+            let runningCrc = 0;
+            let runningTemp = 0;
+            const baseOffset = this.readOffset;
+
+            // Checksum2 always includes header (no _no_header variant currently)
+            let processedIdx = baseOffset;
+
+            while (searchIdx <= this.writeOffset - footerLen) {
+              const foundIdx = this.buffer.indexOf(this.footerBuffer, searchIdx);
+              if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
+
+              const len = foundIdx + footerLen - this.readOffset;
+
+              // Packet: [Header ... Data ... Checksum(2) ... Footer]
+              // Checksum starts at: len - 2 - footerLen (relative to packet start)
+              // Data ends at: len - 2 - footerLen (exclusive)
+
+              const currentDataEnd = baseOffset + len - 2 - footerLen;
+
+              // Update running checksum up to currentDataEnd
+              if (processedIdx < currentDataEnd) {
+                for (let i = processedIdx; i < currentDataEnd; i++) {
+                  const byte = this.buffer[i];
+                  runningCrc += byte;
+                  runningTemp ^= byte;
+                }
+                processedIdx = currentDataEnd;
+              }
+
+              // Finalize checksum
+              const finalCrc = (runningCrc + runningTemp) & 0xff;
+              const finalTemp = runningTemp & 0xff;
+
+              const expectedHigh = this.buffer[baseOffset + len - 2 - footerLen];
+              const expectedLow = this.buffer[baseOffset + len - 1 - footerLen];
+
+              if (finalTemp === expectedHigh && finalCrc === expectedLow) {
+                const packet = Buffer.from(
+                  this.buffer.subarray(this.readOffset, this.readOffset + len),
+                );
+                packets.push(packet);
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
+              }
+
+              searchIdx = foundIdx + 1;
+            }
           } else {
             // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
             while (searchIdx <= this.writeOffset - footerLen) {

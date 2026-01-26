@@ -13,3 +13,7 @@
 ## 2026-01-23 - Reusable Context for CEL Execution
 **Learning:** In high-frequency CEL execution (e.g., per-packet parsing), creating safe context objects (allocating new Objects and Proxies) dominates CPU time. Manually managing a reusable context object with pre-validated types (BigInts) and bypassing safety checks via `executeRaw` reduced parsing overhead by ~17% in hot paths.
 **Action:** For frequent script execution, use `executeRaw` with a persistent context object and handle type conversion (number -> BigInt) manually or once, rather than relying on auto-boxing.
+
+## 2026-01-26 - Allocation Optimization vs Algorithmic Win
+**Learning:** Attempting to optimize `calculateChecksum2` by passing an optional output array (to avoid `[number, number]` allocation) actually SLOWED down the benchmark by ~35%. This is likely due to the overhead of polymorphic function calls, optional checks in tight loops, or V8 deoptimizations.
+**Action:** Be wary of "allocation removal" optimizations in V8 for small, short-lived objects (like 2-element arrays) unless confirmed by profiling. Algorithmic improvements (like changing O(N^2) to O(N) via incremental checksumming) are far more reliable and effective (20x speedup in this case).

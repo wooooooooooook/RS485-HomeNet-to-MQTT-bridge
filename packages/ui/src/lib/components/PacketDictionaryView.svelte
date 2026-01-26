@@ -71,8 +71,14 @@
 
   const parsedSet = $derived.by(() => new Set(parsedPackets));
 
+  let copiedPacket = $state<string | null>(null);
+
   function copyPacket(packet: string) {
-    navigator.clipboard.writeText(packet.toLowerCase());
+    navigator.clipboard.writeText(packet);
+    copiedPacket = packet;
+    setTimeout(() => {
+      if (copiedPacket === packet) copiedPacket = null;
+    }, 2000);
   }
 
   let copySuccess = $state(false);
@@ -200,6 +206,44 @@
                 </span>
               {/if}
             </div>
+            <button
+              class="copy-btn"
+              class:copied={copiedPacket === packet}
+              onclick={() => copyPacket(packet)}
+              aria-label={copiedPacket === packet ? $t('common.copied') : $t('common.copy')}
+              title={$t('common.copy')}
+            >
+              {#if copiedPacket === packet}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              {:else}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              {/if}
+            </button>
           </div>
         {/each}
       {/if}
@@ -378,5 +422,38 @@
 
   .error {
     color: var(--danger-color);
+  }
+
+  .copy-btn {
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      background-color 0.2s,
+      color 0.2s;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #94a3b8);
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .packet-item:hover .copy-btn,
+  .copy-btn:focus-visible,
+  .copy-btn.copied {
+    opacity: 1;
+  }
+
+  .copy-btn:hover {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.1);
+  }
+
+  .copy-btn.copied {
+    color: #34d399;
+    background: rgba(52, 211, 153, 0.1);
   }
 </style>

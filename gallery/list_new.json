@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-26T09:17:02.326Z",
+  "generated_at": "2026-01-27T02:10:49.781Z",
   "vendors": [
     {
       "id": "bestin",
@@ -50,12 +50,11 @@
           ],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "climate": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 2
           },
           "discovery": {
             "match": {
@@ -97,7 +96,6 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "lock": 1
             },
@@ -114,7 +112,40 @@
                 255,
                 255
               ]
-            }
+            },
+            "scripts": [
+              {
+                "id": "update_sequence_number",
+                "name": "update sequence number",
+                "actions": [
+                  {
+                    "action": "update_state",
+                    "target_id": "sequence_number",
+                    "state": {
+                      "state_number": "bitAnd(int(get_from_state('number', -1)) + 1, 0xFF)"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "make_doorlock_packet",
+                "name": "Doorlock Packet Make",
+                "description": "도어락 잠금해제 패킷 생성 명령패킷 구조: 02 41 02 XX 01 00 00 00 00 XX",
+                "actions": [
+                  {
+                    "action": "send_packet",
+                    "data": "[0x41, 0x02, int(get_from_states('sequence_number', 'number', 0)), 0x01, 0x00, 0x00, 0x00, 0x00]",
+                    "ack": "[0x41, 0x82]",
+                    "header": true,
+                    "checksum": true
+                  },
+                  {
+                    "action": "script",
+                    "script": "update_sequence_number"
+                  }
+                ]
+              }
+            ]
           }
         },
         {
@@ -176,7 +207,6 @@
           ],
           "content_summary": {
             "entities": {
-              "scripts": 3,
               "number": 1,
               "light": 1,
               "switch": 1,
@@ -184,7 +214,7 @@
               "sensor": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 3
           },
           "discovery": {
             "match": {
@@ -277,14 +307,13 @@
           ],
           "content_summary": {
             "entities": {
-              "scripts": 4,
               "number": 1,
               "light": 1,
               "switch": 2,
               "sensor": 2
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 4
           },
           "discovery": {
             "match": {
@@ -338,12 +367,11 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "fan": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 2
           },
           "discovery": {
             "match": {
@@ -445,12 +473,11 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "valve": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 2
           },
           "discovery": {
             "match": {
@@ -549,14 +576,13 @@
           ],
           "content_summary": {
             "entities": {
-              "scripts": 3,
               "number": 1,
               "light": 1,
               "switch": 2,
               "sensor": 2
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 3
           },
           "discovery": {
             "match": {

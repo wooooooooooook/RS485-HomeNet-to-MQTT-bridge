@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-26T09:17:02.322Z",
+  "generated_at": "2026-01-27T02:10:49.778Z",
   "vendors": [
     {
       "id": "bestin",
@@ -41,7 +41,6 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "lock": 1
             },
@@ -65,12 +64,11 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "fan": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 2
           }
         },
         {
@@ -134,12 +132,11 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "scripts": 2,
               "number": 1,
               "valve": 1
             },
             "automations": 0,
-            "scripts": 0
+            "scripts": 2
           }
         }
       ]

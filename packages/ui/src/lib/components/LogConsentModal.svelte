@@ -24,7 +24,13 @@
   };
 </script>
 
-<Modal open={true} width="500px" {onclose}>
+<Modal
+  open={true}
+  width="500px"
+  {onclose}
+  ariaLabelledBy="consent-title"
+  ariaDescribedBy="consent-desc"
+>
   <div class="consent-content">
     <h2 id="consent-title">{$t('settings.log_sharing.consent_modal.title')}</h2>
     <p id="consent-desc">

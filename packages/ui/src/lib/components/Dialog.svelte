@@ -50,12 +50,20 @@
       handleCancel();
     }
   };
+
+  const titleId = `dialog-title-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
-<Modal {open} {width} onclose={handleCloseAttempt} oncancel={handleCloseAttempt}>
+<Modal
+  {open}
+  {width}
+  onclose={handleCloseAttempt}
+  oncancel={handleCloseAttempt}
+  ariaLabelledBy={title ? titleId : undefined}
+>
   <div class="dialog-content">
     {#if title}
-      <h3 id="dialog-title">{title}</h3>
+      <h3 id={titleId}>{title}</h3>
     {/if}
 
     <div class="content">

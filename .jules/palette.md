@@ -1,19 +1,3 @@
-## 2024-05-23 - Accessibility Pattern for Form Hints
-**Learning:** For inputs with helper text (hints), strictly using `<label>` is insufficient. Associating the hint text with the input using `aria-describedby` ensures screen reader users receive this context when focusing the input.
-**Action:** Always add an `id` to hint elements and reference it via `aria-describedby` on the corresponding input field.
-
-## 2024-05-24 - Editor Component Accessibility
-**Learning:** Code or configuration editors (textareas) often lack visible labels to maximize screen real estate. This makes them inaccessible to screen readers.
-**Action:** Use `aria-label` with a descriptive string (e.g. "Configuration Editor") and `aria-busy` for loading/saving states to ensure screen reader users understand the component's purpose and status.
-
-## 2026-01-19 - Tooltips on Disabled Buttons
-**Learning:** The native `disabled` attribute on buttons suppresses mouse events in most browsers, preventing `title` tooltips from appearing. Users often need to know *why* a button is disabled.
-**Action:** Use `aria-disabled="true"` instead of the `disabled` attribute when a tooltip explanation is required. Ensure click handlers manually check the disabled state and prevent action.
-
-## 2026-01-20 - Hiding Decorative Text Icons
-**Learning:** Text-based icons (like `✓` or `!`) are often read as random characters or punctuation by screen readers, creating noise.
-**Action:** Use `aria-hidden="true"` on decorative text icons when the surrounding text already conveys the meaning (e.g. "Success" message next to a checkmark).
-
-## 2026-01-25 - Conditional Error Messages
-**Learning:** Error messages that appear dynamically are best associated with their inputs using `aria-describedby`. This ensures that when the user returns focus to the input to correct the mistake, the error context is announced.
-**Action:** Dynamically bind `aria-describedby` to the error message element's ID when an error state is present, alongside `aria-invalid="true"`.
+## 2024-05-22 - [Accessible Modals Pattern]
+**Learning:** Modals using `<dialog>` element often miss the connection between the dialog container and its title/description, making them less accessible to screen readers. Adding `aria-labelledby` and `aria-describedby` props to the reusable `Modal` component allows consumers to easily link these elements.
+**Action:** When creating or updating Modal components, always expose props for ARIA labelling and ensure consuming components pass the IDs of their title and description elements. For generic Dialogs, auto-generating a unique ID for the title ensures accessibility by default.

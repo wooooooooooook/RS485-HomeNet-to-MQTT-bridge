@@ -8,6 +8,8 @@
     oncancel,
     children,
     lockScroll = true,
+    ariaLabelledBy,
+    ariaDescribedBy,
   } = $props<{
     open?: boolean;
     width?: string;
@@ -15,6 +17,8 @@
     oncancel?: () => void; // Native cancel (Esc key)
     children?: import('svelte').Snippet;
     lockScroll?: boolean;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
   }>();
 
   let dialog = $state<HTMLDialogElement>();
@@ -57,6 +61,8 @@
     class="common-modal"
     style:width={width === 'fit-content' ? 'fit-content' : '100%'}
     style:max-width={width}
+    aria-labelledby={ariaLabelledBy}
+    aria-describedby={ariaDescribedBy}
     transition:scale={{ duration: 200, start: 0.95 }}
     onmousedown={handleMouseDown}
     onclick={handleBackdropClick}

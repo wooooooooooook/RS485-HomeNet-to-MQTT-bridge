@@ -1,7 +1,7 @@
 // packages/core/src/domain/entities/text.entity.ts
 
-import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.js';
-import { StateSchema, StateNumSchemaOrCEL, StateSchemaOrCEL } from '../../protocol/types.js';
+import { EntityConfig, CommandSchemaOrCEL } from './base.entity.js';
+import { StateSchema } from '../../protocol/types.js';
 
 export interface TextEntity extends EntityConfig {
   state?: StateSchema;

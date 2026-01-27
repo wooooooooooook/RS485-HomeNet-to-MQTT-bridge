@@ -291,6 +291,52 @@ function xorAdd(header: ByteArray, data: ByteArray): number[] {
   return [high, low];
 }
 
+/**
+ * Returns the optimized checksum function for a given type.
+ * Used to bypass switch statements in hot loops.
+ */
+export function getChecksumFunction(
+  type: ChecksumType,
+): ((buffer: ByteArray, start: number, end: number) => number) | null {
+  switch (type) {
+    case 'add':
+      return addRange;
+    case 'add_no_header':
+      return addRange; // Caller must adjust start
+    case 'xor':
+      return xorRange;
+    case 'xor_no_header':
+      return xorRange; // Caller must adjust start
+    case 'samsung_rx':
+      return samsungRxFromBuffer;
+    case 'samsung_tx':
+      return samsungTxFromBuffer;
+    case 'samsung_xor':
+      return samsungXorAllMsb0FromBuffer;
+    case 'bestin_sum':
+      return bestinSumFromBuffer;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Returns the offset type for the checksum function.
+ * 'header': start = offset + headerLength
+ * 'base': start = offset
+ */
+export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
+  switch (type) {
+    case 'add_no_header':
+    case 'xor_no_header':
+    case 'samsung_rx':
+    case 'samsung_tx':
+      return 'header';
+    default:
+      return 'base';
+  }
+}
+
 function xorAddRange(buffer: ByteArray, start: number, end: number): number[] {
   let crc = 0;
   let temp = 0;

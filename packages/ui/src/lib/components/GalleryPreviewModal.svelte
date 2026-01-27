@@ -481,7 +481,14 @@
   }
 </script>
 
-<Modal open={true} width="800px" onclose={onClose} oncancel={onClose}>
+<Modal
+  open={true}
+  width="800px"
+  onclose={onClose}
+  oncancel={onClose}
+  ariaLabelledBy="gallery-preview-title"
+  ariaDescribedBy="gallery-preview-desc"
+>
   <div class="modal-content-wrapper">
     <Dialog
       open={dialog.open}
@@ -497,8 +504,8 @@
     />
     <header class="modal-header">
       <div class="header-content">
-        <h2>{displayName}</h2>
-        <p class="description">{displayDescription}</p>
+        <h2 id="gallery-preview-title">{displayName}</h2>
+        <p id="gallery-preview-desc" class="description">{displayDescription}</p>
       </div>
       <button class="close-btn" onclick={onClose} aria-label={$t('common.close')}> × </button>
     </header>

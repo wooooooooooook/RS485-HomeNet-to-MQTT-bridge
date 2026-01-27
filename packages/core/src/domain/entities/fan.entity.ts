@@ -1,6 +1,6 @@
 // packages/core/src/domain/entities/fan.entity.ts
 
-import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.js';
+import { EntityConfig, CommandSchemaOrCEL } from './base.entity.js';
 import { StateSchema, StateNumSchemaOrCEL } from '../../protocol/types.js';
 
 export interface FanEntity extends EntityConfig {

@@ -13,3 +13,7 @@
 ## 2025-05-23 - Simulator Excluded from Root Lint
 **Observation:** The root `pnpm lint` script explicitly excludes `packages/simulator` (`--filter '!@rs485-homenet/simulator'`).
 **Action:** Manually verified `packages/simulator` linting. It should be integrated back into the main lint workflow in the future.
+
+## 2025-05-23 - Use tsc to Find Unused Code
+**Observation:** Since `tsconfig.json` disables `noUnusedLocals`, many unused imports accumulate.
+**Action:** Run `pnpm exec tsc --noEmit --noUnusedLocals --noUnusedParameters` to uncover them. Note that `_decodeValue` in `command.generator.ts` is intentionally unused (deprecated but preserved).

@@ -15,6 +15,7 @@
   import SystemTopology from '../components/SystemTopology.svelte';
 
   import HintBubble from '$lib/components/HintBubble.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import { t } from 'svelte-i18n';
 
   import Button from '$lib/components/Button.svelte';
@@ -112,6 +113,28 @@
   let isSearchExpanded = $state(false);
   let searchInput = $state<HTMLInputElement | null>(null);
   let hintDismissed = $state(false);
+  let isAddModalOpen = $state(false);
+  let addStep = $state<'select-category' | 'select-entity-type' | 'edit-yaml'>('select-category');
+  let selectedCategory = $state<EntityCategory | null>(null);
+  let selectedEntityType = $state<string | null>(null);
+  let yamlDraft = $state('');
+  let yamlCopyMessage = $state<string | null>(null);
+
+  const entityTypeOptions = [
+    'light',
+    'climate',
+    'valve',
+    'button',
+    'sensor',
+    'fan',
+    'switch',
+    'lock',
+    'number',
+    'select',
+    'text_sensor',
+    'text',
+    'binary_sensor',
+  ];
 
   const isSearchActive = $derived.by<boolean>(
     () => isSearchExpanded || searchText.trim().length > 0,
@@ -202,6 +225,79 @@
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleSearchChipClick();
+    }
+  }
+
+  function openAddModal() {
+    isAddModalOpen = true;
+    addStep = 'select-category';
+    selectedCategory = null;
+    selectedEntityType = null;
+    yamlDraft = '';
+    yamlCopyMessage = null;
+  }
+
+  function closeAddModal() {
+    isAddModalOpen = false;
+  }
+
+  function buildYamlTemplate(category: EntityCategory, entityType?: string) {
+    if (category === 'automation') {
+      return `automation:\n  - id: new_automation\n    trigger:\n      - type: schedule\n        every: 5m\n    then:\n      - action: command\n        target: id(example_entity).command_on()\n`;
+    }
+
+    if (category === 'script') {
+      return `scripts:\n  - id: new_script\n    description: ${$t('dashboard.add_modal.default_script_description')}\n    actions:\n      - action: command\n        target: id(example_entity).command_on()\n`;
+    }
+
+    const safeType = entityType ?? 'light';
+    const typeLabel = $t(`entity_types.${safeType}`, { default: safeType });
+    const nameLabel = $t('dashboard.add_modal.default_entity_name', {
+      values: { type: typeLabel },
+      default: `새 ${typeLabel}`,
+    });
+
+    return `${safeType}:\n  - id: new_${safeType}\n    name: '${nameLabel}'\n    state:\n      data: [0x00]\n    command_on:\n      data: [0x00]\n`;
+  }
+
+  function handleCategorySelect(category: EntityCategory) {
+    selectedCategory = category;
+    yamlCopyMessage = null;
+    if (category === 'entity') {
+      addStep = 'select-entity-type';
+      return;
+    }
+
+    yamlDraft = buildYamlTemplate(category);
+    addStep = 'edit-yaml';
+  }
+
+  function handleEntityTypeSelect(type: string) {
+    selectedEntityType = type;
+    selectedCategory = 'entity';
+    yamlCopyMessage = null;
+    yamlDraft = buildYamlTemplate('entity', type);
+    addStep = 'edit-yaml';
+  }
+
+  function handleAddStepBack() {
+    yamlCopyMessage = null;
+    if (addStep === 'edit-yaml' && selectedCategory === 'entity') {
+      addStep = 'select-entity-type';
+      return;
+    }
+    addStep = 'select-category';
+  }
+
+  async function handleCopyYaml() {
+    yamlCopyMessage = null;
+    if (!yamlDraft) return;
+
+    try {
+      await navigator.clipboard.writeText(yamlDraft);
+      yamlCopyMessage = $t('dashboard.add_modal.copy_success');
+    } catch (err) {
+      yamlCopyMessage = $t('dashboard.add_modal.copy_fail');
     }
   }
 
@@ -453,18 +549,114 @@
           <div class="empty-grid">
             <p class="empty full-width">{$t('dashboard.no_devices_found')}</p>
           </div>
-        {:else}
-          {#each searchedEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
-            <EntityCard
-              {entity}
-              onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
-            />
-          {/each}
         {/if}
+        {#each searchedEntities as entity (entity.id + '-' + (entity.portId || 'unknown') + '-' + (entity.category || 'entity'))}
+          <EntityCard
+            {entity}
+            onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
+          />
+        {/each}
+        <button type="button" class="add-entity-card" onclick={openAddModal}>
+          <span class="add-icon" aria-hidden="true">+</span>
+          <span class="add-label">{$t('dashboard.add_card_label')}</span>
+        </button>
       </div>
     {/if}
   {/if}
 </div>
+
+{#if isAddModalOpen}
+  <Modal open={true} width="820px" onclose={closeAddModal} oncancel={closeAddModal}>
+    <div class="add-modal">
+      <header class="add-modal-header">
+        <div>
+          <p class="add-modal-eyebrow">{$t('dashboard.add_modal.title')}</p>
+          <h2>{$t('dashboard.add_modal.subtitle')}</h2>
+        </div>
+        <Button variant="secondary" onclick={closeAddModal}>
+          {$t('dashboard.add_modal.close')}
+        </Button>
+      </header>
+
+      {#if addStep === 'select-category'}
+        <section class="add-modal-section">
+          <h3>{$t('dashboard.add_modal.select_category')}</h3>
+          <div class="add-option-grid">
+            <button
+              type="button"
+              class="add-option-card"
+              onclick={() => handleCategorySelect('entity')}
+            >
+              <strong>{$t('dashboard.add_modal.category_entity')}</strong>
+              <span>{$t('dashboard.add_modal.category_entity_desc')}</span>
+            </button>
+            <button
+              type="button"
+              class="add-option-card"
+              onclick={() => handleCategorySelect('automation')}
+            >
+              <strong>{$t('dashboard.add_modal.category_automation')}</strong>
+              <span>{$t('dashboard.add_modal.category_automation_desc')}</span>
+            </button>
+            <button
+              type="button"
+              class="add-option-card"
+              onclick={() => handleCategorySelect('script')}
+            >
+              <strong>{$t('dashboard.add_modal.category_script')}</strong>
+              <span>{$t('dashboard.add_modal.category_script_desc')}</span>
+            </button>
+          </div>
+        </section>
+      {:else if addStep === 'select-entity-type'}
+        <section class="add-modal-section">
+          <h3>{$t('dashboard.add_modal.select_device_type')}</h3>
+          <div class="add-option-grid">
+            {#each entityTypeOptions as entityType}
+              <button
+                type="button"
+                class="add-option-card"
+                onclick={() => handleEntityTypeSelect(entityType)}
+              >
+                <strong>{$t(`entity_types.${entityType}`, { default: entityType })}</strong>
+                <span>{$t('dashboard.add_modal.device_type_desc')}</span>
+              </button>
+            {/each}
+          </div>
+          <div class="add-modal-actions">
+            <Button variant="secondary" onclick={handleAddStepBack}>
+              {$t('dashboard.add_modal.back')}
+            </Button>
+          </div>
+        </section>
+      {:else}
+        <section class="add-modal-section">
+          <div class="yaml-header">
+            <div>
+              <h3>{$t('dashboard.add_modal.yaml_editor_title')}</h3>
+              <p class="yaml-hint">{$t('dashboard.add_modal.yaml_hint')}</p>
+            </div>
+            <Button variant="secondary" onclick={handleAddStepBack}>
+              {$t('dashboard.add_modal.back')}
+            </Button>
+          </div>
+          <textarea class="yaml-editor" bind:value={yamlDraft} rows="16"></textarea>
+          <div class="add-modal-actions">
+            <Button onclick={handleCopyYaml}>
+              {$t('dashboard.add_modal.copy_yaml')}
+            </Button>
+            <Button variant="secondary" onclick={closeAddModal}>
+              {$t('dashboard.add_modal.close')}
+            </Button>
+          </div>
+          {#if yamlCopyMessage}
+            <p class="copy-message">{yamlCopyMessage}</p>
+          {/if}
+        </section>
+      {/if}
+    </div>
+  </Modal>
+{/if}
 
 <style>
   .dashboard-view {
@@ -610,6 +802,144 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1.5rem;
+  }
+
+  .add-entity-card {
+    border: 2px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 1rem;
+    padding: 2rem;
+    background: rgba(15, 23, 42, 0.45);
+    color: #cbd5f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 210px;
+  }
+
+  .add-entity-card:hover,
+  .add-entity-card:focus-visible {
+    border-color: rgba(129, 140, 248, 0.8);
+    background: rgba(30, 41, 59, 0.7);
+    color: #e2e8f0;
+  }
+
+  .add-icon {
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .add-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .add-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .add-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .add-modal-eyebrow {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .add-modal-header h2 {
+    margin: 0.35rem 0 0;
+    color: #e2e8f0;
+  }
+
+  .add-modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .add-option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .add-option-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.65);
+    color: #e2e8f0;
+    text-align: left;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .add-option-card:hover,
+  .add-option-card:focus-visible {
+    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(30, 41, 59, 0.8);
+  }
+
+  .add-option-card span {
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+
+  .add-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .yaml-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .yaml-hint {
+    color: #94a3b8;
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  .yaml-editor {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 1rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .yaml-editor:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.4);
+  }
+
+  .copy-message {
+    color: #38bdf8;
+    margin: 0;
+    font-size: 0.9rem;
+    text-align: right;
   }
 
   .hint,

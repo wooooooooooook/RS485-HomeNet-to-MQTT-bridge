@@ -22,6 +22,7 @@
     "dev:restart:ui": "docker compose -f deploy/docker/docker-compose.dev.yml restart ui",
     "dev:backend": "docker compose -f deploy/docker/docker-compose.dev.yml up -d app mq simulator",
     "dev:frontend": "pnpm --filter @rs485-homenet/ui dev",
+    "schema:build": "pnpm --filter @rs485-homenet/core schema:generate",
     "simulate": "node packages/simulator/scripts/convert_trace.js",
     "lint": "pnpm -r --filter '!@rs485-homenet/simulator' lint",
     "lint:simulator": "pnpm --filter @rs485-homenet/simulator lint",

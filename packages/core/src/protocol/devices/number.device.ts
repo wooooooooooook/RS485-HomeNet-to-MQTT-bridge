@@ -35,7 +35,12 @@ export class NumberDevice extends GenericDevice {
     const entityConfig = this.config as NumberEntity;
 
     // Handle number command with value (uses shared insertValueIntoCommand)
-    if (commandName === 'set' && entityConfig.command_number?.data && value !== undefined) {
+    if (
+      commandName === 'set' &&
+      typeof entityConfig.command_number !== 'string' &&
+      entityConfig.command_number?.data &&
+      value !== undefined
+    ) {
       return this.insertValueIntoCommand(entityConfig.command_number, value);
     }
 

@@ -16,11 +16,12 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && pnpm schema:generate",
     "dev": "tsc -w -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "prettier --config ../../prettier.config.cjs --ignore-path ../../.prettierignore --write .",
-    "test": "vitest run --root ../.."
+    "test": "vitest run --root ../..",
+    "schema:generate": "npx tsx scripts/generate-schema.ts"
   },
   "dependencies": {
     "@marcbachmann/cel-js": "^6.3.4",
@@ -34,6 +35,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.24",
-    "typescript": "^5.3.3"
+    "tsx": "^4.20.6",
+    "typescript": "^5.3.3",
+    "typescript-json-schema": "^0.67.1"
   }
 }

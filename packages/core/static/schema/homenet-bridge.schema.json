@@ -1,0 +1,3309 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HomeNet Bridge Configuration",
+  "description": "RS485 HomeNet to MQTT Bridge 설정 파일 스키마",
+  "type": "object",
+  "properties": {
+    "homenet_bridge": {
+      "description": "Root configuration structure for HomeNet Bridge (`homenet_bridge` key).",
+      "type": "object",
+      "properties": {
+        "packet_defaults": {
+          "description": "Global packet defaults (headers, checksums, timings).",
+          "$ref": "#/definitions/PacketDefaults"
+        },
+        "serial": {
+          "$ref": "#/definitions/SerialConfig",
+          "description": "Serial port settings."
+        },
+        "devices": {
+          "description": "Generic devices list.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeviceConfig"
+          }
+        },
+        "light": {
+          "description": "Light entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LightEntity"
+          }
+        },
+        "climate": {
+          "description": "Climate (HVAC) entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ClimateEntity"
+          }
+        },
+        "valve": {
+          "description": "Valve entities (Gas/Water).",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValveEntity"
+          }
+        },
+        "button": {
+          "description": "Button entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonEntity"
+          }
+        },
+        "sensor": {
+          "description": "Sensor entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SensorEntity"
+          }
+        },
+        "fan": {
+          "description": "Fan entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FanEntity"
+          }
+        },
+        "switch": {
+          "description": "Switch entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SwitchEntity"
+          }
+        },
+        "lock": {
+          "description": "Lock entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LockEntity"
+          }
+        },
+        "number": {
+          "description": "Number entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NumberEntity"
+          }
+        },
+        "select": {
+          "description": "Select entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SelectEntity"
+          }
+        },
+        "text_sensor": {
+          "description": "Text sensor entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TextSensorEntity"
+          }
+        },
+        "text": {
+          "description": "Text input entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TextEntity"
+          }
+        },
+        "binary_sensor": {
+          "description": "Binary sensor entities.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BinarySensorEntity"
+          }
+        },
+        "automation": {
+          "description": "Automation rules.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationConfig"
+          }
+        },
+        "automations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationConfig"
+          }
+        },
+        "scripts": {
+          "description": "Reusable scripts.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ScriptConfig"
+          }
+        }
+      },
+      "required": [
+        "serial"
+      ],
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "required": [
+    "homenet_bridge"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "PacketDefaults": {
+      "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+      "type": "object",
+      "properties": {
+        "rx_header": {
+          "description": "Header bytes for received packets.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "rx_footer": {
+          "description": "Footer bytes for received packets.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "rx_checksum": {
+          "description": "Checksum algorithm or CEL expression for received packets.\nIf CEL, `data` (List<int>) and `len` (int) variables are available.",
+          "type": "string"
+        },
+        "rx_checksum2": {
+          "description": "Secondary checksum algorithm (2 bytes) or CEL expression.",
+          "type": "string"
+        },
+        "rx_length": {
+          "description": "Fixed length of the packet (including header/footer).\nIf set, parser will wait for this many bytes.",
+          "type": "number"
+        },
+        "rx_length_expr": {
+          "description": "CEL expression to calculate dynamic packet length.\nReturns the expected total length, or 0/negative to fallback to Checksum Sweep.\nAvailable variables: `data` (current buffer), `len` (buffer length).",
+          "type": "string"
+        },
+        "rx_valid_headers": {
+          "description": "List of valid start bytes.\nEven if checksum passes, packet is invalid if the first byte is not in this list.\nUseful for avoiding false positives on noisy lines.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "tx_header": {
+          "description": "Header bytes for transmitted packets.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "tx_footer": {
+          "description": "Footer bytes for transmitted packets.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "tx_checksum": {
+          "description": "Checksum algorithm or CEL expression for transmitted packets.",
+          "type": "string"
+        },
+        "tx_checksum2": {
+          "description": "Secondary checksum algorithm for transmitted packets.",
+          "type": "string"
+        },
+        "tx_delay": {
+          "description": "Delay (in ms) before retrying a failed transmission.",
+          "default": 50,
+          "type": "number"
+        },
+        "tx_retry_cnt": {
+          "description": "Number of times to retry transmission if no response is received.",
+          "default": 5,
+          "type": "number"
+        },
+        "tx_timeout": {
+          "description": "Maximum time (in ms) to wait for an ACK or response after transmission.",
+          "default": 100,
+          "type": "number"
+        },
+        "rx_timeout": {
+          "description": "Maximum time (in ms) to wait for a status update packet.",
+          "type": "number"
+        }
+      }
+    },
+    "SerialConfig": {
+      "description": "Serial port configuration.",
+      "type": "object",
+      "properties": {
+        "portId": {
+          "description": "Identifier for this port (e.g. 'default', 'living_room').",
+          "type": "string"
+        },
+        "path": {
+          "description": "Device path (e.g. '/dev/ttyUSB0' or 'socket://IP:PORT').",
+          "type": "string"
+        },
+        "baud_rate": {
+          "type": "number"
+        },
+        "data_bits": {
+          "enum": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "type": "number"
+        },
+        "parity": {
+          "enum": [
+            "even",
+            "mark",
+            "none",
+            "odd",
+            "space"
+          ],
+          "type": "string"
+        },
+        "stop_bits": {
+          "enum": [
+            1,
+            1.5,
+            2
+          ],
+          "type": "number"
+        },
+        "serial_idle": {
+          "description": "Idle timeout in ms to close connection (optional).",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "required": [
+        "baud_rate",
+        "data_bits",
+        "parity",
+        "path",
+        "portId",
+        "stop_bits"
+      ]
+    },
+    "DeviceConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "sw_version": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "LightEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "light"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_on": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_brightness": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_brightness": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_color_temp": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_color_temp": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "min_mireds": {
+          "type": "number"
+        },
+        "max_mireds": {
+          "type": "number"
+        },
+        "state_red": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_green": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_blue": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_red": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_green": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_blue": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_white": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_white": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_color_mode": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "effect_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "state_effect": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "command_effect": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "default_transition_length": {
+          "type": "number"
+        },
+        "command_on": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_off": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "StateSchema": {
+      "description": "Schema for matching and extracting state from a packet.",
+      "type": "object",
+      "properties": {
+        "data": {
+          "description": "Exact sequence of bytes to match.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "mask": {
+          "description": "Bitmask to apply to the value byte(s).",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "offset": {
+          "description": "Byte offset in the packet payload where the state value is located.",
+          "type": "number"
+        },
+        "inverted": {
+          "description": "If true, inverts the boolean logic or bits.",
+          "type": "boolean"
+        },
+        "guard": {
+          "description": "CEL expression condition that must be true for this state to match.",
+          "type": "string"
+        },
+        "except": {
+          "description": "List of schemas to explicitly exclude.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StateSchema"
+          }
+        }
+      }
+    },
+    "StateNumSchema": {
+      "description": "Extended schema for numeric values.",
+      "type": "object",
+      "properties": {
+        "length": {
+          "description": "Number of bytes representing the value.",
+          "type": "number"
+        },
+        "precision": {
+          "description": "Number of decimal places.",
+          "type": "number"
+        },
+        "signed": {
+          "description": "If true, treat as signed integer.",
+          "type": "boolean"
+        },
+        "endian": {
+          "description": "Byte order (endianness).",
+          "enum": [
+            "big",
+            "little"
+          ],
+          "type": "string"
+        },
+        "decode": {
+          "description": "specialized decoding strategy.",
+          "enum": [
+            "add_0x80",
+            "ascii",
+            "bcd",
+            "multiply",
+            "none",
+            "signed_byte_half_degree"
+          ],
+          "type": "string"
+        },
+        "mapping": {
+          "description": "Map of raw values to human-readable strings or numbers.",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          }
+        },
+        "data": {
+          "description": "Exact sequence of bytes to match.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "mask": {
+          "description": "Bitmask to apply to the value byte(s).",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "offset": {
+          "description": "Byte offset in the packet payload where the state value is located.",
+          "type": "number"
+        },
+        "inverted": {
+          "description": "If true, inverts the boolean logic or bits.",
+          "type": "boolean"
+        },
+        "guard": {
+          "description": "CEL expression condition that must be true for this state to match.",
+          "type": "string"
+        },
+        "except": {
+          "description": "List of schemas to explicitly exclude.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StateSchema"
+          }
+        }
+      }
+    },
+    "CommandSchema": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "ack": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "$ref": "#/definitions/StateSchema"
+            }
+          ]
+        },
+        "value_offset": {
+          "type": "number"
+        },
+        "value_encode": {
+          "description": "Value encoding/decoding strategies for numeric states.",
+          "enum": [
+            "add_0x80",
+            "ascii",
+            "bcd",
+            "multiply",
+            "none",
+            "signed_byte_half_degree"
+          ],
+          "type": "string"
+        },
+        "length": {
+          "type": "number"
+        },
+        "signed": {
+          "type": "boolean"
+        },
+        "endian": {
+          "enum": [
+            "big",
+            "little"
+          ],
+          "type": "string"
+        },
+        "multiply_factor": {
+          "type": "number"
+        },
+        "low_priority": {
+          "type": "boolean"
+        },
+        "script": {
+          "type": "string"
+        }
+      }
+    },
+    "ClimateEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "climate"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_heat": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_cool": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_only": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_dry": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_auto": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_temperature_current": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_temperature_target": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_humidity_current": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_humidity_target": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_action_idle": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_action_heating": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_action_cooling": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_action_drying": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_action_fan": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_swing_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_swing_both": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_swing_vertical": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_swing_horizontal": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_on": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_auto": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_low": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_medium": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_high": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_middle": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_focus": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_diffuse": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_fan_quiet": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_none": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_home": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_away": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_boost": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_comfort": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_eco": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_sleep": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_preset_activity": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_custom_fan": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_custom_preset": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_off": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_heat": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_cool": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_only": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_dry": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_auto": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_temperature": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_humidity": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_swing_off": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_swing_both": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_swing_vertical": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_swing_horizontal": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_on": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_off": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_auto": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_low": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_medium": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_high": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_middle": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_focus": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_diffuse": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_fan_quiet": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_none": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_home": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_away": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_boost": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_comfort": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_eco": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_sleep": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_activity": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_custom_fan": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_custom_preset": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "custom_fan_mode": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "custom_preset": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "ValveEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "valve"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_open": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_closed": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_opening": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_closing": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_position": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_position": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reports_position": {
+          "type": "boolean"
+        },
+        "command_open": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_close": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_stop": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "ButtonEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "button"
+        },
+        "command_press": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command_press",
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "SensorEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "sensor"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_number": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "FanEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "fan"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_on": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_speed": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_speed": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "preset_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "state_preset_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateSchema"
+            },
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_preset_mode": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_oscillating": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "command_oscillating": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_direction": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "command_direction": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_percentage": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_percentage": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_on": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_off": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "SwitchEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "switch"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_on": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "command_on": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "command_off": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "command_update": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "LockEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "lock"
+        },
+        "state": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_locked": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_unlocked": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_locking": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_unlocking": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_jammed": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "command_lock": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "command_unlock": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "command_update": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "NumberEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "number"
+        },
+        "state": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "max_value": {
+          "type": "number"
+        },
+        "min_value": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        },
+        "state_increment": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_decrement": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_to_min": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_to_max": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_number": {
+          "description": "Numeric state schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to extract numeric values from packet data.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateNumSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_number": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "SelectEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "select"
+        },
+        "state": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "initial_option": {
+          "type": "string"
+        },
+        "restore_value": {
+          "type": "boolean"
+        },
+        "command_select": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SelectCommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state_select": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SelectStateSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "$ref": "#/definitions/CommandSchema"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "options",
+        "type"
+      ]
+    },
+    "SelectCommandSchema": {
+      "type": "object",
+      "properties": {
+        "map": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "value_offset": {
+          "type": "number"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "ack": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "$ref": "#/definitions/StateSchema"
+            }
+          ]
+        },
+        "value_encode": {
+          "description": "Value encoding/decoding strategies for numeric states.",
+          "enum": [
+            "add_0x80",
+            "ascii",
+            "bcd",
+            "multiply",
+            "none",
+            "signed_byte_half_degree"
+          ],
+          "type": "string"
+        },
+        "length": {
+          "type": "number"
+        },
+        "signed": {
+          "type": "boolean"
+        },
+        "endian": {
+          "enum": [
+            "big",
+            "little"
+          ],
+          "type": "string"
+        },
+        "multiply_factor": {
+          "type": "number"
+        },
+        "low_priority": {
+          "type": "boolean"
+        },
+        "script": {
+          "type": "string"
+        }
+      }
+    },
+    "SelectStateSchema": {
+      "type": "object",
+      "properties": {
+        "map": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "length": {
+          "description": "Number of bytes representing the value.",
+          "type": "number"
+        },
+        "precision": {
+          "description": "Number of decimal places.",
+          "type": "number"
+        },
+        "signed": {
+          "description": "If true, treat as signed integer.",
+          "type": "boolean"
+        },
+        "endian": {
+          "description": "Byte order (endianness).",
+          "enum": [
+            "big",
+            "little"
+          ],
+          "type": "string"
+        },
+        "decode": {
+          "description": "specialized decoding strategy.",
+          "enum": [
+            "add_0x80",
+            "ascii",
+            "bcd",
+            "multiply",
+            "none",
+            "signed_byte_half_degree"
+          ],
+          "type": "string"
+        },
+        "mapping": {
+          "description": "Map of raw values to human-readable strings or numbers.",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          }
+        },
+        "data": {
+          "description": "Exact sequence of bytes to match.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "mask": {
+          "description": "Bitmask to apply to the value byte(s).",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "offset": {
+          "description": "Byte offset in the packet payload where the state value is located.",
+          "type": "number"
+        },
+        "inverted": {
+          "description": "If true, inverts the boolean logic or bits.",
+          "type": "boolean"
+        },
+        "guard": {
+          "description": "CEL expression condition that must be true for this state to match.",
+          "type": "string"
+        },
+        "except": {
+          "description": "List of schemas to explicitly exclude.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StateSchema"
+          }
+        }
+      }
+    },
+    "TextSensorEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "text_sensor"
+        },
+        "state": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_text": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "initial_value": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "TextEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "text"
+        },
+        "state": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_text": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "min_length": {
+          "type": "number"
+        },
+        "max_length": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "password",
+            "text"
+          ],
+          "type": "string"
+        },
+        "command_text": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "command_update": {
+          "description": "Command schema that can be either a structured schema object or a CEL expression string.\nCEL expressions are evaluated at runtime to construct the command packet.\nFor commands, the CEL expression often constructs the raw bytes directly.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommandSchema"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "initial_value": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ]
+    },
+    "BinarySensorEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "binary_sensor"
+        },
+        "state": {
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_on": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "state_off": {
+          "description": "Schema for matching and extracting state from a packet.",
+          "$ref": "#/definitions/StateSchema"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unique_id": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string"
+        },
+        "packet_parameters": {},
+        "device_class": {
+          "type": "string"
+        },
+        "unit_of_measurement": {
+          "type": "string"
+        },
+        "state_class": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "discovery_always": {
+          "type": "boolean"
+        },
+        "discovery_linked_id": {
+          "type": "string"
+        },
+        "optimistic": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "state",
+        "type"
+      ]
+    },
+    "AutomationConfig": {
+      "description": "Configuration for an Automation rule.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique ID for the automation.",
+          "type": "string"
+        },
+        "name": {
+          "description": "User-friendly name.",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mode": {
+          "description": "Execution mode when trigger fires while running.\n- `parallel`: Run multiple instances (default).\n- `single`: Ignore new triggers while running.\n- `restart`: Stop current and start new.\n- `queued`: Queue new triggers.",
+          "enum": [
+            "parallel",
+            "queued",
+            "restart",
+            "single"
+          ],
+          "type": "string"
+        },
+        "trigger": {
+          "description": "List of triggers that start this automation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationTrigger"
+          }
+        },
+        "guard": {
+          "description": "CEL condition that must be true to run.",
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        },
+        "then": {
+          "description": "List of actions to execute.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        },
+        "else": {
+          "description": "Actions to execute if `guard` returns false.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        },
+        "enabled": {
+          "description": "Enable or disable this automation.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "then",
+        "trigger"
+      ]
+    },
+    "AutomationTrigger": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AutomationTriggerState"
+        },
+        {
+          "$ref": "#/definitions/AutomationTriggerPacket"
+        },
+        {
+          "$ref": "#/definitions/AutomationTriggerSchedule"
+        },
+        {
+          "$ref": "#/definitions/AutomationTriggerStartup"
+        }
+      ]
+    },
+    "AutomationTriggerState": {
+      "description": "Trigger based on an entity state change.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "state"
+        },
+        "entity_id": {
+          "description": "Entity ID to monitor.",
+          "type": "string"
+        },
+        "property": {
+          "description": "Specific property of the state to monitor (e.g. 'state', 'value').\nIf omitted, triggers on any change to the entity's state object.",
+          "type": "string"
+        },
+        "match": {
+          "description": "Value to match or condition object (e.g. `{ gt: 10 }`)."
+        },
+        "debounce_ms": {
+          "description": "Debounce time in ms (or '1s'). Prevents rapid firing.",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "guard": {
+          "description": "Additional CEL condition.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_id",
+        "type"
+      ]
+    },
+    "AutomationTriggerPacket": {
+      "description": "Trigger based on receiving a specific raw packet.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "packet"
+        },
+        "match": {
+          "$ref": "#/definitions/StateSchema",
+          "description": "Schema to match the received packet.\n`data` field is required. `offset` can be used to skip header."
+        },
+        "guard": {
+          "description": "Additional CEL condition.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "match",
+        "type"
+      ]
+    },
+    "AutomationTriggerSchedule": {
+      "description": "Trigger based on time interval or cron schedule.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "schedule"
+        },
+        "every": {
+          "description": "Interval string (e.g. '5m', '1h').",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "cron": {
+          "description": "Cron expression (e.g. '0 0 * * *').",
+          "type": "string"
+        },
+        "guard": {
+          "description": "Additional CEL condition.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "AutomationTriggerStartup": {
+      "description": "Trigger executed when the bridge starts up.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "startup"
+        },
+        "guard": {
+          "description": "Additional CEL condition.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "AutomationAction": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AutomationActionCommand"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionPublish"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionLog"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionDelay"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionScript"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionUpdateState"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionSendPacket"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionIf"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionRepeat"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionWaitUntil"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionChoose"
+        },
+        {
+          "$ref": "#/definitions/AutomationActionStop"
+        }
+      ]
+    },
+    "AutomationActionCommand": {
+      "description": "Action to send a command to an entity.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "command"
+        },
+        "target": {
+          "description": "Command target string.",
+          "type": "string"
+        },
+        "input": {
+          "description": "Complex input arguments for the command."
+        },
+        "low_priority": {
+          "description": "If true, sends command only when queue is empty.\nDefault is false, but implicitly true for schedule triggers.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action",
+        "target"
+      ]
+    },
+    "AutomationActionPublish": {
+      "description": "Action to publish an MQTT message.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "publish"
+        },
+        "topic": {
+          "type": "string"
+        },
+        "payload": {},
+        "retain": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action",
+        "payload",
+        "topic"
+      ]
+    },
+    "AutomationActionLog": {
+      "description": "Action to write a log message.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "log"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "error",
+            "info",
+            "trace",
+            "warn"
+          ],
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "message"
+      ]
+    },
+    "AutomationActionDelay": {
+      "description": "Action to pause execution.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "delay"
+        },
+        "milliseconds": {
+          "description": "Duration in ms or string (e.g. '1s').",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "required": [
+        "action",
+        "milliseconds"
+      ]
+    },
+    "AutomationActionScript": {
+      "description": "Action to run a named script.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "script"
+        },
+        "script": {
+          "description": "Script ID to run.",
+          "type": "string"
+        },
+        "code": {
+          "description": "Inline code (not implemented in all contexts).",
+          "type": "string"
+        },
+        "args": {
+          "description": "Arguments to pass to the script.",
+          "$ref": "#/definitions/Record%3Cstring%2Cany%3E"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "Record<string,any>": {
+      "type": "object"
+    },
+    "AutomationActionUpdateState": {
+      "description": "Action to directly update an entity's state from a packet (used in packet triggers).",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "update_state"
+        },
+        "target_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/Record%3Cstring%2Cany%3E"
+        }
+      },
+      "required": [
+        "action",
+        "state",
+        "target_id"
+      ]
+    },
+    "AutomationActionSendPacket": {
+      "description": "Action to send a raw packet to the RS485 bus.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "send_packet"
+        },
+        "data": {
+          "description": "Packet bytes (list of int) or CEL expression string.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "checksum": {
+          "description": "Whether to append checksum. Default: true.",
+          "type": "boolean"
+        },
+        "header": {
+          "description": "Whether to prepend header. Default: false.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "footer": {
+          "description": "Whether to append footer. Default: false.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "portId": {
+          "description": "Port ID to send to (if multiple ports).",
+          "type": "string"
+        },
+        "ack": {
+          "description": "Wait for specific ACK packet.\nCan be byte array or CEL expression.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "action",
+        "data"
+      ]
+    },
+    "AutomationActionIf": {
+      "description": "Conditional action (If-Then-Else).",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "if"
+        },
+        "condition": {
+          "description": "CEL condition expression.",
+          "type": "string"
+        },
+        "then": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        },
+        "else": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        }
+      },
+      "required": [
+        "action",
+        "condition",
+        "then"
+      ]
+    },
+    "AutomationActionRepeat": {
+      "description": "Loop action.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "repeat"
+        },
+        "count": {
+          "description": "Fixed number of iterations.",
+          "type": "number"
+        },
+        "while": {
+          "description": "CEL condition for while loop.",
+          "type": "string"
+        },
+        "max": {
+          "description": "Max iterations for safety (default: 100).",
+          "type": "number"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        }
+      },
+      "required": [
+        "action",
+        "actions"
+      ]
+    },
+    "AutomationActionWaitUntil": {
+      "description": "Action to wait for a condition to become true.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "wait_until"
+        },
+        "condition": {
+          "description": "CEL condition expression.",
+          "type": "string"
+        },
+        "timeout": {
+          "description": "Timeout in ms or string (default: 30s).",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "check_interval": {
+          "description": "Polling interval (default: 100ms).",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "required": [
+        "action",
+        "condition"
+      ]
+    },
+    "AutomationActionChoose": {
+      "description": "Switch-like conditional action.\nExecutes the first choice whose condition is true.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "choose"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationActionChooseChoice"
+          }
+        },
+        "default": {
+          "description": "Executed if no choice matches.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        }
+      },
+      "required": [
+        "action",
+        "choices"
+      ]
+    },
+    "AutomationActionChooseChoice": {
+      "type": "object",
+      "properties": {
+        "condition": {
+          "description": "CEL condition.",
+          "type": "string"
+        },
+        "then": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        }
+      },
+      "required": [
+        "condition",
+        "then"
+      ]
+    },
+    "AutomationActionStop": {
+      "description": "Action to stop the current automation execution.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "stop"
+        },
+        "reason": {
+          "description": "Reason for stopping (logged).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "ScriptConfig": {
+      "description": "Reusable script configuration.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AutomationAction"
+          }
+        }
+      },
+      "required": [
+        "actions",
+        "id"
+      ]
+    }
+  }
+}

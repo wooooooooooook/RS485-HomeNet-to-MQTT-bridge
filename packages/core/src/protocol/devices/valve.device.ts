@@ -41,7 +41,12 @@ export class ValveDevice extends GenericDevice {
     }
 
     // Handle position command (0-100%)
-    if (commandName === 'position' && entityConfig.command_position?.data && value !== undefined) {
+    if (
+      commandName === 'position' &&
+      typeof entityConfig.command_position !== 'string' &&
+      entityConfig.command_position?.data &&
+      value !== undefined
+    ) {
       const command = [...entityConfig.command_position.data];
       const valueOffset = (entityConfig.command_position as any).value_offset;
       if (valueOffset !== undefined) {

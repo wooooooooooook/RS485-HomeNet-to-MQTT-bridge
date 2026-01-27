@@ -45,6 +45,9 @@ export type FrontendSettings = {
   };
   locale?: string;
   logRetention?: LogRetentionSettings;
+  editor?: {
+    default: 'monaco' | 'textarea';
+  };
 };
 
 export type LogRetentionSettings = {

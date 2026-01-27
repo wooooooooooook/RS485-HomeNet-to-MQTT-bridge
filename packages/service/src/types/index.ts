@@ -52,6 +52,9 @@ export type FrontendSettings = {
   };
   locale?: string;
   logRetention?: LogRetentionSettings;
+  editor?: {
+    default: 'monaco' | 'textarea';
+  };
 };
 
 // --- WebSocket/Stream Types ---

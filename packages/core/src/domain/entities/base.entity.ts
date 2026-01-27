@@ -14,6 +14,13 @@ export interface CommandSchema {
   script?: string;
 }
 
+/**
+ * Command schema that can be either a structured schema object or a CEL expression string.
+ * CEL expressions are evaluated at runtime to construct the command packet.
+ * For commands, the CEL expression often constructs the raw bytes directly.
+ */
+export type CommandSchemaOrCEL = CommandSchema | string;
+
 export interface EntityConfig {
   id: string;
   name: string;

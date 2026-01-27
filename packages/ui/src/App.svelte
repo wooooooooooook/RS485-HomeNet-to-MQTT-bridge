@@ -845,6 +845,23 @@
     }
   }
 
+  async function updateEditorSetting(value: 'monaco' | 'textarea') {
+    const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
+    const next: FrontendSettings = {
+      ...previous,
+      editor: {
+        ...(previous.editor ?? { default: 'monaco' }),
+        default: value,
+      },
+    };
+    frontendSettings = next;
+    try {
+      await persistFrontendSettings(next);
+    } catch {
+      frontendSettings = previous;
+    }
+  }
+
   function toggleInactiveEntities() {
     showInactiveEntities = !showInactiveEntities;
     if (typeof window !== 'undefined') {
@@ -1894,6 +1911,7 @@
             onToastChange={(key, value) => updateToastSetting(key, value)}
             onActivityLogChange={(value) => updateActivityLogSetting(value)}
             onLocaleChange={(value) => updateLocaleSetting(value)}
+            onEditorChange={(value) => updateEditorSetting(value)}
           />
         {/if}
       </section>
@@ -1915,6 +1933,7 @@
           selectedEntity && renameEntityRequest(selectedEntity.id, newName, selectedEntity.portId)}
         onUpdate={(updates) =>
           selectedEntity && handleEntityUpdate(selectedEntity.id, selectedEntity.portId, updates)}
+        editorMode={frontendSettings?.editor?.default ?? 'monaco'}
       />
     {/if}
 

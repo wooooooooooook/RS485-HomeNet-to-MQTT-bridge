@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "build": "pnpm --filter @rs485-homenet/ui build && node ../../scripts/sync-ui-static.mjs && tsc -p tsconfig.json",
+    "build": "node ../../scripts/sync-ui-static.mjs && tsc -p tsconfig.json",
     "dev": "pnpm --filter @rs485-homenet/core build && tsx watch src/server.ts",
     "start": "node dist/server.js",
     "lint": "tsc --noEmit -p tsconfig.json",
@@ -14,11 +14,11 @@
   "dependencies": {
     "@marcbachmann/cel-js": "^6.3.4",
     "@rs485-homenet/core": "workspace:*",
+    "@rs485-homenet/ui": "workspace:*",
     "@types/js-yaml": "^4.0.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "js-yaml": "^4.1.0",
-    "mqtt": "^5.3.4",
     "ws": "^8.18.3"
   },
   "devDependencies": {

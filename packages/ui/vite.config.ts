@@ -17,6 +17,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 3000, // Monaco is large by nature, increase limit to suppress warning for the split chunk
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('monaco-editor')) {
+            return 'monaco-editor';
+          }
+          if (id.includes('monaco-yaml')) {
+            return 'monaco-yaml';
+          }
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
   },
   server: {
     host: '0.0.0.0', // Allow external access for Docker

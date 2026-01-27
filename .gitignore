@@ -42,3 +42,4 @@ deploy/.configs/
 .logs/
 .vscode/
 packages/simulator/src/packets_from_userdata.ts
+.turbo/

@@ -2,6 +2,7 @@
   "name": "rs485-homenet-to-mqtt-bridge",
   "private": true,
   "version": "2.0.0",
+  "packageManager": "pnpm@10.18.2",
   "workspaces": [
     "packages/*"
   ],
@@ -24,12 +25,11 @@
     "dev:frontend": "pnpm --filter @rs485-homenet/ui dev",
     "schema:build": "pnpm --filter @rs485-homenet/core schema:generate",
     "simulate": "node packages/simulator/scripts/convert_trace.js",
-    "lint": "pnpm -r --filter '!@rs485-homenet/simulator' lint",
-    "lint:simulator": "pnpm --filter @rs485-homenet/simulator lint",
-    "build": "pnpm -r --filter '!@rs485-homenet/simulator' build",
+    "lint": "turbo lint --filter=!@rs485-homenet/simulator",
+    "build": "turbo build --filter=!@rs485-homenet/simulator",
     "build:simulator": "pnpm --filter @rs485-homenet/simulator build",
     "format": "pnpm -r --if-present format",
-    "test": "vitest run",
+    "test": "turbo test",
     "clean": "sudo bash ./scripts/clean.sh",
     "deploy-addon": "bash deploy/deploy-addon.sh",
     "sync-addon": "bash deploy/sync-addon-repo.sh"
@@ -41,6 +41,7 @@
     "prettier": "^3.2.5",
     "prettier-plugin-svelte": "^3.1.2",
     "ts-node": "^10.9.2",
+    "turbo": "^2.7.6",
     "vitest": "^1.5.0"
   },
   "dependencies": {

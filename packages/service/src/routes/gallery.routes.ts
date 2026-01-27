@@ -89,7 +89,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
           const listContent = await fs.readFile(listPath, 'utf8');
           return res.type('application/json').send(listContent);
         } catch (error) {
-          logger.warn({ err: error, path: listPath }, '[gallery] Failed to read local gallery list');
+          logger.warn(
+            { err: error, path: listPath },
+            '[gallery] Failed to read local gallery list',
+          );
           // Fallback to GitHub if local file fails
         }
       }
@@ -321,7 +324,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
           const listContent = await fs.readFile(listPath, 'utf8');
           galleryList = JSON.parse(listContent);
         } catch (error) {
-          logger.warn({ err: error, path: listPath }, '[gallery] Failed to read local gallery list');
+          logger.warn(
+            { err: error, path: listPath },
+            '[gallery] Failed to read local gallery list',
+          );
           // Fallback to GitHub
           const listResponse = await fetch(GALLERY_LIST_URL);
           if (!listResponse.ok) {

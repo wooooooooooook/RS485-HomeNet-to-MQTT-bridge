@@ -37,6 +37,26 @@ const outputDir = path.resolve(__dirname, '../static/schema');
 const outputFile = path.join(outputDir, 'homenet-bridge.schema.json');
 
 async function main() {
+  const isForce = process.argv.includes('--force');
+
+  // Check if source file exists
+  if (!fs.existsSync(typesFile)) {
+    console.error(`❌ 소스 파일을 찾을 수 없습니다: ${typesFile}`);
+    process.exit(1);
+  }
+
+  // Check if regeneration is needed
+  if (!isForce && fs.existsSync(outputFile)) {
+    const sourceStats = fs.statSync(typesFile);
+    const outputStats = fs.statSync(outputFile);
+
+    if (sourceStats.mtime <= outputStats.mtime) {
+      console.log('✨ 스키마가 이미 최신 상태입니다. 생성을 건너뜁니다.');
+      console.log('   (강제 생성을 원하시면 `pnpm schema:generate --force`를 사용하세요)');
+      return;
+    }
+  }
+
   console.log('🔧 JSON Schema 생성 중...');
   console.log(`   소스: ${typesFile}`);
 

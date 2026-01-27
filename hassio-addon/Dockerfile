@@ -22,13 +22,15 @@ COPY packages/ui/package.json packages/ui/
 
 # Install dependencies
 # We use network-concurrency 1 just in case, though slim is more stable than alpine
-RUN pnpm install --frozen-lockfile --network-concurrency 1
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --network-concurrency 1
 
 # Copy source code
 COPY . .
 
-# Build packages (core, ui, service)
-RUN pnpm build
+# Build packages using Turborepo with cache mount
+RUN --mount=type=cache,target=/app/.turbo \
+    pnpm turbo build --filter=!@rs485-homenet/simulator
 
 
 

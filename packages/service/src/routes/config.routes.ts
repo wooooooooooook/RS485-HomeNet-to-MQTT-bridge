@@ -431,12 +431,10 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
       }
 
       if (mergedKeys.length === 0) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'No valid items found to add. Ensure YAML structure matches root schema keys (e.g. light:, automation:)',
-          });
+        return res.status(400).json({
+          error:
+            'No valid items found to add. Ensure YAML structure matches root schema keys (e.g. light:, automation:)',
+        });
       }
 
       // 4. Update the original object structure

@@ -28,9 +28,15 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # Copy source code
 COPY . .
 
-# Build packages using Turborepo with cache mount
+# Build packages (core, ui, service)
+ARG TARGETARCH
+ARG TARGETVARIANT
 RUN --mount=type=cache,target=/app/.turbo \
-    pnpm turbo build --filter=@rs485-homenet/service...
+    if [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+      pnpm build; \
+    else \
+      pnpm turbo build --filter=@rs485-homenet/service...; \
+    fi
 
 
 

@@ -13,7 +13,6 @@ export interface SelectCommandSchema extends CommandSchema {
 }
 
 export interface SelectEntity extends EntityConfig {
-  type: 'select';
   state?: StateSchema;
   options: string[];
   initial_option?: string;

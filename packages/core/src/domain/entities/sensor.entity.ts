@@ -4,7 +4,6 @@ import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.j
 import { StateSchema, StateNumSchemaOrCEL } from '../../protocol/types.js';
 
 export interface SensorEntity extends EntityConfig {
-  type: 'sensor';
   state: StateSchema;
   state_number?: StateNumSchemaOrCEL;
   command_update?: CommandSchemaOrCEL;

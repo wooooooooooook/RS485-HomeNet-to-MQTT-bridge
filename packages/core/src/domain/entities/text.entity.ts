@@ -4,7 +4,6 @@ import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.j
 import { StateSchema, StateNumSchemaOrCEL, StateSchemaOrCEL } from '../../protocol/types.js';
 
 export interface TextEntity extends EntityConfig {
-  type: 'text';
   state?: StateSchema;
   state_text?: StateSchema | string; // CEL for extracting text from packet
   min_length?: number;

@@ -318,10 +318,6 @@
     "LightEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "light"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -576,8 +572,7 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "StateSchema": {
@@ -781,10 +776,6 @@
     "ClimateEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "climate"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -1405,17 +1396,12 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "ValveEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "valve"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -1548,17 +1534,12 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "ButtonEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "button"
-        },
         "command_press": {
           "$ref": "#/definitions/CommandSchema"
         },
@@ -1606,17 +1587,12 @@
       "required": [
         "command_press",
         "id",
-        "name",
-        "type"
+        "name"
       ]
     },
     "SensorEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "sensor"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -1686,17 +1662,12 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "FanEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "fan"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -1889,17 +1860,12 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "SwitchEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "switch"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -1964,17 +1930,12 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "LockEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "lock"
-        },
         "state": {
           "description": "Schema for matching and extracting state from a packet.",
           "$ref": "#/definitions/StateSchema"
@@ -2051,17 +2012,12 @@
       },
       "required": [
         "id",
-        "name",
-        "type"
+        "name"
       ]
     },
     "NumberEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "number"
-        },
         "state": {
           "description": "Schema for matching and extracting state from a packet.",
           "$ref": "#/definitions/StateSchema"
@@ -2167,17 +2123,12 @@
       },
       "required": [
         "id",
-        "name",
-        "type"
+        "name"
       ]
     },
     "SelectEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "select"
-        },
         "state": {
           "description": "Schema for matching and extracting state from a packet.",
           "$ref": "#/definitions/StateSchema"
@@ -2261,8 +2212,7 @@
       "required": [
         "id",
         "name",
-        "options",
-        "type"
+        "options"
       ]
     },
     "SelectCommandSchema": {
@@ -2434,10 +2384,6 @@
     "TextSensorEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "text_sensor"
-        },
         "state": {
           "description": "Schema for matching and extracting state from a packet.",
           "$ref": "#/definitions/StateSchema"
@@ -2498,17 +2444,12 @@
       },
       "required": [
         "id",
-        "name",
-        "type"
+        "name"
       ]
     },
     "TextEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "text"
-        },
         "state": {
           "description": "Schema for matching and extracting state from a packet.",
           "$ref": "#/definitions/StateSchema"
@@ -2607,17 +2548,12 @@
       },
       "required": [
         "id",
-        "name",
-        "type"
+        "name"
       ]
     },
     "BinarySensorEntity": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "binary_sensor"
-        },
         "state": {
           "$ref": "#/definitions/StateSchema"
         },
@@ -2673,8 +2609,7 @@
       "required": [
         "id",
         "name",
-        "state",
-        "type"
+        "state"
       ]
     },
     "AutomationConfig": {

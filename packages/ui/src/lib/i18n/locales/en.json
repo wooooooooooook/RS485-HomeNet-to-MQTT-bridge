@@ -520,7 +520,10 @@
       "no_status": "No status info",
       "automation_badge": "Automation",
       "script_badge": "Script",
-      "error_label": "Entity error detected"
+      "error_label": "Entity error detected",
+      "last_triggered": "Last triggered: {time}",
+      "last_run": "Last run: {time}",
+      "never_executed": "Never executed"
     }
   },
   "entity_detail": {

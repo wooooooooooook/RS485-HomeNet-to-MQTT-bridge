@@ -316,6 +316,155 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
     }
   });
 
+  router.post('/api/config/add', async (req, res) => {
+    if (!ctx.configRateLimiter.check(req.ip || 'unknown')) {
+      logger.warn({ ip: req.ip }, '[service] Config add rate limit exceeded');
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    const {
+      portId,
+      yaml: newYaml,
+    } = req.body as {
+      portId: string;
+      yaml: string;
+    };
+
+    if (!portId || typeof portId !== 'string') {
+      return res.status(400).json({ error: 'portId is required' });
+    }
+    if (!newYaml || typeof newYaml !== 'string') {
+      return res.status(400).json({ error: 'yaml is required' });
+    }
+
+    const configIndex = findConfigIndexByPortId(portId);
+    if (configIndex === -1) {
+      return res.status(404).json({ error: 'Config not found for the given portId' });
+    }
+
+    const currentConfigFiles = ctx.getCurrentConfigFiles();
+    const targetConfigFile = currentConfigFiles[configIndex];
+
+    try {
+      // 1. Parse new YAML snippet
+      let newItems: any;
+      try {
+        newItems = yaml.load(newYaml);
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid YAML format' });
+      }
+
+      if (!newItems || typeof newItems !== 'object') {
+        return res.status(400).json({ error: 'Invalid YAML content' });
+      }
+
+      // 2. Read full config
+      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const fileContent = await fs.readFile(configPath, 'utf8');
+      const loadedYamlFromFile = yaml.load(fileContent) as {
+        homenet_bridge: PersistableHomenetBridgeConfig;
+      };
+
+      if (!loadedYamlFromFile.homenet_bridge) {
+        throw new Error('Invalid config file structure');
+      }
+
+      // Normalize to ensure arrays exist
+      const normalizedFullConfig = normalizeConfig(
+        loadedYamlFromFile.homenet_bridge as HomenetBridgeConfig,
+      );
+
+      const backupPath = await saveBackup(configPath, loadedYamlFromFile, 'add_item');
+
+      // 3. Merge items
+      // We iterate over the keys in the newItems and append them to the existing config arrays
+      const mergedKeys: string[] = [];
+
+      for (const key of Object.keys(newItems)) {
+        // Check if this key is one of the allowed entity types or automation/script
+        if (
+          !ENTITY_TYPE_KEYS.includes(key as any) &&
+          key !== 'automation' &&
+          key !== 'scripts'
+        ) {
+          continue; // Skip unknown top-level keys
+        }
+
+        const newEntries = newItems[key];
+        if (!Array.isArray(newEntries)) {
+           // If user provided a single object instead of array (unlikely with valid schema but possible), wrap it
+           // But our schema usually defines these as arrays.
+           // If it's not an array, we might want to skip or error. 
+           // Let's assume standard format matches our schema which are lists.
+           continue; 
+        }
+
+         mergedKeys.push(key);
+
+         const existingList = (normalizedFullConfig as any)[key] || [];
+         if (!Array.isArray((normalizedFullConfig as any)[key])) {
+             (normalizedFullConfig as any)[key] = existingList;
+         }
+
+          // Check for duplicate IDs before appending
+          for (const newItem of newEntries) {
+            if (newItem.id) {
+              const duplicate = existingList.find((existing: any) => existing.id === newItem.id);
+              if (duplicate) {
+                 return res.status(409).json({ error: `ID '${newItem.id}' already exists in ${key}.` });
+              }
+              // Also check against global uniqueness if necessary?
+              // For now, uniqueness within the list (and usually within the whole system for entities) is expected.
+              // Let's at least check within the current file's relevant lists if it's an entity type
+              
+              if (ENTITY_TYPE_KEYS.includes(key as any)) {
+                 // Check if ID exists in OTHER entity lists in the SAME file
+                 for (const otherKey of ENTITY_TYPE_KEYS) {
+                    if (otherKey === key) continue;
+                    const otherList = (normalizedFullConfig as any)[otherKey];
+                    if (Array.isArray(otherList) && otherList.some((e: any) => e.id === newItem.id)) {
+                       return res.status(409).json({ error: `ID '${newItem.id}' already exists in ${otherKey}.` });
+                    }
+                 }
+              }
+            }
+          }
+
+         (normalizedFullConfig as any)[key].push(...newEntries);
+      }
+
+      if (mergedKeys.length === 0) {
+          return res.status(400).json({ error: 'No valid items found to add. Ensure YAML structure matches root schema keys (e.g. light:, automation:)'});
+      }
+
+      // 4. Update the original object structure
+      loadedYamlFromFile.homenet_bridge = normalizedFullConfig;
+
+      // 5. Write new config
+      const newFileContent = dumpConfigToYaml(loadedYamlFromFile);
+      await fs.writeFile(configPath, newFileContent, 'utf8');
+
+      // 6. Update in-memory
+      ctx.setCurrentRawConfigs(configIndex, normalizedFullConfig);
+      ctx.setCurrentConfigs(configIndex, normalizedFullConfig);
+      ctx.rebuildPortMappings();
+
+      // We don't hot-reload individual items on "Add" usually, we request restart.
+      // But we could try? 
+      // For now, consistent with requirements: "request restart".
+      
+      logger.info(
+        `[service] Config added items for ${mergedKeys.join(', ')} in ${portId}. Backup: ${path.basename(backupPath)}`,
+      );
+      
+      res.json({ success: true, backup: path.basename(backupPath), restartRequired: true });
+
+    } catch (err) {
+      logger.error({ err }, '[service] Failed to add config items');
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Add failed' });
+    }
+  });
+
   return router;
 }
 

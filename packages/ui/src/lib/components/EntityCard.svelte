@@ -2,7 +2,11 @@
   import type { UnifiedEntity, ParsedPayloadEntry } from '../types';
   import { t } from 'svelte-i18n';
 
-  let { entity, onSelect }: { entity: UnifiedEntity; onSelect?: () => void } = $props();
+  let {
+    entity,
+    onSelect,
+    lastActivityText,
+  }: { entity: UnifiedEntity; onSelect?: () => void; lastActivityText?: string | null } = $props();
 
   function parsePayload(payload: string): ParsedPayloadEntry[] | null {
     try {
@@ -85,7 +89,12 @@
       {#if entity.category && entity.category !== 'entity'}
         {#if entity.description}
           <p class="entity-description">{entity.description}</p>
-        {:else}
+        {/if}
+        {#if lastActivityText}
+          <p class="entity-status-text">{lastActivityText}</p>
+        {:else if entity.category === 'automation' || entity.category === 'script'}
+          <span class="no-status">{$t('dashboard.entity_card.never_executed')}</span>
+        {:else if !entity.description}
           <span class="no-status">{$t('dashboard.entity_card.no_status')}</span>
         {/if}
       {:else if entity.statePayload}
@@ -269,6 +278,13 @@
     color: #cbd5f5;
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+
+  .entity-status-text {
+    margin-top: 0.5rem;
+    color: #93c5fd;
+    font-size: 0.85rem;
+    font-weight: 500;
   }
   @media (max-width: 480px) {
     .card-header {

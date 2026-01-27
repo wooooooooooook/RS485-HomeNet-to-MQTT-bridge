@@ -35,7 +35,9 @@
       }
 
       // Import workers FIRST before anything else (using Vite workaround)
-      const EditorWorkerModule = await import('monaco-editor/esm/vs/editor/editor.worker?worker');
+      const EditorWorkerModule = await import(
+        'monaco-editor/esm/vs/editor/editor.worker.js?worker'
+      );
       const YamlWorkerModule = await import('$lib/yaml.worker.js?worker');
 
       const EditorWorker = EditorWorkerModule.default;
@@ -92,7 +94,17 @@
     mode?: 'monaco' | 'textarea';
   }
 
-  let props: Props = $props();
+  let {
+    value = $bindable(),
+    onChange,
+    readOnly,
+    ariaLabel,
+    ariaDescribedBy,
+    placeholder,
+    class: className,
+    schemaUri,
+    mode = 'monaco',
+  }: Props = $props();
 
   let editorHost: HTMLDivElement | null = null;
   let fallbackValue = $state('');
@@ -105,7 +117,7 @@
   let monaco: MonacoInstance | null = null;
   let isApplyingExternalChange = false;
   // Derived state to check if we should actually load Monaco
-  let shouldLoadMonaco = $derived((props.mode ?? 'monaco') === 'monaco');
+  let shouldLoadMonaco = $derived((mode ?? 'monaco') === 'monaco');
 
   const layoutEditor = async () => {
     if (!editor || !editorHost) return;
@@ -140,7 +152,7 @@
     if (!shouldLoadMonaco) {
       // In textarea mode, we are "ready" immediately
       // But we might want to ensure fallbackValue is synced
-      fallbackValue = props.value;
+      fallbackValue = value;
       return;
     }
 
@@ -167,19 +179,19 @@
         let schemaConfig: any[] = [];
 
         // If schemaUri is provided, fetch the schema dynamically
-        if (props.schemaUri) {
+        if (schemaUri) {
           try {
-            const response = await fetch(props.schemaUri);
+            const response = await fetch(schemaUri);
             if (response.ok) {
               const schema = await response.json();
               // Convert relative paths to absolute URLs to avoid Monaco YAML parse errors
-              let schemaUriAbsolute = props.schemaUri;
+              let schemaUriAbsolute = schemaUri;
               if (
                 typeof window !== 'undefined' &&
-                (props.schemaUri.startsWith('./') || props.schemaUri.startsWith('/'))
+                (schemaUri.startsWith('./') || schemaUri.startsWith('/'))
               ) {
                 const base = window.location.origin;
-                schemaUriAbsolute = new URL(props.schemaUri, base).href;
+                schemaUriAbsolute = new URL(schemaUri, base).href;
               }
               schemaConfig = [
                 {
@@ -210,11 +222,11 @@
     }
 
     // Explicitly set the language to ensure hover/suggest widgets are created for YAML
-    const model = monacoModule.editor.createModel(props.value, 'yaml', modelUri);
+    const model = monacoModule.editor.createModel(value, 'yaml', modelUri);
 
     editor = monacoModule.editor.create(editorHost, {
       model,
-      readOnly: props.readOnly ?? false,
+      readOnly: readOnly ?? false,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       padding: { top: 12, bottom: 12 },
@@ -234,18 +246,20 @@
         showSnippets: true,
       },
       theme: 'vs-dark',
-      ariaLabel: props.ariaLabel ?? 'YAML editor',
+      ariaLabel: ariaLabel ?? 'YAML editor',
     });
 
     // Ensure readOnly state is correct after creation
-    editor.updateOptions({ readOnly: props.readOnly ?? false });
+    editor.updateOptions({ readOnly: readOnly ?? false });
     layoutEditor().catch((err) => {
       console.warn('Failed to layout editor', err);
     });
 
     modelChangeDisposable = editor.onDidChangeModelContent(() => {
       if (isApplyingExternalChange) return;
-      props.onChange?.(editor?.getValue() ?? '');
+      const nextValue = editor?.getValue() ?? '';
+      value = nextValue;
+      onChange?.(nextValue);
     });
 
     isReady = true;
@@ -256,7 +270,8 @@
   const handleFallbackInput = (event: Event) => {
     const target = event.target as HTMLTextAreaElement;
     fallbackValue = target.value;
-    props.onChange?.(fallbackValue);
+    value = fallbackValue;
+    onChange?.(fallbackValue);
   };
 
   // Mobile selection helper functions
@@ -405,7 +420,7 @@
       navigator.maxTouchPoints > 0 ||
       (navigator as any).msMaxTouchPoints > 0;
 
-    fallbackValue = props.value;
+    fallbackValue = value;
     initializeEditor().catch((err) => {
       loadError = err instanceof Error ? err.message : 'Failed to load editor';
       isLoading = false;
@@ -422,20 +437,20 @@
   });
 
   $effect(() => {
-    fallbackValue = props.value;
+    fallbackValue = value;
 
     if (!editor) return;
-    if (props.value === editor.getValue()) return;
+    if (value === editor.getValue()) return;
 
     isApplyingExternalChange = true;
-    editor.setValue(props.value);
+    editor.setValue(value);
     isApplyingExternalChange = false;
   });
 
   $effect(() => {
-    const readOnly = props.readOnly ?? false;
+    const isReadOnly = readOnly ?? false;
     if (!editor) return;
-    editor.updateOptions({ readOnly });
+    editor.updateOptions({ readOnly: isReadOnly });
   });
 
   $effect(() => {
@@ -459,9 +474,9 @@
 </script>
 
 <div
-  class={`monaco-yaml-editor ${props.class ?? ''}`}
-  aria-label={props.ariaLabel ?? 'YAML editor'}
-  aria-describedby={props.ariaDescribedBy}
+  class={`monaco-yaml-editor ${className ?? ''}`}
+  aria-label={ariaLabel ?? 'YAML editor'}
+  aria-describedby={ariaDescribedBy}
   aria-busy={isLoading}
 >
   {#if !isReady || !shouldLoadMonaco}
@@ -470,8 +485,8 @@
       class:visible={!shouldLoadMonaco}
       bind:value={fallbackValue}
       spellcheck="false"
-      placeholder={props.placeholder ?? ''}
-      readonly={props.readOnly ?? false}
+      placeholder={placeholder ?? ''}
+      readonly={readOnly ?? false}
       oninput={handleFallbackInput}
     ></textarea>
     {#if loadError && shouldLoadMonaco}
@@ -481,7 +496,7 @@
   <div class="monaco-host" class:ready={isReady && shouldLoadMonaco} bind:this={editorHost}></div>
 
   <!-- Mobile floating toolbar -->
-  {#if isTouchDevice && isReady && !props.readOnly}
+  {#if isTouchDevice && isReady && !readOnly}
     <div class="mobile-toolbar-wrapper">
       {#if isToolbarExpanded}
         <div

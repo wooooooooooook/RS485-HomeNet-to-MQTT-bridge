@@ -4,7 +4,6 @@ import { EntityConfig, CommandSchema } from './base.entity.js';
 import { StateSchema } from '../../protocol/types.js';
 
 export interface LockEntity extends EntityConfig {
-  type: 'lock';
   state?: StateSchema;
   state_locked?: StateSchema;
   state_unlocked?: StateSchema;

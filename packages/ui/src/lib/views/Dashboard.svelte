@@ -16,9 +16,11 @@
 
   import HintBubble from '$lib/components/HintBubble.svelte';
   import Modal from '$lib/components/Modal.svelte';
-  import { t } from 'svelte-i18n';
+  import { t, locale } from 'svelte-i18n';
+  import { formatTime } from '$lib/utils/time';
 
   import Button from '$lib/components/Button.svelte';
+  import MonacoYamlEditor from '$lib/components/MonacoYamlEditor.svelte';
 
   let {
     bridgeInfo,
@@ -202,6 +204,52 @@
     return false;
   });
 
+  const lastActivityMap = $derived.by<Map<string, number>>(() => {
+    const map = new Map<string, number>();
+    for (const log of activityLogs) {
+      if (log.code === 'log.automation_triggered' && log.params?.automationId) {
+        // Automation logs usually have portId
+        const key = `${log.portId ?? 'unknown'}:${log.params.automationId}`;
+        // Store latest timestamp
+        const current = map.get(key);
+        if (!current || log.timestamp > current) {
+          map.set(key, log.timestamp);
+        }
+      } else if (log.code === 'log.script_action_executed' && log.params?.scriptId) {
+        const key = `${log.portId ?? 'unknown'}:${log.params.scriptId}`;
+        const current = map.get(key);
+        if (!current || log.timestamp > current) {
+          map.set(key, log.timestamp);
+        }
+      }
+    }
+    return map;
+  });
+
+  function getLastActivityText(entity: UnifiedEntity): string | null {
+    if (entity.category !== 'automation' && entity.category !== 'script') return null;
+
+    const key = `${entity.portId ?? 'unknown'}:${entity.id}`;
+    const ts = lastActivityMap.get(key);
+    if (!ts) return null;
+
+    // Format: "MM/DD HH:mm:ss" or similar depending on space
+    // Using short numerical format
+    const timeStr = formatTime(ts, $locale ?? undefined, {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    if (entity.category === 'automation') {
+      return $t('dashboard.entity_card.last_triggered', { values: { time: timeStr } });
+    }
+    return $t('dashboard.entity_card.last_run', { values: { time: timeStr } });
+  }
+
   function handleSelect(entityId: string, portId: string | undefined, category: EntityCategory) {
     onSelect?.(entityId, portId, category);
   }
@@ -243,11 +291,11 @@
 
   function buildYamlTemplate(category: EntityCategory, entityType?: string) {
     if (category === 'automation') {
-      return `automation:\n  - id: new_automation\n    trigger:\n      - type: schedule\n        every: 5m\n    then:\n      - action: command\n        target: id(example_entity).command_on()\n`;
+      return `id: new_automation\ntrigger:\n  - type: schedule\n    every: 5m\nthen:\n  - action: command\n    target: id(example_entity).command_on()\n`;
     }
 
     if (category === 'script') {
-      return `scripts:\n  - id: new_script\n    description: ${$t('dashboard.add_modal.default_script_description')}\n    actions:\n      - action: command\n        target: id(example_entity).command_on()\n`;
+      return `id: new_script\ndescription: ${$t('dashboard.add_modal.default_script_description')}\nactions:\n  - action: command\n    target: id(example_entity).command_on()\n`;
     }
 
     const safeType = entityType ?? 'light';
@@ -257,7 +305,7 @@
       default: `새 ${typeLabel}`,
     });
 
-    return `${safeType}:\n  - id: new_${safeType}\n    name: '${nameLabel}'\n    state:\n      data: [0x00]\n    command_on:\n      data: [0x00]\n`;
+    return `id: new_${safeType}\nname: '${nameLabel}'\nstate:\n  data: [0x00]\ncommand_on:\n  data: [0x00]\n`;
   }
 
   function handleCategorySelect(category: EntityCategory) {
@@ -289,15 +337,73 @@
     addStep = 'select-category';
   }
 
-  async function handleCopyYaml() {
-    yamlCopyMessage = null;
-    if (!yamlDraft) return;
+  let isAdding = $state(false);
+  let addError = $state<string | null>(null);
 
+  async function handleSaveYaml() {
+    if (isAdding) return;
+    addError = null;
+    yamlCopyMessage = null;
+
+    if (!activePortId) {
+      addError = $t('errors.BRIDGE_NOT_FOUND_FOR_PORT', { values: { portId: 'active' } });
+      return;
+    }
+
+    isAdding = true;
     try {
-      await navigator.clipboard.writeText(yamlDraft);
-      yamlCopyMessage = $t('dashboard.add_modal.copy_success');
+      // Wrap the flat YAML into the expected structure based on category/type
+      const rootKey =
+        selectedCategory === 'automation'
+          ? 'automation'
+          : selectedCategory === 'script'
+            ? 'scripts'
+            : (selectedEntityType ?? 'light');
+
+      // Indent the draft by 4 spaces (2 for array item, 2 for property) or just 2 for array item?
+      // Standard YAML array item:
+      // key:
+      //   - id: ...
+      //     name: ...
+      // So we need to prepend "  - " to the first line and "    " to subsequent lines.
+      const lines = yamlDraft.split('\n');
+      const indentedYaml = lines
+        .map((line, index) => (index === 0 ? `  - ${line}` : `    ${line}`))
+        .join('\n');
+
+      const finalYaml = `${rootKey}:\n${indentedYaml}`;
+
+      const res = await fetch('./api/config/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          portId: activePortId,
+          yaml: finalYaml,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add item');
+      }
+
+      // Success
+      yamlCopyMessage = $t('dashboard.add_modal.save_success');
+
+      // Request restart confirmation after a short delay
+      setTimeout(async () => {
+        closeAddModal();
+        await handleRestart();
+      }, 1000);
     } catch (err) {
-      yamlCopyMessage = $t('dashboard.add_modal.copy_fail');
+      console.error('Failed to add item:', err);
+      addError = $t('dashboard.add_modal.save_fail', {
+        values: { error: err instanceof Error ? err.message : String(err) },
+      });
+    } finally {
+      isAdding = false;
     }
   }
 
@@ -554,6 +660,7 @@
           <EntityCard
             {entity}
             onSelect={() => handleSelect(entity.id, entity.portId, entity.category ?? 'entity')}
+            lastActivityText={getLastActivityText(entity)}
           />
         {/each}
         <button type="button" class="add-entity-card" onclick={openAddModal}>
@@ -567,92 +674,111 @@
 
 {#if isAddModalOpen}
   <Modal open={true} width="820px" onclose={closeAddModal} oncancel={closeAddModal}>
-    <div class="add-modal">
-      <header class="add-modal-header">
-        <div>
-          <p class="add-modal-eyebrow">{$t('dashboard.add_modal.title')}</p>
-          <h2>{$t('dashboard.add_modal.subtitle')}</h2>
-        </div>
-        <Button variant="secondary" onclick={closeAddModal}>
-          {$t('dashboard.add_modal.close')}
-        </Button>
-      </header>
+    <div class="modal-content-wrapper">
+      <div class="modal-header">
+        <h2>{$t('dashboard.add_modal.title')}</h2>
+        <button
+          class="close-btn"
+          onclick={closeAddModal}
+          aria-label={$t('dashboard.add_modal.close')}>×</button
+        >
+      </div>
 
-      {#if addStep === 'select-category'}
-        <section class="add-modal-section">
-          <h3>{$t('dashboard.add_modal.select_category')}</h3>
-          <div class="add-option-grid">
-            <button
-              type="button"
-              class="add-option-card"
-              onclick={() => handleCategorySelect('entity')}
-            >
-              <strong>{$t('dashboard.add_modal.category_entity')}</strong>
-              <span>{$t('dashboard.add_modal.category_entity_desc')}</span>
-            </button>
-            <button
-              type="button"
-              class="add-option-card"
-              onclick={() => handleCategorySelect('automation')}
-            >
-              <strong>{$t('dashboard.add_modal.category_automation')}</strong>
-              <span>{$t('dashboard.add_modal.category_automation_desc')}</span>
-            </button>
-            <button
-              type="button"
-              class="add-option-card"
-              onclick={() => handleCategorySelect('script')}
-            >
-              <strong>{$t('dashboard.add_modal.category_script')}</strong>
-              <span>{$t('dashboard.add_modal.category_script_desc')}</span>
-            </button>
-          </div>
-        </section>
-      {:else if addStep === 'select-entity-type'}
-        <section class="add-modal-section">
-          <h3>{$t('dashboard.add_modal.select_device_type')}</h3>
-          <div class="add-option-grid">
-            {#each entityTypeOptions as entityType}
+      <div class="modal-body">
+        {#if addStep === 'select-category'}
+          <section class="add-modal-section">
+            <h3>{$t('dashboard.add_modal.select_category')}</h3>
+            <div class="add-option-grid">
               <button
                 type="button"
                 class="add-option-card"
-                onclick={() => handleEntityTypeSelect(entityType)}
+                onclick={() => handleCategorySelect('entity')}
               >
-                <strong>{$t(`entity_types.${entityType}`, { default: entityType })}</strong>
-                <span>{$t('dashboard.add_modal.device_type_desc')}</span>
+                <strong>{$t('dashboard.add_modal.category_entity')}</strong>
+                <span>{$t('dashboard.add_modal.category_entity_desc')}</span>
               </button>
-            {/each}
-          </div>
-          <div class="add-modal-actions">
-            <Button variant="secondary" onclick={handleAddStepBack}>
-              {$t('dashboard.add_modal.back')}
-            </Button>
-          </div>
-        </section>
-      {:else}
-        <section class="add-modal-section">
-          <div class="yaml-header">
-            <div>
-              <h3>{$t('dashboard.add_modal.yaml_editor_title')}</h3>
-              <p class="yaml-hint">{$t('dashboard.add_modal.yaml_hint')}</p>
+              <button
+                type="button"
+                class="add-option-card"
+                onclick={() => handleCategorySelect('automation')}
+              >
+                <strong>{$t('dashboard.add_modal.category_automation')}</strong>
+                <span>{$t('dashboard.add_modal.category_automation_desc')}</span>
+              </button>
+              <button
+                type="button"
+                class="add-option-card"
+                onclick={() => handleCategorySelect('script')}
+              >
+                <strong>{$t('dashboard.add_modal.category_script')}</strong>
+                <span>{$t('dashboard.add_modal.category_script_desc')}</span>
+              </button>
             </div>
-            <Button variant="secondary" onclick={handleAddStepBack}>
-              {$t('dashboard.add_modal.back')}
-            </Button>
-          </div>
-          <textarea class="yaml-editor" bind:value={yamlDraft} rows="16"></textarea>
-          <div class="add-modal-actions">
-            <Button onclick={handleCopyYaml}>
-              {$t('dashboard.add_modal.copy_yaml')}
-            </Button>
-            <Button variant="secondary" onclick={closeAddModal}>
-              {$t('dashboard.add_modal.close')}
-            </Button>
-          </div>
-          {#if yamlCopyMessage}
-            <p class="copy-message">{yamlCopyMessage}</p>
-          {/if}
-        </section>
+          </section>
+        {:else if addStep === 'select-entity-type'}
+          <section class="add-modal-section">
+            <h3>{$t('dashboard.add_modal.select_device_type')}</h3>
+            <div class="add-option-grid">
+              {#each entityTypeOptions as entityType}
+                <button
+                  type="button"
+                  class="add-option-card"
+                  onclick={() => handleEntityTypeSelect(entityType)}
+                >
+                  <strong>{$t(`entity_types.${entityType}`, { default: entityType })}</strong>
+                  <span>{$t('dashboard.add_modal.device_type_desc')}</span>
+                </button>
+              {/each}
+            </div>
+            <div class="add-modal-actions">
+              <Button variant="secondary" onclick={handleAddStepBack}>
+                {$t('dashboard.add_modal.back')}
+              </Button>
+            </div>
+          </section>
+        {:else}
+          <section class="add-modal-section full-height">
+            <div class="yaml-header">
+              <div>
+                <h3>{$t('dashboard.add_modal.yaml_editor_title')}</h3>
+                <p class="yaml-hint">{$t('dashboard.add_modal.yaml_hint')}</p>
+              </div>
+              <Button variant="secondary" onclick={handleAddStepBack}>
+                {$t('dashboard.add_modal.back')}
+              </Button>
+            </div>
+            <!-- Replaced textarea with MonacoYamlEditor -->
+            <div class="yaml-editor-container">
+              <MonacoYamlEditor
+                bind:value={yamlDraft}
+                schemaUri={selectedCategory === 'automation'
+                  ? './api/schema/entity/automation'
+                  : selectedCategory === 'script'
+                    ? './api/schema/entity/script'
+                    : `./api/schema/entity/${selectedEntityType ?? 'light'}`}
+                class="yaml-editor-instance"
+              />
+            </div>
+
+            {#if addError}
+              <p class="error">{addError}</p>
+            {/if}
+            {#if yamlCopyMessage}
+              <p class="copy-message">{yamlCopyMessage}</p>
+            {/if}
+          </section>
+        {/if}
+      </div>
+
+      {#if addStep === 'edit-yaml'}
+        <div class="modal-footer">
+          <Button variant="secondary" onclick={closeAddModal} disabled={isAdding}>
+            {$t('dashboard.add_modal.close')}
+          </Button>
+          <Button variant="primary" onclick={handleSaveYaml} isLoading={isAdding}>
+            {$t('dashboard.add_modal.save')}
+          </Button>
+        </div>
       {/if}
     </div>
   </Modal>
@@ -798,6 +924,19 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
   }
 
+  .yaml-editor-container {
+    flex: 1;
+    min-height: 200px;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    margin-bottom: 0;
+  }
+
+  :global(.yaml-editor-instance) {
+    height: 100%;
+    width: 100%;
+  }
+
   .entity-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -838,36 +977,80 @@
     font-weight: 600;
   }
 
-  .add-modal {
+  /* New Modal Styles */
+  .modal-content-wrapper {
+    position: relative;
+    width: 100%;
+    height: 85dvh;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .close-btn {
+    margin-left: auto;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .close-btn:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #94a3b8;
+  }
+
+  .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  /* Specific Section Overrides */
+  .add-modal-section {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  .add-modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .add-modal-eyebrow {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #94a3b8;
-    margin: 0;
-  }
-
-  .add-modal-header h2 {
-    margin: 0.35rem 0 0;
-    color: #e2e8f0;
-  }
-
-  .add-modal-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .add-modal-section.full-height {
+    flex: 1;
+    min-height: 0;
   }
 
   .add-option-grid {
@@ -901,12 +1084,6 @@
     font-size: 0.85rem;
   }
 
-  .add-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-
   .yaml-header {
     display: flex;
     align-items: flex-start;
@@ -918,21 +1095,6 @@
     color: #94a3b8;
     margin: 0.35rem 0 0;
     font-size: 0.9rem;
-  }
-
-  .yaml-editor {
-    border-radius: 0.75rem;
-    border: 1px solid rgba(148, 163, 184, 0.35);
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 1rem;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  .yaml-editor:focus {
-    outline: 2px solid rgba(59, 130, 246, 0.4);
   }
 
   .copy-message {

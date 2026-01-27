@@ -510,18 +510,26 @@
       "category_script_desc": "재사용 가능한 액션 시퀀스 생성",
       "device_type_desc": "기본 YAML을 만들 타입을 고르세요",
       "yaml_editor_title": "YAML 편집기",
-      "yaml_hint": "아래 스니펫을 설정 파일에 복사해서 추가하세요.",
+      "yaml_hint": "새 항목의 속성을 입력하세요.",
       "copy_yaml": "YAML 복사",
       "copy_success": "YAML이 클립보드에 복사되었습니다.",
       "copy_fail": "YAML 복사에 실패했습니다. 수동으로 복사해 주세요.",
       "default_entity_name": "새 {type}",
-      "default_script_description": "새 스크립트 액션"
+      "default_script_description": "새 스크립트 액션",
+      "save": "설정에 추가",
+      "saving": "추가 중...",
+      "save_success": "설정에 추가되었습니다. 재시작 후 적용됩니다.",
+      "save_fail": "추가 실패: {error}",
+      "restart_hint": "설정 변경 후 적용을 위해 재시작이 필요합니다."
     },
     "entity_card": {
       "no_status": "상태 정보 없음",
       "automation_badge": "자동화",
       "script_badge": "스크립트",
-      "error_label": "엔티티 오류 발생"
+      "error_label": "엔티티 오류 발생",
+      "last_triggered": "마지막 실행: {time}",
+      "last_run": "마지막 실행: {time}",
+      "never_executed": "실행된 적 없음"
     }
   },
   "entity_detail": {

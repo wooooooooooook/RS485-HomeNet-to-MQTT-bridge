@@ -4,6 +4,5 @@ import { EntityConfig } from './base.entity.js';
 import { CommandSchema } from './base.entity.js';
 
 export interface ButtonEntity extends EntityConfig {
-  type: 'button';
   command_press: CommandSchema;
 }

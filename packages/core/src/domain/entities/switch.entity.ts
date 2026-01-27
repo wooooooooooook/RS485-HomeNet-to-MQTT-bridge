@@ -4,7 +4,6 @@ import { EntityConfig, CommandSchema } from './base.entity.js';
 import { StateSchema } from '../../protocol/types.js';
 
 export interface SwitchEntity extends EntityConfig {
-  type: 'switch';
   state: StateSchema;
   state_on?: StateSchema;
   state_off?: StateSchema;

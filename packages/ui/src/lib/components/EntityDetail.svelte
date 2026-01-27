@@ -1182,6 +1182,7 @@
     display: flex;
     flex-direction: column;
     height: 85dvh;
+    max-height: 730px;
     overflow: hidden;
   }
 
@@ -1287,7 +1288,6 @@
 
   .modal-body {
     flex: 1;
-    overflow-y: auto;
     padding: 1.5rem;
   }
 
@@ -1694,6 +1694,8 @@
   @media (max-width: 768px) {
     .modal-content-wrapper {
       border-radius: 0;
+      height: 100dvh;
+      min-height: 700px;
     }
 
     .modal-header {
@@ -1702,11 +1704,10 @@
 
     .modal-tabs {
       padding: 0 1rem;
-      overflow-x: auto; /* Ensure tabs are scrollable if they overflow */
     }
 
     .modal-body {
-      padding: 1rem;
+      padding: 0.5rem;
     }
 
     .manage-card {

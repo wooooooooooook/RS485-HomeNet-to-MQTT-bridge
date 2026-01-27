@@ -155,6 +155,7 @@
     padding: 1rem 1.25rem;
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     background: rgba(15, 23, 42, 0.3);

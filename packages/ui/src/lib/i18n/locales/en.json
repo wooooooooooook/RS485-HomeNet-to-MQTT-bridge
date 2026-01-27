@@ -348,7 +348,10 @@
       "select_block": "Select block",
       "expand_up": "Expand up",
       "expand_down": "Expand down",
-      "select_all": "Select all"
+      "select_all": "Select all",
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste"
     }
   },
   "header": {

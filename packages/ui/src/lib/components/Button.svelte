@@ -79,6 +79,7 @@
     transition: all 0.2s;
     font-family: inherit;
     font-size: 0.95rem;
+    word-break: keep-all;
   }
 
   .full-width {

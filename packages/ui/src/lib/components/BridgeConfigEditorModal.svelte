@@ -93,8 +93,6 @@
       handleSave(false);
     }
   };
-
-  const hintId = `editor-hint-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -133,15 +131,10 @@
         onChange={(nextValue) => (content = nextValue)}
         readOnly={isLoading}
         ariaLabel={$t('settings.bridge_config.edit_title')}
-        ariaDescribedBy={hintId}
         placeholder="homenet_bridge:\n  serial:\n    ..."
         schemaUri="./api/schema/homenet-bridge"
         {mode}
       />
-
-      <div id={hintId} class="editor-hint">
-        {$t('settings.bridge_config.edit_hint')}
-      </div>
     </div>
 
     <div class="modal-footer">
@@ -229,8 +222,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 1rem 1.5rem;
-    /* overflow: hidden removed to allow monaco widgets to be visible */
+    padding: 0 1.5rem;
     gap: 0.75rem;
   }
 
@@ -286,11 +278,6 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
-  .editor-hint {
-    color: #64748b;
-    font-size: 0.8rem;
-  }
-
   .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -302,18 +289,25 @@
   @media (max-width: 640px) {
     .modal-content-wrapper {
       border-radius: 0;
+      height: 100dvh;
     }
 
     .filename {
       display: none;
     }
 
+    .modal-header {
+      padding: 0.5rem 1.5rem;
+    }
     .modal-header h2 {
       font-size: 1.1rem;
     }
 
-    :global(.yaml-editor) {
-      font-size: 0.8rem;
+    .modal-body {
+      padding: 0;
+    }
+    .modal-footer {
+      padding: 0.5rem;
     }
   }
 </style>

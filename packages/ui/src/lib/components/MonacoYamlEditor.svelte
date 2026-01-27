@@ -357,6 +357,47 @@
     isToolbarExpanded = false; // Close menu after action
   };
 
+  const copySelection = () => {
+    if (!editor) return;
+    editor.focus();
+    const action = editor.getAction('editor.action.clipboardCopyAction');
+    if (action) {
+      action.run();
+    } else {
+      document.execCommand('copy');
+    }
+    isToolbarExpanded = false;
+  };
+
+  const cutSelection = () => {
+    if (!editor) return;
+    editor.focus();
+    const action = editor.getAction('editor.action.clipboardCutAction');
+    if (action) {
+      action.run();
+    } else {
+      document.execCommand('cut');
+    }
+    isToolbarExpanded = false;
+  };
+
+  const pasteToEditor = async () => {
+    if (!editor) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        editor.focus();
+        editor.trigger('keyboard', 'type', { text });
+      }
+    } catch (err) {
+      console.warn('Failed to paste from clipboard:', err);
+      // Fallback: trigger standard paste action which might be blocked or handled by browser
+      editor.focus();
+      editor.trigger('source', 'editor.action.clipboardPasteAction', {});
+    }
+    isToolbarExpanded = false;
+  };
+
   onMount(() => {
     // Detect touch device
     isTouchDevice =
@@ -552,6 +593,75 @@
             </svg>
             <span class="toolbar-label">{$t('editor.mobile.select_all')}</span>
           </button>
+          <div class="toolbar-row">
+            <button
+              type="button"
+              class="toolbar-btn half"
+              onclick={copySelection}
+              title={$t('editor.mobile.copy') || 'Copy'}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="toolbar-icon"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="toolbar-label">{$t('editor.mobile.copy')}</span>
+            </button>
+            <button
+              type="button"
+              class="toolbar-btn half"
+              onclick={cutSelection}
+              title={$t('editor.mobile.cut') || 'Cut'}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="toolbar-icon"
+              >
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+              </svg>
+              <span class="toolbar-label">{$t('editor.mobile.cut')}</span>
+            </button>
+          </div>
+          <button
+            type="button"
+            class="toolbar-btn"
+            onclick={pasteToEditor}
+            title={$t('editor.mobile.paste') || 'Paste'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="toolbar-icon"
+            >
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              ></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            <span class="toolbar-label">{$t('editor.mobile.paste')}</span>
+          </button>
         </div>
       {/if}
 
@@ -654,12 +764,12 @@
   /* Mobile floating toolbar */
   .mobile-toolbar-wrapper {
     position: absolute;
-    bottom: 16px;
-    right: 16px;
+    bottom: 8px;
+    right: 8px;
     display: flex;
     flex-direction: column;
     align-items: flex-end; /* Align toggle button and menu to the right */
-    gap: 12px;
+    gap: 8px;
     z-index: 100;
   }
 
@@ -667,13 +777,13 @@
   .mobile-toolbar-menu {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     background: rgba(30, 30, 30, 0.95);
     backdrop-filter: blur(8px);
-    border-radius: 12px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 4px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    min-width: 150px;
+    min-width: 120px;
     transform-origin: bottom right;
     animation: slideUp 0.15s ease-out;
   }
@@ -693,8 +803,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(59, 130, 246, 0.9); /* Primary color */
     color: white;
@@ -730,8 +840,8 @@
     align-items: center;
     justify-content: flex-start;
     width: 100%;
-    height: 42px;
-    padding: 0 12px;
+    height: 36px;
+    padding: 0 8px;
     border: none;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.08);
@@ -758,29 +868,39 @@
   }
 
   .toolbar-icon {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
     flex-shrink: 0;
   }
 
   .toolbar-label {
-    margin-left: 10px;
-    font-size: 13px;
+    margin-left: 6px;
+    font-size: 11px;
     font-weight: 500;
     white-space: nowrap;
   }
 
   .toolbar-btn.half .toolbar-label {
-    margin-left: 6px;
+    margin-left: 4px;
     font-size: 11px;
   }
 
-  /* Ensure monaco widgets appear above modals */
-  :global(.monaco-editor .suggest-widget),
-  :global(.monaco-editor .monaco-hover) {
-    z-index: 2147483647 !important;
-    max-width: 80vw !important;
-    visibility: visible !important;
+  @media (max-width: 768px) {
+    /* 줄 번호 영역 전체 */
+    :global(.monaco-editor .margin) {
+      width: 32px !important; /* 기본은 대략 50px 이상 */
+    }
+
+    /* 줄 번호 텍스트 */
+    :global(.monaco-editor .line-numbers) {
+      font-size: 11px;
+      width: 32px !important;
+      padding-left: 4px;
+      text-align: right;
+    }
+    :global(.editor-scrollable) {
+      left: 50px !important;
+    }
   }
 </style>

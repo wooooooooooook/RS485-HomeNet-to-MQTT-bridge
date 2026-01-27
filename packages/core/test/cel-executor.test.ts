@@ -53,6 +53,11 @@ describe('CelExecutor', () => {
     expect(executor.execute('bitShiftLeft(1, 2)', {})).toBe(4);
   });
 
+  it('should handle len helper for list and string', () => {
+    expect(executor.execute('len(data)', { data: [1, 2, 3] })).toBe(3);
+    expect(executor.execute('len("abc")', {})).toBe(3);
+  });
+
   it('should handle state value calculation (Commax example)', () => {
     // double((bcd_to_int(data[4]) * 10000) + (bcd_to_int(data[5]) * 100) + bcd_to_int(data[6])) * 0.1
     // data: [..., ..., ..., ..., 0x12, 0x34, 0x56] -> 12345.6

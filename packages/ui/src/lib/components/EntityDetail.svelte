@@ -1265,6 +1265,7 @@
   .modal-body {
     flex: 1;
     padding: 1.5rem;
+    overflow-y: auto;
   }
 
   .section {

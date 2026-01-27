@@ -322,10 +322,7 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
       return res.status(429).json({ error: 'Too many requests' });
     }
 
-    const {
-      portId,
-      yaml: newYaml,
-    } = req.body as {
+    const { portId, yaml: newYaml } = req.body as {
       portId: string;
       yaml: string;
     };
@@ -382,59 +379,64 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
 
       for (const key of Object.keys(newItems)) {
         // Check if this key is one of the allowed entity types or automation/script
-        if (
-          !ENTITY_TYPE_KEYS.includes(key as any) &&
-          key !== 'automation' &&
-          key !== 'scripts'
-        ) {
+        if (!ENTITY_TYPE_KEYS.includes(key as any) && key !== 'automation' && key !== 'scripts') {
           continue; // Skip unknown top-level keys
         }
 
         const newEntries = newItems[key];
         if (!Array.isArray(newEntries)) {
-           // If user provided a single object instead of array (unlikely with valid schema but possible), wrap it
-           // But our schema usually defines these as arrays.
-           // If it's not an array, we might want to skip or error. 
-           // Let's assume standard format matches our schema which are lists.
-           continue; 
+          // If user provided a single object instead of array (unlikely with valid schema but possible), wrap it
+          // But our schema usually defines these as arrays.
+          // If it's not an array, we might want to skip or error.
+          // Let's assume standard format matches our schema which are lists.
+          continue;
         }
 
-         mergedKeys.push(key);
+        mergedKeys.push(key);
 
-         const existingList = (normalizedFullConfig as any)[key] || [];
-         if (!Array.isArray((normalizedFullConfig as any)[key])) {
-             (normalizedFullConfig as any)[key] = existingList;
-         }
+        const existingList = (normalizedFullConfig as any)[key] || [];
+        if (!Array.isArray((normalizedFullConfig as any)[key])) {
+          (normalizedFullConfig as any)[key] = existingList;
+        }
 
-          // Check for duplicate IDs before appending
-          for (const newItem of newEntries) {
-            if (newItem.id) {
-              const duplicate = existingList.find((existing: any) => existing.id === newItem.id);
-              if (duplicate) {
-                 return res.status(409).json({ error: `ID '${newItem.id}' already exists in ${key}.` });
-              }
-              // Also check against global uniqueness if necessary?
-              // For now, uniqueness within the list (and usually within the whole system for entities) is expected.
-              // Let's at least check within the current file's relevant lists if it's an entity type
-              
-              if (ENTITY_TYPE_KEYS.includes(key as any)) {
-                 // Check if ID exists in OTHER entity lists in the SAME file
-                 for (const otherKey of ENTITY_TYPE_KEYS) {
-                    if (otherKey === key) continue;
-                    const otherList = (normalizedFullConfig as any)[otherKey];
-                    if (Array.isArray(otherList) && otherList.some((e: any) => e.id === newItem.id)) {
-                       return res.status(409).json({ error: `ID '${newItem.id}' already exists in ${otherKey}.` });
-                    }
-                 }
+        // Check for duplicate IDs before appending
+        for (const newItem of newEntries) {
+          if (newItem.id) {
+            const duplicate = existingList.find((existing: any) => existing.id === newItem.id);
+            if (duplicate) {
+              return res
+                .status(409)
+                .json({ error: `ID '${newItem.id}' already exists in ${key}.` });
+            }
+            // Also check against global uniqueness if necessary?
+            // For now, uniqueness within the list (and usually within the whole system for entities) is expected.
+            // Let's at least check within the current file's relevant lists if it's an entity type
+
+            if (ENTITY_TYPE_KEYS.includes(key as any)) {
+              // Check if ID exists in OTHER entity lists in the SAME file
+              for (const otherKey of ENTITY_TYPE_KEYS) {
+                if (otherKey === key) continue;
+                const otherList = (normalizedFullConfig as any)[otherKey];
+                if (Array.isArray(otherList) && otherList.some((e: any) => e.id === newItem.id)) {
+                  return res
+                    .status(409)
+                    .json({ error: `ID '${newItem.id}' already exists in ${otherKey}.` });
+                }
               }
             }
           }
+        }
 
-         (normalizedFullConfig as any)[key].push(...newEntries);
+        (normalizedFullConfig as any)[key].push(...newEntries);
       }
 
       if (mergedKeys.length === 0) {
-          return res.status(400).json({ error: 'No valid items found to add. Ensure YAML structure matches root schema keys (e.g. light:, automation:)'});
+        return res
+          .status(400)
+          .json({
+            error:
+              'No valid items found to add. Ensure YAML structure matches root schema keys (e.g. light:, automation:)',
+          });
       }
 
       // 4. Update the original object structure
@@ -450,15 +452,14 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
       ctx.rebuildPortMappings();
 
       // We don't hot-reload individual items on "Add" usually, we request restart.
-      // But we could try? 
+      // But we could try?
       // For now, consistent with requirements: "request restart".
-      
+
       logger.info(
         `[service] Config added items for ${mergedKeys.join(', ')} in ${portId}. Backup: ${path.basename(backupPath)}`,
       );
-      
-      res.json({ success: true, backup: path.basename(backupPath), restartRequired: true });
 
+      res.json({ success: true, backup: path.basename(backupPath), restartRequired: true });
     } catch (err) {
       logger.error({ err }, '[service] Failed to add config items');
       res.status(500).json({ error: err instanceof Error ? err.message : 'Add failed' });

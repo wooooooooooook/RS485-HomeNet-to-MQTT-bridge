@@ -1,4 +1,3 @@
-
 /**
  * Initiates a system restart by fetching a token and sending a restart request.
  * Automatically reloads the window after a successful request.

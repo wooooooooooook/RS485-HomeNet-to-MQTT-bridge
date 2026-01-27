@@ -86,6 +86,10 @@ export function calculateChecksumFromBuffer(
   }
 }
 
+/**
+ * Calculate simple addition checksum
+ * Sum of all bytes (header + data) masked by 0xFF
+ */
 function add(header: ByteArray, data: ByteArray): number {
   let sum = 0;
   for (const byte of header) {
@@ -97,6 +101,10 @@ function add(header: ByteArray, data: ByteArray): number {
   return sum & 0xff;
 }
 
+/**
+ * Calculate addition checksum excluding header
+ * Sum of data bytes masked by 0xFF
+ */
 function addNoHeader(data: ByteArray): number {
   let sum = 0;
   for (const byte of data) {
@@ -113,6 +121,10 @@ function addRange(buffer: ByteArray, start: number, end: number): number {
   return sum & 0xff;
 }
 
+/**
+ * Calculate simple XOR checksum
+ * XOR of all bytes (header + data)
+ */
 function xor(header: ByteArray, data: ByteArray): number {
   let checksum = 0;
   for (const byte of header) {
@@ -124,6 +136,10 @@ function xor(header: ByteArray, data: ByteArray): number {
   return checksum;
 }
 
+/**
+ * Calculate XOR checksum excluding header
+ * XOR of data bytes only
+ */
 function xorNoHeader(data: ByteArray): number {
   let checksum = 0;
   for (const byte of data) {
@@ -140,6 +156,14 @@ function xorRange(buffer: ByteArray, start: number, end: number): number {
   return checksum;
 }
 
+/**
+ * Samsung Wallpad RX Checksum (Deprecated)
+ * Algorithm:
+ * 1. Initial value: 0xB0
+ * 2. XOR with all data bytes
+ * 3. If first data byte < 0x7C, XOR result with 0x80
+ * @deprecated Use CEL expression or samsung_xor if possible
+ */
 function samsungRx(data: ByteArray): number {
   let crc = 0xb0;
   for (const byte of data) {
@@ -162,6 +186,14 @@ function samsungRxFromBuffer(buffer: ByteArray, start: number, end: number): num
   return crc;
 }
 
+/**
+ * Samsung Wallpad TX Checksum (Deprecated)
+ * Algorithm:
+ * 1. Initial value: 0x00
+ * 2. XOR with all data bytes
+ * 3. XOR result with 0x80
+ * @deprecated Use CEL expression or samsung_xor if possible
+ */
 function samsungTx(data: ByteArray): number {
   let crc = 0x00;
   for (const byte of data) {
@@ -180,6 +212,12 @@ function samsungTxFromBuffer(buffer: ByteArray, start: number, end: number): num
   return crc;
 }
 
+/**
+ * Samsung SDS Checksum (MSB 0)
+ * Algorithm:
+ * 1. XOR all bytes (header + data)
+ * 2. Mask with 0x7F (Force MSB to 0)
+ */
 function samsungXorAllMsb0(header: ByteArray, data: ByteArray): number {
   let crc = 0;
   for (const byte of header) {
@@ -199,6 +237,12 @@ function samsungXorAllMsb0FromBuffer(buffer: ByteArray, start: number, end: numb
   return crc & 0x7f;
 }
 
+/**
+ * Bestin Wallpad Checksum
+ * Algorithm:
+ * 1. Initial value: 3
+ * 2. For each byte b: sum = ((b ^ sum) + 1) & 0xFF
+ */
 function bestinSum(header: ByteArray, data: ByteArray): number {
   let sum = 3;
   for (const byte of header) {
@@ -261,14 +305,15 @@ export function calculateChecksum2FromBuffer(
 
 /**
  * XOR_ADD 2-byte checksum
- * Based on user-provided algorithm:
- * - Accumulates ADD and XOR separately for header and data
- * - Adds XOR result to ADD accumulator
- * - Packs as [XOR, ADD&0xFF]
+ * Algorithm:
+ * 1. xor_sum = XOR(All Bytes)
+ * 2. add_sum = Sum(All Bytes)
+ * 3. final_add = (add_sum + xor_sum) & 0xFF
+ * Result: [xor_sum, final_add]
  */
 function xorAdd(header: ByteArray, data: ByteArray): number[] {
-  let crc = 0;
-  let temp = 0;
+  let crc = 0; // add_sum
+  let temp = 0; // xor_sum
 
   // Process header bytes
   for (const byte of header) {
@@ -282,6 +327,7 @@ function xorAdd(header: ByteArray, data: ByteArray): number[] {
     temp ^= byte;
   }
 
+  // Add XOR result to the arithmetic sum
   crc += temp;
 
   // Pack into 2 bytes: [XOR, ADD]

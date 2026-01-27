@@ -46,4 +46,3 @@ export interface LightEntity extends EntityConfig {
   command_off?: CommandSchemaOrCEL;
   command_update?: CommandSchemaOrCEL;
 }
-

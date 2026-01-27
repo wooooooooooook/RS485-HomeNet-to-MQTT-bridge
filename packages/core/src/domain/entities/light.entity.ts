@@ -1,7 +1,7 @@
 // packages/core/src/domain/entities/light.entity.ts
 
-import { EntityConfig, CommandSchema } from './base.entity.js';
-import { StateSchema, StateNumSchema } from '../../protocol/types.js';
+import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.js';
+import { StateSchema, StateNumSchemaOrCEL } from '../../protocol/types.js';
 
 export interface LightEntity extends EntityConfig {
   type: 'light';
@@ -10,26 +10,26 @@ export interface LightEntity extends EntityConfig {
   state_off?: StateSchema;
 
   // Brightness support
-  state_brightness?: StateNumSchema;
-  command_brightness?: CommandSchema;
+  state_brightness?: StateNumSchemaOrCEL;
+  command_brightness?: CommandSchemaOrCEL;
 
   // Color temperature support (mireds)
-  state_color_temp?: StateNumSchema;
-  command_color_temp?: CommandSchema;
+  state_color_temp?: StateNumSchemaOrCEL;
+  command_color_temp?: CommandSchemaOrCEL;
   min_mireds?: number;
   max_mireds?: number;
 
   // RGB color support
-  state_red?: StateNumSchema;
-  state_green?: StateNumSchema;
-  state_blue?: StateNumSchema;
-  command_red?: CommandSchema;
-  command_green?: CommandSchema;
-  command_blue?: CommandSchema;
+  state_red?: StateNumSchemaOrCEL;
+  state_green?: StateNumSchemaOrCEL;
+  state_blue?: StateNumSchemaOrCEL;
+  command_red?: CommandSchemaOrCEL;
+  command_green?: CommandSchemaOrCEL;
+  command_blue?: CommandSchemaOrCEL;
 
   // White value support
-  state_white?: StateNumSchema;
-  command_white?: CommandSchema;
+  state_white?: StateNumSchemaOrCEL;
+  command_white?: CommandSchemaOrCEL;
 
   // Color mode
   state_color_mode?: StateSchema; // 'rgb', 'color_temp', 'white'
@@ -37,12 +37,13 @@ export interface LightEntity extends EntityConfig {
   // Effects
   effect_list?: string[];
   state_effect?: StateSchema;
-  command_effect?: CommandSchema;
+  command_effect?: CommandSchemaOrCEL;
 
   // Transition support
   default_transition_length?: number;
 
-  command_on?: CommandSchema;
-  command_off?: CommandSchema;
-  command_update?: CommandSchema;
+  command_on?: CommandSchemaOrCEL;
+  command_off?: CommandSchemaOrCEL;
+  command_update?: CommandSchemaOrCEL;
 }
+

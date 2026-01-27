@@ -5,6 +5,7 @@
   import Button from './Button.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import Dialog from './Dialog.svelte';
+  import MonacoYamlEditor from './MonacoYamlEditor.svelte';
   import Modal from './Modal.svelte';
   import ActivityLogList from './ActivityLogList.svelte';
   import { formatTime } from '../utils/time';
@@ -31,6 +32,7 @@
     onExecute,
     onRename,
     onUpdate,
+    editorMode = 'monaco',
   }: {
     entity: UnifiedEntity;
     parsedPackets?: ParsedPacket[];
@@ -44,6 +46,7 @@
     onExecute?: (cmd: CommandInfo, value?: any) => void;
     onRename?: (newName: string) => void;
     onUpdate?: (updates: Partial<UnifiedEntity>) => void;
+    editorMode?: 'monaco' | 'textarea';
   } = $props();
 
   let activeTab = $state<'status' | 'config' | 'packets' | 'manage' | 'execute' | 'logs'>('status');
@@ -906,13 +909,21 @@
               </div>
             {:else}
               <div class="config-editor-container">
-                <textarea
+                <MonacoYamlEditor
                   class="config-editor"
-                  bind:value={editingConfig}
-                  spellcheck="false"
-                  aria-label={$t('entity_detail.tabs.config')}
-                  aria-busy={isSaving}
-                ></textarea>
+                  value={editingConfig}
+                  onChange={(nextValue) => (editingConfig = nextValue)}
+                  readOnly={false}
+                  placeholder="type: switch\nname: My Light\n..."
+                  schemaUri={activeTab === 'config'
+                    ? (() => {
+                        if (isAutomation) return './api/schema/entity/automation';
+                        if (isScript) return './api/schema/entity/script';
+                        return `./api/schema/entity/${entity.type ?? 'unknown'}`;
+                      })()
+                    : undefined}
+                  mode={editorMode}
+                />
                 <div class="config-actions">
                   <Button
                     variant="success"
@@ -1414,7 +1425,8 @@
     height: 100%;
   }
 
-  .config-editor {
+  :global(.config-editor) {
+    position: relative;
     flex: 1;
     background: #0f172a;
     padding: 1rem;
@@ -1424,12 +1436,11 @@
     font-family: 'Fira Code', monospace;
     font-size: 0.9rem;
     line-height: 1.5;
-    resize: vertical;
     min-height: 400px;
     outline: none;
   }
 
-  .config-editor:focus {
+  :global(.config-editor:focus-within) {
     border-color: #38bdf8;
   }
 

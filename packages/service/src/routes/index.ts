@@ -17,6 +17,7 @@ import {
   createConfigEditorRoutes,
   type ConfigEditorRoutesContext,
 } from './config-editor.routes.js';
+import { createSchemaRoutes } from './schema.routes.js';
 
 export interface RoutesContext
   extends SystemRoutesContext,
@@ -66,6 +67,9 @@ export function registerRoutes(app: Express, ctx: RoutesContext): void {
 
   // Config Editor routes
   app.use(createConfigEditorRoutes(ctx));
+
+  // Schema routes (JSON Schema for Monaco YAML editor autocomplete)
+  app.use(createSchemaRoutes());
 }
 
 export { createSystemRoutes } from './system.routes.js';

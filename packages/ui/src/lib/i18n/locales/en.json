@@ -121,7 +121,11 @@
       "mqtt_cleanup_desc": "Clear all retained MQTT messages published by the application. Use this when you want to remove unnecessary MQTT messages after port name changes or other operations.",
       "mqtt_cleanup_confirm": "Are you sure you want to clear all retained MQTT messages? The service will restart after clearing.",
       "cleaning": "Cleaning...",
-      "mqtt_cleanup_success": "MQTT messages cleared."
+      "mqtt_cleanup_success": "MQTT messages cleared.",
+      "editor_title": "Default Editor",
+      "editor_desc": "Select the editor to use when editing YAML.",
+      "editor_monaco": "Monaco Editor (Recommended)",
+      "editor_textarea": "Basic Textarea"
     },
     "bridge_config": {
       "title": "Bridge Management",
@@ -335,6 +339,16 @@
       "reconnecting": "Reconnecting",
       "connecting": "Connecting",
       "connected": "Connected"
+    }
+  },
+  "editor": {
+    "mobile": {
+      "toolbar_label": "Selection tools",
+      "select_line": "Select line",
+      "select_block": "Select block",
+      "expand_up": "Expand up",
+      "expand_down": "Expand down",
+      "select_all": "Select all"
     }
   },
   "header": {

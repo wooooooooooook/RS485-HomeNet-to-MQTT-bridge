@@ -134,6 +134,9 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
     retentionCount: 7,
     ttlHours: 1,
   },
+  editor: {
+    default: 'monaco',
+  },
 };
 
 /**
@@ -178,6 +181,12 @@ export const normalizeFrontendSettings = (
         typeof value?.logRetention?.ttlHours === 'number' && value.logRetention.ttlHours > 0
           ? value.logRetention.ttlHours
           : DEFAULT_FRONTEND_SETTINGS.logRetention!.ttlHours,
+    },
+    editor: {
+      default:
+        value?.editor?.default === 'textarea' || value?.editor?.default === 'monaco'
+          ? value.editor.default
+          : DEFAULT_FRONTEND_SETTINGS.editor!.default,
     },
   };
 };

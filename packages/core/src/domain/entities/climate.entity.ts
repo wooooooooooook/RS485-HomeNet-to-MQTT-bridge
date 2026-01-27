@@ -1,7 +1,7 @@
 // packages/core/src/domain/entities/climate.entity.ts
 
-import { EntityConfig, CommandSchema } from './base.entity.js';
-import { StateSchema, StateNumSchema } from '../../protocol/types.js';
+import { EntityConfig, CommandSchema, CommandSchemaOrCEL } from './base.entity.js';
+import { StateSchema, StateNumSchemaOrCEL } from '../../protocol/types.js';
 
 export interface ClimateEntity extends EntityConfig {
   type: 'climate';
@@ -16,12 +16,12 @@ export interface ClimateEntity extends EntityConfig {
   state_auto?: StateSchema;
 
   // Temperature
-  state_temperature_current?: StateNumSchema;
-  state_temperature_target?: StateNumSchema;
+  state_temperature_current?: StateNumSchemaOrCEL;
+  state_temperature_target?: StateNumSchemaOrCEL;
 
   // Humidity
-  state_humidity_current?: StateNumSchema;
-  state_humidity_target?: StateNumSchema;
+  state_humidity_current?: StateNumSchemaOrCEL;
+  state_humidity_target?: StateNumSchemaOrCEL;
 
   // Actions
   state_action_idle?: StateSchema;
@@ -59,55 +59,55 @@ export interface ClimateEntity extends EntityConfig {
   state_preset_activity?: StateSchema;
 
   // Custom modes (CEL)
-  state_custom_fan?: CommandSchema; // CEL returning string
-  state_custom_preset?: CommandSchema; // CEL returning string
+  state_custom_fan?: CommandSchemaOrCEL; // CEL returning string
+  state_custom_preset?: CommandSchemaOrCEL; // CEL returning string
 
   // Commands - Temperature modes
-  command_off?: CommandSchema;
-  command_heat?: CommandSchema;
-  command_cool?: CommandSchema;
-  command_fan_only?: CommandSchema;
-  command_dry?: CommandSchema;
-  command_auto?: CommandSchema;
+  command_off?: CommandSchemaOrCEL;
+  command_heat?: CommandSchemaOrCEL;
+  command_cool?: CommandSchemaOrCEL;
+  command_fan_only?: CommandSchemaOrCEL;
+  command_dry?: CommandSchemaOrCEL;
+  command_auto?: CommandSchemaOrCEL;
 
   // Commands - Temperature/Humidity
-  command_temperature?: CommandSchema;
-  command_humidity?: CommandSchema;
+  command_temperature?: CommandSchemaOrCEL;
+  command_humidity?: CommandSchemaOrCEL;
 
   // Commands - Swing
-  command_swing_off?: CommandSchema;
-  command_swing_both?: CommandSchema;
-  command_swing_vertical?: CommandSchema;
-  command_swing_horizontal?: CommandSchema;
+  command_swing_off?: CommandSchemaOrCEL;
+  command_swing_both?: CommandSchemaOrCEL;
+  command_swing_vertical?: CommandSchemaOrCEL;
+  command_swing_horizontal?: CommandSchemaOrCEL;
 
   // Commands - Fan modes
-  command_fan_on?: CommandSchema;
-  command_fan_off?: CommandSchema;
-  command_fan_auto?: CommandSchema;
-  command_fan_low?: CommandSchema;
-  command_fan_medium?: CommandSchema;
-  command_fan_high?: CommandSchema;
-  command_fan_middle?: CommandSchema;
-  command_fan_focus?: CommandSchema;
-  command_fan_diffuse?: CommandSchema;
-  command_fan_quiet?: CommandSchema;
+  command_fan_on?: CommandSchemaOrCEL;
+  command_fan_off?: CommandSchemaOrCEL;
+  command_fan_auto?: CommandSchemaOrCEL;
+  command_fan_low?: CommandSchemaOrCEL;
+  command_fan_medium?: CommandSchemaOrCEL;
+  command_fan_high?: CommandSchemaOrCEL;
+  command_fan_middle?: CommandSchemaOrCEL;
+  command_fan_focus?: CommandSchemaOrCEL;
+  command_fan_diffuse?: CommandSchemaOrCEL;
+  command_fan_quiet?: CommandSchemaOrCEL;
 
   // Commands - Preset modes
-  command_preset_none?: CommandSchema;
-  command_preset_home?: CommandSchema;
-  command_preset_away?: CommandSchema;
-  command_preset_boost?: CommandSchema;
-  command_preset_comfort?: CommandSchema;
-  command_preset_eco?: CommandSchema;
-  command_preset_sleep?: CommandSchema;
-  command_preset_activity?: CommandSchema;
+  command_preset_none?: CommandSchemaOrCEL;
+  command_preset_home?: CommandSchemaOrCEL;
+  command_preset_away?: CommandSchemaOrCEL;
+  command_preset_boost?: CommandSchemaOrCEL;
+  command_preset_comfort?: CommandSchemaOrCEL;
+  command_preset_eco?: CommandSchemaOrCEL;
+  command_preset_sleep?: CommandSchemaOrCEL;
+  command_preset_activity?: CommandSchemaOrCEL;
 
   // Commands - Custom modes (CEL)
-  command_custom_fan?: CommandSchema; // CEL taking string
-  command_custom_preset?: CommandSchema; // CEL taking string
+  command_custom_fan?: CommandSchemaOrCEL; // CEL taking string
+  command_custom_preset?: CommandSchemaOrCEL; // CEL taking string
 
   // Update command
-  command_update?: CommandSchema;
+  command_update?: CommandSchemaOrCEL;
 
   // Custom mode lists
   custom_fan_mode?: string[];

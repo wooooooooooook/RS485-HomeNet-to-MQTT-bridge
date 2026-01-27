@@ -79,7 +79,7 @@ export class TextDevice extends GenericDevice {
       this.optimisticValue = String(value);
 
       // If command_text is defined, construct packet
-      if (entityConfig.command_text?.data) {
+      if (typeof entityConfig.command_text !== 'string' && entityConfig.command_text?.data) {
         const command = [...entityConfig.command_text.data];
 
         // If there's a value offset, insert the text as ASCII bytes

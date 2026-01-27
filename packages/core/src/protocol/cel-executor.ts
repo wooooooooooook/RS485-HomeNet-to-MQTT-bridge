@@ -231,6 +231,12 @@ export class CelExecutor {
     this.env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
     this.env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
     this.env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
+    this.env.registerFunction('len(list): int', (value: { length: number } | null) =>
+      BigInt(value?.length ?? 0),
+    );
+    this.env.registerFunction('len(string): int', (value: string | null) =>
+      BigInt(value?.length ?? 0),
+    );
     this.env.registerFunction(
       'get_from_states(string, string): dyn',
       (entityId: string, key: string) => this.getFromStates(entityId, key) ?? null,

@@ -61,6 +61,7 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 *   `bitNot(int)`: 비트 NOT 연산 (`~`)
 *   `bitShiftLeft(int, int)`: 비트 왼쪽 시프트 (`<<`)
 *   `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
+*   `len(list|string)`: 리스트 또는 문자열 길이 반환
 *   `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
 *   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `get_from_state('value') != null`)
 *   `get_from_states(entity_id, attribute, default?)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `null`, 기본값을 넘기면 해당 값 반환)

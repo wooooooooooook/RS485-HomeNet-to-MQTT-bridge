@@ -1,5 +1,11 @@
 import { PacketDefaults, ChecksumType, Checksum2Type } from './types.js';
-import { calculateChecksumFromBuffer, calculateChecksum2FromBuffer } from './utils/checksum.js';
+import {
+  calculateChecksumFromBuffer,
+  calculateChecksum2FromBuffer,
+  getChecksumFunction,
+  getChecksumOffsetType,
+  ByteArray,
+} from './utils/checksum.js';
 import { CelExecutor, CompiledScript, ReusableBufferView } from './cel-executor.js';
 import { Buffer } from 'buffer';
 import { logger } from '../utils/logger.js';
@@ -33,6 +39,11 @@ export class PacketParser {
   private validHeaderCount: number = 0;
   private isStandard1Byte: boolean = false;
   private isStandard2Byte: boolean = false;
+
+  // Optimized checksum function (bypasses switch/call overhead)
+  private checksumFn: ((buffer: ByteArray, start: number, end: number) => number) | null = null;
+  private checksumStartAdjust: number = 0;
+  private cachedChecksumType: string | null = null;
 
   // Optimizations for CEL Checksums
   private preparedChecksum: CompiledScript | null = null;
@@ -91,6 +102,15 @@ export class PacketParser {
       typeof checksumType === 'string' &&
       checksumType !== 'none' &&
       this.checksumTypes.has(checksumType);
+
+    // Bolt: Pre-resolve checksum function
+    if (this.isStandard1Byte) {
+      this.checksumFn = getChecksumFunction(checksumType as ChecksumType);
+      const offsetType = getChecksumOffsetType(checksumType as ChecksumType);
+      const headerLen = this.defaults.rx_header?.length || 0;
+      this.checksumStartAdjust = offsetType === 'header' ? headerLen : 0;
+      this.cachedChecksumType = checksumType as string;
+    }
 
     const checksum2Type = this.defaults.rx_checksum2;
     this.isStandard2Byte =
@@ -971,6 +991,13 @@ export class PacketParser {
 
         if (this.checksumTypes.has(checksumOrScript)) {
           // Standard algorithm (add, xor, etc.)
+          if (this.checksumFn && checksumOrScript === this.cachedChecksumType) {
+            const start = offset + this.checksumStartAdjust;
+            const end = dataEnd;
+            const calculated = this.checksumFn(buffer, start, end);
+            return calculated === checksumByte;
+          }
+
           const headerLength = this.defaults.rx_header?.length || 0;
           const calculated = calculateChecksumFromBuffer(
             buffer,

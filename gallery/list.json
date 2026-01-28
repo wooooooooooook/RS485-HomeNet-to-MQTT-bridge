@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-27T04:46:23.570Z",
+  "generated_at": "2026-01-28T06:05:58.796Z",
   "vendors": [
     {
       "id": "bestin",
@@ -731,7 +731,7 @@
           "name_en": "Ventilation System",
           "description": "현대 이마주 환기시스템 설정입니다. 3단 속도를 지원합니다.",
           "description_en": "Hyundai Imazu ventilation system with 3-speed control.",
-          "version": "2.0.3",
+          "version": "2.1.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -744,7 +744,7 @@
             "entities": {
               "fan": 1
             },
-            "automations": 0,
+            "automations": 1,
             "scripts": 0
           }
         },
@@ -775,7 +775,7 @@
           "file": "hyundai_imazu/periodic_update.yaml",
           "name": "주기적 조명 상태요청 자동화 (1번방)",
           "name_en": "Periodic light state request automation (Room 1)",
-          "description": "상태 갱신을 위한 주기적 조명 상태요청 자동화입니다. 다른 방도 필요한 경우 복사하여 수정하시면 됩니다.",
+          "description": "!조명설정에 통합되었습니다. 이걸 사용할 필요가 없습니다.! 상태 갱신을 위한 주기적 조명 상태요청 자동화입니다. 다른 방도 필요한 경우 복사하여 수정하시면 됩니다.",
           "description_en": "Periodic light state request automation for Hyundai Telecom wallpads.",
           "version": "1.0.2",
           "author": "wooooooooooook",
@@ -794,7 +794,7 @@
           "file": "hyundai_imazu/periodic_update_climate.yaml",
           "name": "주기적 난방 상태요청 자동화",
           "name_en": "Periodic climate state request automation",
-          "description": "상태 갱신을 위한 주기적 난방 상태요청 자동화입니다.",
+          "description": "!난방 설정에 통합되었습니다. 이걸 사용할 필요가 없습니다! 상태 갱신을 위한 주기적 난방 상태요청 자동화입니다.",
           "description_en": "Periodic climate state request automation for Hyundai Telecom wallpads.",
           "version": "1.0.0",
           "author": "muuky",

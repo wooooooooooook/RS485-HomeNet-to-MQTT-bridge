@@ -1,0 +1,83 @@
+meta:
+  name: "모드 설정 환풍기"
+  name_en: "mode setting fan"
+  description: "코콤 모드 설정 환풍기 설정입니다. 전열/자동/바이패스/취침 모드를 지원합니다."
+  description_en: "Kocom mode setting fan configuration. Supports ventilation, auto, bypass, and sleep modes."
+  version: "1.1.0"
+  author: "wooooooooooook"
+  tags: ["fan", "kocom", "mode setting"]
+
+discovery:
+  match:
+    data: [0x30, 0xDC, 0x00, 0x48]
+    mask: [0xFF, 0xF0, 0xFF, 0xFF]
+entities:
+  fan:
+    - id: 'livingroom_fan'
+      name: '거실 환풍기'
+      icon: 'mdi:fan'
+      state:
+        data: [0x30, 0xDC, 0x00, 0x48, 0x00]
+        mask: [0xFF, 0xF0, 0xFF, 0xFF, 0xFF]
+      state_on:
+        offset: 10
+        data: [0x11]
+        mask: [0xFF]
+      state_off:
+        offset: 10
+        data: [0x00]
+        mask: [0xFF]
+      state_speed:
+        offset: 12
+        mask: 0xF0
+        mapping:
+          0x40: 33
+          0x80: 66
+          0xC0: 100
+          0x00: 0
+        
+      # 프리셋 모드 정의
+      preset_modes: ["ventilation", "auto", "bypass", "sleep"]
+
+      # 현재 모드 감지 (CEL 표현식)
+      state_preset_mode: >-
+        data[11] == 0x01 ? "ventilation" :
+        (data[11] == 0x02 ? "auto" :
+        (data[11] == 0x03 ? "bypass" :
+        (data[11] == 0x05 ? "sleep" : "off")))
+
+      # 모드 제어 명령 (CEL 표현식)
+      command_preset_mode: >-
+        xstr == "ventilation" ? [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11, 0x01,
+        get_from_state('speed', 33) <= 0 ? 0x40 : (get_from_state('speed', 33) <= 33 ? 0x40 : (get_from_state('speed', 33) <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]] :
+        (xstr == "auto" ? [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11, 0x02,
+        get_from_state('speed', 33) <= 0 ? 0x40 : (get_from_state('speed', 33) <= 33 ? 0x40 : (get_from_state('speed', 33) <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]] :
+        (xstr == "bypass" ? [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11, 0x03,
+        get_from_state('speed', 33) <= 0 ? 0x40 : (get_from_state('speed', 33) <= 33 ? 0x40 : (get_from_state('speed', 33) <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]] :
+        [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11, 0x05,
+        get_from_state('speed', 33) <= 0 ? 0x40 : (get_from_state('speed', 33) <= 33 ? 0x40 : (get_from_state('speed', 33) <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]]))
+      # mode 바이트(data[11])와 속도 바이트(data[12]) 매핑 참고
+      # - mode: 0x01=ventilation, 0x02=auto, 0x03=bypass, 0x05=sleep
+      # - speed (data[12] & 0xF0): 0x40=33%, 0x80=66%, 0xC0=100%
+      command_on: >-
+        [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11,
+        get_from_state('preset_mode', 'auto') == "ventilation" ? 0x01 :
+        (get_from_state('preset_mode', 'auto') == "auto" ? 0x02 :
+        (get_from_state('preset_mode', 'auto') == "bypass" ? 0x03 :
+        (get_from_state('preset_mode', 'auto') == "sleep" ? 0x05 : 0x02))),
+        get_from_state('speed', 33) <= 0 ? 0x40 : (get_from_state('speed', 33) <= 33 ? 0x40 : (get_from_state('speed', 33) <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]]
+      command_off: >-
+        [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x00, 0x01, 0x00, 0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]]
+      command_speed: >-
+        [[0x30, 0xBC, 0x00, 0x01, 0x00, 0x48, 0x00, 0x00, 0x11,
+        get_from_state('preset_mode', 'auto') == "ventilation" ? 0x01 :
+        (get_from_state('preset_mode', 'auto') == "auto" ? 0x02 :
+        (get_from_state('preset_mode', 'auto') == "bypass" ? 0x03 :
+        (get_from_state('preset_mode', 'auto') == "sleep" ? 0x05 : 0x02))),
+        x <= 0 ? 0x00 : (x <= 33 ? 0x40 : (x <= 66 ? 0x80 : 0xC0)),
+        0x05, 0, 0, 0, 0], [0x30, 0xDC], [0xFF, 0xF0]]

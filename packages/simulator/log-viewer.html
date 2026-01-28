@@ -369,6 +369,7 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th width="40" onclick="sortTable('idx')">#</th>
               <th width="140" onclick="sortTable('server_timestamp')">Time</th>
               <th width="80" onclick="sortTable('version')">Ver</th>
               <th onclick="sortTable('uid')">UID</th>
@@ -451,12 +452,9 @@
         if (viewName === 'uids') {
              if (elSearchQuery.value.trim() !== '') {
                  elSearchQuery.value = ''; // clear input
-                 // Optional: Trigger reload if needed. 
-                 // If we had filtered results, showing them in UID view might be confusing if the user expects "all".
-                 // But simply clearing the input signals "ready for all". 
-                 // For better UX, we could auto-reload if the current list is partial/filtered.
-                 // For now, just clearing as requested. 
              }
+             // Always trigger load to ensure full dataset
+             elBtnLoad.click();
         }
 
         // Update Tabs
@@ -728,7 +726,7 @@
          }
          document.getElementById('tableEmpty').style.display = 'none';
 
-         logs.forEach(log => {
+         logs.forEach((log, index) => {
              const tr = document.createElement('tr');
              
              const date = new Date(log.server_timestamp).toLocaleString('ko-KR');
@@ -739,6 +737,7 @@
              const ports = getPortInfo(log);
 
              tr.innerHTML = `
+                <td style="text-align:center; color:#999;">${index + 1}</td>
                 <td>${date}</td>
                 <td>${escapeHtml(version)}</td>
                 <td style="font-family:monospace">${escapeHtml(uid)}</td>

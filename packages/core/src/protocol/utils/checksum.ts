@@ -260,6 +260,36 @@ export function calculateChecksum2FromBuffer(
 }
 
 /**
+ * Verify 2-byte checksum from buffer without slicing and allocation
+ */
+export function verifyChecksum2FromBuffer(
+  buffer: ByteArray,
+  type: Checksum2Type,
+  _headerLength: number,
+  dataEnd: number,
+  baseOffset: number = 0,
+  expectedHigh: number,
+  expectedLow: number,
+): boolean {
+  const dataStart = baseOffset;
+  const dataStop = baseOffset + dataEnd;
+  switch (type) {
+    case 'xor_add':
+      return verifyXorAddRange(buffer, dataStart, dataStop, expectedHigh, expectedLow);
+    default: {
+      const calculated = calculateChecksum2FromBuffer(
+        buffer,
+        type,
+        _headerLength,
+        dataEnd,
+        baseOffset,
+      );
+      return calculated[0] === expectedHigh && calculated[1] === expectedLow;
+    }
+  }
+}
+
+/**
  * XOR_ADD 2-byte checksum
  * Based on user-provided algorithm:
  * - Accumulates ADD and XOR separately for header and data
@@ -289,6 +319,30 @@ function xorAdd(header: ByteArray, data: ByteArray): number[] {
   const low = crc & 0xff;
 
   return [high, low];
+}
+
+function verifyXorAddRange(
+  buffer: ByteArray,
+  start: number,
+  end: number,
+  expectedHigh: number,
+  expectedLow: number,
+): boolean {
+  let crc = 0;
+  let temp = 0;
+
+  for (let i = start; i < end; i++) {
+    const byte = buffer[i];
+    crc += byte;
+    temp ^= byte;
+  }
+
+  crc += temp;
+
+  const high = temp & 0xff;
+  const low = crc & 0xff;
+
+  return high === expectedHigh && low === expectedLow;
 }
 
 /**

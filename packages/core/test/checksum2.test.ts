@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { calculateChecksum2 } from '../src/protocol/utils/checksum';
+import { calculateChecksum2, verifyChecksum2FromBuffer } from '../src/protocol/utils/checksum';
 import { PacketParser } from '../src/protocol/packet-parser';
 import { CommandGenerator } from '../src/protocol/generators/command.generator';
 
@@ -35,6 +35,66 @@ describe('2-Byte Checksum', () => {
     // Result: [XOR(0x40), ADD&0xFF(0x20)]
 
     expect(result).toEqual([0x40, 0x20]);
+  });
+
+  describe('verifyChecksum2FromBuffer', () => {
+    it('should verify xor_add checksum correctly', () => {
+      // Packet: 0xF7 0x0e 0x11 0x81 0x00 0x00 0x01
+      // Checksum: [0x68, 0x00]
+      const buffer = Buffer.from([0xf7, 0x0e, 0x11, 0x81, 0x00, 0x00, 0x01, 0x68, 0x00]);
+
+      const isValid = verifyChecksum2FromBuffer(
+        buffer,
+        'xor_add',
+        1, // headerLength
+        buffer.length - 2, // dataEnd (checksum starts here)
+        0, // baseOffset
+        0x68, // expectedHigh
+        0x00, // expectedLow
+      );
+
+      expect(isValid).toBe(true);
+    });
+
+    it('should reject invalid xor_add checksum', () => {
+      const buffer = Buffer.from([0xf7, 0x0e, 0x11, 0x81, 0x00, 0x00, 0x01, 0x68, 0x01]); // Invalid low byte
+
+      const isValid = verifyChecksum2FromBuffer(
+        buffer,
+        'xor_add',
+        1,
+        buffer.length - 2,
+        0,
+        0x68,
+        0x01,
+      );
+
+      expect(isValid).toBe(false);
+    });
+
+    it('should handle offset and baseOffset correctly', () => {
+      // Packet embedded in a larger buffer at index 2
+      // FF FF [F7 0e 11 81 00 00 01 68 00]
+      const buffer = Buffer.from([
+        0xff, 0xff, 0xf7, 0x0e, 0x11, 0x81, 0x00, 0x00, 0x01, 0x68, 0x00,
+      ]);
+
+      const baseOffset = 2;
+      const packetLen = 9;
+      const dataEnd = packetLen - 2;
+
+      const isValid = verifyChecksum2FromBuffer(
+        buffer,
+        'xor_add',
+        1,
+        dataEnd,
+        baseOffset,
+        0x68,
+        0x00,
+      );
+
+      expect(isValid).toBe(true);
+    });
   });
 
   describe('CEL checksum2 support', () => {

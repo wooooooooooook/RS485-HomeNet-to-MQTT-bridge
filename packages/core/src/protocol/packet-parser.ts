@@ -2,6 +2,7 @@ import { PacketDefaults, ChecksumType, Checksum2Type } from './types.js';
 import {
   calculateChecksumFromBuffer,
   calculateChecksum2FromBuffer,
+  verifyChecksum2FromBuffer,
   getChecksumFunction,
   getChecksumOffsetType,
   ByteArray,
@@ -1050,15 +1051,14 @@ export class PacketParser {
         const checksumOrScript = this.defaults.rx_checksum2 as string;
 
         if (this.checksum2Types.has(checksumOrScript)) {
-          const calculated = calculateChecksum2FromBuffer(
+          return verifyChecksum2FromBuffer(
             buffer,
             checksumOrScript as Checksum2Type,
             headerLength,
             checksumStart - offset,
             offset,
-          );
-          return (
-            calculated[0] === buffer[checksumStart] && calculated[1] === buffer[checksumStart + 1]
+            buffer[checksumStart],
+            buffer[checksumStart + 1],
           );
         } else if (this.preparedChecksum2) {
           // Prepared CEL Expression for 2-byte checksum

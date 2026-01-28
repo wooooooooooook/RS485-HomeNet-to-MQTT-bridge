@@ -11,3 +11,6 @@ WORKDIR /workspace
 
 # Corepack enable is needed for pnpm
 RUN corepack enable
+
+# Copy source code
+COPY . /workspace

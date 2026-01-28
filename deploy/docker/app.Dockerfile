@@ -14,7 +14,7 @@ COPY packages packages
 COPY scripts scripts
 
 RUN pnpm install --recursive --no-frozen-lockfile
-RUN pnpm core:build && pnpm service:build
+RUN pnpm build
 
 FROM base AS runner
 

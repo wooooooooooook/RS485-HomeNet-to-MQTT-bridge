@@ -1,39 +1,8 @@
 node_modules
-.git
-.github
-.DS_Store
-.vscode
-.idea
-.refs
-.logs
-.pnpm-store
-
-# Build outputs
 dist
-packages/*/dist
-packages/service/static
-build
+.turbo
+.git
+.logs
+.refs
 coverage
-*.log
-*.tsbuildinfo
-
-# Environment variables
-.env
-.env.*
-
-# Documentation & Gallery (Fetched from GitHub)
-docs
-gallery
-*.md
-TODO.md
-AGENTS.md
-GEMINI.md
-
-# Deployment & Dev Scripts
-deploy
-hassio-addon-dev
-
-# Unused packages in production
-packages/simulator
-test
-packages/*/test
+.DS_Store

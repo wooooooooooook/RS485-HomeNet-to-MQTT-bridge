@@ -1,15 +1,15 @@
 x-dev-base: &dev-base
   image: rs485-dev-base:latest
   build:
-    context: .
-    dockerfile: Dockerfile.dev
+    context: ../../
+    dockerfile: deploy/docker/Dockerfile.dev
   working_dir: /workspace
   environment:
     PNPM_HOME: /root/.local/share/pnpm
     PATH: /root/.local/share/pnpm:$PATH
   volumes:
-    - ../../:/workspace
     - pnpm-store:/root/.local/share/pnpm
+    - turbo-cache:/workspace/.turbo
 
 services:
   mq:
@@ -108,10 +108,9 @@ services:
         pnpm install --filter @rs485-homenet/service... --filter @rs485-homenet/core... --filter @rs485-homenet/ui... --frozen-lockfile
 
         # Pre-build packages to avoid race conditions and speed up startup
-        echo '[app] Building core...'
-        pnpm --filter @rs485-homenet/core build
-        echo '[app] Building service...'
-        pnpm --filter @rs485-homenet/service build
+        # Pre-build packages using Turbo for speed and caching
+        echo '[app] Building via Turbo...'
+        pnpm build
         
         # Start dev servers
         echo '[app] Starting dev servers...'
@@ -154,3 +153,4 @@ volumes:
   simulator_node_modules:
   app_node_modules:
   ui_node_modules:
+  turbo-cache:

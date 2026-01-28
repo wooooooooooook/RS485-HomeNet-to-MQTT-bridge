@@ -23,3 +23,7 @@
 ## 2024-05-25 - CEL Context Variable Discrepancy
 **Learning:** The documentation for `tx_checksum` incorrectly stated that `state` and `states` were available, but the code does not inject them. Also `rx_length_expr` context was undocumented.
 **Action:** When documenting CEL expressions, verify the exact context object passed to `execute` in the corresponding source file (e.g., `GenericDevice.ts`, `PacketParser.ts`).
+
+## 2024-05-26 - Checksum Type Definition Gap
+**Learning:** `ChecksumType` in `packages/core/src/protocol/types.ts` is missing `samsung_xor` and `bestin_sum` which are implemented in `checksum.ts` and documented in `packet-defaults.md`.
+**Action:** A developer agent should update the `ChecksumType` union to include these missing types to ensure type safety and consistent API definition.

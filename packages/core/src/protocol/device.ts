@@ -9,6 +9,8 @@ import {
 import { Buffer } from 'buffer';
 import { extractFromSchema } from './schema-utils.js';
 import type { EntityErrorEvent, EntityErrorType } from '../service/event-bus.js';
+import { CelExecutor, CompiledScript, ReusableBufferView } from './cel-executor.js';
+import { logger } from '../utils/logger.js';
 
 export abstract class Device {
   public config: DeviceConfig;
@@ -16,10 +18,37 @@ export abstract class Device {
   protected state: Record<string, any> = {};
   private errorReporter?: (payload: EntityErrorEvent) => void;
   private lastError: { type: EntityErrorType; timestamp: number } | null = null;
+  protected preparedGuard: CompiledScript | null = null;
+  protected reusableBufferView: ReusableBufferView | null = null;
+  protected reusableContext: Record<string, any>;
 
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     this.config = config;
     this.protocolConfig = protocolConfig;
+
+    const executor = CelExecutor.shared();
+    this.reusableBufferView = executor.createReusableBufferView();
+    this.reusableContext = {
+      x: 0n,
+      xstr: '',
+      data: this.reusableBufferView.proxy,
+      len: 0n,
+      state: {},
+      states: {},
+      trigger: {},
+      args: {},
+    };
+
+    if (this.config.state?.guard) {
+      try {
+        this.preparedGuard = executor.prepare(this.config.state.guard);
+      } catch (err) {
+        logger.warn(
+          { err, guard: this.config.state.guard },
+          '[Device] Failed to prepare guard script',
+        );
+      }
+    }
   }
 
   public abstract parseData(packet: Buffer): Record<string, any> | null;
@@ -88,9 +117,19 @@ export abstract class Device {
     const headerLength = this.protocolConfig.packet_defaults?.rx_header?.length || 0;
     const baseOffset = stateConfig.offset === undefined ? headerLength : 0;
 
+    // Optimization: Update reusable view/context for zero-allocation guard execution
+    if (this.reusableBufferView) {
+      this.reusableBufferView.update(packet, 0, packet.length);
+      this.reusableContext.len = BigInt(packet.length);
+      this.reusableContext.state = this.getState();
+      // Reset other context fields if needed, but for guard, typically only data/len/state are used
+    }
+
     return matchesPacket(stateConfig, packet, {
       baseOffset,
       context: { state: this.getState() },
+      preparedGuard: this.preparedGuard,
+      reusableContext: this.reusableContext,
     });
   }
 }

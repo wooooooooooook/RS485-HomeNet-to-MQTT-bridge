@@ -17,3 +17,7 @@
 ## 2026-01-26 - Allocation Optimization vs Algorithmic Win
 **Learning:** Attempting to optimize `calculateChecksum2` by passing an optional output array (to avoid `[number, number]` allocation) actually SLOWED down the benchmark by ~35%. This is likely due to the overhead of polymorphic function calls, optional checks in tight loops, or V8 deoptimizations.
 **Action:** Be wary of "allocation removal" optimizations in V8 for small, short-lived objects (like 2-element arrays) unless confirmed by profiling. Algorithmic improvements (like changing O(N^2) to O(N) via incremental checksumming) are far more reliable and effective (20x speedup in this case).
+
+## 2026-01-29 - Extending Reusable Context to Packet Matching
+**Learning:** Packet matching logic (`matchesPacket`) often runs for every device on every packet. When `guard` expressions are used (CEL), the overhead of creating safe context objects (Proxies) for every match attempt becomes significant. Promoting `ReusableBufferView` and `reusableContext` to the base `Device` class allows all devices to share zero-allocation script execution for packet guards.
+**Action:** Identify repetitive script executions in "router" or "dispatcher" patterns (like matching logic) and lift the context management to the long-lived objects (e.g., Device instances) to amortize allocation costs.

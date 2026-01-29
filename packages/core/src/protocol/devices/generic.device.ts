@@ -36,24 +36,12 @@ export class GenericDevice extends Device {
   // Optimization: Cache prepared scripts to avoid parsing/lookups on every packet
   private stateScripts: StateScript[] = [];
   private commandScripts: Map<string, CompiledScript> = new Map();
-  private reusableBufferView: ReusableBufferView | null = null;
   private static readonly EMPTY_STATES = {};
-  private reusableContext: Record<string, any> = {
-    x: 0n,
-    xstr: '',
-    data: null as any,
-    len: 0n,
-    state: {},
-    states: GenericDevice.EMPTY_STATES,
-    trigger: {},
-    args: {},
-  };
+  // private reusableBufferView & reusableContext are inherited from Device
 
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
     super(config, protocolConfig);
     this.prepareScripts();
-    this.reusableBufferView = this.getExecutor().createReusableBufferView();
-    this.reusableContext.data = this.reusableBufferView.proxy;
   }
 
   private getExecutor(): CelExecutor {

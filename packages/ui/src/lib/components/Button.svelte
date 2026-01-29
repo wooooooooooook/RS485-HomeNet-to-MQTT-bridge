@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { t } from 'svelte-i18n';
 
   let {
     variant = 'primary',
@@ -57,7 +58,7 @@
 >
   {#if isLoading}
     <span class="spinner" aria-hidden="true"></span>
-    <span class="sr-only">Loading...</span>
+    <span class="sr-only">{$t('common.loading')}</span>
   {/if}
   <span class="content" class:hidden={isLoading} aria-hidden={isLoading || undefined}>
     {@render children?.()}

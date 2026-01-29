@@ -236,15 +236,15 @@ export class ProtocolManager extends EventEmitter {
       }
       if (stateUpdates) {
         matchedAny = true;
-        
+
         let targetDeviceId = device.getId();
         if (device.config.state_proxy && device.config.target_id) {
-            targetDeviceId = device.config.target_id;
-             if (isDebug) {
-                logger.debug(
-                  `[ProtocolManager] Proxying state from ${device.getId()} to ${targetDeviceId}`
-                );
-             }
+          targetDeviceId = device.config.target_id;
+          if (isDebug) {
+            logger.debug(
+              `[ProtocolManager] Proxying state from ${device.getId()} to ${targetDeviceId}`,
+            );
+          }
         }
 
         if (isDebug) {

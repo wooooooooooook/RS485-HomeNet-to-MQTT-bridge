@@ -10,7 +10,7 @@ describe('State Proxy Logic', () => {
   it('should redirect state updates to target_id (Light)', () => {
     const protocolConfig: ProtocolConfig = {
       packet_defaults: {
-        rx_header: [0xAA],
+        rx_header: [0xaa],
         rx_checksum: 'none',
         rx_length: 2,
       },
@@ -43,7 +43,7 @@ describe('State Proxy Logic', () => {
 
     // Send packet for proxy
     // Header: 0xAA, Data: 0x02
-    manager.handleIncomingChunk(Buffer.from([0xAA, 0x02]));
+    manager.handleIncomingChunk(Buffer.from([0xaa, 0x02]));
 
     expect(stateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -56,7 +56,7 @@ describe('State Proxy Logic', () => {
   it('should redirect complex attributes (Climate)', () => {
     const protocolConfig: ProtocolConfig = {
       packet_defaults: {
-        rx_header: [0xBB],
+        rx_header: [0xbb],
         rx_checksum: 'none',
         rx_length: 2,
       },
@@ -68,7 +68,7 @@ describe('State Proxy Logic', () => {
       name: 'Main Climate',
       type: 'climate',
       state: { data: [0x10] },
-      state_cool: { data: [0x10] }
+      state_cool: { data: [0x10] },
     };
     const targetDevice = new ClimateDevice(targetConfig, protocolConfig);
     manager.registerDevice(targetDevice);
@@ -94,13 +94,13 @@ describe('State Proxy Logic', () => {
 
     // Send packet for proxy
     // Header: 0xBB, Data: 0x20 (32 decimal)
-    manager.handleIncomingChunk(Buffer.from([0xBB, 0x20]));
+    manager.handleIncomingChunk(Buffer.from([0xbb, 0x20]));
 
     expect(stateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         deviceId: 'main_climate',
         state: expect.objectContaining({
-            current_temperature: 32
+          current_temperature: 32,
         }),
       }),
     );

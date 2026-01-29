@@ -1,7 +1,6 @@
 import { PacketDefaults, ChecksumType, Checksum2Type } from './types.js';
 import {
   calculateChecksumFromBuffer,
-  calculateChecksum2FromBuffer,
   verifyChecksum2FromBuffer,
   getChecksumFunction,
   getChecksumOffsetType,

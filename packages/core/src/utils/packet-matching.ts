@@ -1,10 +1,12 @@
-import { CelExecutor } from '../protocol/cel-executor.js';
+import { CelExecutor, CompiledScript } from '../protocol/cel-executor.js';
 import { StateSchema } from '../protocol/types.js';
 
 interface PacketMatchOptions {
   baseOffset?: number;
   context?: Record<string, any>;
   allowEmptyData?: boolean;
+  preparedGuard?: CompiledScript | null;
+  reusableContext?: Record<string, any>;
 }
 
 export function matchesPacket(
@@ -44,10 +46,16 @@ export function matchesPacket(
   if (!matched) return false;
 
   if (match.guard) {
-    const guardResult = CelExecutor.shared().execute(match.guard, {
-      data: packet,
-      ...(options.context ?? {}),
-    });
+    let guardResult: any;
+    if (options.preparedGuard && options.reusableContext) {
+      // Optimization: Use prepared script and reusable context to avoid allocations
+      guardResult = options.preparedGuard.executeRaw(options.reusableContext);
+    } else {
+      guardResult = CelExecutor.shared().execute(match.guard, {
+        data: packet,
+        ...(options.context ?? {}),
+      });
+    }
     if (!guardResult) return false;
   }
 

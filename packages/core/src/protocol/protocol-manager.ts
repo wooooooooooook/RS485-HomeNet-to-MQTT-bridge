@@ -205,6 +205,13 @@ export class ProtocolManager extends EventEmitter {
   }
 
   private processPacket(packet: Buffer) {
+    if (!this.isLengthAllowed(packet.length)) {
+      logger.debug(
+        { length: packet.length },
+        '[ProtocolManager] Packet length out of bounds, skipping',
+      );
+      return;
+    }
     this.emit('packet', packet);
 
     let matchedAny = false;
@@ -268,5 +275,19 @@ export class ProtocolManager extends EventEmitter {
         logger.debug(`[ProtocolManager] Packet not matched: ${packetHex}`);
       }
     }
+  }
+
+  private isLengthAllowed(length: number): boolean {
+    const minLength = this.config.packet_defaults?.rx_min_length;
+    if (typeof minLength === 'number' && minLength > 0 && length < minLength) {
+      return false;
+    }
+
+    const maxLength = this.config.packet_defaults?.rx_max_length;
+    if (typeof maxLength === 'number' && maxLength > 0 && length > maxLength) {
+      return false;
+    }
+
+    return true;
   }
 }

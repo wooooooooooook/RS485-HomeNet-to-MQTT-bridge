@@ -704,12 +704,16 @@ export class PacketParser {
 
               const dynamicLen = typeof exprResult === 'bigint' ? Number(exprResult) : exprResult;
 
-              if (
-                typeof dynamicLen === 'number' &&
-                dynamicLen > 0 &&
-                dynamicLen <= bufferLength &&
-                this.isLengthAllowed(dynamicLen)
-              ) {
+              if (typeof dynamicLen === 'number' && dynamicLen > 0 && dynamicLen <= bufferLength) {
+                // Check if length is allowed (rx_min_length / rx_max_length)
+                if (!this.isLengthAllowed(dynamicLen)) {
+                  // Length not allowed (e.g., below rx_min_length) - skip this packet entirely
+                  // This prevents the packet from blocking subsequent valid packets in the buffer
+                  this.consumeBytes(dynamicLen);
+                  this.lastScannedLength = 0;
+                  continue;
+                }
+
                 // Dynamic length provided - verify only this length
                 if (this.verifyChecksum(this.buffer, this.readOffset, dynamicLen)) {
                   // Validate first byte against valid headers if configured

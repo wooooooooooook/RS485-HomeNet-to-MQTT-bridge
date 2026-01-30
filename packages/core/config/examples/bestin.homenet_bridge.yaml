@@ -1,5 +1,6 @@
 homenet_bridge:
   serial:
+    portId: bestin_main
     baud_rate: 9600
     data_bits: 8
     parity: NONE
@@ -16,7 +17,7 @@ homenet_bridge:
     tx_header: [0x02]
     rx_checksum: bestin_sum
     tx_checksum: bestin_sum
-    rx_length_expr: '(data[1] == 0x31 || data[1] == 0x61 || data[1] == 0x17) ? data[2] : 10'
+    rx_length_expr: '(data[1] == 0x31 || data[1] == 0x61 || data[1] == 0x17) ? 10 : data[2]'
 
   scripts:
     - id: 'update_sequence_number'

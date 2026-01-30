@@ -9,7 +9,10 @@ import yaml from 'js-yaml';
 import { HomenetBridgeConfig, logger, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
 import { dumpConfigToYaml } from '../utils/yaml-dumper.js';
 import { expandGalleryTemplate, type GallerySnippet } from '../utils/gallery-template.js';
-import { findAllSignatureMatches, type SignatureMatchCandidate } from '../utils/gallery-matching.js';
+import {
+  findAllSignatureMatches,
+  type SignatureMatchCandidate,
+} from '../utils/gallery-matching.js';
 import {
   validateGalleryAutomationIds,
   validateGalleryEntityIds,
@@ -924,7 +927,9 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
                 entityObj.id = newId;
                 targetList.push(entityObj);
                 addedEntities++;
-                logger.info(`[gallery] Added new entity with custom ID: ${newId} (was ${entityId})`);
+                logger.info(
+                  `[gallery] Added new entity with custom ID: ${newId} (was ${entityId})`,
+                );
               } else {
                 targetList.push(entityObj);
                 addedEntities++;
@@ -1000,7 +1005,9 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
                 automationObj.id = newId;
                 automationList.push(automationObj);
                 addedAutomations++;
-                logger.info(`[gallery] Added new automation with custom ID: ${newId} (was ${automationId})`);
+                logger.info(
+                  `[gallery] Added new automation with custom ID: ${newId} (was ${automationId})`,
+                );
               } else {
                 automationList.push(automationObj);
                 addedAutomations++;
@@ -1074,7 +1081,9 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
                 scriptObj.id = newId;
                 scriptsList.push(scriptObj);
                 addedScripts++;
-                logger.info(`[gallery] Added new script with custom ID: ${newId} (was ${scriptId})`);
+                logger.info(
+                  `[gallery] Added new script with custom ID: ${newId} (was ${scriptId})`,
+                );
               } else {
                 scriptsList.push(scriptObj);
                 addedScripts++;

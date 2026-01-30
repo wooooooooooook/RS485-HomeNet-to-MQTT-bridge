@@ -39,6 +39,7 @@
 
   let showSaveDialog = $state(false);
   let downloadError = $state<string | null>(null);
+  let logCopied = $state(false);
 
   let isPaused = $state(false);
   let pausedSnapshot = $state<RawPacketWithInterval[] | null>(null);
@@ -406,13 +407,49 @@
     }
   }
 
+  async function copyToClipboard(text: string): Promise<boolean> {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      throw new Error('Clipboard API unavailable');
+    } catch (err) {
+      let textArea: HTMLTextAreaElement | null = null;
+      try {
+        textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return document.execCommand('copy');
+      } catch (fallbackErr) {
+        console.error('Failed to copy', err, fallbackErr);
+        return false;
+      } finally {
+        if (textArea && textArea.parentNode) {
+          document.body.removeChild(textArea);
+        }
+      }
+    }
+  }
+
   async function copyLogContent() {
     if (!recordedFile) return;
     try {
       const response = await fetch(`./api/logs/packet/download/${recordedFile.filename}`);
       if (!response.ok) throw new Error('Failed to fetch log');
       const text = await response.text();
-      await navigator.clipboard.writeText(text);
+      const success = await copyToClipboard(text);
+      if (success) {
+        logCopied = true;
+        setTimeout(() => {
+          logCopied = false;
+        }, 2000);
+      }
     } catch (e) {
       console.error('Failed to copy log:', e);
     }
@@ -597,7 +634,7 @@
               {$t('analysis.raw_log.download')}
             </Button>
             <Button variant="secondary" onclick={copyLogContent}>
-              {$t('analysis.raw_log.copy_log')}
+              {logCopied ? $t('common.copied') : $t('analysis.raw_log.copy_log')}
             </Button>
             <Button variant="danger" onclick={deleteLog}>
               {$t('analysis.raw_log.delete')}
@@ -609,8 +646,9 @@
         </div>
       </div>
     {/if}
-    {#if rawPackets.length !== 0}
-      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem;">
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem;">
+      {#if rawPackets.length !== 0}
         <Button variant="secondary" onclick={togglePause}>
           {#if isPaused}
             <svg
@@ -634,35 +672,32 @@
             {$t('analysis.raw_log.pause')}
           {/if}
         </Button>
-        <Button
-          variant="secondary"
-          class={isRecording ? 'recording' : ''}
-          onclick={toggleRecording}
-        >
-          {#if isRecording}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="16"
-              height="16"
-              style="margin-right: 0.4rem;"><rect x="6" y="6" width="12" height="12" /></svg
-            >
-            {$t('analysis.raw_log.stop_rec')}
-          {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="16"
-              height="16"
-              style="margin-right: 0.4rem;"><circle cx="12" cy="12" r="8" /></svg
-            >
-            {$t('analysis.raw_log.start_rec')}
-          {/if}
-        </Button>
-      </div>
-    {/if}
+      {/if}
+      <Button variant="secondary" class={isRecording ? 'recording' : ''} onclick={toggleRecording}>
+        {#if isRecording}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="16"
+            height="16"
+            style="margin-right: 0.4rem;"><rect x="6" y="6" width="12" height="12" /></svg
+          >
+          {$t('analysis.raw_log.stop_rec')}
+        {:else}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="16"
+            height="16"
+            style="margin-right: 0.4rem;"><circle cx="12" cy="12" r="8" /></svg
+          >
+          {$t('analysis.raw_log.start_rec')}
+        {/if}
+      </Button>
+    </div>
+
     <div class="log-list raw-list">
       {#if rawPackets.length === 0}
         <p class="empty">{$t('analysis.raw_log.empty')}</p>

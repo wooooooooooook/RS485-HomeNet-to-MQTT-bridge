@@ -317,7 +317,11 @@ export const findAllSignatureMatches = (
 
     if (similarity >= threshold) {
       const name = (existing as any).name || (existing as any).displayName;
-      matches.push({ matchId: existingId, similarity, name: typeof name === 'string' ? name : undefined });
+      matches.push({
+        matchId: existingId,
+        similarity,
+        name: typeof name === 'string' ? name : undefined,
+      });
     }
   }
 
@@ -326,4 +330,3 @@ export const findAllSignatureMatches = (
 
   return matches;
 };
-

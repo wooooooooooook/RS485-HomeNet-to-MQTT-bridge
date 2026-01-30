@@ -63,4 +63,20 @@ describe('ProtocolManager', () => {
       state: { on: true },
     });
   });
+
+  it('should ignore packets shorter than rx_min_length', () => {
+    const config: ProtocolConfig = {
+      packet_defaults: {
+        rx_min_length: 4,
+      },
+    };
+    const manager = new ProtocolManager(config);
+    const packetSpy = vi.fn();
+
+    manager.on('packet', packetSpy);
+
+    (manager as any).processPacket(Buffer.from([0x02, 0x01, 0x03]));
+
+    expect(packetSpy).not.toHaveBeenCalled();
+  });
 });

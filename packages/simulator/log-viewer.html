@@ -312,7 +312,7 @@
   <body>
     <header>
       <h3>Log Viewer</h3>
-      <div style="display:flex; gap:0.5rem; align-items:center;">
+      <div style="display: flex; gap: 0.5rem; align-items: center">
         <input
           type="text"
           id="apiUrl"
@@ -380,7 +380,7 @@
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
-        <div id="tableEmpty" class="empty-state" style="display:none">No logs loaded</div>
+        <div id="tableEmpty" class="empty-state" style="display: none">No logs loaded</div>
       </div>
     </div>
 
@@ -389,7 +389,7 @@
       <div class="uid-grid" id="uidGrid">
         <!-- UID Cards -->
       </div>
-      <div id="uidEmpty" class="empty-state" style="display:none">No logs loaded</div>
+      <div id="uidEmpty" class="empty-state" style="display: none">No logs loaded</div>
     </div>
 
     <script>
@@ -410,7 +410,7 @@
       let currentOffset = 0;
       let allLogs = []; // Store all fetched logs to share between views
       let currentView = 'timeline';
-      
+
       // Sorting State
       let sortCol = 'server_timestamp';
       let sortAsc = false;
@@ -450,11 +450,11 @@
 
         // Reset search when entering UID view
         if (viewName === 'uids') {
-             if (elSearchQuery.value.trim() !== '') {
-                 elSearchQuery.value = ''; // clear input
-             }
-             // Always trigger load to ensure full dataset
-             elBtnLoad.click();
+          if (elSearchQuery.value.trim() !== '') {
+            elSearchQuery.value = ''; // clear input
+          }
+          // Always trigger load to ensure full dataset
+          elBtnLoad.click();
         }
 
         // Update Tabs
@@ -470,8 +470,8 @@
 
         // Refresh render if needed
         if (viewName === 'table') {
-             // Re-sort to maintain order
-             sortTable(sortCol, true); // force re-render
+          // Re-sort to maintain order
+          sortTable(sortCol, true); // force re-render
         }
         if (viewName === 'uids') renderUidStats(allLogs);
       }
@@ -521,21 +521,20 @@
           }
 
           const newLogs = await res.json();
-          
+
           if (currentOffset === 0) {
-              allLogs = newLogs;
+            allLogs = newLogs;
           } else {
-              // Deduplicate just in case
-              const existingIds = new Set(allLogs.map(l=>l.id));
-              const filtered = newLogs.filter(l => !existingIds.has(l.id));
-              allLogs = [...allLogs, ...filtered];
+            // Deduplicate just in case
+            const existingIds = new Set(allLogs.map((l) => l.id));
+            const filtered = newLogs.filter((l) => !existingIds.has(l.id));
+            allLogs = [...allLogs, ...filtered];
           }
 
           // Render all views based on current state
           renderList(newLogs, currentOffset === 0); // Append to sidebar
           if (currentView === 'table') renderTable(allLogs);
           if (currentView === 'uids') renderUidStats(allLogs);
-
         } catch (err) {
           alert('Error fetching logs: ' + err.message);
         } finally {
@@ -548,7 +547,7 @@
 
       function renderList(logs, isReset) {
         if (isReset) elLogList.innerHTML = '';
-        
+
         if (logs.length === 0 && allLogs.length === 0) {
           elLogList.innerHTML =
             '<div style="padding:1rem; text-align:center; color:#888;">No logs found</div>';
@@ -664,79 +663,82 @@
       // --- New Render Functions ---
 
       function sortTable(col, forceRender = false) {
-          if (sortCol === col && !forceRender) {
-              sortAsc = !sortAsc;
+        if (sortCol === col && !forceRender) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = col;
+          // default desc for time, asc for others? let's stick to toggle
+          if (!forceRender) sortAsc = true;
+        }
+
+        // Sort
+        allLogs.sort((a, b) => {
+          let valA = a[col];
+          let valB = b[col];
+
+          if (col === 'port_ids') {
+            valA = getPortInfo(a);
+            valB = getPortInfo(b);
+          }
+          if (col === 'server_timestamp') {
+            valA = new Date(valA).getTime();
+            valB = new Date(valB).getTime();
+          }
+
+          if (valA < valB) return sortAsc ? -1 : 1;
+          if (valA > valB) return sortAsc ? 1 : -1;
+          return 0;
+        });
+
+        // Update header arrows
+        document.querySelectorAll('table.data-table th').forEach((th) => {
+          let text = th.textContent.replace(/[▲▼]/g, ' ').trim();
+          if (th.getAttribute('onclick')?.includes(`'${sortCol}'`)) {
+            th.textContent = `${text} ${sortAsc ? '▲' : '▼'}`;
           } else {
-              sortCol = col;
-              // default desc for time, asc for others? let's stick to toggle
-              if (!forceRender) sortAsc = true; 
+            th.textContent = text;
           }
+        });
 
-          // Sort
-          allLogs.sort((a, b) => {
-              let valA = a[col];
-              let valB = b[col];
-
-              if (col === 'port_ids') {
-                  valA = getPortInfo(a);
-                  valB = getPortInfo(b);
-              }
-              if (col === 'server_timestamp') {
-                  valA = new Date(valA).getTime();
-                  valB = new Date(valB).getTime();
-              }
-
-              if (valA < valB) return sortAsc ? -1 : 1;
-              if (valA > valB) return sortAsc ? 1 : -1;
-              return 0;
-          });
-
-          // Update header arrows
-          document.querySelectorAll('table.data-table th').forEach(th => {
-              let text = th.textContent.replace(/[▲▼]/g, ' ').trim();
-              if (th.getAttribute('onclick')?.includes(`'${sortCol}'`)) {
-                  th.textContent = `${text} ${sortAsc ? '▲' : '▼'}`;
-              } else {
-                  th.textContent = text;
-              }
-          });
-
-          renderTable(allLogs);
+        renderTable(allLogs);
       }
-      
+
       function getPortInfo(log) {
-          if (log.port_ids) return log.port_ids;
-          if (log.configs) {
-            try {
-              let configs = log.configs;
-              if (typeof configs === 'string') configs = JSON.parse(configs);
-              if (Array.isArray(configs)) {
-                return configs.map((c) => c.portId).filter(Boolean).join(', ');
-              }
-            } catch (e) {}
-          }
-          return '';
+        if (log.port_ids) return log.port_ids;
+        if (log.configs) {
+          try {
+            let configs = log.configs;
+            if (typeof configs === 'string') configs = JSON.parse(configs);
+            if (Array.isArray(configs)) {
+              return configs
+                .map((c) => c.portId)
+                .filter(Boolean)
+                .join(', ');
+            }
+          } catch (e) {}
+        }
+        return '';
       }
 
       function renderTable(logs) {
-         elTableBody.innerHTML = '';
-         if (logs.length === 0) {
-             document.getElementById('tableEmpty').style.display = 'flex';
-             return;
-         }
-         document.getElementById('tableEmpty').style.display = 'none';
+        elTableBody.innerHTML = '';
+        if (logs.length === 0) {
+          document.getElementById('tableEmpty').style.display = 'flex';
+          return;
+        }
+        document.getElementById('tableEmpty').style.display = 'none';
 
-         logs.forEach((log, index) => {
-             const tr = document.createElement('tr');
-             
-             const date = new Date(log.server_timestamp).toLocaleString('ko-KR');
-             const uid = log.uid || 'N/A';
-             const version = log.version || '-';
-             const arch = log.architecture || '-';
-             const isSup = log.is_supervisor ? 'Yes' : 'No';
-             const ports = getPortInfo(log);
+        logs.forEach((log, index) => {
+          const tr = document.createElement('tr');
 
-             tr.innerHTML = `
+          const date = new Date(log.server_timestamp).toLocaleString('ko-KR');
+          const uid = log.uid || 'N/A';
+          const version = log.version || '-';
+          const arch = log.architecture || '-';
+          const isSup = log.is_supervisor ? 'Yes' : 'No';
+          const ports = getPortInfo(log);
+
+          tr.innerHTML = `
                 <td style="text-align:center; color:#999;">${index + 1}</td>
                 <td>${date}</td>
                 <td>${escapeHtml(version)}</td>
@@ -745,56 +747,58 @@
                 <td>${isSup}</td>
                 <td style="font-family:monospace; font-size:0.8rem">${escapeHtml(ports)}</td>
              `;
-             tr.onclick = () => {
-                 // Switch to timeline and load detail
-                 switchView('timeline');
-                 // Find if item is in list, if not we might need to fetch or just show detail
-                 // For now, since we share 'allLogs', it's likely in the list or we can just load detail directly.
-                 // We need to highlight it in the list if it exists.
-                 const listItem = Array.from(document.querySelectorAll('.log-item')).find(el => el.innerHTML.includes(log.id.substring(0,8))); // rough match
-                 loadDetail(log.id, listItem);
-             };
-             elTableBody.appendChild(tr);
-         });
+          tr.onclick = () => {
+            // Switch to timeline and load detail
+            switchView('timeline');
+            // Find if item is in list, if not we might need to fetch or just show detail
+            // For now, since we share 'allLogs', it's likely in the list or we can just load detail directly.
+            // We need to highlight it in the list if it exists.
+            const listItem = Array.from(document.querySelectorAll('.log-item')).find((el) =>
+              el.innerHTML.includes(log.id.substring(0, 8)),
+            ); // rough match
+            loadDetail(log.id, listItem);
+          };
+          elTableBody.appendChild(tr);
+        });
       }
 
       function renderUidStats(logs) {
-          elUidGrid.innerHTML = '';
-           if (logs.length === 0) {
-             document.getElementById('uidEmpty').style.display = 'flex';
-             return;
-         }
-         document.getElementById('uidEmpty').style.display = 'none';
+        elUidGrid.innerHTML = '';
+        if (logs.length === 0) {
+          document.getElementById('uidEmpty').style.display = 'flex';
+          return;
+        }
+        document.getElementById('uidEmpty').style.display = 'none';
 
-         // Aggregate
-         const map = new Map(); // uid -> { count, portIds: Set, latestLog }
-         
-         logs.forEach(log => {
-             const uid = log.uid || 'Unknown';
-             if (!map.has(uid)) {
-                 map.set(uid, { count: 0, portIds: new Set(), latestLog: log });
-             }
-             const entry = map.get(uid);
-             entry.count++;
-             
-             const ports = getPortInfo(log);
-             if (ports) {
-                 ports.split(',').forEach(p => entry.portIds.add(p.trim()));
-             }
-             if (new Date(log.server_timestamp) > new Date(entry.latestLog.server_timestamp)) {
-                 entry.latestLog = log;
-             }
-         });
+        // Aggregate
+        const map = new Map(); // uid -> { count, portIds: Set, latestLog }
 
-         // Render
-         map.forEach((stats, uid) => {
-             const card = document.createElement('div');
-             card.className = 'uid-card';
-             
-             const portsArr = Array.from(stats.portIds).sort();
-             const portsStr = portsArr.length > 0 ? portsArr.join(', ') : 'No Ports';
-             
-             card.innerHTML = `
+        logs.forEach((log) => {
+          const uid = log.uid || 'Unknown';
+          if (!map.has(uid)) {
+            map.set(uid, { count: 0, portIds: new Set(), latestLog: log });
+          }
+          const entry = map.get(uid);
+          entry.count++;
+
+          const ports = getPortInfo(log);
+          if (ports) {
+            ports.split(',').forEach((p) => entry.portIds.add(p.trim()));
+          }
+          if (new Date(log.server_timestamp) > new Date(entry.latestLog.server_timestamp)) {
+            entry.latestLog = log;
+          }
+        });
+
+        // Render
+        map.forEach((stats, uid) => {
+          const card = document.createElement('div');
+          card.className = 'uid-card';
+
+          const portsArr = Array.from(stats.portIds).sort();
+          const portsStr = portsArr.length > 0 ? portsArr.join(', ') : 'No Ports';
+
+          card.innerHTML = `
                 <h4>${escapeHtml(uid)}</h4>
                 <div class="uid-stats">
                     Count: <strong>${stats.count}</strong><br>
@@ -804,18 +808,18 @@
                     ${escapeHtml(portsStr)}
                 </div>
              `;
-             
-             card.onclick = () => {
-                 // Filter by this UID
-                 elSearchQuery.value = uid;
-                 // Trigger load
-                 elBtnLoad.click();
-                 // Switch to timeline
-                 switchView('timeline');
-             };
-             
-             elUidGrid.appendChild(card);
-         });
+
+          card.onclick = () => {
+            // Filter by this UID
+            elSearchQuery.value = uid;
+            // Trigger load
+            elBtnLoad.click();
+            // Switch to timeline
+            switchView('timeline');
+          };
+
+          elUidGrid.appendChild(card);
+        });
       }
     </script>
   </body>

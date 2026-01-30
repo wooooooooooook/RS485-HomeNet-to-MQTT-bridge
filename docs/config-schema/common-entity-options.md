@@ -57,6 +57,8 @@ sensor:
 
 | 옵션명 | 설명 |
 |---|---|
+| `tx_header` | 송신 패킷 앞부분 식별 바이트 배열 |
+| `tx_footer` | 패킷 종료 시그널 (송신용) |
 | `tx_retry_cnt` | 명령 전송 실패 시 재시도 횟수 |
 | `tx_timeout` | 응답(ACK/상태변경) 대기 시간 (ms) |
 | `tx_delay` | 재시도 간격 (ms) |

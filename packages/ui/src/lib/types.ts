@@ -374,6 +374,12 @@ export interface GalleryDiscoveryResult {
   };
 }
 
+export interface GalleryMatchCandidate {
+  matchId: string;
+  similarity: number;
+  existingYaml?: string;
+}
+
 export interface GalleryMatch {
   type: 'entity';
   entityType?: string;
@@ -381,6 +387,8 @@ export interface GalleryMatch {
   matchedId: string;
   existingYaml: string;
   newYaml: string;
+  similarity?: number;
+  candidates?: GalleryMatchCandidate[];
 }
 
 export interface GalleryVendorRequirements {

@@ -9,6 +9,7 @@
     GalleryDiscoveryResult,
     GalleryItemForPreview,
     GalleryMatch,
+    GalleryMatchCandidate,
     GalleryParameterDefinition,
     GallerySchemaField,
     GalleryVendorRequirements,
@@ -73,7 +74,30 @@
   let resolutions = $state<Record<string, 'overwrite' | 'skip' | 'rename'>>({});
   let renames = $state<Record<string, string>>({});
   let matchActions = $state<Record<string, MatchAction>>({});
+  let matchTargets = $state<Record<string, string>>({}); // galleryId -> selected matchedId
   let expandedDiffs = $state<Set<string>>(new Set());
+
+  // Detect duplicate match target selections
+  const duplicateTargets = $derived.by(() => {
+    const targetCounts = new Map<string, string[]>();
+    for (const [galleryId, action] of Object.entries(matchActions)) {
+      if (action !== 'overwrite') continue;
+      const targetId = matchTargets[galleryId];
+      if (!targetId) continue;
+      if (!targetCounts.has(targetId)) {
+        targetCounts.set(targetId, []);
+      }
+      targetCounts.get(targetId)!.push(galleryId);
+    }
+    // Return map of targetId -> array of galleryIds that selected it (only duplicates)
+    const duplicates = new Map<string, string[]>();
+    for (const [targetId, galleryIds] of targetCounts) {
+      if (galleryIds.length > 1) {
+        duplicates.set(targetId, galleryIds);
+      }
+    }
+    return duplicates;
+  });
 
   // Compatibility check states
   let compatibility = $state<CompatibilityResult | null>(null);
@@ -393,7 +417,50 @@
       compatibility = data.compatibility || null;
       resolutions = {};
       renames = {};
-      matchActions = {};
+
+      // Initialize matchActions and matchTargets with duplicate-avoidance logic
+      function initializeMatchTargets() {
+        const usedTargets = new Set<string>();
+        const actions: Record<string, MatchAction> = {};
+        const targets: Record<string, string> = {};
+
+        for (const match of matches) {
+          // Find first available target (not already used) with >= 80% similarity
+          let selectedTarget = '';
+          let bestSimilarity = 0;
+
+          if (match.candidates && match.candidates.length > 0) {
+            for (const candidate of match.candidates) {
+              if (!usedTargets.has(candidate.matchId) && candidate.similarity >= 0.8) {
+                selectedTarget = candidate.matchId;
+                bestSimilarity = candidate.similarity;
+                break;
+              }
+            }
+            // If no high-similarity candidate available, just pick the best one
+            if (!selectedTarget) {
+              selectedTarget = match.candidates[0].matchId;
+              bestSimilarity = match.candidates[0].similarity;
+            }
+          } else {
+            selectedTarget = match.matchedId;
+            bestSimilarity = match.similarity || 0;
+          }
+
+          // Default action: 'overwrite' if >= 80% similarity, otherwise 'add'
+          actions[match.id] = bestSimilarity >= 0.8 ? 'overwrite' : 'add';
+          targets[match.id] = selectedTarget;
+          if (actions[match.id] === 'overwrite') {
+            usedTargets.add(selectedTarget);
+          }
+        }
+
+        return { actions, targets };
+      }
+
+      const { actions: defaultActions, targets: defaultTargets } = initializeMatchTargets();
+      matchActions = defaultActions;
+      matchTargets = defaultTargets;
 
       // If incompatible and force not checked, show warning and don't proceed
       if (compatibility && !compatibility.compatible && !forceApply) {
@@ -406,13 +473,6 @@
           resolutions = defaultResolutions;
           renames = {};
         }
-        if (matches.length > 0) {
-          const defaultMatchActions: Record<string, MatchAction> = {};
-          for (const match of matches) {
-            defaultMatchActions[match.id] = 'overwrite';
-          }
-          matchActions = defaultMatchActions;
-        }
         showConflictModal = true;
       } else if (conflicts.length > 0) {
         // Initialize resolutions to overwrite by default
@@ -422,22 +482,8 @@
         }
         resolutions = defaultResolutions;
         renames = {};
-        if (matches.length > 0) {
-          const defaultMatchActions: Record<string, MatchAction> = {};
-          for (const match of matches) {
-            defaultMatchActions[match.id] = 'overwrite';
-          }
-          matchActions = defaultMatchActions;
-        }
         showConflictModal = true;
       } else if (matches.length > 0 || (compatibility && !compatibility.compatible)) {
-        if (matches.length > 0) {
-          const defaultMatchActions: Record<string, MatchAction> = {};
-          for (const match of matches) {
-            defaultMatchActions[match.id] = 'overwrite';
-          }
-          matchActions = defaultMatchActions;
-        }
         showConflictModal = true;
       } else {
         // No conflicts and compatible, apply directly
@@ -524,7 +570,8 @@
 
       if (action === 'overwrite') {
         payloadResolutions[match.id] = 'overwrite';
-        payloadRenames[match.id] = match.matchedId;
+        // Use selected target from dropdown instead of default matchedId
+        payloadRenames[match.id] = matchTargets[match.id] || match.matchedId;
       } else if (action === 'skip') {
         payloadResolutions[match.id] = 'skip';
         delete payloadRenames[match.id];
@@ -820,16 +867,53 @@
         {$t('gallery.preview.matches_found', { values: { count: matches.length } })}
       </p>
 
+      {#if duplicateTargets.size > 0}
+        <div class="duplicate-warning">
+          ⚠️ {$t('gallery.preview.duplicate_target_warning')}
+        </div>
+      {/if}
+
       <div class="conflict-list">
         {#each matches as match, index (`${match.id}-${index}`)}
-          <div class="conflict-item">
+          {@const selectedTarget = matchTargets[match.id] || match.matchedId}
+          {@const selectedCandidate = match.candidates?.find((c) => c.matchId === selectedTarget)}
+          {@const selectedExistingYaml = selectedCandidate?.existingYaml || match.existingYaml}
+          {@const selectedSimilarity = selectedCandidate?.similarity ?? match.similarity}
+          {@const isDuplicate =
+            duplicateTargets.has(selectedTarget) && matchActions[match.id] === 'overwrite'}
+          <div class="conflict-item" class:duplicate={isDuplicate}>
             <div class="conflict-header">
               <span class="conflict-id">
                 ID: <strong>{match.id}</strong>
               </span>
-              <span class="match-id">
-                {$t('gallery.preview.match_target', { values: { id: match.matchedId } })}
-              </span>
+              {#if match.candidates && match.candidates.length > 1}
+                <select
+                  class="match-target-select"
+                  value={selectedTarget}
+                  onchange={(e) => {
+                    matchTargets[match.id] = (e.target as HTMLSelectElement).value;
+                  }}
+                  disabled={matchActions[match.id] !== 'overwrite'}
+                >
+                  {#each match.candidates as candidate}
+                    <option value={candidate.matchId}>
+                      {candidate.matchId} ({Math.round(candidate.similarity * 100)}%)
+                    </option>
+                  {/each}
+                </select>
+              {:else}
+                <span class="match-id">
+                  {$t('gallery.preview.match_target', { values: { id: selectedTarget } })}
+                  {#if selectedSimilarity !== undefined}
+                    <span class="similarity-badge">
+                      {Math.round(selectedSimilarity * 100)}%
+                    </span>
+                  {/if}
+                </span>
+              {/if}
+              {#if isDuplicate}
+                <span class="duplicate-badge">⚠️</span>
+              {/if}
               <button class="toggle-diff-btn" onclick={() => toggleDiff(`match-${match.id}`)}>
                 {expandedDiffs.has(`match-${match.id}`) ? '▲' : '▼'}
                 {$t('gallery.preview.diff_title')}
@@ -839,8 +923,8 @@
             {#if expandedDiffs.has(`match-${match.id}`)}
               <div class="diff-container">
                 <div class="diff-pane">
-                  <div class="diff-label">{$t('gallery.preview.existing')}</div>
-                  <pre class="diff-content">{match.existingYaml}</pre>
+                  <div class="diff-label">{$t('gallery.preview.existing')} ({selectedTarget})</div>
+                  <pre class="diff-content">{selectedExistingYaml}</pre>
                 </div>
                 <div class="diff-pane">
                   <div class="diff-label">{$t('gallery.preview.new')}</div>
@@ -899,10 +983,7 @@
               <span class="conflict-id">
                 ID: <strong>{conflict.id}</strong>
               </span>
-              <button
-                class="toggle-diff-btn"
-                onclick={() => toggleDiff(`conflict-${conflict.id}`)}
-              >
+              <button class="toggle-diff-btn" onclick={() => toggleDiff(`conflict-${conflict.id}`)}>
                 {expandedDiffs.has(`conflict-${conflict.id}`) ? '▲' : '▼'}
                 {$t('gallery.preview.diff_title')}
               </button>
@@ -1304,7 +1385,6 @@
   .conflict-modal-wrapper {
     background: #1e293b;
     padding: 1.5rem;
-    width: 100%;
     max-height: 80dvh;
     overflow-y: auto;
   }
@@ -1354,6 +1434,55 @@
   .match-id {
     font-size: 0.75rem;
     color: #94a3b8;
+  }
+
+  .similarity-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.375rem;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #60a5fa;
+  }
+
+  .match-target-select {
+    flex: 1;
+    min-width: 150px;
+    max-width: 250px;
+    padding: 0.25rem 0.5rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 4px;
+    color: #f1f5f9;
+    font-size: 0.8rem;
+  }
+
+  .match-target-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .duplicate-warning {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    color: #eab308;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .conflict-item.duplicate {
+    border-color: rgba(234, 179, 8, 0.5);
+    background: rgba(234, 179, 8, 0.08);
+  }
+
+  .duplicate-badge {
+    font-size: 1rem;
+    margin-left: 0.25rem;
   }
 
   .toggle-diff-btn {

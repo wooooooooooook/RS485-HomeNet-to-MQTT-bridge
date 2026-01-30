@@ -404,6 +404,7 @@
       "script_count": "스크립트 {count}개",
       "match_detected": "유사 항목 감지",
       "matches_found": "{count}개의 기존 항목이 동일한 패킷 패턴과 일치합니다. 처리 방법을 선택해주세요.",
+      "duplicate_target_warning": "동일한 기존 항목이 여러 스니펫의 덮어쓰기 대상으로 선택되었습니다. 마지막 스니펫만 적용됩니다.",
       "match_target": "매칭 대상: {id}",
       "conflict_detected": "충돌 감지",
       "conflict_desc": "ID '{id}'인 기존 항목이 있습니다.",

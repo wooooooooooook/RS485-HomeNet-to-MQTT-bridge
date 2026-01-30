@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 import { HomenetBridgeConfig, logger, normalizeConfig, normalizePortId } from '@rs485-homenet/core';
 import { dumpConfigToYaml } from '../utils/yaml-dumper.js';
 import { expandGalleryTemplate, type GallerySnippet } from '../utils/gallery-template.js';
-import { buildEntitySignature } from '../utils/gallery-matching.js';
+import { findAllSignatureMatches, type SignatureMatchCandidate } from '../utils/gallery-matching.js';
 import {
   validateGalleryAutomationIds,
   validateGalleryEntityIds,
@@ -479,6 +479,8 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
         matchedId: string;
         existingYaml: string;
         newYaml: string;
+        similarity: number;
+        candidates: SignatureMatchCandidate[];
       }> = [];
       const newItems: Array<{
         type: 'entity' | 'automation' | 'script';
@@ -494,22 +496,10 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
           const typeKey = entityType as keyof HomenetBridgeConfig;
           if (!ENTITY_TYPE_KEYS.includes(typeKey)) continue;
 
-          const existingList = (currentConfig[typeKey] as unknown[]) || [];
-          const existingSignatureMap = new Map<
+          const existingList = ((currentConfig[typeKey] as unknown[]) || []) as Record<
             string,
-            { id: string; entity: Record<string, unknown> }
-          >();
-
-          for (const existing of existingList) {
-            if (!existing || typeof existing !== 'object') continue;
-            const existingObj = existing as Record<string, unknown>;
-            const existingId = existingObj.id;
-            if (typeof existingId !== 'string' || existingId.trim().length === 0) continue;
-            const signature = buildEntitySignature(entityType, existingObj);
-            if (signature && !existingSignatureMap.has(signature)) {
-              existingSignatureMap.set(signature, { id: existingId, entity: existingObj });
-            }
-          }
+            unknown
+          >[];
 
           for (const entity of entities) {
             if (!entity || typeof entity !== 'object') continue;
@@ -519,7 +509,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
 
             if (!entityId) continue;
 
-            const existingEntity = existingList.find((e: any) => e.id === entityId);
+            const existingEntity = existingList.find((e) => e.id === entityId);
 
             if (existingEntity) {
               conflicts.push({
@@ -530,17 +520,48 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
                 newYaml: dumpConfigToYaml(entityObj),
               });
             } else {
-              const signature = buildEntitySignature(entityType, entityObj);
-              const matched = signature ? existingSignatureMap.get(signature) : undefined;
+              // Find all same-type entities as candidates (threshold: 0 to include all)
+              const allCandidates = findAllSignatureMatches(entityType, entityObj, existingList, 0);
 
-              if (matched && matched.id !== entityId) {
+              // Add existingYaml to each candidate for diff display
+              const candidatesWithYaml = allCandidates.map((candidate) => {
+                const existingEntity = existingList.find((e) => e.id === candidate.matchId);
+                return {
+                  ...candidate,
+                  existingYaml: existingEntity ? dumpConfigToYaml(existingEntity) : '',
+                };
+              });
+
+              // Filter candidates that meet 80% threshold for auto-matching
+              const highSimilarityCandidates = candidatesWithYaml.filter((c) => c.similarity >= 0.8);
+
+              if (highSimilarityCandidates.length > 0) {
+                // Auto-match with best candidate above threshold
+                const bestCandidate = highSimilarityCandidates[0];
+
                 matches.push({
                   type: 'entity',
                   entityType,
                   id: entityId,
-                  matchedId: matched.id,
-                  existingYaml: dumpConfigToYaml(matched.entity),
+                  matchedId: bestCandidate.matchId,
+                  existingYaml: bestCandidate.existingYaml,
                   newYaml: dumpConfigToYaml(entityObj),
+                  similarity: bestCandidate.similarity,
+                  candidates: candidatesWithYaml,
+                });
+              } else if (candidatesWithYaml.length > 0) {
+                // No auto-match, but same-type entities exist - show in matches for manual selection
+                const bestCandidate = candidatesWithYaml[0];
+
+                matches.push({
+                  type: 'entity',
+                  entityType,
+                  id: entityId,
+                  matchedId: bestCandidate.matchId,
+                  existingYaml: bestCandidate.existingYaml,
+                  newYaml: dumpConfigToYaml(entityObj),
+                  similarity: bestCandidate.similarity,
+                  candidates: candidatesWithYaml,
                 });
               } else {
                 newItems.push({

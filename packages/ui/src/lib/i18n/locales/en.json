@@ -403,6 +403,7 @@
       "script_count": "{count} script(s)",
       "match_detected": "Potential Matches Found",
       "matches_found": "{count} existing item(s) share the same packet pattern. Choose how to apply them.",
+      "duplicate_target_warning": "The same existing item is selected as the overwrite target by multiple snippets. Only the last snippet will be applied.",
       "match_target": "Match target: {id}",
       "conflict_detected": "Conflict Detected",
       "conflict_desc": "An existing item with ID '{id}' was found.",

@@ -262,6 +262,11 @@ export class PacketParser {
         // when valid packets are sparse (noise).
         if (this.bufferLength() >= this.defaults.rx_length) {
           const packetLen = this.defaults.rx_length;
+          if (!this.isLengthAllowed(packetLen)) {
+            this.consumeBytes(1);
+            this.lastScannedLength = 0;
+            continue;
+          }
           let currentOffset = this.readOffset;
           const maxOffset = this.writeOffset - packetLen;
 
@@ -530,6 +535,10 @@ export class PacketParser {
               if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
 
               const len = foundIdx + footerLen - this.readOffset;
+              if (!this.isLengthAllowed(len)) {
+                searchIdx = foundIdx + 1;
+                continue;
+              }
 
               // Verify checksum incrementally
               // Packet: [Header ... Data ... Checksum ... Footer]
@@ -596,6 +605,10 @@ export class PacketParser {
               if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
 
               const len = foundIdx + footerLen - this.readOffset;
+              if (!this.isLengthAllowed(len)) {
+                searchIdx = foundIdx + 1;
+                continue;
+              }
 
               // Packet: [Header ... Data ... Checksum(2) ... Footer]
               // Checksum starts at: len - 2 - footerLen (relative to packet start)
@@ -639,6 +652,10 @@ export class PacketParser {
               if (foundIdx === -1 || foundIdx + footerLen > this.writeOffset) break;
 
               const len = foundIdx + footerLen - this.readOffset;
+              if (!this.isLengthAllowed(len)) {
+                searchIdx = foundIdx + 1;
+                continue;
+              }
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
                 const packet = Buffer.from(
                   this.buffer.subarray(this.readOffset, this.readOffset + len),
@@ -684,7 +701,12 @@ export class PacketParser {
 
               const dynamicLen = typeof exprResult === 'bigint' ? Number(exprResult) : exprResult;
 
-              if (typeof dynamicLen === 'number' && dynamicLen > 0 && dynamicLen <= bufferLength) {
+              if (
+                typeof dynamicLen === 'number' &&
+                dynamicLen > 0 &&
+                dynamicLen <= bufferLength &&
+                this.isLengthAllowed(dynamicLen)
+              ) {
                 // Dynamic length provided - verify only this length
                 if (this.verifyChecksum(this.buffer, this.readOffset, dynamicLen)) {
                   // Validate first byte against valid headers if configured
@@ -706,7 +728,13 @@ export class PacketParser {
             }
           }
 
-          const startLen = Math.max(minLen, this.lastScannedLength + 1);
+          const startLen = Math.max(minLen, this.lastScannedLength + 1, this.getMinLength());
+          const maxLen = this.getMaxLength();
+          const scanLimit = maxLen ? Math.min(bufferLength, maxLen) : bufferLength;
+          if (startLen > scanLimit) {
+            this.lastScannedLength = this.bufferLength();
+            break;
+          }
 
           if (this.isStandard1Byte) {
             const typeStr = this.defaults.rx_checksum as string;
@@ -749,7 +777,7 @@ export class PacketParser {
               }
             }
 
-            for (let len = startLen; len <= bufferLength; len++) {
+            for (let len = startLen; len <= scanLimit; len++) {
               // Update checksum with the new byte added to the data section
               if (len > startLen) {
                 // The byte that was previously the checksum (or part of future data)
@@ -816,7 +844,7 @@ export class PacketParser {
               runningTemp ^= byte;
             }
 
-            for (let len = startLen; len <= bufferLength; len++) {
+            for (let len = startLen; len <= scanLimit; len++) {
               // Update checksum with the new byte added to the data section
               if (len > startLen) {
                 // The byte that was previously the checksum high byte (or part of future data)
@@ -853,7 +881,7 @@ export class PacketParser {
             }
           } else {
             // Standard unoptimized loop for complex checksums (CEL, Samsung, etc.)
-            for (let len = startLen; len <= bufferLength; len++) {
+            for (let len = startLen; len <= scanLimit; len++) {
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
                 // Validate first byte against valid headers if configured
                 // Redundant check: covered by pre-check at start of block
@@ -965,6 +993,28 @@ export class PacketParser {
         : 0;
   }
 
+  private getMinLength(): number {
+    return typeof this.defaults.rx_min_length === 'number' && this.defaults.rx_min_length > 0
+      ? this.defaults.rx_min_length
+      : 0;
+  }
+
+  private getMaxLength(): number | null {
+    return typeof this.defaults.rx_max_length === 'number' && this.defaults.rx_max_length > 0
+      ? this.defaults.rx_max_length
+      : null;
+  }
+
+  private isLengthAllowed(length: number): boolean {
+    const minLength = this.getMinLength();
+    if (minLength > 0 && length < minLength) return false;
+
+    const maxLength = this.getMaxLength();
+    if (maxLength !== null && length > maxLength) return false;
+
+    return true;
+  }
+
   /**
    * Verifies the checksum of a potential packet candidate.
    *
@@ -973,6 +1023,7 @@ export class PacketParser {
    * @param length - The length of the candidate packet to verify
    */
   private verifyChecksum(buffer: Buffer, offset: number, length: number): boolean {
+    if (!this.isLengthAllowed(length)) return false;
     if (this.defaults.rx_checksum === 'none') return true;
 
     // 1-byte Checksum

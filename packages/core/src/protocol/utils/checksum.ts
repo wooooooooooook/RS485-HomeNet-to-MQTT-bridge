@@ -13,6 +13,14 @@ export type Checksum2Type = 'xor_add';
 
 export type ByteArray = number[] | Buffer | Uint8Array;
 
+export type Checksum2Verifier = (
+  buffer: ByteArray,
+  start: number,
+  end: number,
+  expectedHigh: number,
+  expectedLow: number,
+) => boolean;
+
 /**
  * Calculate 1-byte checksum
  * @param header Header bytes
@@ -321,7 +329,7 @@ function xorAdd(header: ByteArray, data: ByteArray): number[] {
   return [high, low];
 }
 
-function verifyXorAddRange(
+export function verifyXorAddRange(
   buffer: ByteArray,
   start: number,
   end: number,
@@ -369,6 +377,19 @@ export function getChecksumFunction(
       return samsungXorAllMsb0FromBuffer;
     case 'bestin_sum':
       return bestinSumFromBuffer;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Returns the optimized 2-byte checksum verifier function for a given type.
+ * Used to bypass switch statements in hot loops.
+ */
+export function getChecksum2Verifier(type: Checksum2Type): Checksum2Verifier | null {
+  switch (type) {
+    case 'xor_add':
+      return verifyXorAddRange;
     default:
       return null;
   }

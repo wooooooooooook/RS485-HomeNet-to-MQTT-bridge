@@ -21,3 +21,7 @@
 ## 2026-01-29 - Extending Reusable Context to Packet Matching
 **Learning:** Packet matching logic (`matchesPacket`) often runs for every device on every packet. When `guard` expressions are used (CEL), the overhead of creating safe context objects (Proxies) for every match attempt becomes significant. Promoting `ReusableBufferView` and `reusableContext` to the base `Device` class allows all devices to share zero-allocation script execution for packet guards.
 **Action:** Identify repetitive script executions in "router" or "dispatcher" patterns (like matching logic) and lift the context management to the long-lived objects (e.g., Device instances) to amortize allocation costs.
+
+## 2026-01-30 - Pre-resolved Dispatch vs Switch
+**Learning:** In hot parsing loops, even a simple `switch` statement inside a helper function (like `verifyChecksum2FromBuffer`) adds measurable overhead (~13%) compared to calling a pre-resolved function reference directly. V8's monomorphic call optimization works best when the target function is stable and known ahead of time.
+**Action:** For high-frequency operations configured at startup (like checksum algorithms), pre-resolve the specific implementation function into a class property instead of passing the type string to a generic dispatcher function repeatedly.

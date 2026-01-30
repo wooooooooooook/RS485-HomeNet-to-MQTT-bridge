@@ -473,14 +473,14 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
         newYaml: string;
       }> = [];
       const matches: Array<{
-        type: 'entity';
+        type: 'entity' | 'automation' | 'script';
         entityType?: string;
         id: string;
         matchedId: string;
         existingYaml: string;
         newYaml: string;
-        similarity: number;
-        candidates: SignatureMatchCandidate[];
+        similarity?: number;
+        candidates?: SignatureMatchCandidate[];
       }> = [];
       const newItems: Array<{
         type: 'entity' | 'automation' | 'script';
@@ -591,19 +591,15 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
 
           const existingAutomation = existingAutomations.find((a: any) => a.id === automationId);
 
-          if (existingAutomation) {
-            conflicts.push({
-              type: 'automation',
-              id: automationId,
-              existingYaml: dumpConfigToYaml(existingAutomation),
-              newYaml: dumpConfigToYaml(automationObj),
-            });
-          } else {
-            newItems.push({
-              type: 'automation',
-              id: automationId,
-            });
-          }
+          // Add to matches instead of conflicts
+          matches.push({
+            type: 'automation',
+            id: automationId,
+            matchedId: existingAutomation ? automationId : '',
+            existingYaml: existingAutomation ? dumpConfigToYaml(existingAutomation) : '',
+            newYaml: dumpConfigToYaml(automationObj),
+            similarity: existingAutomation ? 1 : 0,
+          });
         }
       }
 
@@ -627,19 +623,15 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
 
           const existingScript = existingScripts.find((s: any) => s.id === scriptId);
 
-          if (existingScript) {
-            conflicts.push({
-              type: 'script',
-              id: scriptId,
-              existingYaml: dumpConfigToYaml(existingScript),
-              newYaml: dumpConfigToYaml(scriptObj),
-            });
-          } else {
-            newItems.push({
-              type: 'script',
-              id: scriptId,
-            });
-          }
+          // Add to matches instead of conflicts
+          matches.push({
+            type: 'script',
+            id: scriptId,
+            matchedId: existingScript ? scriptId : '',
+            existingYaml: existingScript ? dumpConfigToYaml(existingScript) : '',
+            newYaml: dumpConfigToYaml(scriptObj),
+            similarity: existingScript ? 1 : 0,
+          });
         }
       }
 

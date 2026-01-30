@@ -7,7 +7,7 @@ meta:
   description_en: >- 
     Bestin2.0 dimming light and outlet configuration. You can configure room count and lights/outlets per room.
     If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.
-  version: "2.1.2"
+  version: "2.1.3"
   min_version: "1.16.0"
   author: "wooooooooooook"
   tags: ["light", "outlet", "bestin2.0"]
@@ -55,10 +55,39 @@ scripts:
 
   - id: "make_light_packet"
     name: "Light Packet Make"
+    args: 
+      room_id:
+        type: number
+        description: 방 ID (1-based)
+        default: 1
+        min: 1
+        max: 8
+      ONOFF:
+        type: boolean
+        description: true(on), false(off)
+        default: true
+      position:
+        type: number
+        description: 조명번호 1-based (pos_id)
+        default: 1
+        min: 1
+        max: 5
+      BRIGHTNESS:
+        type: number
+        description: 밝기 (0-100)
+        default: 100
+        min: 0
+        max: 100
+      COLOR_TEMP:
+        type: number
+        description: 색온도 (0-100)
+        default: 100
+        min: 0
+        max: 100
     description: >- 
       조명 공통 패킷 생성 
         args: 
-          room_number: (1-8)
+          room_id: (1-8)
           position: 조명번호1-based
           ONOFF: 1(on), 2(off) (생략시 1)
           BRIGHTNESS: 0-100 (0xFF: 변경없음, 생략시 0xFF)
@@ -66,16 +95,16 @@ scripts:
     actions:
       - action: send_packet
         data: >- 
-          [bitOr(0x30, args.room_number),
+          [bitOr(0x30, int(args.room_id)),
           0x0E, 0x21, 
           int(get_from_states('sequence_number', 'number', 0)), 
           0x01, 0x00, 
-          int(args.position), int(has(args.ONOFF)?args.ONOFF:1), 
-          int(has(args.BRIGHTNESS)?args.BRIGHTNESS:0xFF), 
-          int(has(args.COLOR_TEMP)?args.COLOR_TEMP:0xFF), 
+          int(args.position), int(has(args.ONOFF)?int(args.ONOFF):1), 
+          int(has(args.BRIGHTNESS)?int(args.BRIGHTNESS):0xFF), 
+          int(has(args.COLOR_TEMP)?int(args.COLOR_TEMP):0xFF), 
           0x00, 0xFF]
         ack: >- 
-          [bitOr(0x30, args.room_number), 0x81]
+          [bitOr(0x30, int(args.room_id)), 0x81]
         header: true
         checksum: true
       - action: script
@@ -83,22 +112,39 @@ scripts:
 
   - id: "make_outlet_packet"
     name: "Outlet Packet Make"
+    args: 
+      room_id:
+        type: number
+        description: 방 ID (1-based)
+        default: 1
+        min: 1
+        max: 8
+      ONOFF:
+        type: boolean
+        description: true(on), false(off)
+        default: true
+      position:
+        type: number
+        description: 콘센트번호 1-based (pos_id)
+        default: 1
+        min: 1
+        max: 4
     description: >- 
       아웃렛 공통 패킷 생성 
         args: 
-          room_number: (1-8)
+          room_id: (1-8)
           position: 콘센트번호1-based
           ONOFF: 1(on), 2(off) 16(대기전력차단on) 17(대기전력차단off)
     actions:
       - action: send_packet
         data: >- 
-          [bitOr(0x30, args.room_number), 0x09, 0x22, 
+          [bitOr(0x30, int(args.room_id)), 0x09, 0x22, 
           int(get_from_states('sequence_number', 'number', 0)), 
           0x01, 
           int(args.position), 
           int(args.ONOFF)]
         ack: >- 
-          [bitOr(0x30, args.room_number), 0x81]
+          [bitOr(0x30, int(args.room_id)), 0x81]
         header: true
         checksum: true
       - action: script
@@ -130,10 +176,10 @@ entities:
         id: 'room{{room.room_id}}_light{{light_num + 1}}'
         name: 'Room{{room.room_id}} Light {{light_num + 1}}'
         state:
-          # [3n : room_number, packet_length, 91: 조명응답패킷]
+          # [3n : room_id, packet_length, 91: 조명응답패킷]
           data: [0x30, 0x00, 0x91]
           mask: [0xF0, 0x00, 0xFF]
-          # 헤더의 room_number 매칭
+          # 헤더의 room_id 매칭
           # data[0] & 0x0F == room.room_id
         state_on: "bitAnd(data[0], 0x0F) == {{room.room_id}} && data[{{18 + light_num * 13}}] == 1"
         state_off: "bitAnd(data[0], 0x0F) == {{room.room_id}} && data[{{18 + light_num * 13}}] == 2"
@@ -142,25 +188,25 @@ entities:
         command_on:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num + 1}}'
             ONOFF: 1
         command_off:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num + 1}}'
             ONOFF: 2
         command_brightness:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num + 1}}'
             BRIGHTNESS: "x"
         command_color_temp:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num + 1}}'
             COLOR_TEMP: "int((370 - x) * 100 / (370 - 153)):0"
 
@@ -186,13 +232,13 @@ entities:
         command_on:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num + 1}}'
             ONOFF: 1
         command_off:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num + 1}}'
             ONOFF: 2
 
@@ -216,13 +262,13 @@ entities:
         command_on:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num + 1}}'
             ONOFF: 16
         command_off:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num + 1}}'
             ONOFF: 17
 

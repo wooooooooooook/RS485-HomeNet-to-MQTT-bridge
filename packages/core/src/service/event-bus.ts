@@ -45,6 +45,8 @@ export interface ScriptActionEvent {
   action: string;
   portId?: string;
   timestamp: number;
+  /** Original entity ID that triggered this script (for command attribution) */
+  sourceEntityId?: string;
 }
 
 export type EntityErrorType = 'parse' | 'cel' | 'command';

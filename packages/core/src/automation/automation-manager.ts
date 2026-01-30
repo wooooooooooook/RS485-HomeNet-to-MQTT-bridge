@@ -54,6 +54,8 @@ interface TriggerContext {
   prev_packet?: number[];
   timestamp: number;
   args?: Record<string, any>;
+  /** Original entity ID that triggered the script (for command-packet attribution) */
+  sourceEntityId?: string;
 }
 
 // Updated PacketSender signature to match CommandManager.sendRaw capabilities
@@ -213,6 +215,7 @@ export class AutomationManager {
         action: this.summarizeAction(action),
         portId: this.contextPortId,
         timestamp: Date.now(),
+        sourceEntityId: scriptContext.sourceEntityId,
       });
       await this.executeAction(action, scriptContext, this.contextPortId, nextStack);
     }
@@ -934,15 +937,19 @@ export class AutomationManager {
       sourceName = `automation:${automationId}`;
     }
 
+    // Use sourceEntityId if available (when script is called from an entity command)
+    const effectiveEntityId = context.sourceEntityId || sourceName;
+
     // Emit command-packet event for packet log display
     eventBus.emit('command-packet', {
       entity: sourceName,
-      entityId: sourceName,
+      entityId: effectiveEntityId,
       command: 'send_packet',
       value: undefined,
       packet: hexPacket,
       portId: targetPortId,
       timestamp: new Date().toISOString(),
+      sourceEntityId: context.sourceEntityId,
     });
 
     if (this.commandSender) {
@@ -1073,14 +1080,19 @@ export class AutomationManager {
 
     // Emit command-packet event for packet log display
     const hexPacket = Buffer.from(packet).toString('hex').toUpperCase();
+    
+    // Use sourceEntityId if available (when command is called from an entity's script-based command)
+    const effectiveEntityId = context.sourceEntityId || entity.id;
+    
     eventBus.emit('command-packet', {
       entity: entity.name || entity.id,
-      entityId: entity.id,
+      entityId: effectiveEntityId,
       command: parsed.command,
       value: commandValue,
       packet: hexPacket,
       portId: this.contextPortId,
       timestamp: new Date().toISOString(),
+      sourceEntityId: context.sourceEntityId,
     });
 
     await this.commandManager.send(entity, packet, {

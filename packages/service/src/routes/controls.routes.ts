@@ -502,7 +502,7 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       return res.status(429).json({ error: 'Too many requests' });
     }
 
-    const { scriptId } = req.body as { scriptId?: string };
+    const { scriptId, args } = req.body as { scriptId?: string; args?: Record<string, any> };
 
     if (!scriptId) {
       return res.status(400).json({ error: 'scriptId가 필요합니다.' });
@@ -533,7 +533,7 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     }
 
     try {
-      const result = await targetBridge.bridge.runScript(scriptId);
+      const result = await targetBridge.bridge.runScript(scriptId, undefined, args);
       if (result.success) {
         res.json({ success: true });
       } else {

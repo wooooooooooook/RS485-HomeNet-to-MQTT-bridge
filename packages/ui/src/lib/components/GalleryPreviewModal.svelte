@@ -982,6 +982,7 @@
           >
             <div class="conflict-header">
               <span class="conflict-id">
+                <span class="item-type-label">{formatItemLabel(match.type, match.entityType)}</span>
                 ID: <strong>{match.id}</strong>
               </span>
               {#if match.candidates && match.candidates.length > 0}
@@ -1560,6 +1561,18 @@
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 0.85rem;
     color: #f1f5f9;
+  }
+
+  .item-type-label {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    margin-right: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 3px;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
   }
 
   .target-label {

@@ -15,6 +15,8 @@ export type CommandPacket = {
   timestampMs?: number;
   timeLabel?: string;
   searchText?: string;
+  /** Original entity ID that triggered this command (for script-based commands) */
+  sourceEntityId?: string;
 };
 
 export type StateChangeEvent = {
@@ -175,10 +177,20 @@ export type AutomationSummary = {
   configFile?: string;
 };
 
+export interface ScriptArg {
+  type?: 'string' | 'number' | 'boolean' | 'select';
+  description?: string;
+  default?: any;
+  min?: number;
+  max?: number;
+  options?: string[];
+}
+
 export type ScriptSummary = {
   id: string;
   description?: string;
   configFile?: string;
+  args?: Record<string, ScriptArg>;
 };
 
 export type RawPacketWithInterval = {
@@ -213,6 +225,7 @@ export type UnifiedEntity = {
   enabled?: boolean;
   statePayload?: string;
   commands: CommandInfo[];
+  args?: Record<string, ScriptArg>;
   isStatusDevice: boolean;
   portId?: string;
   discoveryAlways?: boolean;
@@ -311,6 +324,8 @@ export type CommandLogEntry = {
   timestampMs?: number;
   timeLabel?: string;
   searchText?: string;
+  /** Original entity ID that triggered this command (for script-based commands) */
+  sourceEntityId?: string;
 };
 
 export type PacketHistoryResponse<T> = {
@@ -382,7 +397,7 @@ export interface GalleryMatchCandidate {
 }
 
 export interface GalleryMatch {
-  type: 'entity';
+  type: 'entity' | 'automation' | 'script';
   entityType?: string;
   id: string;
   matchedId: string;

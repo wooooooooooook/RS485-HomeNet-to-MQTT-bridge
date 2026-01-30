@@ -74,6 +74,8 @@
 
   let tabsContainer = $state<HTMLElement>();
   let commandInputs = $state<Record<string, any>>({});
+  let scriptArgInputs = $state<Record<string, any>>({});
+  let inputInitializedEntityId = $state<string | null>(null);
   let executingCommands = $state(new Set<string>());
 
   let showRx = $state(true);
@@ -343,7 +345,7 @@
 
   // Re-initialize command inputs only when the entity.id changes or modal opens for a *new* entity
   $effect(() => {
-    if (isOpen && entity && loadedConfigEntityId !== entity.id) {
+    if (isOpen && entity && inputInitializedEntityId !== entity.id) {
       entity.commands.forEach((cmd: CommandInfo) => {
         if (cmd.inputType === 'number') {
           commandInputs[`${cmd.entityId}_${cmd.commandName}`] = cmd.min ?? 0;
@@ -353,6 +355,26 @@
           commandInputs[`${cmd.entityId}_${cmd.commandName}`] = '';
         }
       });
+
+      if (entity.category === 'script' && entity.args) {
+        scriptArgInputs = {};
+        for (const [key, arg] of Object.entries(entity.args)) {
+          if (arg.default !== undefined) {
+            scriptArgInputs[key] = arg.default;
+          } else if (arg.type === 'number') {
+            scriptArgInputs[key] = arg.min ?? 0;
+          } else if (arg.type === 'select' && arg.options?.length) {
+            scriptArgInputs[key] = arg.options[0];
+          } else if (arg.type === 'boolean') {
+            scriptArgInputs[key] = false;
+          } else {
+            scriptArgInputs[key] = '';
+          }
+        }
+      }
+      inputInitializedEntityId = entity.id;
+    } else if (!isOpen) {
+      inputInitializedEntityId = null;
     }
   });
 
@@ -519,7 +541,7 @@
       const res = await fetch('./api/scripts/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptId: entity.id }),
+        body: JSON.stringify({ scriptId: entity.id, args: scriptArgInputs }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -917,6 +939,48 @@
             {:else if isScript}
               <h3>{$t('entity_detail.script.execute_title')}</h3>
               <p class="subtle">{$t('entity_detail.script.execute_desc')}</p>
+
+              {#if entity.args}
+                <div class="script-args">
+                  {#each Object.entries(entity.args) as [key, arg]}
+                    <div class="input-group">
+                      <label for={`arg-${key}`}>
+                        {key}
+                        {#if arg.description}
+                          <span class="arg-desc">({arg.description})</span>
+                        {/if}
+                      </label>
+
+                      {#if arg.type === 'select'}
+                        <select id={`arg-${key}`} bind:value={scriptArgInputs[key]}>
+                          {#each arg.options ?? [] as option}
+                            <option value={option}>{option}</option>
+                          {/each}
+                        </select>
+                      {:else if arg.type === 'boolean'}
+                        <div class="toggle-wrapper">
+                          <Toggle
+                            id={`arg-${key}`}
+                            checked={scriptArgInputs[key]}
+                            onchange={(checked: boolean) => (scriptArgInputs[key] = checked)}
+                          />
+                        </div>
+                      {:else if arg.type === 'number'}
+                        <input
+                          id={`arg-${key}`}
+                          type="number"
+                          bind:value={scriptArgInputs[key]}
+                          min={arg.min}
+                          max={arg.max}
+                        />
+                      {:else}
+                        <input id={`arg-${key}`} type="text" bind:value={scriptArgInputs[key]} />
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+
               <Button variant="primary" onclick={handleExecuteScript} isLoading={isExecutingScript}>
                 {$t('entity_detail.script.execute_button')}
               </Button>
@@ -1397,6 +1461,20 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1rem;
+  }
+
+  .script-args {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .arg-desc {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: normal;
+    margin-left: 0.5rem;
   }
 
   /* .action-btn class is replaced by Button component, but might be used by other parts, so keeping it or removing if unused */

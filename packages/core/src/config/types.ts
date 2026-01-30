@@ -300,6 +300,15 @@ export interface AutomationConfig {
   enabled?: boolean;
 }
 
+export interface ScriptArg {
+  type?: 'string' | 'number' | 'boolean' | 'select';
+  description?: string;
+  default?: any;
+  min?: number;
+  max?: number;
+  options?: string[];
+}
+
 /**
  * Reusable script configuration.
  */
@@ -307,6 +316,11 @@ export interface ScriptConfig {
   id: string;
   description?: string;
   actions: AutomationAction[];
+  /**
+   * Arguments definition for the script.
+   * Key is the argument name.
+   */
+  args?: Record<string, ScriptArg>;
 }
 
 /**

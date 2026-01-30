@@ -1011,6 +1011,7 @@
           value: data.value,
           timestamp: data.timestamp,
           portId: data.portId,
+          sourceEntityId: data.sourceEntityId,
         },
         data.packet,
       );
@@ -1509,6 +1510,7 @@
           commands: [],
           isStatusDevice: false,
           portId,
+          args: script.args,
         });
       }
     }
@@ -1692,7 +1694,7 @@
       ? commandPacketLogs
           .filter(
             (p) =>
-              p.entityId === selectedEntity.id &&
+              (p.entityId === selectedEntity.id || p.sourceEntityId === selectedEntity.id) &&
               (!selectedEntity.portId || !p.portId || p.portId === selectedEntity.portId),
           )
           .slice(0, 20)
@@ -1707,6 +1709,7 @@
             timestampMs: log.timestampMs,
             timeLabel: log.timeLabel,
             searchText: log.searchText,
+            sourceEntityId: log.sourceEntityId,
           }))
       : [],
   );
@@ -1724,8 +1727,12 @@
         (log) => log.code.startsWith('log.script_') && log.params?.scriptId === selectedEntity.id,
       );
     }
-    // 일반 엔티티: entityId로 상태 변경 로그 필터링
-    return activityLogs.filter((log) => log.params?.entityId === selectedEntity.id);
+    // 일반 엔티티: entityId로 상태 변경 로그 + sourceEntityId로 스크립트 실행 로그 필터링
+    return activityLogs.filter(
+      (log) =>
+        log.params?.entityId === selectedEntity.id ||
+        log.params?.sourceEntityId === selectedEntity.id,
+    );
   });
 
   $effect(() => {

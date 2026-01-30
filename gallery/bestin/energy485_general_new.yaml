@@ -56,10 +56,27 @@ scripts:
 
   - id: "make_light_packet"
     name: "Light Packet Make"
+    args: 
+      room_id:
+        type: number
+        description: 방 ID (1-based)
+        default: 1
+        min: 1
+        max: 8
+      ONOFF:
+        type: boolean
+        description: true(on), false(off)
+        default: true
+      position:
+        type: number
+        description: 조명번호 0-based (pos_id, 0-4)
+        default: 0
+        min: 0
+        max: 4
     description: >- 
       조명 제어 패킷 생성 (Gen1/General, 13바이트)
         args: 
-          room_number: (1-8)
+          room_id: (1-8)
           position: 조명번호 0-based (pos_id)
           ONOFF: true(on), false(off)
     actions:
@@ -67,8 +84,8 @@ scripts:
         data: >- 
           [0x31, 0x0D, 0x01, 
           int(get_from_states('sequence_number', 'number', 0)), 
-          int(args.room_number),
-          int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
+          int(args.room_id),
+          int(bitOr(bitShiftLeft(0x01, int(args.position)), args.ONOFF ? 0x80 : 0x00)),
           0x00, 0x00, 0x00, 0x00,
           int(args.ONOFF ? 0x04 : 0x00)]
         ack: >- 
@@ -80,10 +97,27 @@ scripts:
 
   - id: "make_outlet_packet"
     name: "Outlet Packet Make"
+    args: 
+      room_id:
+        type: number
+        description: 방 ID (1-based)
+        default: 1
+        min: 1
+        max: 8
+      ONOFF:
+        type: boolean
+        description: true(on), false(off)
+        default: true
+      position:
+        type: number
+        description: 콘센트번호 0-based (pos_id, 0-1)
+        default: 0
+        min: 0
+        max: 1
     description: >- 
       콘센트 제어 패킷 생성 (Gen1/General, 13바이트)
         args: 
-          room_number: (1-8)
+          room_id: (1-8)
           position: 콘센트번호 0-based (pos_id)
           ONOFF: true(on), false(off)
     actions:
@@ -91,11 +125,11 @@ scripts:
         data: >- 
           [0x31, 0x0D, 0x01, 
           int(get_from_states('sequence_number', 'number', 0)), 
-          int(args.room_number),
+          int(args.room_id),
           0x00,
-          int(bitOr(bitShiftLeft(0x01, args.position), args.ONOFF ? 0x80 : 0x00)),
+          int(bitOr(bitShiftLeft(0x01, int(args.position)), args.ONOFF ? 0x80 : 0x00)),
           0x00, 0x00, 0x00,
-          int(args.ONOFF ? bitShiftLeft(0x09, args.position) : 0x00)]
+          int(args.ONOFF ? bitShiftLeft(0x09, int(args.position)) : 0x00)]
         ack: >- 
           [0x02, 0x31, 0x81]
         header: true
@@ -105,17 +139,28 @@ scripts:
 
   - id: "make_standby_cutoff_packet"
     name: "Standby Cutoff Packet Make"
+    args: 
+      room_id:
+        type: number
+        description: 방 ID (1-based)
+        default: 1
+        min: 1
+        max: 8
+      ONOFF:
+        type: boolean
+        description: true(on), false(off)
+        default: true
     description: >- 
       대기전력 차단 제어 패킷 생성 (Gen1/General, 13바이트)
         args: 
-          room_number: (1-8)
+          room_id: (1-8)
           ONOFF: true(차단on), false(차단off)
     actions:
       - action: send_packet
         data: >- 
           [0x31, 0x0D, 0x01, 
           int(get_from_states('sequence_number', 'number', 0)), 
-          int(args.room_number),
+          int(args.room_id),
           0x00, 0x00,
           int(args.ONOFF ? 0x83 : 0x03),
           0x00, 0x00, 0x00]
@@ -159,13 +204,13 @@ entities:
         command_on:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num}}'
             ONOFF: true
         command_off:
           script: "make_light_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{light_num}}'
             ONOFF: false
 
@@ -190,13 +235,13 @@ entities:
         command_on:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num}}'
             ONOFF: true
         command_off:
           script: "make_outlet_packet"
           args:
-            room_number: '{{room.room_id}}'
+            room_id: '{{room.room_id}}'
             position: '{{outlet_num}}'
             ONOFF: false
 
@@ -214,12 +259,12 @@ entities:
       command_on:
         script: "make_standby_cutoff_packet"
         args:
-          room_number: '{{room.room_id}}'
+          room_id: '{{room.room_id}}'
           ONOFF: true
       command_off:
         script: "make_standby_cutoff_packet"
         args:
-          room_number: '{{room.room_id}}'
+          room_id: '{{room.room_id}}'
           ONOFF: false
 
   sensor:

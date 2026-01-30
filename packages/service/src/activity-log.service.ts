@@ -142,6 +142,7 @@ export class ActivityLogService {
         {
           scriptId: event.scriptId,
           action: event.action,
+          sourceEntityId: event.sourceEntityId,
         },
         event.portId,
       );

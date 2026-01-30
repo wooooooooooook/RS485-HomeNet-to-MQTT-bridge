@@ -350,16 +350,21 @@ export class HomeNetBridge extends EventEmitter {
   async runScript(
     scriptId: string,
     portId?: string,
+    args: Record<string, any> = {},
   ): Promise<{ success: boolean; error?: string }> {
     const context = this.getDefaultContext(portId);
     if (!context) {
       return { success: false, error: 'Bridge not initialized' };
     }
 
-    await context.automationManager.runScript(scriptId, {
-      type: 'command',
-      timestamp: Date.now(),
-    });
+    await context.automationManager.runScript(
+      scriptId,
+      {
+        type: 'command',
+        timestamp: Date.now(),
+      },
+      args,
+    );
     return { success: true };
   }
 
@@ -470,10 +475,37 @@ export class HomeNetBridge extends EventEmitter {
 
       // Include entity state in context for CEL script access
       const entityState = context.stateManager.getEntityState(entityId) || {};
+      
+      // Process script args: substitute "x" with actual value and evaluate CEL expressions
+      const rawArgs = (commandSchema as any).args || {};
+      const processedArgs: Record<string, any> = {};
+      
+      for (const [key, argValue] of Object.entries(rawArgs)) {
+        if (typeof argValue === 'string') {
+          // If arg is exactly "x", substitute with command value
+          if (argValue === 'x') {
+            processedArgs[key] = value;
+          } else if (argValue === 'xstr') {
+            processedArgs[key] = String(value);
+          } else {
+            // Keep as is - will be evaluated in automation-manager
+            processedArgs[key] = argValue;
+          }
+        } else {
+          processedArgs[key] = argValue;
+        }
+      }
+      
+      logger.debug(
+        { scriptId: (commandSchema as any).script, args: processedArgs, value },
+        '[bridge] Executing script with args',
+      );
       await automationManager.runScript((commandSchema as any).script, {
         type: 'command',
         timestamp: Date.now(),
         state: entityState,
+        sourceEntityId: entityId,
+        args: processedArgs,
       });
 
       return { success: true };

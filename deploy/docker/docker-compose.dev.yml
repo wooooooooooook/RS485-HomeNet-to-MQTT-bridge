@@ -82,7 +82,7 @@ services:
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '10000'
       PORT: '3000'
-      CONFIG_ROOT: /workspace/deploy/.configs
+      CONFIG_ROOT: /config
       CONFIG_FILES:
       LOG_LEVEL: info
       MQTT_TOPIC_PREFIX: homenet
@@ -90,6 +90,7 @@ services:
       # No workspace mount -> Uses built-in code from image
       - pnpm-store:/root/.local/share/pnpm
       - app_node_modules:/workspace/node_modules
+      - config_data:/config
       - /dev/pts:/dev/pts
       - ../../gallery:/gallery
     ports:
@@ -148,3 +149,4 @@ volumes:
   app_node_modules:
   ui_node_modules:
   turbo-cache:
+  config_data:

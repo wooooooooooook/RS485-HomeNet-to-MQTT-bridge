@@ -3,8 +3,10 @@ import {
   calculateChecksumFromBuffer,
   verifyChecksum2FromBuffer,
   getChecksumFunction,
+  getChecksum2Verifier,
   getChecksumOffsetType,
   ByteArray,
+  Checksum2Verifier,
 } from './utils/checksum.js';
 import { CelExecutor, CompiledScript, ReusableBufferView } from './cel-executor.js';
 import { Buffer } from 'buffer';
@@ -44,6 +46,9 @@ export class PacketParser {
   private checksumFn: ((buffer: ByteArray, start: number, end: number) => number) | null = null;
   private checksumStartAdjust: number = 0;
   private cachedChecksumType: string | null = null;
+  // Bolt: Optimized 2-byte checksum verifier
+  private checksum2Fn: Checksum2Verifier | null = null;
+  private cachedChecksum2Type: string | null = null;
 
   // Optimizations for CEL Checksums
   private preparedChecksum: CompiledScript | null = null;
@@ -117,6 +122,12 @@ export class PacketParser {
       typeof checksum2Type === 'string' &&
       checksum2Type !== 'none' &&
       this.checksum2Types.has(checksum2Type);
+
+    // Bolt: Pre-resolve 2-byte checksum verifier
+    if (this.isStandard2Byte) {
+      this.checksum2Fn = getChecksum2Verifier(checksum2Type as Checksum2Type);
+      this.cachedChecksum2Type = checksum2Type as string;
+    }
 
     // Prepare CEL scripts if applicable
     const executor = this.getExecutor();
@@ -1050,6 +1061,17 @@ export class PacketParser {
         const checksumOrScript = this.defaults.rx_checksum2 as string;
 
         if (this.checksum2Types.has(checksumOrScript)) {
+          // Bolt: Use pre-resolved verifier if available to bypass switch overhead
+          if (this.checksum2Fn && checksumOrScript === this.cachedChecksum2Type) {
+            return this.checksum2Fn(
+              buffer,
+              offset,
+              checksumStart,
+              buffer[checksumStart],
+              buffer[checksumStart + 1],
+            );
+          }
+
           return verifyChecksum2FromBuffer(
             buffer,
             checksumOrScript as Checksum2Type,

@@ -10,10 +10,12 @@
     parsedLogs = [],
     commandLogs = [],
     packetDictionary = {},
+    version = 0,
   } = $props<{
     parsedLogs?: PacketLogEntry[];
     commandLogs?: CommandLogEntry[];
     packetDictionary?: Record<string, string>;
+    version?: number;
   }>();
 
   let showRx = $state(true);
@@ -124,6 +126,8 @@
   // Calculate merged logs normally
   const displayPackets = $derived.by(() => {
     const query = debouncedQuery;
+    // v is a dependency to trigger update when non-reactive arrays change
+    const v = version;
     const rxPackets = showRx ? parsedLogs : [];
     const txPackets = showTx ? commandLogs : [];
 

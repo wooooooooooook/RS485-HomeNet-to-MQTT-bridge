@@ -11,7 +11,8 @@ gen1 aio gen2 등 다양한 버전이 있는걸로보임
 | 0 | 1 | 2 | 3 | 4 | 5 | ...| length|
 |---|---|---|---|---|---|---|---|
 |prefix |header(기기별)| length |request/response| sequence_number |data..| ...|checksum|
-|0x02|0x28: 난방 <br> 0xD1 에너지 사용량<br>0x5x aio 방별 장치<br> 0x3x gen1,2 방별 장치
+| 0x02 | 0x28: THERMOSTAT (난방)<br>0x31: 가스밸브<br>0x41: 도어락<br>0x42: IGNORE<br>0x61: FAN (환기)<br>0xC1: ELEVATOR (엘리베이터)<br>0xD1: ENERGY (에너지)<br>0x5x: AIO 방별 장치<br>0x3x: Gen1,2 방별 장치 | | | | | | |
+
 
 가스밸브, 도어락, 환기장치의 경우는 10바이트로 길이가 고정이고 구조가 다르다. 
 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |

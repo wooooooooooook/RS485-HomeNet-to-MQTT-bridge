@@ -287,30 +287,16 @@
   // Packet dictionary cache (packetId -> hex string)
   let packetDictionary = $state<Record<string, string>>({});
   // Raw logs with packetId (optimized storage)
-  let commandPacketLogs = $state<CommandLogEntry[]>([]);
-  let parsedPacketLogs = $state<PacketLogEntry[]>([]);
+  // OPTIMIZATION: Use native arrays instead of $state to avoid Deep Proxy overhead.
+  let commandPacketLogs: CommandLogEntry[] = [];
+  let parsedPacketLogs: PacketLogEntry[] = [];
+  let logVersion = $state(0);
 
-  // Derived: resolved packets with packet string (for UI display)
-  // Derived: parsedEntitiesByPayload is used for discovery suggestions, so we keep it or optimize it.
-  // It iterates parsedPacketLogs which is fine, but we should make sure it's not too heavy.
-  // Actually, parsedEntitiesByPayload iterates 'parsedPacketLogs'. If logs are large, this is also heavy.
-  // But typically user only cares about this when discovery is open?
-  // Let's optimize it later if needed. The main blocker was mapping all packets for the logs view.
-
-  const parsedEntitiesByPayload = $derived.by<Record<string, string[]>>(() => {
-    const entries = new Map<string, Set<string>>();
-    for (const log of parsedPacketLogs) {
-      const payload = packetDictionary[log.packetId];
-      if (!payload) continue;
-      const key = payload.toUpperCase();
-      const set = entries.get(key) ?? new Set<string>();
-      set.add(log.entityId);
-      entries.set(key, set);
-    }
-    return Object.fromEntries(
-      Array.from(entries.entries()).map(([payload, entities]) => [payload, Array.from(entities)]),
-    );
-  });
+  // Buffers for batch processing
+  let commandLogBuffer: CommandLogEntry[] = [];
+  let parsedLogBuffer: PacketLogEntry[] = [];
+  const LOG_FLUSH_INTERVAL = 250;
+  let logFlushTimer: ReturnType<typeof setInterval> | undefined;
 
   type DeviceStateEntry = { payload: string; portId?: string };
   type ParsedStateEntry = { entityId: string; state: Record<string, unknown>; portId?: string };
@@ -339,7 +325,9 @@
 
   let executingCommands = $state(new Set<string>());
 
-  let rawPackets = $state<RawPacketWithInterval[]>([]);
+  // OPTIMIZATION: Use native arrays for raw packets too
+  let rawPackets: RawPacketWithInterval[] = []; // Changed from $state
+
   let packetStatsByPort = $state(new Map<string, PacketStats>());
   let hasIntervalPackets = $state(false);
   let lastRawPacketTimestamp = $state<number | null>(null);
@@ -572,7 +560,65 @@
     loadFrontendSettings();
     loadActivityLogs();
     checkRecordingStatus();
+    checkRecordingStatus();
+
+    // Start log flush timer
+    logFlushTimer = setInterval(flushLogBuffers, LOG_FLUSH_INTERVAL);
   });
+
+  const flushLogBuffers = () => {
+    if (commandLogBuffer.length > 0) {
+      // Sort buffer by timestamp descending (newest first)
+      commandLogBuffer.sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0));
+
+      // Optimization: If the newest buffered log is newer than the newest existing log,
+      // we can just unshift. This is the most common case for real-time logs.
+      const newestBufferTs = commandLogBuffer[0].timestampMs ?? 0;
+      const newestExistingTs =
+        commandPacketLogs.length > 0 ? (commandPacketLogs[0].timestampMs ?? 0) : 0;
+
+      if (commandPacketLogs.length === 0 || newestBufferTs >= newestExistingTs) {
+        // Prepend all
+        commandPacketLogs.unshift(...commandLogBuffer);
+      } else {
+        // Fallback: insert one by one (or could optimize further to merge-sort)
+        // Since out-of-order logs are rare in real-time view, this is acceptable.
+        for (const entry of commandLogBuffer) {
+          insertSortedLogEntry(commandPacketLogs, entry);
+        }
+      }
+
+      // Trim if needed
+      if (commandPacketLogs.length > MAX_PACKETS) {
+        commandPacketLogs.length = MAX_PACKETS;
+      }
+
+      commandLogBuffer = [];
+    }
+
+    if (parsedLogBuffer.length > 0) {
+      // Sort buffer by timestamp descending
+      parsedLogBuffer.sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0));
+
+      const newestBufferTs = parsedLogBuffer[0].timestampMs ?? 0;
+      const newestExistingTs =
+        parsedPacketLogs.length > 0 ? (parsedPacketLogs[0].timestampMs ?? 0) : 0;
+
+      if (parsedPacketLogs.length === 0 || newestBufferTs >= newestExistingTs) {
+        parsedPacketLogs.unshift(...parsedLogBuffer);
+      } else {
+        for (const entry of parsedLogBuffer) {
+          insertSortedLogEntry(parsedPacketLogs, entry);
+        }
+      }
+
+      if (parsedPacketLogs.length > MAX_PACKETS) {
+        parsedPacketLogs.length = MAX_PACKETS;
+      }
+
+      parsedLogBuffer = [];
+    }
+  };
 
   async function checkRecordingStatus() {
     try {
@@ -620,6 +666,7 @@
     if (rawPacketStreamMode === lastAppliedRawPacketMode) return;
     lastAppliedRawPacketMode = rawPacketStreamMode;
     rawPackets = [];
+    logVersion += 1;
     packetStatsByPort = new Map();
     hasIntervalPackets = false;
     lastRawPacketTimestamp = null;
@@ -661,6 +708,7 @@
 
   function handleRawRecordingStart() {
     rawPackets = [];
+    logVersion += 1;
     packetStatsByPort = new Map();
   }
 
@@ -677,6 +725,7 @@
       setTimeZone(data.timezone);
       bridgeStatusByPort = new Map();
       rawPackets = [];
+      logVersion += 1;
       deviceStates.clear();
       parsedStates.clear();
       entityErrorsByKey = new Map();
@@ -741,6 +790,7 @@
         .sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0));
       commandPacketLogs = enrichedCommandLogs.slice(0, MAX_PACKETS);
       parsedPacketLogs = enrichedParsedLogs.slice(0, MAX_PACKETS);
+      logVersion += 1;
     } catch (err) {
       console.error('Failed to load packet history:', err);
     }
@@ -951,6 +1001,7 @@
       });
       lastRawPacketTimestamp = Date.parse(packet.receivedAt);
       appendRawPacket(packet);
+      logVersion += 1;
     };
 
     const handleRawPacketFallback = (data: MqttMessageEvent) => {
@@ -965,6 +1016,7 @@
           portId: getExplicitPortId(undefined),
         }),
       );
+      logVersion += 1;
     };
 
     const handlePacketStats = (data: PacketStats) => {
@@ -1015,7 +1067,8 @@
         },
         data.packet,
       );
-      insertSortedLogEntry(commandPacketLogs, logEntry);
+      // Buffer the log instead of inserting immediately
+      commandLogBuffer.push(logEntry);
 
       if (!isToastEnabled('command')) return;
 
@@ -1047,7 +1100,8 @@
         },
         data.packet,
       );
-      insertSortedLogEntry(parsedPacketLogs, logEntry);
+      // Buffer the log instead of inserting immediately
+      parsedLogBuffer.push(logEntry);
     };
 
     const handleStateChange = (data: StateChangeEvent) => {
@@ -1193,6 +1247,7 @@
     closeStream();
     toastTimeouts.forEach((timeout) => clearTimeout(timeout));
     toastTimeouts.clear();
+    if (logFlushTimer) clearInterval(logFlushTimer);
   });
 
   async function loadCommands() {
@@ -1667,8 +1722,9 @@
     return entityErrorsByKey.get(key) ?? [];
   });
 
-  const selectedEntityParsedPackets = $derived.by<ParsedPacket[]>(() =>
-    selectedEntity && selectedEntity.category === 'entity'
+  const selectedEntityParsedPackets = $derived.by<ParsedPacket[]>(() => {
+    logVersion;
+    return selectedEntity && selectedEntity.category === 'entity'
       ? parsedPacketLogs
           .filter(
             (p) =>
@@ -1686,11 +1742,12 @@
             timeLabel: log.timeLabel,
             searchText: log.searchText,
           }))
-      : [],
-  );
+      : [];
+  });
 
-  const selectedEntityCommandPackets = $derived.by<CommandPacket[]>(() =>
-    selectedEntity && selectedEntity.category === 'entity'
+  const selectedEntityCommandPackets = $derived.by<CommandPacket[]>(() => {
+    logVersion;
+    return selectedEntity && selectedEntity.category === 'entity'
       ? commandPacketLogs
           .filter(
             (p) =>
@@ -1711,8 +1768,8 @@
             searchText: log.searchText,
             sourceEntityId: log.sourceEntityId,
           }))
-      : [],
-  );
+      : [];
+  });
 
   const selectedEntityActivityLogs = $derived.by<ActivityLog[]>(() => {
     if (!selectedEntity) return [];
@@ -1759,23 +1816,26 @@
     activePortId ? (entitiesByPort[activePortId] ?? []) : unifiedEntities,
   );
 
-  const filteredCommandLogs = $derived.by<CommandLogEntry[]>(() =>
-    activePortId
+  const filteredCommandLogs = $derived.by<CommandLogEntry[]>(() => {
+    logVersion; // Register dependency
+    return activePortId
       ? commandPacketLogs.filter((log) => !log.portId || log.portId === activePortId)
-      : commandPacketLogs,
-  );
+      : commandPacketLogs;
+  });
 
-  const filteredParsedLogs = $derived.by<PacketLogEntry[]>(() =>
-    activePortId
+  const filteredParsedLogs = $derived.by<PacketLogEntry[]>(() => {
+    logVersion; // Register dependency
+    return activePortId
       ? parsedPacketLogs.filter((log) => !log.portId || log.portId === activePortId)
-      : parsedPacketLogs,
-  );
+      : parsedPacketLogs;
+  });
 
-  const filteredRawPackets = $derived.by<RawPacketWithInterval[]>(() =>
-    activePortId
+  const filteredRawPackets = $derived.by<RawPacketWithInterval[]>(() => {
+    logVersion; // Register dependency
+    return activePortId
       ? rawPackets.filter((packet) => !packet.portId || packet.portId === activePortId)
-      : rawPackets,
-  );
+      : rawPackets;
+  });
 
   const filteredPacketStats = $derived.by<PacketStats | null>(() =>
     activePortId ? (packetStatsByPort.get(activePortId) ?? null) : null,

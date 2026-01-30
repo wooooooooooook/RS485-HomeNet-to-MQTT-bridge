@@ -325,12 +325,51 @@ export function validateConfig(
   }
 
   if (config.packet_defaults) {
-    const { rx_checksum, rx_checksum2, tx_checksum, tx_checksum2 } = config.packet_defaults;
+    const {
+      rx_checksum,
+      rx_checksum2,
+      tx_checksum,
+      tx_checksum2,
+      rx_min_length,
+      rx_max_length,
+      rx_length,
+    } = config.packet_defaults;
     if (rx_checksum && rx_checksum2) {
       errors.push('packet_defaults에서 rx_checksum과 rx_checksum2는 동시에 설정할 수 없습니다.');
     }
     if (tx_checksum && tx_checksum2) {
       errors.push('packet_defaults에서 tx_checksum과 tx_checksum2는 동시에 설정할 수 없습니다.');
+    }
+    if (
+      rx_min_length !== undefined &&
+      (typeof rx_min_length !== 'number' || Number.isNaN(rx_min_length))
+    ) {
+      errors.push('packet_defaults.rx_min_length는 숫자여야 합니다.');
+    } else if (typeof rx_min_length === 'number' && rx_min_length < 0) {
+      errors.push('packet_defaults.rx_min_length는 0 이상이어야 합니다.');
+    }
+    if (
+      rx_max_length !== undefined &&
+      (typeof rx_max_length !== 'number' || Number.isNaN(rx_max_length))
+    ) {
+      errors.push('packet_defaults.rx_max_length는 숫자여야 합니다.');
+    } else if (typeof rx_max_length === 'number' && rx_max_length < 0) {
+      errors.push('packet_defaults.rx_max_length는 0 이상이어야 합니다.');
+    }
+    if (
+      typeof rx_min_length === 'number' &&
+      typeof rx_max_length === 'number' &&
+      rx_min_length > rx_max_length
+    ) {
+      errors.push('packet_defaults.rx_min_length는 rx_max_length보다 작거나 같아야 합니다.');
+    }
+    if (typeof rx_length === 'number') {
+      if (typeof rx_min_length === 'number' && rx_length < rx_min_length) {
+        errors.push('packet_defaults.rx_length는 rx_min_length보다 크거나 같아야 합니다.');
+      }
+      if (typeof rx_max_length === 'number' && rx_length > rx_max_length) {
+        errors.push('packet_defaults.rx_length는 rx_max_length보다 작거나 같아야 합니다.');
+      }
     }
   }
 

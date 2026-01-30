@@ -1121,6 +1121,33 @@
             </div>
           </div>
 
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rx_min_length">{$t('setup_wizard.pdf_rx_min_length')}</label>
+              <input
+                type="number"
+                id="rx_min_length"
+                bind:value={packetDefaults.rx_min_length}
+                aria-describedby="rx-min-length-hint"
+              />
+              <p id="rx-min-length-hint" class="field-hint">
+                {$t('setup_wizard.pdf_rx_min_length_hint')}
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="rx_max_length">{$t('setup_wizard.pdf_rx_max_length')}</label>
+              <input
+                type="number"
+                id="rx_max_length"
+                bind:value={packetDefaults.rx_max_length}
+                aria-describedby="rx-max-length-hint"
+              />
+              <p id="rx-max-length-hint" class="field-hint">
+                {$t('setup_wizard.pdf_rx_max_length_hint')}
+              </p>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="rx_length_expr">{$t('setup_wizard.pdf_rx_length_expr')}</label>
             <input

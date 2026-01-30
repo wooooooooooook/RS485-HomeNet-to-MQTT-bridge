@@ -176,6 +176,14 @@
           "description": "Fixed length of the packet (including header/footer).\nIf set, parser will wait for this many bytes.",
           "type": "number"
         },
+        "rx_min_length": {
+          "description": "Minimum packet length allowed (including header/footer).\nPackets shorter than this length will be ignored.",
+          "type": "number"
+        },
+        "rx_max_length": {
+          "description": "Maximum packet length allowed (including header/footer).\nPackets longer than this length will be ignored.",
+          "type": "number"
+        },
         "rx_length_expr": {
           "description": "CEL expression to calculate dynamic packet length.\nReturns the expected total length, or 0/negative to fallback to Checksum Sweep.\nAvailable variables: `data` (current buffer), `len` (buffer length).",
           "type": "string"

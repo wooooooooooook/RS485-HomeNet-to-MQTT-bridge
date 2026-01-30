@@ -8,6 +8,8 @@
 - `rx_checksum` / `tx_checksum`: 기본 1바이트 체크섬 계산기 (알고리즘 이름 문자열 또는 CEL 표현식).
 - `rx_checksum2` / `tx_checksum2`: 이중(2바이트) 체크섬 계산기 (알고리즘 이름 문자열 또는 CEL 표현식).
 - `rx_length`: 고정 길이 패킷일 때 전체 길이를 명시.
+- `rx_min_length`: 최소 수신 길이. 이보다 짧은 패킷은 무시.
+- `rx_max_length`: 최대 수신 길이. 이보다 긴 패킷은 무시.
 - `rx_length_expr`: 동적 패킷 길이 계산을 위한 CEL 표현식(선택). 패킷에 패킷 길이 정보가 있는경우 성능향상에 도움이됩니다. 0을 반환하면 Checksum Sweep fallback.
 - `rx_valid_headers`: 유효한 패킷 시작 바이트 목록(선택). 체크섬이 유효해도 첫 바이트가 이 목록에 없으면 패킷으로 인식하지 않음.
 - `tx_delay`: 재전송 간격 대기 시간 (ms).

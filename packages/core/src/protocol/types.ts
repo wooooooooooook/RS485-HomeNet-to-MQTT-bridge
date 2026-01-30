@@ -78,6 +78,18 @@ export interface PacketDefaults {
   rx_length?: number;
 
   /**
+   * Minimum packet length allowed (including header/footer).
+   * Packets shorter than this length will be ignored.
+   */
+  rx_min_length?: number;
+
+  /**
+   * Maximum packet length allowed (including header/footer).
+   * Packets longer than this length will be ignored.
+   */
+  rx_max_length?: number;
+
+  /**
    * CEL expression to calculate dynamic packet length.
    * Returns the expected total length, or 0/negative to fallback to Checksum Sweep.
    * Available variables: `data` (current buffer), `len` (buffer length).

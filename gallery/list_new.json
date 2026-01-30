@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-28T08:49:28.893Z",
+  "generated_at": "2026-01-30T06:51:33.389Z",
   "vendors": [
     {
       "id": "bestin",
@@ -31,7 +31,7 @@
           "name_en": "Bestin Climate",
           "description": "Bestin 난방 설정입니다. 방 개수를 지정할 수 있습니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin climate with configurable room count. bestin1.0 bestin2.0 common.",
-          "version": "2.1.1",
+          "version": "2.1.2",
           "author": "wooooooooooook",
           "tags": [
             "climate",
@@ -86,7 +86,7 @@
           "name_en": "Bestin Doorlock",
           "description": "Bestin 도어락 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin doorlock. bestin1.0 bestin2.0 common.",
-          "version": "2.1.0",
+          "version": "2.1.1",
           "author": "wooooooooooook",
           "tags": [
             "lock",
@@ -154,7 +154,7 @@
           "name_en": "Bestin aio Light and Outlet (energy485)",
           "description": "Bestin aio gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.",
           "description_en": "Bestin aio gateway light and outlet. You can specify lights/outlets per room.",
-          "version": "2.1.0",
+          "version": "2.1.1",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -255,7 +255,7 @@
           "name_en": "Bestin general Light and Outlet (energy485)",
           "description": "Bestin general gateway용 조명 및 아웃렛 설정입니다. 방별 조명/콘센트 개수를 지정할 수 있습니다.",
           "description_en": "Bestin general gateway light and outlet. You can specify lights/outlets per room.",
-          "version": "2.1.1",
+          "version": "2.1.2",
           "author": "wooooooooooook",
           "tags": [
             "light",
@@ -357,7 +357,7 @@
           "name_en": "Bestin Ventilation Fan",
           "description": "Bestin 환기팬 설정입니다. 3단 속도(약/중/강)와 자연환기 모드를 지원합니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin ventilation fan with 3-speed control and natural ventilation mode. bestin1.0 bestin2.0 common.",
-          "version": "2.1.0",
+          "version": "2.2.0",
           "author": "wooooooooooook",
           "tags": [
             "fan",
@@ -367,21 +367,21 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "number": 1,
+              "number": 2,
               "fan": 1
             },
             "automations": 0,
-            "scripts": 2
+            "scripts": 3
           },
           "discovery": {
             "match": {
               "data": [
                 97,
-                0
+                128
               ],
               "mask": [
                 255,
-                0
+                240
               ]
             }
           }
@@ -463,7 +463,7 @@
           "name_en": "Bestin Gas Valve",
           "description": "Bestin 가스밸브 설정입니다. bestin1.0 bestin2.0 공통입니다.",
           "description_en": "Bestin gas valve. bestin1.0 bestin2.0 common.",
-          "version": "2.1.0",
+          "version": "2.1.1",
           "author": "wooooooooooook",
           "tags": [
             "valve",
@@ -524,7 +524,7 @@
           "name_en": "Bestin2.0 Dimming Light and Outlet",
           "description": "Bestin2.0 디밍 조명 및 아웃렛 설정입니다. 방 개수와 방별 조명/콘센트 개수를 설정할 수 있습니다. 디밍이 아닌경우 light엔티티에서 디밍관련 옵션들(brightness, color_temp)을 제거하고 사용하세요.",
           "description_en": "Bestin2.0 dimming light and outlet configuration. You can configure room count and lights/outlets per room. If it's not a dimming light, remove dimming-related options (brightness, color_temp) from the light entity.",
-          "version": "2.1.1",
+          "version": "2.1.2",
           "author": "wooooooooooook",
           "tags": [
             "light",

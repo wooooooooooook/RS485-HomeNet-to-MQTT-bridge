@@ -680,6 +680,9 @@
     .gallery-container {
       padding: 1rem;
     }
+    .discovered-section {
+      padding: 1rem 0.5rem;
+    }
 
     .filters {
       flex-direction: column;

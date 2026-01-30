@@ -536,8 +536,9 @@ export class PacketParser {
 
               const len = foundIdx + footerLen - this.readOffset;
               if (!this.isLengthAllowed(len)) {
-                searchIdx = foundIdx + 1;
-                continue;
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
               }
 
               // Verify checksum incrementally
@@ -606,8 +607,9 @@ export class PacketParser {
 
               const len = foundIdx + footerLen - this.readOffset;
               if (!this.isLengthAllowed(len)) {
-                searchIdx = foundIdx + 1;
-                continue;
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
               }
 
               // Packet: [Header ... Data ... Checksum(2) ... Footer]
@@ -653,8 +655,9 @@ export class PacketParser {
 
               const len = foundIdx + footerLen - this.readOffset;
               if (!this.isLengthAllowed(len)) {
-                searchIdx = foundIdx + 1;
-                continue;
+                this.consumeBytes(len);
+                matchFound = true;
+                break;
               }
               if (this.verifyChecksum(this.buffer, this.readOffset, len)) {
                 const packet = Buffer.from(
@@ -915,6 +918,12 @@ export class PacketParser {
         break;
       } else {
         // Variable length: waiting for more data to find a footer or valid checksum
+        const maxLen = this.getMaxLength();
+        if (maxLen && this.bufferLength() > maxLen) {
+          this.consumeBytes(1);
+          this.lastScannedLength = 0;
+          continue;
+        }
         this.lastScannedLength = this.bufferLength();
         break;
       }

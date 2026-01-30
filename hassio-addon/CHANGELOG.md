@@ -1,4 +1,5 @@
-v2.3.1
+v2.4.0
+- feat: packet_defaults에 rx_min_length, rx_max_length 옵션 도입
 - fix: script실행시 args 전달 안되는 문제 수정.
 - fix: 갤러리 스니펫 적용시 스크립트, 자동화도 변경사항 확인할수있도록 수정. (스크립트, 자동화는 대상 선택 안됩니다.)
 - fix: 분석페이지 패킷로그에서 로그가 조금만 쌓여도 렉이 심한 현상 개선

@@ -49,13 +49,14 @@ services:
     <<: *dev-base
     container_name: rs485-simulator-dev
     environment:
+      CI: 'true'
       SIMULATOR_INTERVAL_MS: '100'
       SIMULATOR_PROTOCOL: 'tcp'
       SIMULATOR_PORT_PATH: '/tmp/ttyRS485'
       SIMULATOR_DEVICE: 'userdata'
       SIMULATOR_SLOW: '20'
     volumes:
-      - ../../:/workspace
+      # No workspace mount -> Uses built-in code from image
       - pnpm-store:/root/.local/share/pnpm
       - simulator_node_modules:/workspace/node_modules
     command: >
@@ -67,7 +68,7 @@ services:
         fi
         
         corepack enable
-        pnpm install --filter @rs485-homenet/simulator... --no-frozen-lockfile
+        pnpm install --filter @rs485-homenet/simulator... --frozen-lockfile
         pnpm --filter @rs485-homenet/simulator build
         node scripts/run-simulator.mjs
       "
@@ -77,6 +78,7 @@ services:
     <<: *dev-base
     container_name: rs485-app-dev
     environment:
+      CI: 'true'
       MQTT_URL: mqtt://mq:1883
       SERIAL_PATH_WAIT_TIMEOUT_MS: '10000'
       PORT: '3000'
@@ -85,7 +87,7 @@ services:
       LOG_LEVEL: info
       MQTT_TOPIC_PREFIX: homenet
     volumes:
-      - ../../:/workspace
+      # No workspace mount -> Uses built-in code from image
       - pnpm-store:/root/.local/share/pnpm
       - app_node_modules:/workspace/node_modules
       - /dev/pts:/dev/pts
@@ -116,6 +118,8 @@ services:
   ui:
     <<: *dev-base
     container_name: rs485-ui-dev
+    environment:
+      CI: 'true'
     volumes:
       - ../../:/workspace
       - pnpm-store:/root/.local/share/pnpm
@@ -126,7 +130,7 @@ services:
       bash -lc "
         set -euo pipefail
         corepack enable
-        pnpm install --filter @rs485-homenet/ui... --no-frozen-lockfile
+        pnpm install --filter @rs485-homenet/ui... --frozen-lockfile
         pnpm --filter @rs485-homenet/ui dev --host 0.0.0.0
       "
     depends_on:

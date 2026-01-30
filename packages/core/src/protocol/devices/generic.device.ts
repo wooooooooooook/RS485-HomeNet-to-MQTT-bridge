@@ -2,7 +2,7 @@ import { Device } from '../device.js';
 import { DeviceConfig, ProtocolConfig } from '../types.js';
 import { StateSchema, StateNumSchema } from '../types.js';
 import { matchesPacket } from '../../utils/packet-matching.js';
-import { CelExecutor, CompiledScript, ReusableBufferView } from '../cel-executor.js';
+import { CelExecutor, CompiledScript } from '../cel-executor.js';
 import {
   calculateChecksum,
   calculateChecksum2,

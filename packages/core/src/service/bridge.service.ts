@@ -475,11 +475,11 @@ export class HomeNetBridge extends EventEmitter {
 
       // Include entity state in context for CEL script access
       const entityState = context.stateManager.getEntityState(entityId) || {};
-      
+
       // Process script args: substitute "x" with actual value and evaluate CEL expressions
       const rawArgs = (commandSchema as any).args || {};
       const processedArgs: Record<string, any> = {};
-      
+
       for (const [key, argValue] of Object.entries(rawArgs)) {
         if (typeof argValue === 'string') {
           // If arg is exactly "x", substitute with command value
@@ -495,7 +495,7 @@ export class HomeNetBridge extends EventEmitter {
           processedArgs[key] = argValue;
         }
       }
-      
+
       logger.debug(
         { scriptId: (commandSchema as any).script, args: processedArgs, value },
         '[bridge] Executing script with args',

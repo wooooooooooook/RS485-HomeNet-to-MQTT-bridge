@@ -135,15 +135,11 @@
           }
         }
       },
-      "required": [
-        "serial"
-      ],
+      "required": ["serial"],
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "required": [
-    "homenet_bridge"
-  ],
+  "required": ["homenet_bridge"],
   "additionalProperties": false,
   "definitions": {
     "PacketDefaults": {
@@ -262,48 +258,23 @@
           "type": "number"
         },
         "data_bits": {
-          "enum": [
-            5,
-            6,
-            7,
-            8
-          ],
+          "enum": [5, 6, 7, 8],
           "type": "number"
         },
         "parity": {
-          "enum": [
-            "even",
-            "mark",
-            "none",
-            "odd",
-            "space"
-          ],
+          "enum": ["even", "mark", "none", "odd", "space"],
           "type": "string"
         },
         "stop_bits": {
-          "enum": [
-            1,
-            1.5,
-            2
-          ],
+          "enum": [1, 1.5, 2],
           "type": "number"
         },
         "serial_idle": {
           "description": "Idle timeout in ms to close connection (optional).",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         }
       },
-      "required": [
-        "baud_rate",
-        "data_bits",
-        "parity",
-        "path",
-        "portId",
-        "stop_bits"
-      ]
+      "required": ["baud_rate", "data_bits", "parity", "path", "portId", "stop_bits"]
     },
     "DeviceConfig": {
       "type": "object",
@@ -327,9 +298,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id"
-      ]
+      "required": ["id"]
     },
     "LightEntity": {
       "type": "object",
@@ -610,11 +579,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "StateSchema": {
       "description": "Schema for matching and extracting state from a packet.",
@@ -680,22 +645,12 @@
         },
         "endian": {
           "description": "Byte order (endianness).",
-          "enum": [
-            "big",
-            "little"
-          ],
+          "enum": ["big", "little"],
           "type": "string"
         },
         "decode": {
           "description": "specialized decoding strategy.",
-          "enum": [
-            "add_0x80",
-            "ascii",
-            "bcd",
-            "multiply",
-            "none",
-            "signed_byte_half_degree"
-          ],
+          "enum": ["add_0x80", "ascii", "bcd", "multiply", "none", "signed_byte_half_degree"],
           "type": "string"
         },
         "mapping": {
@@ -704,10 +659,7 @@
           "additionalProperties": false,
           "patternProperties": {
             "^[0-9]+$": {
-              "type": [
-                "string",
-                "number"
-              ]
+              "type": ["string", "number"]
             }
           }
         },
@@ -780,14 +732,7 @@
         },
         "value_encode": {
           "description": "Value encoding/decoding strategies for numeric states.",
-          "enum": [
-            "add_0x80",
-            "ascii",
-            "bcd",
-            "multiply",
-            "none",
-            "signed_byte_half_degree"
-          ],
+          "enum": ["add_0x80", "ascii", "bcd", "multiply", "none", "signed_byte_half_degree"],
           "type": "string"
         },
         "length": {
@@ -797,10 +742,7 @@
           "type": "boolean"
         },
         "endian": {
-          "enum": [
-            "big",
-            "little"
-          ],
+          "enum": ["big", "little"],
           "type": "string"
         },
         "multiply_factor": {
@@ -1452,11 +1394,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "ValveEntity": {
       "type": "object",
@@ -1601,11 +1539,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "ButtonEntity": {
       "type": "object",
@@ -1665,11 +1599,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "command_press",
-        "id",
-        "name"
-      ]
+      "required": ["command_press", "id", "name"]
     },
     "SensorEntity": {
       "type": "object",
@@ -1751,11 +1681,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "FanEntity": {
       "type": "object",
@@ -1974,11 +1900,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "SwitchEntity": {
       "type": "object",
@@ -2069,11 +1991,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "LockEntity": {
       "type": "object",
@@ -2163,10 +2081,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "NumberEntity": {
       "type": "object",
@@ -2285,10 +2200,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "SelectEntity": {
       "type": "object",
@@ -2384,11 +2296,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "options"
-      ]
+      "required": ["id", "name", "options"]
     },
     "SelectCommandSchema": {
       "type": "object",
@@ -2423,14 +2331,7 @@
         },
         "value_encode": {
           "description": "Value encoding/decoding strategies for numeric states.",
-          "enum": [
-            "add_0x80",
-            "ascii",
-            "bcd",
-            "multiply",
-            "none",
-            "signed_byte_half_degree"
-          ],
+          "enum": ["add_0x80", "ascii", "bcd", "multiply", "none", "signed_byte_half_degree"],
           "type": "string"
         },
         "length": {
@@ -2440,10 +2341,7 @@
           "type": "boolean"
         },
         "endian": {
-          "enum": [
-            "big",
-            "little"
-          ],
+          "enum": ["big", "little"],
           "type": "string"
         },
         "multiply_factor": {
@@ -2483,22 +2381,12 @@
         },
         "endian": {
           "description": "Byte order (endianness).",
-          "enum": [
-            "big",
-            "little"
-          ],
+          "enum": ["big", "little"],
           "type": "string"
         },
         "decode": {
           "description": "specialized decoding strategy.",
-          "enum": [
-            "add_0x80",
-            "ascii",
-            "bcd",
-            "multiply",
-            "none",
-            "signed_byte_half_degree"
-          ],
+          "enum": ["add_0x80", "ascii", "bcd", "multiply", "none", "signed_byte_half_degree"],
           "type": "string"
         },
         "mapping": {
@@ -2507,10 +2395,7 @@
           "additionalProperties": false,
           "patternProperties": {
             "^[0-9]+$": {
-              "type": [
-                "string",
-                "number"
-              ]
+              "type": ["string", "number"]
             }
           }
         },
@@ -2628,10 +2513,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "TextEntity": {
       "type": "object",
@@ -2660,10 +2542,7 @@
           "type": "string"
         },
         "mode": {
-          "enum": [
-            "password",
-            "text"
-          ],
+          "enum": ["password", "text"],
           "type": "string"
         },
         "command_text": {
@@ -2743,10 +2622,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "BinarySensorEntity": {
       "type": "object",
@@ -2828,11 +2704,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "state"
-      ]
+      "required": ["id", "name", "state"]
     },
     "AutomationConfig": {
       "description": "Configuration for an Automation rule.",
@@ -2851,12 +2723,7 @@
         },
         "mode": {
           "description": "Execution mode when trigger fires while running.\n- `parallel`: Run multiple instances (default).\n- `single`: Ignore new triggers while running.\n- `restart`: Stop current and start new.\n- `queued`: Queue new triggers.",
-          "enum": [
-            "parallel",
-            "queued",
-            "restart",
-            "single"
-          ],
+          "enum": ["parallel", "queued", "restart", "single"],
           "type": "string"
         },
         "trigger": {
@@ -2895,11 +2762,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "id",
-        "then",
-        "trigger"
-      ]
+      "required": ["id", "then", "trigger"]
     },
     "AutomationTrigger": {
       "anyOf": [
@@ -2938,20 +2801,14 @@
         },
         "debounce_ms": {
           "description": "Debounce time in ms (or '1s'). Prevents rapid firing.",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         },
         "guard": {
           "description": "Additional CEL condition.",
           "type": "string"
         }
       },
-      "required": [
-        "entity_id",
-        "type"
-      ]
+      "required": ["entity_id", "type"]
     },
     "AutomationTriggerPacket": {
       "description": "Trigger based on receiving a specific raw packet.",
@@ -2970,10 +2827,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "match",
-        "type"
-      ]
+      "required": ["match", "type"]
     },
     "AutomationTriggerSchedule": {
       "description": "Trigger based on time interval or cron schedule.",
@@ -2985,10 +2839,7 @@
         },
         "every": {
           "description": "Interval string (e.g. '5m', '1h').",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         },
         "cron": {
           "description": "Cron expression (e.g. '0 0 * * *').",
@@ -2999,9 +2850,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ]
+      "required": ["type"]
     },
     "AutomationTriggerStartup": {
       "description": "Trigger executed when the bridge starts up.",
@@ -3016,9 +2865,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ]
+      "required": ["type"]
     },
     "AutomationAction": {
       "anyOf": [
@@ -3080,10 +2927,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "action",
-        "target"
-      ]
+      "required": ["action", "target"]
     },
     "AutomationActionPublish": {
       "description": "Action to publish an MQTT message.",
@@ -3101,11 +2945,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "action",
-        "payload",
-        "topic"
-      ]
+      "required": ["action", "payload", "topic"]
     },
     "AutomationActionLog": {
       "description": "Action to write a log message.",
@@ -3116,23 +2956,14 @@
           "const": "log"
         },
         "level": {
-          "enum": [
-            "debug",
-            "error",
-            "info",
-            "trace",
-            "warn"
-          ],
+          "enum": ["debug", "error", "info", "trace", "warn"],
           "type": "string"
         },
         "message": {
           "type": "string"
         }
       },
-      "required": [
-        "action",
-        "message"
-      ]
+      "required": ["action", "message"]
     },
     "AutomationActionDelay": {
       "description": "Action to pause execution.",
@@ -3144,16 +2975,10 @@
         },
         "milliseconds": {
           "description": "Duration in ms or string (e.g. '1s').",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         }
       },
-      "required": [
-        "action",
-        "milliseconds"
-      ]
+      "required": ["action", "milliseconds"]
     },
     "AutomationActionScript": {
       "description": "Action to run a named script.",
@@ -3176,9 +3001,7 @@
           "$ref": "#/definitions/Record%3Cstring%2Cany%3E"
         }
       },
-      "required": [
-        "action"
-      ]
+      "required": ["action"]
     },
     "Record<string,any>": {
       "type": "object"
@@ -3198,11 +3021,7 @@
           "$ref": "#/definitions/Record%3Cstring%2Cany%3E"
         }
       },
-      "required": [
-        "action",
-        "state",
-        "target_id"
-      ]
+      "required": ["action", "state", "target_id"]
     },
     "AutomationActionSendPacket": {
       "description": "Action to send a raw packet to the RS485 bus.",
@@ -3277,10 +3096,7 @@
           ]
         }
       },
-      "required": [
-        "action",
-        "data"
-      ]
+      "required": ["action", "data"]
     },
     "AutomationActionIf": {
       "description": "Conditional action (If-Then-Else).",
@@ -3307,11 +3123,7 @@
           }
         }
       },
-      "required": [
-        "action",
-        "condition",
-        "then"
-      ]
+      "required": ["action", "condition", "then"]
     },
     "AutomationActionRepeat": {
       "description": "Loop action.",
@@ -3340,10 +3152,7 @@
           }
         }
       },
-      "required": [
-        "action",
-        "actions"
-      ]
+      "required": ["action", "actions"]
     },
     "AutomationActionWaitUntil": {
       "description": "Action to wait for a condition to become true.",
@@ -3359,23 +3168,14 @@
         },
         "timeout": {
           "description": "Timeout in ms or string (default: 30s).",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         },
         "check_interval": {
           "description": "Polling interval (default: 100ms).",
-          "type": [
-            "string",
-            "number"
-          ]
+          "type": ["string", "number"]
         }
       },
-      "required": [
-        "action",
-        "condition"
-      ]
+      "required": ["action", "condition"]
     },
     "AutomationActionChoose": {
       "description": "Switch-like conditional action.\nExecutes the first choice whose condition is true.",
@@ -3399,10 +3199,7 @@
           }
         }
       },
-      "required": [
-        "action",
-        "choices"
-      ]
+      "required": ["action", "choices"]
     },
     "AutomationActionChooseChoice": {
       "type": "object",
@@ -3418,10 +3215,7 @@
           }
         }
       },
-      "required": [
-        "condition",
-        "then"
-      ]
+      "required": ["condition", "then"]
     },
     "AutomationActionStop": {
       "description": "Action to stop the current automation execution.",
@@ -3436,9 +3230,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "action"
-      ]
+      "required": ["action"]
     },
     "ScriptConfig": {
       "description": "Reusable script configuration.",
@@ -3461,10 +3253,7 @@
           "$ref": "#/definitions/Record%3Cstring%2CScriptArg%3E"
         }
       },
-      "required": [
-        "actions",
-        "id"
-      ]
+      "required": ["actions", "id"]
     },
     "Record<string,ScriptArg>": {
       "type": "object"

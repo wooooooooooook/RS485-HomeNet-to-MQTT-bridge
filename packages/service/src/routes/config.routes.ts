@@ -379,7 +379,12 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
 
       for (const key of Object.keys(newItems)) {
         // Check if this key is one of the allowed entity types or automation/script
-        if (!ENTITY_TYPE_KEYS.includes(key as any) && key !== 'automation' && key !== 'scripts') {
+        const configKey = key as keyof HomenetBridgeConfig;
+        if (
+          !ENTITY_TYPE_KEYS.includes(configKey) &&
+          configKey !== 'automation' &&
+          configKey !== 'scripts'
+        ) {
           continue; // Skip unknown top-level keys
         }
 
@@ -392,31 +397,33 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
           continue;
         }
 
-        mergedKeys.push(key);
+        mergedKeys.push(configKey);
 
-        const existingList = (normalizedFullConfig as any)[key] || [];
-        if (!Array.isArray((normalizedFullConfig as any)[key])) {
-          (normalizedFullConfig as any)[key] = existingList;
+        let existingList = normalizedFullConfig[configKey];
+        if (!Array.isArray(existingList)) {
+          existingList = [];
+          (normalizedFullConfig[configKey] as any) = existingList;
         }
+        const targetList = existingList as any[];
 
         // Check for duplicate IDs before appending
         for (const newItem of newEntries) {
           if (newItem.id) {
-            const duplicate = existingList.find((existing: any) => existing.id === newItem.id);
+            const duplicate = targetList.find((existing: any) => existing.id === newItem.id);
             if (duplicate) {
               return res
                 .status(409)
-                .json({ error: `ID '${newItem.id}' already exists in ${key}.` });
+                .json({ error: `ID '${newItem.id}' already exists in ${configKey}.` });
             }
             // Also check against global uniqueness if necessary?
             // For now, uniqueness within the list (and usually within the whole system for entities) is expected.
             // Let's at least check within the current file's relevant lists if it's an entity type
 
-            if (ENTITY_TYPE_KEYS.includes(key as any)) {
+            if (ENTITY_TYPE_KEYS.includes(configKey)) {
               // Check if ID exists in OTHER entity lists in the SAME file
               for (const otherKey of ENTITY_TYPE_KEYS) {
-                if (otherKey === key) continue;
-                const otherList = (normalizedFullConfig as any)[otherKey];
+                if (otherKey === configKey) continue;
+                const otherList = normalizedFullConfig[otherKey];
                 if (Array.isArray(otherList) && otherList.some((e: any) => e.id === newItem.id)) {
                   return res
                     .status(409)
@@ -427,7 +434,7 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
           }
         }
 
-        (normalizedFullConfig as any)[key].push(...newEntries);
+        targetList.push(...newEntries);
       }
 
       if (mergedKeys.length === 0) {

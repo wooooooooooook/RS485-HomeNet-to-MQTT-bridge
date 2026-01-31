@@ -66,7 +66,7 @@ export class PacketParser {
     args: {},
   };
 
-  private readonly checksumTypes = new Set([
+  private static readonly CHECKSUM_TYPES = new Set([
     'add',
     'xor',
     'add_no_header',
@@ -77,7 +77,7 @@ export class PacketParser {
     'bestin_sum',
     'none',
   ]);
-  private readonly checksum2Types = new Set(['xor_add']);
+  private static readonly CHECKSUM2_TYPES = new Set(['xor_add']);
 
   /**
    * @param defaults - Configuration defining packet structure (header, footer, checksum, length)
@@ -106,7 +106,7 @@ export class PacketParser {
     this.isStandard1Byte =
       typeof checksumType === 'string' &&
       checksumType !== 'none' &&
-      this.checksumTypes.has(checksumType);
+      PacketParser.CHECKSUM_TYPES.has(checksumType);
 
     // Bolt: Pre-resolve checksum function
     if (this.isStandard1Byte) {
@@ -121,7 +121,7 @@ export class PacketParser {
     this.isStandard2Byte =
       typeof checksum2Type === 'string' &&
       checksum2Type !== 'none' &&
-      this.checksum2Types.has(checksum2Type);
+      PacketParser.CHECKSUM2_TYPES.has(checksum2Type);
 
     // Bolt: Pre-resolve 2-byte checksum verifier
     if (this.isStandard2Byte) {
@@ -139,7 +139,7 @@ export class PacketParser {
     if (
       typeof checksumType === 'string' &&
       checksumType !== 'none' &&
-      !this.checksumTypes.has(checksumType)
+      !PacketParser.CHECKSUM_TYPES.has(checksumType)
     ) {
       try {
         this.preparedChecksum = executor.prepare(checksumType);
@@ -148,7 +148,7 @@ export class PacketParser {
       }
     }
 
-    if (typeof checksum2Type === 'string' && !this.checksum2Types.has(checksum2Type)) {
+    if (typeof checksum2Type === 'string' && !PacketParser.CHECKSUM2_TYPES.has(checksum2Type)) {
       try {
         this.preparedChecksum2 = executor.prepare(checksum2Type);
       } catch (err) {
@@ -1064,7 +1064,7 @@ export class PacketParser {
       if (typeof this.defaults.rx_checksum === 'string') {
         const checksumOrScript = this.defaults.rx_checksum as string;
 
-        if (this.checksumTypes.has(checksumOrScript)) {
+        if (PacketParser.CHECKSUM_TYPES.has(checksumOrScript)) {
           // Standard algorithm (add, xor, etc.)
           if (this.checksumFn && checksumOrScript === this.cachedChecksumType) {
             const start = offset + this.checksumStartAdjust;
@@ -1124,7 +1124,7 @@ export class PacketParser {
       if (typeof this.defaults.rx_checksum2 === 'string') {
         const checksumOrScript = this.defaults.rx_checksum2 as string;
 
-        if (this.checksum2Types.has(checksumOrScript)) {
+        if (PacketParser.CHECKSUM2_TYPES.has(checksumOrScript)) {
           // Bolt: Use pre-resolved verifier if available to bypass switch overhead
           if (this.checksum2Fn && checksumOrScript === this.cachedChecksum2Type) {
             return this.checksum2Fn(

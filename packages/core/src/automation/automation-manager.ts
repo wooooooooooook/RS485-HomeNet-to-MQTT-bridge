@@ -1080,10 +1080,10 @@ export class AutomationManager {
 
     // Emit command-packet event for packet log display
     const hexPacket = Buffer.from(packet).toString('hex').toUpperCase();
-    
+
     // Use sourceEntityId if available (when command is called from an entity's script-based command)
     const effectiveEntityId = context.sourceEntityId || entity.id;
-    
+
     eventBus.emit('command-packet', {
       entity: entity.name || entity.id,
       entityId: effectiveEntityId,

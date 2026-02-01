@@ -133,6 +133,14 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
   - 방화벽(UFW, 시놀로지 방화벽 등)에서 3000번 포트가 허용되어 있는지 확인하세요.
   - 브라우저의 광고 차단 확장 프로그램이 간혹 웹소켓 연결을 차단할 수 있습니다. 시크릿 모드에서 시도해보세요.
 
+## 👨‍💻 개발 및 기여 (Development)
+
+이 프로젝트에 기여하거나 로컬 환경에서 개발을 진행하려면 [개발 가이드 (docs/DEVELOPMENT.md)](docs/DEVELOPMENT.md)를 참고하세요.
+
+- 로컬 개발 환경 설정 (Docker 미사용 포함)
+- 프로젝트 구조 및 아키텍처
+- 테스트 및 린트 실행 방법
+
 ## 문의 및 지원
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge)
 

@@ -295,11 +295,23 @@
   <div class="filter-row">
     <label class="filter-label">
       <span>{$t('analysis.packet_log.search_placeholder')}</span>
-      <input
-        type="text"
-        placeholder={$t('analysis.packet_log.search_placeholder')}
-        bind:value={searchQuery}
-      />
+      <div class="search-input-wrapper">
+        <input
+          type="text"
+          placeholder={$t('analysis.packet_log.search_placeholder')}
+          bind:value={searchQuery}
+        />
+        {#if searchQuery}
+          <button
+            class="clear-search-btn"
+            onclick={() => (searchQuery = '')}
+            aria-label={$t('analysis.raw_log.clear_filter') || 'Clear search'}
+            title={$t('analysis.raw_log.clear_filter') || 'Clear search'}
+          >
+            ×
+          </button>
+        {/if}
+      </div>
     </label>
     <button
       type="button"
@@ -319,11 +331,6 @@
     >
       {$t('analysis.packet_log.tx')}
     </button>
-    {#if searchQuery}
-      <Button variant="secondary" onclick={() => (searchQuery = '')}>
-        {$t('analysis.raw_log.clear_filter')}
-      </Button>
-    {/if}
   </div>
 
   <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem;">
@@ -436,14 +443,23 @@
     letter-spacing: 0.05em;
   }
 
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
   .filter-label input {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.2);
     color: #e2e8f0;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
     border-radius: 6px;
     font-size: 0.9rem;
     transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .filter-label input:focus {
@@ -451,6 +467,30 @@
     border-color: #3b82f6;
     background: rgba(15, 23, 42, 0.8);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .clear-search-btn:hover {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.2);
   }
 
   .filter-chip {

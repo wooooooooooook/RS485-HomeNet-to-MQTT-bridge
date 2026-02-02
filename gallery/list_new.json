@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-02T01:02:05.809Z",
+  "generated_at": "2026-02-02T01:54:25.387Z",
   "vendors": [
     {
       "id": "bestin",
@@ -2661,6 +2661,48 @@
                 1,
                 0,
                 68
+              ],
+              "mask": [
+                255,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "file": "kocom/elevator_old.yaml",
+          "name": "구형 코콤 엘리베이터 호출 설정",
+          "name_en": "Old Kocom Elevator Call",
+          "description": "구형 코콤 엘리베이터 호출 버튼입니다.",
+          "description_en": "Old Kocom elevator call button",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "button",
+            "kocom"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "button": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                48,
+                208,
+                0,
+                68,
+                0,
+                1
               ],
               "mask": [
                 255,

@@ -238,11 +238,52 @@ export class MqttSubscriber {
         if (this.automationManager) {
           // Include entity state in context for CEL script access
           const entityState = this.stateProvider?.getEntityState(entityId) || {};
-          await this.automationManager.runScript((commandSchema as any).script, {
-            type: 'command',
+
+          // Evaluate args from commandSchema (same as executeCommandAction in automation-manager)
+          const schemaArgs = (commandSchema as any).args || {};
+          const evaluatedArgs: Record<string, any> = {};
+
+          // Build context with 'x' for command value (injection)
+          // x is the value from MQTT payload (e.g., percentage for fan speed)
+          const triggerContext = {
+            type: 'command' as const,
             timestamp: Date.now(),
             state: entityState,
-          });
+          };
+
+          for (const [key, value] of Object.entries(schemaArgs)) {
+            if (typeof value === 'string') {
+              // Heuristic to check if value needs CEL evaluation
+              if (
+                value.includes('(') ||
+                value.includes('.') ||
+                value.includes('[') ||
+                /\bx\b/.test(value)
+              ) {
+                try {
+                  // Use automationManager's executeWithContext to evaluate CEL with 'x' variable
+                  const result = this.automationManager.evaluateCELWithValue(
+                    value,
+                    triggerContext,
+                    commandValue,
+                  );
+                  evaluatedArgs[key] = result !== undefined ? result : value;
+                } catch (e) {
+                  evaluatedArgs[key] = value;
+                }
+              } else {
+                evaluatedArgs[key] = value;
+              }
+            } else {
+              evaluatedArgs[key] = value;
+            }
+          }
+
+          await this.automationManager.runScript(
+            (commandSchema as any).script,
+            triggerContext,
+            evaluatedArgs,
+          );
         } else {
           logger.warn(
             { entityId, command: commandKey },

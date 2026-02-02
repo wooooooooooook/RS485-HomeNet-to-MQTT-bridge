@@ -155,6 +155,22 @@ export class AutomationManager {
     return actionType;
   }
 
+  /**
+   * Evaluate a CEL expression with optional 'x' value injected into context.
+   * This is useful for evaluating command args with value substitution.
+   */
+  public evaluateCELWithValue(
+    expression: string,
+    context: TriggerContext,
+    commandValue?: number | string,
+  ): any {
+    const evalContext = this.buildContext(context);
+    if (commandValue !== undefined) {
+      (evalContext as any).x = commandValue;
+    }
+    return this.celExecutor.execute(expression, evalContext);
+  }
+
   private getCommandSchema(entity: any, commandName: string) {
     const normalized = this.normalizeCommandName(commandName);
     const schema = (entity as any)[normalized] as any;

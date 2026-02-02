@@ -482,9 +482,17 @@ export class HomeNetBridge extends EventEmitter {
       // Include entity state in context for CEL script access
       const entityState = context.stateManager.getEntityState(entityId) || {};
 
-      // Process script args: substitute "x" with actual value and evaluate CEL expressions
+      // Process script args: evaluate CEL expressions with 'x' value substitution
       const rawArgs = (commandSchema as any).args || {};
       const processedArgs: Record<string, any> = {};
+
+      // Build trigger context for CEL evaluation
+      const triggerContext = {
+        type: 'command' as const,
+        timestamp: Date.now(),
+        state: entityState,
+        sourceEntityId: entityId,
+      };
 
       for (const [key, argValue] of Object.entries(rawArgs)) {
         if (typeof argValue === 'string') {
@@ -493,6 +501,24 @@ export class HomeNetBridge extends EventEmitter {
             processedArgs[key] = value;
           } else if (argValue === 'xstr') {
             processedArgs[key] = String(value);
+          } else if (
+            // Heuristic to check if value needs CEL evaluation (same as subscriber.ts)
+            argValue.includes('(') ||
+            argValue.includes('.') ||
+            argValue.includes('[') ||
+            /\bx\b/.test(argValue)
+          ) {
+            // Evaluate CEL expression with 'x' variable
+            try {
+              const result = automationManager.evaluateCELWithValue(
+                argValue,
+                triggerContext,
+                value,
+              );
+              processedArgs[key] = result !== undefined ? result : argValue;
+            } catch (e) {
+              processedArgs[key] = argValue;
+            }
           } else {
             // Keep as is - will be evaluated in automation-manager
             processedArgs[key] = argValue;
@@ -506,13 +532,16 @@ export class HomeNetBridge extends EventEmitter {
         { scriptId: (commandSchema as any).script, args: processedArgs, value },
         '[bridge] Executing script with args',
       );
-      await automationManager.runScript((commandSchema as any).script, {
-        type: 'command',
-        timestamp: Date.now(),
-        state: entityState,
-        sourceEntityId: entityId,
-        args: processedArgs,
-      });
+      await automationManager.runScript(
+        (commandSchema as any).script,
+        {
+          type: 'command',
+          timestamp: Date.now(),
+          state: entityState,
+          sourceEntityId: entityId,
+        },
+        processedArgs,
+      );
 
       return { success: true };
     }

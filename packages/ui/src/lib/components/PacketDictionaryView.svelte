@@ -11,6 +11,7 @@
   let error = $state<string | null>(null);
   let viewMode = $state<'parsed' | 'unmatched' | 'all'>('all');
   let sortDesc = $state(false);
+  let searchTerm = $state('');
 
   async function fetchData() {
     loading = true;
@@ -59,6 +60,16 @@
     } else {
       // 'all' mode - combine and deduplicate
       packets = Array.from(new Set([...parsedPackets, ...unmatchedPackets]));
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const hexTerm = term.replace(/\s+/g, '');
+      packets = packets.filter((packet) => {
+        if (packet.toLowerCase().replace(/\s+/g, '').includes(hexTerm)) return true;
+        const entities = data?.parsedPacketEntities[packet.toLowerCase()] || [];
+        return entities.some((e) => e.toLowerCase().includes(term));
+      });
     }
 
     packets.sort((a, b) => {
@@ -176,6 +187,12 @@
   {/if}
 
   <div class="controls">
+    <input
+      type="text"
+      class="search-input"
+      placeholder={$t('analysis.packet_dictionary.search_placeholder')}
+      bind:value={searchTerm}
+    />
     <div class="view-tabs">
       <Button
         variant={viewMode === 'all' ? 'primary' : 'secondary'}
@@ -501,5 +518,22 @@
 
   .error {
     color: var(--danger-color);
+  }
+
+  .search-input {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 </style>

@@ -1,18 +1,41 @@
 meta:
   name: "공기청정기"
   name_en: "Air Purifier"
-  description: "Ezville 공기청정기 2대(1번/2번) 전원 및 풍량 제어 설정입니다."
-  description_en: "Ezville air purifier fan control for two units (1/2)."
+  description: "Ezville 공기청정기 전원 및 풍량 제어 설정입니다. 기기 개수를 지정할 수 있습니다."
+  description_en: "Ezville air purifier fan control. You can set the number of devices."
   version: "1.0.0"
   author: "loveangelsa"
   tags: ["fan", "air purifier", "ezville"]
 
+parameters:
+  - name: purifier_count
+    type: integer
+    default: 2
+    min: 1
+    max: 8
+    label: "공기청정기 개수"
+    label_en: "Number of Air Purifiers"
+
+discovery:
+  match:
+    data: [0x61, 0x00, 0x81]
+    mask: [0xFF, 0x00, 0xFF]
+  dimensions:
+    - parameter: "purifier_count"
+      offset: 1
+  inference:
+    strategy: count
+
 entities:
   fan:
-    - id: air_purifier_1
-      name: "공기청정기 1"
+    - $repeat:
+        count: '{{purifier_count}}'
+        as: i
+        start: 1
+      id: air_purifier_{{i}}
+      name: "공기청정기 {{i}}"
       state:
-        data: [0x61, 0x01, 0x81]
+        data: [0x61, '{{i}}', 0x81]
       state_on:
         offset: 6
         data: [0x01]
@@ -20,9 +43,9 @@ entities:
         offset: 6
         data: [0x00]
       command_on:
-        data: [0x61, 0x01, 0x41, 0x01, 0x03]
+        data: [0x61, '{{i}}', 0x41, 0x01, '{{i == 1 ? 0x03 : 0x01}}']
       command_off:
-        data: [0x61, 0x01, 0x41, 0x01, 0x00]
+        data: [0x61, '{{i}}', 0x41, 0x01, 0x00]
       preset_modes: ["약", "중", "강", "터보"]
       state_preset_mode: >-
         data[7] == 0x02 ? "약" :
@@ -30,33 +53,7 @@ entities:
         (data[7] == 0x04 ? "강" :
         (data[7] == 0x05 ? "터보" : "off")))
       command_preset_mode: >-
-        xstr == "약" ? [0x61, 0x01, 0x42, 0x01, 0x02] :
-        (xstr == "중" ? [0x61, 0x01, 0x42, 0x01, 0x03] :
-        (xstr == "강" ? [0x61, 0x01, 0x42, 0x01, 0x04] :
-        [0x61, 0x01, 0x42, 0x01, 0x05]))
-
-    - id: air_purifier_2
-      name: "공기청정기 2"
-      state:
-        data: [0x61, 0x02, 0x81]
-      state_on:
-        offset: 6
-        data: [0x01]
-      state_off:
-        offset: 6
-        data: [0x00]
-      command_on:
-        data: [0x61, 0x02, 0x41, 0x01, 0x01]
-      command_off:
-        data: [0x61, 0x02, 0x41, 0x01, 0x00]
-      preset_modes: ["약", "중", "강", "터보"]
-      state_preset_mode: >-
-        data[7] == 0x02 ? "약" :
-        (data[7] == 0x03 ? "중" :
-        (data[7] == 0x04 ? "강" :
-        (data[7] == 0x05 ? "터보" : "off")))
-      command_preset_mode: >-
-        xstr == "약" ? [0x61, 0x02, 0x42, 0x01, 0x02] :
-        (xstr == "중" ? [0x61, 0x02, 0x42, 0x01, 0x03] :
-        (xstr == "강" ? [0x61, 0x02, 0x42, 0x01, 0x04] :
-        [0x61, 0x02, 0x42, 0x01, 0x05]))
+        xstr == "약" ? [0x61, '{{i}}', 0x42, 0x01, 0x02] :
+        (xstr == "중" ? [0x61, '{{i}}', 0x42, 0x01, 0x03] :
+        (xstr == "강" ? [0x61, '{{i}}', 0x42, 0x01, 0x04] :
+        [0x61, '{{i}}', 0x42, 0x01, 0x05]))

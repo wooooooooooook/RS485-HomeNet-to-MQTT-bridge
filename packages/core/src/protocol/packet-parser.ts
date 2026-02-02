@@ -50,6 +50,13 @@ export class PacketParser {
   private checksum2Fn: Checksum2Verifier | null = null;
   private cachedChecksum2Type: string | null = null;
 
+  // Cached configuration values to avoid property access/checks in hot loops
+  private minLength: number = 0;
+  private maxLength: number | null = null;
+  private footerLength: number = 0;
+  private headerLength: number = 0;
+  private isChecksumNone: boolean = false;
+
   // Optimizations for CEL Checksums
   private preparedChecksum: CompiledScript | null = null;
   private preparedChecksum2: CompiledScript | null = null;
@@ -101,19 +108,31 @@ export class PacketParser {
       }
     }
 
+    // Cache common configuration values
+    this.headerLength = this.defaults.rx_header?.length || 0;
+    this.footerLength = this.defaults.rx_footer?.length || 0;
+    this.minLength =
+      typeof this.defaults.rx_min_length === 'number' && this.defaults.rx_min_length > 0
+        ? this.defaults.rx_min_length
+        : 0;
+    this.maxLength =
+      typeof this.defaults.rx_max_length === 'number' && this.defaults.rx_max_length > 0
+        ? this.defaults.rx_max_length
+        : null;
+    this.isChecksumNone = this.defaults.rx_checksum === 'none';
+
     // Pre-calculate optimization flags for incremental checksums
     const checksumType = this.defaults.rx_checksum;
     this.isStandard1Byte =
       typeof checksumType === 'string' &&
-      checksumType !== 'none' &&
+      !this.isChecksumNone &&
       PacketParser.CHECKSUM_TYPES.has(checksumType);
 
     // Bolt: Pre-resolve checksum function
     if (this.isStandard1Byte) {
       this.checksumFn = getChecksumFunction(checksumType as ChecksumType);
       const offsetType = getChecksumOffsetType(checksumType as ChecksumType);
-      const headerLen = this.defaults.rx_header?.length || 0;
-      this.checksumStartAdjust = offsetType === 'header' ? headerLen : 0;
+      this.checksumStartAdjust = offsetType === 'header' ? this.headerLength : 0;
       this.cachedChecksumType = checksumType as string;
     }
 
@@ -1018,24 +1037,16 @@ export class PacketParser {
   }
 
   private getMinLength(): number {
-    return typeof this.defaults.rx_min_length === 'number' && this.defaults.rx_min_length > 0
-      ? this.defaults.rx_min_length
-      : 0;
+    return this.minLength;
   }
 
   private getMaxLength(): number | null {
-    return typeof this.defaults.rx_max_length === 'number' && this.defaults.rx_max_length > 0
-      ? this.defaults.rx_max_length
-      : null;
+    return this.maxLength;
   }
 
   private isLengthAllowed(length: number): boolean {
-    const minLength = this.getMinLength();
-    if (minLength > 0 && length < minLength) return false;
-
-    const maxLength = this.getMaxLength();
-    if (maxLength !== null && length > maxLength) return false;
-
+    if (this.minLength > 0 && length < this.minLength) return false;
+    if (this.maxLength !== null && length > this.maxLength) return false;
     return true;
   }
 
@@ -1048,23 +1059,24 @@ export class PacketParser {
    */
   private verifyChecksum(buffer: Buffer, offset: number, length: number): boolean {
     if (!this.isLengthAllowed(length)) return false;
-    if (this.defaults.rx_checksum === 'none') return true;
+    if (this.isChecksumNone) return true;
 
     // 1-byte Checksum
     if (this.defaults.rx_checksum) {
       let checksumByte = buffer[offset + length - 1];
       let dataEnd = offset + length - 1;
 
-      if (this.defaults.rx_footer && this.defaults.rx_footer.length > 0) {
+      if (this.footerLength > 0) {
         // If there is a footer, the checksum is usually immediately BEFORE the footer
-        checksumByte = buffer[offset + length - 1 - this.defaults.rx_footer.length];
-        dataEnd = offset + length - 1 - this.defaults.rx_footer.length;
+        checksumByte = buffer[offset + length - 1 - this.footerLength];
+        dataEnd = offset + length - 1 - this.footerLength;
       }
 
       if (typeof this.defaults.rx_checksum === 'string') {
         const checksumOrScript = this.defaults.rx_checksum as string;
 
-        if (PacketParser.CHECKSUM_TYPES.has(checksumOrScript)) {
+        // Optimization: Use cached boolean check instead of Set.has()
+        if (this.isStandard1Byte) {
           // Standard algorithm (add, xor, etc.)
           if (this.checksumFn && checksumOrScript === this.cachedChecksumType) {
             const start = offset + this.checksumStartAdjust;
@@ -1073,11 +1085,10 @@ export class PacketParser {
             return calculated === checksumByte;
           }
 
-          const headerLength = this.defaults.rx_header?.length || 0;
           const calculated = calculateChecksumFromBuffer(
             buffer,
             checksumOrScript as ChecksumType,
-            headerLength,
+            this.headerLength,
             dataEnd - offset,
             offset,
           );
@@ -1114,17 +1125,15 @@ export class PacketParser {
 
     // 2-byte Checksum
     if (this.defaults.rx_checksum2) {
-      const footerLength = this.defaults.rx_footer?.length || 0;
-      const headerLength = this.defaults.rx_header?.length || 0;
-
       // Ensure packet is long enough to contain checksum
-      const checksumStart = offset + length - 2 - footerLength;
-      if (checksumStart < offset + headerLength) return false;
+      const checksumStart = offset + length - 2 - this.footerLength;
+      if (checksumStart < offset + this.headerLength) return false;
 
       if (typeof this.defaults.rx_checksum2 === 'string') {
         const checksumOrScript = this.defaults.rx_checksum2 as string;
 
-        if (PacketParser.CHECKSUM2_TYPES.has(checksumOrScript)) {
+        // Optimization: Use cached boolean check instead of Set.has()
+        if (this.isStandard2Byte) {
           // Bolt: Use pre-resolved verifier if available to bypass switch overhead
           if (this.checksum2Fn && checksumOrScript === this.cachedChecksum2Type) {
             return this.checksum2Fn(
@@ -1139,7 +1148,7 @@ export class PacketParser {
           return verifyChecksum2FromBuffer(
             buffer,
             checksumOrScript as Checksum2Type,
-            headerLength,
+            this.headerLength,
             checksumStart - offset,
             offset,
             buffer[checksumStart],

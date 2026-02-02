@@ -230,6 +230,16 @@ export class LogRetentionService {
   public getParsedPacketEntities(portId?: string): Record<string, string[]> {
     const result: Record<string, string[]> = {};
 
+    const formatCommandLabel = (log: CommandLogEntry): string => {
+      const base = `${log.entityId} (${log.command}`;
+      if (log.value === undefined) {
+        return `${base})`;
+      }
+      const valueLabel =
+        typeof log.value === 'string' ? log.value : JSON.stringify(log.value);
+      return `${base}: ${valueLabel})`;
+    };
+
     for (const log of this.parsedPacketLogs) {
       // Filter by portId if specified
       if (portId && log.portId !== portId) continue;
@@ -242,6 +252,21 @@ export class LogRetentionService {
       }
       if (!result[packetHex].includes(log.entityId)) {
         result[packetHex].push(log.entityId);
+      }
+    }
+
+    for (const log of this.commandPacketLogs) {
+      if (portId && log.portId !== portId) continue;
+
+      const packetHex = this.packetDictionaryReverse.get(log.packetId);
+      if (!packetHex) continue;
+
+      if (!result[packetHex]) {
+        result[packetHex] = [];
+      }
+      const label = formatCommandLabel(log);
+      if (!result[packetHex].includes(label)) {
+        result[packetHex].push(label);
       }
     }
 

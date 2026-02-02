@@ -1,5 +1,5 @@
 v2.5.0
-- feat: 엔티티 이름 변경시 한글일 경우 entityId 를 로마자변환 추가 및 entityId 유지 옵션 추가. 
+- feat: UI에서 엔티티 이름 변경시 한글인 경우 entityId에 로마자변환 추가 및 entityId 유지 옵션 추가. 
 - fix: 일부 엔티티의 discovery에서 없는 속성을 발행하는 문제 수정
 - fix: command_*가 script를 실행할때 args를 전달하지 않는 문제 수정
 

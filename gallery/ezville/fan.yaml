@@ -3,7 +3,7 @@ meta:
   name_en: "heat exchanger fan"
   description: "Ezville 전열교환기 설정입니다."
   description_en: "Ezville heat exchanger fan configuration."
-  version: "2.0.1"
+  version: "2.0.2"
   author: "gunfos"
   tags: ["heat exchanger fan", "ezville"]
 
@@ -22,10 +22,8 @@ entities:
         data: [0x32, 0x01, 0x81]  
         
       # 전원 상태 감지 (7번째 바이트 기준)  
-      state_on:  
-        offset: 7  
-        data: [0x01]  # 약/중/강 모두 ON 상태  
-        #data: [0x01, 0x02, 0x03]  # 약/중/강 모두 ON 상태  
+      state_on: >-
+        data[7] != 0x00
       state_off:  
         offset: 7 
         data: [0x00]  
@@ -45,7 +43,7 @@ entities:
       state_preset_mode: >-  
         data[7] == 0x01 ? "약" :   
         (data[7] == 0x02 ? "중" :   
-        (data[7] == 0x03 ? "강" : "off"))  
+        (data[7] == 0x03 ? "강" : ""))  
         
       # 속도 제어 명령 (CEL 표현식)  
       command_preset_mode: >-  

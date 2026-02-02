@@ -3,7 +3,7 @@ meta:
   name_en: "heat exchanger fan (auto mode)"
   description: "Ezville 전열교환기 설정입니다. 자동 모드를 포함합니다."
   description_en: "Ezville heat exchanger fan configuration with auto mode."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "loveangelsa"
   tags: ["heat exchanger fan", "ezville", "auto mode"]
 
@@ -44,7 +44,7 @@ entities:
         data[7] == 0x01 ? "약" :
         (data[7] == 0x02 ? "중" :
         (data[7] == 0x03 ? "강" :
-        (data[7] == 0x04 ? "자동" : "off")))
+        (data[7] == 0x04 ? "자동" : "")))
 
       # 속도 제어 명령 (CEL 표현식)
       command_preset_mode: >-

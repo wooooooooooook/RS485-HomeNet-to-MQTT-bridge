@@ -13,6 +13,10 @@ async function loadYamlConfig(filePath: string): Promise<any> {
 function normalizeSerialConfig(serial: SerialConfig): SerialConfig {
   const normalized = { ...serial };
 
+  if (normalized.port_id && !normalized.portId) {
+    normalized.portId = normalized.port_id;
+  }
+
   if (normalized.portId) {
     normalized.portId = normalized.portId.toString().trim();
   } else {

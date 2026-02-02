@@ -329,6 +329,8 @@ export interface ScriptConfig {
 export interface SerialConfig {
   /** Identifier for this port (e.g. 'default', 'living_room'). */
   portId: string;
+  /** Alias for portId. */
+  port_id?: string;
   /** Device path (e.g. '/dev/ttyUSB0' or 'socket://IP:PORT'). */
   path: string;
   baud_rate: number;

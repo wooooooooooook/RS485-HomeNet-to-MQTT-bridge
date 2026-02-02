@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-02T05:20:59.189988Z",
+  "generated_at": "2026-02-02T05:30:58.954Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1301,6 +1301,61 @@
       },
       "items": [
         {
+          "file": "ezville/air_purifier.yaml",
+          "name": "공기청정기",
+          "name_en": "Air Purifier",
+          "description": "Ezville 공기청정기 전원 및 풍량 제어 설정입니다. 기기 개수를 지정할 수 있습니다.",
+          "description_en": "Ezville air purifier fan control. You can set the number of devices.",
+          "version": "1.0.0",
+          "author": "loveangelsa",
+          "tags": [
+            "fan",
+            "air purifier",
+            "ezville"
+          ],
+          "parameters": [
+            {
+              "name": "purifier_count",
+              "type": "integer",
+              "default": 2,
+              "min": 1,
+              "max": 8,
+              "label": "공기청정기 개수",
+              "label_en": "Number of Air Purifiers"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "fan": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                97,
+                0,
+                129
+              ],
+              "mask": [
+                255,
+                0,
+                255
+              ]
+            },
+            "dimensions": [
+              {
+                "parameter": "purifier_count",
+                "offset": 1
+              }
+            ],
+            "inference": {
+              "strategy": "count"
+            }
+          }
+        },
+        {
           "file": "ezville/air_quality_sensors.yaml",
           "name": "공기질 센서 (CO2/PM)",
           "name_en": "Air Quality Sensors (CO2/PM)",
@@ -1333,20 +1388,6 @@
               ]
             }
           }
-        },
-        {
-          "file": "ezville/air_purifier.yaml",
-          "name": "공기청정기",
-          "name_en": "Air Purifier",
-          "description": "Ezville 공기청정기 전원 및 풍량 제어 설정입니다. 기기 개수를 지정할 수 있습니다.",
-          "description_en": "Ezville air purifier fan control. You can set the number of devices.",
-          "version": "1.0.0",
-          "author": "loveangelsa",
-          "tags": [
-            "fan",
-            "air purifier",
-            "ezville"
-          ]
         },
         {
           "file": "ezville/door_auto.yaml",

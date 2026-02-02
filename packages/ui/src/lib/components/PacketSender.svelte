@@ -191,8 +191,8 @@
           <button
             class="copy-btn"
             onclick={() => handleCopyPreview(toHexPairs(senderPreview!).join(' '))}
-            aria-label={$t('common.copy')}
-            title={$t('common.copy')}
+            aria-label={previewCopied ? $t('common.copied') : $t('common.copy')}
+            title={previewCopied ? $t('common.copied') : $t('common.copy')}
           >
             {#if previewCopied}
               <svg

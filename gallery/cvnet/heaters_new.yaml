@@ -3,7 +3,7 @@ meta:
   name_en: "Heaters"
   description: "CVNet 난방 온도조절기 설정입니다. 개수를 지정할 수 있습니다."
   description_en: "CVNet heating thermostats. You can specify the number of thermostats."
-  version: "2.1.1"
+  version: "2.1.2"
   min_version: "1.16.0"
   author: "wooooooooooook"
   tags: ["climate", "heater", "thermostat", "cvnet"]
@@ -20,11 +20,11 @@ parameters:
 discovery:
   match:
     data: [0x20, 0x01, 0x4A]
-    mask: [0xFF, 0xFF, 0xFF]
+    mask: [0xFF, 0xFF, 0xFE]
   dimensions:
     - parameter: "heater_count"
       offset: 0
-      # CVNet 난방 패킷은 [0xF7, 0x20, 0x01, 0x4A, 0x81 ...] 형태이며 heater당 2바이트 데이터
+      # CVNet 난방 패킷은 [0xF7, 0x20, 0x01, 0x4A/0x4B, 0x81 ...] 형태이며 heater당 2바이트 데이터
       # Header(5)+Footer(1)+CS(1)? Overhead 7 bytes assumed per user request.
       # 공식: (전체길이 - 7) / 2
       transform: "int((len(data) - 7) / 2)"
@@ -42,17 +42,17 @@ entities:
         max_temperature: 30 °C
         temperature_step: 1 °C
       state:
-        data: [0x20, 0x01, 0x4A]
+        data: [0x20, 0x01, '{{i <= 4 ? 0x4A : 0x4B}}']
       state_temperature_current:
-        offset: '{{4 + i * 2}}'
+        offset: '{{4 + (i <= 4 ? i : i - 4) * 2}}'
       state_temperature_target: >-
-        bitAnd(data[{{3 + i * 2}}], 0x7F)
+        bitAnd(data[{{3 + (i <= 4 ? i : i - 4) * 2}}], 0x7F)
       state_off:
-        offset: '{{3 + i * 2}}'
+        offset: '{{3 + (i <= 4 ? i : i - 4) * 2}}'
         data: [0x00]
         mask: [0x80]
       state_heat:
-        offset: '{{3 + i * 2}}'
+        offset: '{{3 + (i <= 4 ? i : i - 4) * 2}}'
         data: [0x80]
         mask: [0x80]
       command_off: >-

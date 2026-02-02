@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-02T01:54:25.387Z",
+  "generated_at": "2026-02-02T05:09:35.474886Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1333,6 +1333,20 @@
               ]
             }
           }
+        },
+        {
+          "file": "ezville/air_purifier.yaml",
+          "name": "공기청정기",
+          "name_en": "Air Purifier",
+          "description": "Ezville 공기청정기 2대(1번/2번) 전원 및 풍량 제어 설정입니다.",
+          "description_en": "Ezville air purifier fan control for two units (1/2).",
+          "version": "1.0.0",
+          "author": "loveangelsa",
+          "tags": [
+            "fan",
+            "air purifier",
+            "ezville"
+          ]
         },
         {
           "file": "ezville/door_auto.yaml",

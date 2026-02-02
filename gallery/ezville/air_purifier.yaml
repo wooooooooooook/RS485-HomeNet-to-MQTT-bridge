@@ -1,0 +1,62 @@
+meta:
+  name: "공기청정기"
+  name_en: "Air Purifier"
+  description: "Ezville 공기청정기 2대(1번/2번) 전원 및 풍량 제어 설정입니다."
+  description_en: "Ezville air purifier fan control for two units (1/2)."
+  version: "1.0.0"
+  author: "loveangelsa"
+  tags: ["fan", "air purifier", "ezville"]
+
+entities:
+  fan:
+    - id: air_purifier_1
+      name: "공기청정기 1"
+      state:
+        data: [0x61, 0x01, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+      command_on:
+        data: [0x61, 0x01, 0x41, 0x01, 0x03]
+      command_off:
+        data: [0x61, 0x01, 0x41, 0x01, 0x00]
+      preset_modes: ["약", "중", "강", "터보"]
+      state_preset_mode: >-
+        data[7] == 0x02 ? "약" :
+        (data[7] == 0x03 ? "중" :
+        (data[7] == 0x04 ? "강" :
+        (data[7] == 0x05 ? "터보" : "off")))
+      command_preset_mode: >-
+        xstr == "약" ? [0x61, 0x01, 0x42, 0x01, 0x02] :
+        (xstr == "중" ? [0x61, 0x01, 0x42, 0x01, 0x03] :
+        (xstr == "강" ? [0x61, 0x01, 0x42, 0x01, 0x04] :
+        [0x61, 0x01, 0x42, 0x01, 0x05]))
+
+    - id: air_purifier_2
+      name: "공기청정기 2"
+      state:
+        data: [0x61, 0x02, 0x81]
+      state_on:
+        offset: 6
+        data: [0x01]
+      state_off:
+        offset: 6
+        data: [0x00]
+      command_on:
+        data: [0x61, 0x02, 0x41, 0x01, 0x01]
+      command_off:
+        data: [0x61, 0x02, 0x41, 0x01, 0x00]
+      preset_modes: ["약", "중", "강", "터보"]
+      state_preset_mode: >-
+        data[7] == 0x02 ? "약" :
+        (data[7] == 0x03 ? "중" :
+        (data[7] == 0x04 ? "강" :
+        (data[7] == 0x05 ? "터보" : "off")))
+      command_preset_mode: >-
+        xstr == "약" ? [0x61, 0x02, 0x42, 0x01, 0x02] :
+        (xstr == "중" ? [0x61, 0x02, 0x42, 0x01, 0x03] :
+        (xstr == "강" ? [0x61, 0x02, 0x42, 0x01, 0x04] :
+        [0x61, 0x02, 0x42, 0x01, 0x05]))

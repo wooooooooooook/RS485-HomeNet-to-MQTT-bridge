@@ -30,4 +30,12 @@ describe('matchesPacket', () => {
     expect(matchesPacket(schema, Buffer.from([0x01, 0x02, 0x10]))).toBe(true);
     expect(matchesPacket(schema, Buffer.from([0x01, 0x02, 0xff]))).toBe(false);
   });
+
+  it('should return false if packet is too short for data', () => {
+    const schema: StateSchema = {
+      offset: 0,
+      data: [0x01, 0x02, 0x03],
+    };
+    expect(matchesPacket(schema, Buffer.from([0x01, 0x02]))).toBe(false);
+  });
 });

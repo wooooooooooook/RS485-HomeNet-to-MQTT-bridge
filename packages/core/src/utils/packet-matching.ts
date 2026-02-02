@@ -23,19 +23,28 @@ export function matchesPacket(
   let matched = true;
 
   if (hasData) {
-    for (let i = 0; i < match.data!.length; i++) {
-      const expected = match.data![i];
-      const packetByte = packet[offset + i];
-      if (packetByte === undefined) {
-        matched = false;
-        break;
-      }
-      const mask = Array.isArray(match.mask) ? match.mask[i] : match.mask;
-      const maskedPacket = mask !== undefined ? packetByte & mask : packetByte;
-      const maskedExpected = mask !== undefined ? expected & mask : expected;
-      if (maskedPacket !== maskedExpected) {
-        matched = false;
-        break;
+    const dataLen = match.data!.length;
+    // Optimization: Check bounds once before loop
+    if (offset + dataLen > packet.length) {
+      matched = false;
+    } else {
+      const maskIsArray = Array.isArray(match.mask);
+      const globalMask = !maskIsArray ? (match.mask as number | undefined) : undefined;
+      const maskArray = maskIsArray ? (match.mask as number[]) : null;
+
+      for (let i = 0; i < dataLen; i++) {
+        const expected = match.data![i];
+        const packetByte = packet[offset + i];
+        // packetByte cannot be undefined due to bounds check
+
+        const mask = maskArray ? maskArray[i] : globalMask;
+        const maskedPacket = mask !== undefined ? packetByte & mask : packetByte;
+        const maskedExpected = mask !== undefined ? expected & mask : expected;
+
+        if (maskedPacket !== maskedExpected) {
+          matched = false;
+          break;
+        }
       }
     }
   } else if (!options.allowEmptyData) {

@@ -385,7 +385,7 @@
   .packet-item {
     display: flex;
     align-items: flex-start;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem;
     background: rgba(30, 41, 59, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.15);
     border-radius: 8px;
@@ -459,7 +459,6 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex-shrink: 0;
-    min-width: 58px;
     text-align: center;
     margin-top: 0.15rem;
   }

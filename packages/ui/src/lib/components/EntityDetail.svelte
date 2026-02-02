@@ -1132,8 +1132,12 @@
                           <button
                             class="copy-btn"
                             onclick={() => copyPacket(packet.packet.toUpperCase())}
-                            aria-label={$t('common.copy')}
-                            title={$t('common.copy')}
+                            aria-label={copiedPacket === packet.packet.toUpperCase()
+                              ? $t('common.copied')
+                              : $t('common.copy')}
+                            title={copiedPacket === packet.packet.toUpperCase()
+                              ? $t('common.copied')
+                              : $t('common.copy')}
                           >
                             {#if copiedPacket === packet.packet.toUpperCase()}
                               <svg

@@ -255,8 +255,8 @@
                 <button
                   class="copy-btn"
                   onclick={() => copyPacket(packet)}
-                  aria-label={$t('common.copy')}
-                  title={$t('common.copy')}
+                  aria-label={copiedPacket === packet ? $t('common.copied') : $t('common.copy')}
+                  title={copiedPacket === packet ? $t('common.copied') : $t('common.copy')}
                 >
                   {#if copiedPacket === packet}
                     <svg

@@ -300,7 +300,8 @@
       "tab_unmatched": "미매칭",
       "empty": "아직 수집된 패킷이 없습니다.",
       "sort_asc": "오름차순 정렬",
-      "sort_desc": "내림차순 정렬"
+      "sort_desc": "내림차순 정렬",
+      "search_placeholder": "패킷 HEX 또는 엔티티 이름 검색"
     },
     "stats": {
       "title": "패킷 간격 분석",

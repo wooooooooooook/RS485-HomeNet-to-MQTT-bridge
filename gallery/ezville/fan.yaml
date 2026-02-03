@@ -35,6 +35,7 @@ entities:
         data: [0x32, 0x01, 0x41, 0x01, 0x00]  
       command_update:  
         data: [0x32, 0x01, 0x01, 0x00]
+        ack: [0x32, 0x01, 0x81]
         
       # 프리셋 모드 정의  
       preset_modes: ["약", "중", "강"]  

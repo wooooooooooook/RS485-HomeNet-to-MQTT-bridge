@@ -25,3 +25,7 @@
 ## 2026-01-30 - Pre-resolved Dispatch vs Switch
 **Learning:** In hot parsing loops, even a simple `switch` statement inside a helper function (like `verifyChecksum2FromBuffer`) adds measurable overhead (~13%) compared to calling a pre-resolved function reference directly. V8's monomorphic call optimization works best when the target function is stable and known ahead of time.
 **Action:** For high-frequency operations configured at startup (like checksum algorithms), pre-resolve the specific implementation function into a class property instead of passing the type string to a generic dispatcher function repeatedly.
+
+## 2026-02-03 - Loop Unswitching in Packet Matching
+**Learning:** In hot loops (like packet byte matching), checking `mask !== undefined` or `Array.isArray(mask)` inside the loop adds significant overhead (27% slowdown for scalar masks). V8 optimizes much better when the loop body is monomorphic and simple.
+**Action:** Unswitch loops based on configuration (No Mask, Scalar Mask, Array Mask) to create specialized, simple loop bodies for each case.

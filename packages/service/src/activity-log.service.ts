@@ -2,7 +2,6 @@ import {
   eventBus,
   type StateChangedEvent,
   type MqttMessageEvent,
-  type AutomationTriggeredEvent,
   type AutomationGuardEvent,
   type AutomationActionEvent,
   type ScriptActionEvent,

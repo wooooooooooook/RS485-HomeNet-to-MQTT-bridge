@@ -735,23 +735,50 @@
     <header class="modal-header">
       <div class="header-info">
         <h2 id="modal-title">{entity.displayName}</h2>
-        <button
-          class="entity-id-btn"
-          onclick={handleCopyId}
-          title={$t('entity_detail.copy_id') || 'Click to copy ID'}
-          aria-label={$t('entity_detail.copy_id_aria', { values: { id: entity.id } }) ||
-            `Copy ID ${entity.id}`}
-        >
+        <div class="code-wrapper">
           <span class="entity-id">{entity.id}</span>
-          {#if idCopied}
-            <span
-              class="copy-feedback"
-              role="status"
-              aria-live="polite"
-              transition:fade={{ duration: 200 }}>{$t('common.copied') || 'Copied!'}</span
-            >
-          {/if}
-        </button>
+          <button
+            class="copy-btn"
+            onclick={handleCopyId}
+            title={$t('entity_detail.copy_id') || 'Click to copy ID'}
+            aria-label={$t('entity_detail.copy_id_aria', { values: { id: entity.id } }) ||
+              `Copy ID ${entity.id}`}
+          >
+            {#if idCopied}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="success-icon"
+                aria-hidden="true"
+              >
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            {:else}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            {/if}
+          </button>
+        </div>
       </div>
       <button class="close-btn" onclick={close} aria-label={$t('entity_detail.close_aria')}
         >&times;</button
@@ -1373,41 +1400,7 @@
     color: #94a3b8;
     font-family: monospace;
     font-size: 0.9rem;
-    margin-top: 0.25rem;
-    display: block;
-    transition: color 0.2s;
-  }
-
-  .entity-id-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    text-align: left;
-    display: block;
-    position: relative;
-  }
-
-  .entity-id-btn:hover .entity-id {
-    color: #38bdf8;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-  }
-
-  .copy-feedback {
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 0.5rem;
-    background: #10b981;
-    color: white;
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    font-weight: 500;
+    display: inline-block;
   }
 
   .close-btn {

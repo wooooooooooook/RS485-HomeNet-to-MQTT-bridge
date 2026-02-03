@@ -28,22 +28,43 @@ export function matchesPacket(
     if (offset + dataLen > packet.length) {
       matched = false;
     } else {
-      const maskIsArray = Array.isArray(match.mask);
-      const globalMask = !maskIsArray ? (match.mask as number | undefined) : undefined;
-      const maskArray = maskIsArray ? (match.mask as number[]) : null;
+      const matchData = match.data!;
 
-      for (let i = 0; i < dataLen; i++) {
-        const expected = match.data![i];
-        const packetByte = packet[offset + i];
-        // packetByte cannot be undefined due to bounds check
-
-        const mask = maskArray ? maskArray[i] : globalMask;
-        const maskedPacket = mask !== undefined ? packetByte & mask : packetByte;
-        const maskedExpected = mask !== undefined ? expected & mask : expected;
-
-        if (maskedPacket !== maskedExpected) {
-          matched = false;
-          break;
+      // Bolt Optimization: Loop unswitching to separate mask strategies
+      // This eliminates repeated undefined checks and type guards in the hot loop
+      if (match.mask === undefined) {
+        // Path 1: No Mask (Fastest, Common Case)
+        for (let i = 0; i < dataLen; i++) {
+          if (packet[offset + i] !== matchData[i]) {
+            matched = false;
+            break;
+          }
+        }
+      } else if (typeof match.mask === 'number') {
+        // Path 2: Global Scalar Mask
+        const mask = match.mask;
+        for (let i = 0; i < dataLen; i++) {
+          if ((packet[offset + i] & mask) !== (matchData[i] & mask)) {
+            matched = false;
+            break;
+          }
+        }
+      } else if (Array.isArray(match.mask)) {
+        // Path 3: Array Mask
+        const maskArray = match.mask;
+        for (let i = 0; i < dataLen; i++) {
+          const mask = maskArray[i];
+          if (mask !== undefined) {
+            if ((packet[offset + i] & mask) !== (matchData[i] & mask)) {
+              matched = false;
+              break;
+            }
+          } else {
+            if (packet[offset + i] !== matchData[i]) {
+              matched = false;
+              break;
+            }
+          }
         }
       }
     }

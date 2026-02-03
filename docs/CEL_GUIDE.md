@@ -8,15 +8,15 @@
 
 ## 사용 방법
 
-YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표현식을 문자열로 작성합니다. 
+YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표현식을 문자열로 작성합니다.
 
 ### 기본 문법
 
-*   **산술 연산**: `+`, `-`, `*`, `/`, `%`
-*   **비교 연산**: `==`, `!=`, `<`, `<=`, `>`, `>=`
-*   **논리 연산**: `&&`, `||`, `!`
-*   **삼항 연산**: `condition ? true_val : false_val`
-*   **괄호**: `( )`를 사용하여 연산 우선순위 지정
+- **산술 연산**: `+`, `-`, `*`, `/`, `%`
+- **비교 연산**: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- **논리 연산**: `&&`, `||`, `!`
+- **삼항 연산**: `condition ? true_val : false_val`
+- **괄호**: `( )`를 사용하여 연산 우선순위 지정
 
 ## 실행 컨텍스트 (변수)
 
@@ -26,46 +26,46 @@ YAML 파일에서 `state_value`, `command_temperature` 등의 속성에 CEL 표�
 
 장치로부터 수신한 패킷 데이터를 분석하여 상태 값을 반환할 때 사용합니다.
 
-*   `data`: 수신된 패킷 데이터의 바이트 배열 (List of int). 예: `data[4]`
-*   `state`: 해당 장치의 현재 상태 맵 (Map). 키 이름은 `state_` 접두사를 제거한 값입니다. 예: `state_value` → `state['value']`, `state_temperature_target` → `state['temperature_target']`. `state['value']`는 이전 값이 없으면 `null`입니다.
-*   `states`: 전체 엔티티의 상태 맵 (Map). 예: `states['entity_id']['value']` (안전하게 사용하려면 `get_from_states('entity_id', 'value')` 권장)
+- `data`: 수신된 패킷 데이터의 바이트 배열 (List of int). 예: `data[4]`
+- `state`: 해당 장치의 현재 상태 맵 (Map). 키 이름은 `state_` 접두사를 제거한 값입니다. 예: `state_value` → `state['value']`, `state_temperature_target` → `state['temperature_target']`. `state['value']`는 이전 값이 없으면 `null`입니다.
+- `states`: 전체 엔티티의 상태 맵 (Map). 예: `states['entity_id']['value']` (안전하게 사용하려면 `get_from_states('entity_id', 'value')` 권장)
 
 ### 2. 명령 생성 (`command_*`)
 
 사용자의 요청(MQTT 등)을 RS-485 패킷으로 변환할 때 사용합니다.
 
-*   `x`: 명령과 함께 전달된 **숫자** 값 (설정 온도, 팬 속도 등). 예: `x * 10`
-*   `xstr`: 명령과 함께 전달된 **문자열** 값 (커스텀 팬 모드, 프리셋 이름 등). 예: `xstr == "Turbo" ? [0x01] : [0x00]`
-*   `state`: 해당 장치의 현재 상태 맵 (Map).
-*   `states`: 전체 엔티티의 상태 맵 (Map).
+- `x`: 명령과 함께 전달된 **숫자** 값 (설정 온도, 팬 속도 등). 예: `x * 10`
+- `xstr`: 명령과 함께 전달된 **문자열** 값 (커스텀 팬 모드, 프리셋 이름 등). 예: `xstr == "Turbo" ? [0x01] : [0x00]`
+- `state`: 해당 장치의 현재 상태 맵 (Map).
+- `states`: 전체 엔티티의 상태 맵 (Map).
 
 ### 3. 자동화 (Automation `guard`)
 
 자동화 실행 여부를 결정하는 조건식에서 사용합니다.
 
-*   `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다. (안전하게 사용하려면 `get_from_states('entity_id', 'property')` 권장)
-*   `trigger`: 자동화를 유발한 트리거 정보 (Map).
-    *   `trigger.type`: 트리거 유형 (`state`, `packet`, `schedule`, `startup` 등)
-    *   `trigger.state`: (state 트리거인 경우) 변경된 상태 맵
-    *   `trigger.packet`: (packet 트리거인 경우) 수신된 패킷 배열 (List of int)
+- `states`: 전체 엔티티의 상태 맵 (Map). `states['entity_id']['property']` 형태로 접근 가능합니다. (안전하게 사용하려면 `get_from_states('entity_id', 'property')` 권장)
+- `trigger`: 자동화를 유발한 트리거 정보 (Map).
+  - `trigger.type`: 트리거 유형 (`state`, `packet`, `schedule`, `startup` 등)
+  - `trigger.state`: (state 트리거인 경우) 변경된 상태 맵
+  - `trigger.packet`: (packet 트리거인 경우) 수신된 패킷 배열 (List of int)
 
 ## 헬퍼 함수
 
 홈넷 환경에 필요한 비트 연산 및 BCD 변환 함수를 제공합니다.
 
-*   `bcd_to_int(int)`: BCD 포맷을 정수로 변환 (예: `0x12` -> `12`)
-*   `int_to_bcd(int)`: 정수를 BCD 포맷으로 변환 (예: `12` -> `0x12`)
-*   `bitAnd(int, int)`: 비트 AND 연산 (`&`)
-*   `bitOr(int, int)`: 비트 OR 연산 (`|`)
-*   `bitXor(int, int)`: 비트 XOR 연산 (`^`)
-*   `bitNot(int)`: 비트 NOT 연산 (`~`)
-*   `bitShiftLeft(int, int)`: 비트 왼쪽 시프트 (`<<`)
-*   `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
-*   `len(list|string)`: 리스트 또는 문자열 길이 반환
-*   `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
-*   `has(expr)`: 선택적 필드 존재 여부 확인 (예: `get_from_state('value') != null`)
-*   `get_from_states(entity_id, attribute, default?)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `null`, 기본값을 넘기면 해당 값 반환)
-*   `get_from_state(attribute, default?)`: 현재 `state` 맵에서 속성을 안전하게 조회 (없으면 `null`, 기본값을 넘기면 해당 값 반환)
+- `bcd_to_int(int)`: BCD 포맷을 정수로 변환 (예: `0x12` -> `12`)
+- `int_to_bcd(int)`: 정수를 BCD 포맷으로 변환 (예: `12` -> `0x12`)
+- `bitAnd(int, int)`: 비트 AND 연산 (`&`)
+- `bitOr(int, int)`: 비트 OR 연산 (`|`)
+- `bitXor(int, int)`: 비트 XOR 연산 (`^`)
+- `bitNot(int)`: 비트 NOT 연산 (`~`)
+- `bitShiftLeft(int, int)`: 비트 왼쪽 시프트 (`<<`)
+- `bitShiftRight(int, int)`: 비트 오른쪽 시프트 (`>>`)
+- `len(list|string)`: 리스트 또는 문자열 길이 반환
+- `double(value)`: 값을 실수형(double)으로 변환 (나눗셈 등을 위해 사용)
+- `has(expr)`: 선택적 필드 존재 여부 확인 (예: `get_from_state('value') != null`)
+- `get_from_states(entity_id, attribute, default?)`: `states` 맵에서 엔티티/속성 값을 안전하게 조회 (없으면 `null`, 기본값을 넘기면 해당 값 반환)
+- `get_from_state(attribute, default?)`: 현재 `state` 맵에서 속성을 안전하게 조회 (없으면 `null`, 기본값을 넘기면 해당 값 반환)
 
 > **Tip**: `states['id']['field']`나 `state['field']`처럼 직접 접근하면 키가 없을 때 오류가 날 수 있습니다. 조건 분기나 기본값 처리가 필요하다면 `get_from_states`, `get_from_state`를 사용하는 편이 안전합니다.
 
@@ -141,45 +141,48 @@ sensor:
 > **주의**: CEL에서는 반복문(`for`, `while`)을 사용할 수 없으므로, 가변 길이 데이터의 전체 합계(Sum)를 구하는 등의 로직은 구현할 수 없습니다. 고정 길이 패킷이나 특정 바이트를 참조하는 로직에 적합합니다.
 
 #### 수신 체크섬 (`rx_checksum`)
+
 수신된 패킷의 유효성을 검증할 때 사용합니다. 표현식의 결과값은 패킷의 체크섬 바이트와 비교됩니다.
 
-*   `data`: 체크섬을 제외한 전체 패킷(헤더 포함) 데이터 배열 (List of int).
-*   `len`: 데이터의 길이 (int).
-*   **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
+- `data`: 체크섬을 제외한 전체 패킷(헤더 포함) 데이터 배열 (List of int).
+- `len`: 데이터의 길이 (int).
+- **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
 
 #### 송신 체크섬 (`tx_checksum`)
+
 명령 패킷을 생성하여 전송하기 직전에 계산됩니다. 표현식의 결과값이 체크섬 바이트로 패킷 끝에 추가됩니다.
 
-*   `data`: 헤더와 명령 데이터를 포함한 배열 (List of int).
-*   `len`: 전체 데이터 길이 (int).
-*   **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
+- `data`: 헤더와 명령 데이터를 포함한 배열 (List of int).
+- `len`: 전체 데이터 길이 (int).
+- `state`: 해당 장치의 현재 상태 맵 (Map).
+- `states`: 전체 엔티티의 상태 맵 (Map).
 
 ### 7. 동적 패킷 길이 (`rx_length_expr`)
 
 가변 길이 패킷에서 헤더 다음에 오는 특정 바이트가 길이를 나타내는 경우 사용합니다.
 
-*   `data`: 현재 수신 버퍼의 데이터 배열 (List of int). `data[0]`은 헤더의 첫 바이트(또는 스캔 시작점)입니다.
-*   `len`: 현재 수신 버퍼에 남아있는 데이터의 길이 (int).
-*   **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
+- `data`: 현재 수신 버퍼의 데이터 배열 (List of int). `data[0]`은 헤더의 첫 바이트(또는 스캔 시작점)입니다.
+- `len`: 현재 수신 버퍼에 남아있는 데이터의 길이 (int).
+- **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
 
 **예시:**
 
 ```yaml
 packet_defaults:
   # [수신] 3번째 바이트(인덱스 2) 값을 그대로 체크섬으로 사용
-  rx_checksum: "data[2]"
+  rx_checksum: 'data[2]'
 
   # [송신] 첫 번째 바이트와 두 번째 바이트를 XOR 연산
-  tx_checksum: "bitXor(data[0], data[1])"
+  tx_checksum: 'bitXor(data[0], data[1])'
 ```
 
 ## CEL 분석기 (UI)
 
 분석 페이지에 있는 **CEL 분석기 카드**에서 표현식과 컨텍스트 값을 입력해 즉시 결과를 확인할 수 있습니다.
 
-*   **위치**: UI → 분석(Analysis) 페이지
-*   **입력값**: `expression`, `data`, `x`, `xstr`, `state`, `states`, `trigger`
-*   **주의**: 입력값은 JSON 형식으로 작성해야 하며, `data`는 `0x` 16진수 배열도 지원합니다. `xstr`가 있으면 문자열 입력으로 처리됩니다. 평가 실패 시 오류 메시지가 표시됩니다.
+- **위치**: UI → 분석(Analysis) 페이지
+- **입력값**: `expression`, `data`, `x`, `xstr`, `state`, `states`, `trigger`
+- **주의**: 입력값은 JSON 형식으로 작성해야 하며, `data`는 `0x` 16진수 배열도 지원합니다. `xstr`가 있으면 문자열 입력으로 처리됩니다. 평가 실패 시 오류 메시지가 표시됩니다.
 
 ## 자주 발생하는 문제와 팁 (Troubleshooting)
 
@@ -190,6 +193,7 @@ CEL에서 리스트(배열)를 생성할 때, 모든 요소는 동일한 타입�
 이 경우 `int(...)`를 사용하여 명시적으로 타입을 변환(캐스팅)해주어야 합니다.
 
 **❌ 잘못된 예시 (오류 발생)**
+
 ```yaml
 # 0x02는 int, get_from_states('light_1', 'value')는 dyn 타입이므로 오류 발생
 command_on:
@@ -198,6 +202,7 @@ command_on:
 ```
 
 **✅ 올바른 예시**
+
 ```yaml
 # int()로 감싸서 모든 요소를 int 타입으로 통일
 command_on:
@@ -210,13 +215,13 @@ command_on:
 CEL 도입으로 인해 기존 `!lambda`에서 가능했던 일부 기능이 더 이상 지원되지 않습니다. 이는 보안성과 안정성을 높이기 위한 의도적인 제약입니다.
 
 1.  **반복문 사용 불가 (No Loops)**
-    *   `for`, `while` 등의 반복문을 사용할 수 없습니다.
-    *   따라서 가변 길이의 데이터를 순회하며 체크섬을 계산하거나 복잡한 알고리즘을 수행하는 로직은 단일 표현식으로 구현하기 어렵습니다.
+    - `for`, `while` 등의 반복문을 사용할 수 없습니다.
+    - 따라서 가변 길이의 데이터를 순회하며 체크섬을 계산하거나 복잡한 알고리즘을 수행하는 로직은 단일 표현식으로 구현하기 어렵습니다.
 
 2.  **부작용 없음 (No Side Effects)**
-    *   CEL 표현식은 순수(Pure)해야 합니다.
-    *   로그 출력, 외부 명령 실행 등의 부작용이 있는 함수는 지원되지 않습니다.
-    *   명령 실행이 필요한 경우, 자동화(Automation)의 `then:` 블록에서 `action: command`를 사용하세요.
+    - CEL 표현식은 순수(Pure)해야 합니다.
+    - 로그 출력, 외부 명령 실행 등의 부작용이 있는 함수는 지원되지 않습니다.
+    - 명령 실행이 필요한 경우, 자동화(Automation)의 `then:` 블록에서 `action: command`를 사용하세요.
 
 3.  **제한된 표준 라이브러리**
-    *   JavaScript의 모든 표준 객체(`Math`, `Date` 등)를 사용할 수 없으며, 제공된 연산자와 헬퍼 함수만 사용 가능합니다.
+    - JavaScript의 모든 표준 객체(`Math`, `Date` 등)를 사용할 수 없으며, 제공된 연산자와 헬퍼 함수만 사용 가능합니다.

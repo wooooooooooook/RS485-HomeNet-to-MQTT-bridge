@@ -129,7 +129,7 @@ export class ReusableBufferView {
  *
  * 1. **State Parsing (`state_*`)**: `data`, `state`, `states`
  * 2. **Command Generation (`command_*`)**: `x`, `xstr`, `state`, `states`
- * 3. **Checksums (`rx_checksum`, `tx_checksum`)**: `data`, `len` (**Note**: `state` and `states` are NOT available)
+ * 3. **Checksum (`rx_checksum, tx_checksum`)**: `data`, `len` (**Note**: `state` and `states` are NOT available for performance)
  * 4. **Packet Length (`rx_length_expr`)**: `data`, `len` (**Note**: `state` and `states` are NOT available)
  * 5. **Automation (`guard`, `condition`)**: `states`, `trigger`
  *

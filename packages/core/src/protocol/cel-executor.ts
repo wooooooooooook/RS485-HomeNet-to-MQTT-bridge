@@ -129,10 +129,9 @@ export class ReusableBufferView {
  *
  * 1. **State Parsing (`state_*`)**: `data`, `state`, `states`
  * 2. **Command Generation (`command_*`)**: `x`, `xstr`, `state`, `states`
- * 3. **Rx Checksum (`rx_checksum`)**: `data`, `len` (**Note**: `state` and `states` are NOT available for performance)
- * 4. **Tx Checksum (`tx_checksum`)**: `data`, `len`, `state`, `states`
- * 5. **Packet Length (`rx_length_expr`)**: `data`, `len` (**Note**: `state` and `states` are NOT available)
- * 6. **Automation (`guard`, `condition`)**: `states`, `trigger`
+ * 3. **Checksum (`rx_checksum, tx_checksum`)**: `data`, `len` (**Note**: `state` and `states` are NOT available for performance)
+ * 4. **Packet Length (`rx_length_expr`)**: `data`, `len` (**Note**: `state` and `states` are NOT available)
+ * 5. **Automation (`guard`, `condition`)**: `states`, `trigger`
  *
  * **Variable Definitions:**
  * - `x` (int): The primary input value (e.g., a candidate byte or current state).

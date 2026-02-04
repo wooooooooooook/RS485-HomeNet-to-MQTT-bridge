@@ -257,8 +257,6 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
           }
         });
       };
-      injectLowPriority(auto.then);
-      injectLowPriority(auto.else);
 
       const hasSchedule = auto.trigger.some((t) => t.type === 'schedule');
       if (hasSchedule) {

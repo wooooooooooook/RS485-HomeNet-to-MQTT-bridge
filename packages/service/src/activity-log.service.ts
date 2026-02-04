@@ -117,8 +117,13 @@ export class ActivityLogService {
     });
 
     eventBus.on('automation:action', (event: AutomationActionEvent) => {
+      const isFirst = event.actionIndex === 0 || event.actionIndex === undefined;
+      const code = isFirst
+        ? 'log.automation_run_action_executed'
+        : 'log.automation_consecutive_action_executed';
+
       this.addLog(
-        'log.automation_run_action_executed',
+        code,
         {
           automationId: event.automationId,
           trigger: event.triggerType,

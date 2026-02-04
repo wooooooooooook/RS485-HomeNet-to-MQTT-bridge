@@ -292,7 +292,7 @@ export class AutomationManager {
     automationPortId?: string,
     automationId?: string,
   ) {
-    for (const action of actions) {
+    for (const [i, action] of actions.entries()) {
       if (automationId) {
         eventBus.emit('automation:action', {
           automationId,
@@ -300,6 +300,8 @@ export class AutomationManager {
           action: this.summarizeAction(action),
           portId: automationPortId ?? this.contextPortId,
           timestamp: Date.now(),
+          actionIndex: i,
+          totalActions: actions.length,
         });
       }
       await this.executeAction(action, context, automationPortId, []);
@@ -583,13 +585,15 @@ export class AutomationManager {
         { automation: automationId, trigger: trigger.type, mode },
         '[automation] Executing',
       );
-      for (const action of actions) {
+      for (const [i, action] of actions.entries()) {
         eventBus.emit('automation:action', {
           automationId,
           triggerType: trigger.type,
           action: this.summarizeAction(action),
           portId: this.contextPortId,
           timestamp: Date.now(),
+          actionIndex: i,
+          totalActions: actions.length,
         });
         // Check if aborted
         if (abortController.signal.aborted) {

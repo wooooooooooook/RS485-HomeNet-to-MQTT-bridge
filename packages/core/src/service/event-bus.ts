@@ -38,6 +38,8 @@ export interface AutomationActionEvent {
   action: string;
   portId?: string;
   timestamp: number;
+  actionIndex?: number;
+  totalActions?: number;
 }
 
 export interface ScriptActionEvent {

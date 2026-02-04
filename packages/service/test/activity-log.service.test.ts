@@ -51,4 +51,48 @@ describe('ActivityLogService', () => {
       expect(logs[logs.length - 1].code).toBe('code_1099');
     }
   });
+
+  it('should log combined message for first action and consecutive message for others', () => {
+    // Simulate first action (index 0)
+    service.addLog = vi.fn();
+    const mockEventBus = mocks.eventBus;
+
+    // Find the handler
+    const handler = mockEventBus.on.mock.calls.find(
+      (call: any) => call[0] === 'automation:action',
+    )?.[1];
+    expect(handler).toBeDefined();
+
+    // First action
+    handler({
+      automationId: 'auto1',
+      triggerType: 'state',
+      action: 'log:test',
+      timestamp: Date.now(),
+      actionIndex: 0,
+      totalActions: 2,
+    });
+
+    expect(service.addLog).toHaveBeenCalledWith(
+      'log.automation_run_action_executed',
+      expect.anything(),
+      undefined,
+    );
+
+    // Second action
+    handler({
+      automationId: 'auto1',
+      triggerType: 'state',
+      action: 'delay:100',
+      timestamp: Date.now(),
+      actionIndex: 1,
+      totalActions: 2,
+    });
+
+    expect(service.addLog).toHaveBeenCalledWith(
+      'log.automation_consecutive_action_executed',
+      expect.anything(),
+      undefined,
+    );
+  });
 });

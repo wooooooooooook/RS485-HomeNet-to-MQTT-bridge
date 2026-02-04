@@ -677,6 +677,7 @@
     "automation_guard_failed": "Automation guard failed: {automationId} ({trigger})",
     "automation_action_executed": "Automation action executed: {automationId} ({action})",
     "automation_run_action_executed": "Automation triggered - Guard passed - Action executed: {automationId} ({trigger}) ({action})",
+    "automation_consecutive_action_executed": "Automation consecutive action executed: {automationId} ({action})",
     "automation_run_guard_failed": "Automation triggered - Guard failed: {automationId} ({trigger})",
     "script_action_executed": "Script action executed: {scriptId} ({action})",
     "core_started": "Core service started.",

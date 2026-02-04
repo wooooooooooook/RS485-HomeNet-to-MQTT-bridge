@@ -154,8 +154,7 @@ sensor:
 
 - `data`: 헤더와 명령 데이터를 포함한 배열 (List of int).
 - `len`: 전체 데이터 길이 (int).
-- `state`: 해당 장치의 현재 상태 맵 (Map).
-- `states`: 전체 엔티티의 상태 맵 (Map).
+- **주의**: `state` 및 `states` 변수는 사용할 수 없습니다.
 
 ### 7. 동적 패킷 길이 (`rx_length_expr`)
 

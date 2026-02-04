@@ -27,3 +27,7 @@
 ## 2024-05-26 - Checksum Type Definition Gap
 **Learning:** `ChecksumType` in `packages/core/src/protocol/types.ts` is missing `samsung_xor` and `bestin_sum` which are implemented in `checksum.ts` and documented in `packet-defaults.md`.
 **Action:** A developer agent should update the `ChecksumType` union to include these missing types to ensure type safety and consistent API definition.
+
+## 2026-02-04 - CEL Context Verification
+**Learning:** The documentation for 'tx_checksum' incorrectly listed 'state' and 'states' variables as available, but the implementation strictly limits context to 'data' and 'len' for performance.
+**Action:** Always verify the specific context object passed to 'CelExecutor.execute()' in 'GenericDevice.ts' or 'CommandGenerator.ts' before documenting available variables for new CEL features.

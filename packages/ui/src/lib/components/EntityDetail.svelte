@@ -773,6 +773,27 @@
       }, 2000);
     }
   }
+
+  function formatEntityType(type: string) {
+    return type
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  const currentTypeLabel = $derived.by<string | null>(() => {
+    if (isAutomation) return 'Automation';
+    if (isScript) return 'Script';
+    return entity.type ? formatEntityType(entity.type) : null;
+  });
+
+  const currentDocUrl = $derived.by<string | null>(() => {
+    const baseUrl = 'https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs';
+    if (isAutomation) return `${baseUrl}/AUTOMATION.md`;
+    if (isScript) return `${baseUrl}/SCRIPTS.md`;
+    if (entity.type) return `${baseUrl}/config-schema/${entity.type.replace('_', '-')}.md`;
+    return null;
+  });
 </script>
 
 <Modal open={isOpen} width="1400px" onclose={close} oncancel={close}>
@@ -1123,26 +1144,58 @@
                   mode={editorMode}
                 />
                 <div class="config-actions">
-                  <Button
-                    variant="success"
-                    onclick={saveConfig}
-                    isLoading={isSaving}
-                    ariaLabel={isSaving
-                      ? $t('entity_detail.config.saving')
-                      : $t('entity_detail.config.save')}
-                  >
-                    {$t('entity_detail.config.save')}
-                  </Button>
-                  {#if saveMessage}
-                    <span class="save-message success" role="status" aria-live="polite">
-                      {saveMessage}
-                    </span>
-                  {/if}
-                  {#if configError}
-                    <span class="save-message error" role="alert" aria-live="assertive">
-                      {configError}
-                    </span>
-                  {/if}
+                  <div class="actions-left">
+                    {#if currentDocUrl && currentTypeLabel}
+                      <a
+                        href={currentDocUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="docs-link"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                          ></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                          <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        {currentTypeLabel} 문서 보기
+                      </a>
+                    {/if}
+                  </div>
+                  <div class="actions-right">
+                    <Button
+                      variant="success"
+                      onclick={saveConfig}
+                      isLoading={isSaving}
+                      ariaLabel={isSaving
+                        ? $t('entity_detail.config.saving')
+                        : $t('entity_detail.config.save')}
+                    >
+                      {$t('entity_detail.config.save')}
+                    </Button>
+                    {#if saveMessage}
+                      <span class="save-message success" role="status" aria-live="polite">
+                        {saveMessage}
+                      </span>
+                    {/if}
+                    {#if configError}
+                      <span class="save-message error" role="alert" aria-live="assertive">
+                        {configError}
+                      </span>
+                    {/if}
+                  </div>
                 </div>
               </div>
             {/if}
@@ -1695,8 +1748,55 @@
   .config-editor-container {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
     height: 100%;
+    gap: 0.75rem;
+  }
+
+  .config-header-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .config-editor {
+    flex: 1;
+    min-height: 0;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .docs-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .docs-link:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+    color: #f1f5f9;
+  }
+
+  .config-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.5rem;
+  }
+
+  .actions-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
   :global(.config-editor) {

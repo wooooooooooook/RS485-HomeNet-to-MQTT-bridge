@@ -174,6 +174,21 @@
     });
   });
 
+  const currentTypeLabel = $derived.by<string | null>(() => {
+    if (selectedCategory === 'automation') return 'Automation';
+    if (selectedCategory === 'script') return 'Script';
+    return selectedEntityType ? formatEntityType(selectedEntityType) : null;
+  });
+
+  const currentDocUrl = $derived.by<string | null>(() => {
+    const baseUrl = 'https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs';
+    if (selectedCategory === 'automation') return `${baseUrl}/AUTOMATION.md`;
+    if (selectedCategory === 'script') return `${baseUrl}/SCRIPTS.md`;
+    if (selectedEntityType)
+      return `${baseUrl}/config-schema/${selectedEntityType.replace('_', '-')}.md`;
+    return null;
+  });
+
   function getBridgeErrorMessage(): string | undefined {
     if (!bridgeInfo?.errorInfo) return bridgeInfo?.error ? $t(`errors.${bridgeInfo.error}`) : '';
     return $t(`errors.${bridgeInfo.errorInfo.code}`, {
@@ -313,6 +328,13 @@
     }
   }
 
+  function formatEntityType(type: string) {
+    return type
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
   function openAddModal() {
     isAddModalOpen = true;
     addStep = 'select-category';
@@ -347,6 +369,11 @@
 
   function handleCategorySelect(category: EntityCategory) {
     selectedCategory = category;
+    // Reset entity type if not selecting an entity to prevent state persistence (e.g. showing "Number" for Automation)
+    if (category !== 'entity') {
+      selectedEntityType = null;
+    }
+
     yamlCopyMessage = null;
     if (category === 'entity') {
       addStep = 'select-entity-type';
@@ -641,7 +668,10 @@
           </section>
         {:else if addStep === 'select-entity-type'}
           <section class="add-modal-section">
-            <h3>{$t('dashboard.add_modal.select_device_type')}</h3>
+            <div class="section-header-with-desc">
+              <h3>{$t('dashboard.add_modal.select_device_type')}</h3>
+              <p class="section-desc">{$t('dashboard.add_modal.device_type_desc')}</p>
+            </div>
             <div class="add-option-grid">
               {#each entityTypeOptions as entityType}
                 <button
@@ -650,7 +680,7 @@
                   onclick={() => handleEntityTypeSelect(entityType)}
                 >
                   <strong>{$t(`entity_types.${entityType}`, { default: entityType })}</strong>
-                  <span>{$t('dashboard.add_modal.device_type_desc')}</span>
+                  <span>{formatEntityType(entityType)}</span>
                 </button>
               {/each}
             </div>
@@ -659,9 +689,36 @@
           <section class="add-modal-section full-height">
             <div class="yaml-header">
               <div>
-                <h3>{$t('dashboard.add_modal.yaml_editor_title')}</h3>
+                <div class="header-row">
+                  <h3>{$t('dashboard.add_modal.yaml_editor_title')}</h3>
+                  {#if currentTypeLabel}
+                    <span class="entity-type-badge">{currentTypeLabel}</span>
+                  {/if}
+                </div>
                 <p class="yaml-hint">{$t('dashboard.add_modal.yaml_hint')}</p>
               </div>
+              {#if currentDocUrl && currentTypeLabel}
+                <a href={currentDocUrl} target="_blank" rel="noopener noreferrer" class="docs-link">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  {currentTypeLabel} 문서 보기
+                </a>
+              {/if}
             </div>
             <!-- Replaced textarea with MonacoYamlEditor -->
             <div class="yaml-editor-container">
@@ -1183,9 +1240,47 @@
 
   .yaml-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .entity-type-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  .docs-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .docs-link:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+    color: #f1f5f9;
   }
 
   .yaml-hint {
@@ -1236,5 +1331,17 @@
     gap: 0.75rem;
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  .section-header-with-desc {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .section-desc {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.9rem;
   }
 </style>

@@ -231,14 +231,6 @@
         "rx_timeout": {
           "description": "Maximum time (in ms) to wait for a status update packet.",
           "type": "number"
-        },
-        "rx_min_length": {
-          "description": "Minimum length of the received packet.\nPackets shorter than this will be ignored.",
-          "type": "number"
-        },
-        "rx_max_length": {
-          "description": "Maximum length of the received packet.\nPackets longer than this will be ignored.",
-          "type": "number"
         }
       }
     },
@@ -248,6 +240,10 @@
       "properties": {
         "portId": {
           "description": "Identifier for this port (e.g. 'default', 'living_room').",
+          "type": "string"
+        },
+        "port_id": {
+          "description": "Alias for portId.",
           "type": "string"
         },
         "path": {
@@ -545,7 +541,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1360,7 +1359,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1505,7 +1507,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1565,7 +1570,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1647,7 +1655,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1866,7 +1877,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -1957,7 +1971,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2047,7 +2064,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2166,7 +2186,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2262,7 +2285,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2479,7 +2505,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2588,7 +2617,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2670,7 +2702,10 @@
         "area": {
           "type": "string"
         },
-        "packet_parameters": {},
+        "packet_parameters": {
+          "description": "Default packet structure and timing configuration.\nCan be defined globally or overridden per entity.",
+          "$ref": "#/definitions/PacketDefaults"
+        },
         "device_class": {
           "type": "string"
         },
@@ -2801,6 +2836,10 @@
         },
         "debounce_ms": {
           "description": "Debounce time in ms (or '1s'). Prevents rapid firing.",
+          "type": ["string", "number"]
+        },
+        "debounce": {
+          "description": "Alias for debounce_ms.",
           "type": ["string", "number"]
         },
         "guard": {
@@ -2976,9 +3015,17 @@
         "milliseconds": {
           "description": "Duration in ms or string (e.g. '1s').",
           "type": ["string", "number"]
+        },
+        "duration": {
+          "description": "Alias for milliseconds.",
+          "type": ["string", "number"]
+        },
+        "delay": {
+          "description": "Alias for milliseconds.",
+          "type": ["string", "number"]
         }
       },
-      "required": ["action", "milliseconds"]
+      "required": ["action"]
     },
     "AutomationActionScript": {
       "description": "Action to run a named script.",

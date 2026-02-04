@@ -1,4 +1,4 @@
-import { DecodeEncodeType, EndianType, StateSchema } from '../../protocol/types.js';
+import { DecodeEncodeType, EndianType, PacketDefaults, StateSchema } from '../../protocol/types.js';
 
 export interface CommandSchema {
   data?: number[];
@@ -28,7 +28,7 @@ export interface EntityConfig {
   unique_id?: string;
   device?: string;
   area?: string;
-  packet_parameters?: any;
+  packet_parameters?: PacketDefaults;
   device_class?: string;
   unit_of_measurement?: string;
   state_class?: string;

@@ -75,10 +75,13 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
         const entityId = entity.id as string;
         const entityName = (entity.name as string) || entityId;
 
+        const foundCommands = new Set<string>();
+
         // Dynamically find all command_* properties in the entity
         for (const key of Object.keys(entity)) {
           if (!key.startsWith('command_')) continue;
 
+          foundCommands.add(key);
           const commandData = entity[key];
           if (!commandData) continue;
 
@@ -164,6 +167,31 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
           }
 
           commands.push(cmdInfo);
+        }
+
+        // Add implicit commands for optimistic switches
+        // Optimistic switches without command definitions can still be toggled
+        // because the PacketProcessor handles optimistic updates regardless of packet generation
+        if (entityType === 'switch' && entity.optimistic === true) {
+          if (!foundCommands.has('command_on')) {
+            commands.push({
+              entityId,
+              entityName,
+              entityType,
+              commandName: 'command_on',
+              displayName: `${entityName} On`,
+            });
+          }
+
+          if (!foundCommands.has('command_off')) {
+            commands.push({
+              entityId,
+              entityName,
+              entityType,
+              commandName: 'command_off',
+              displayName: `${entityName} Off`,
+            });
+          }
         }
       }
     }

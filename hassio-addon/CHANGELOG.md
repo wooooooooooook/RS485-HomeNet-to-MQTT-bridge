@@ -1,3 +1,8 @@
+v2.5.3
+- fix: optimistic 옵션이 true이고 on/off command가 정의되지 않은 스위치가 상태를 가지거나 on off동작이 되지 않는 문제 수정
+- fix: optimistic 옵션이 있는 엔티티의 초기 상태가 디스커버리와 일치하지 않는 문제 수정
+- ui: optimistic 옵션이 true일때 on/off command가 정의되지 않았더라도 대시보드에서 조작할 수 있게 수정함
+
 v2.5.2
 - 자동화, 스크립트 상세보기모달에서 직접 실행했을때 실행완료 피드백 시점을 앞당김
 - 활동로그 문장수정

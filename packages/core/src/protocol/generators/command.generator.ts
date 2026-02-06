@@ -35,7 +35,7 @@ export class CommandGenerator {
   private config: HomenetBridgeConfig;
   private celExecutor: CelExecutor;
 
-  private readonly checksumTypes = new Set([
+  private static readonly CHECKSUM_TYPES = new Set([
     'add',
     'add_no_header',
     'xor',
@@ -45,7 +45,7 @@ export class CommandGenerator {
     'samsung_xor',
   ]);
 
-  private readonly checksum2Types = new Set(['xor_add']);
+  private static readonly CHECKSUM2_TYPES = new Set(['xor_add']);
 
   /**
    * @param config - Global bridge configuration (contains default packet settings like retries, timeouts).
@@ -53,6 +53,8 @@ export class CommandGenerator {
   constructor(config: HomenetBridgeConfig) {
     this.config = config;
     this.celExecutor = CelExecutor.shared();
+    // Silence unused warning for deprecated method
+    void this._decodeValue;
   }
 
   // --- Value Encoding/Decoding Logic ---
@@ -292,7 +294,7 @@ export class CommandGenerator {
       const checksumOrScript = packetDefaults.tx_checksum as string;
       let checksum = 0;
 
-      if (this.checksumTypes.has(checksumOrScript)) {
+      if (CommandGenerator.CHECKSUM_TYPES.has(checksumOrScript)) {
         checksum = calculateChecksum(
           headerPart,
           dataPart,
@@ -327,7 +329,7 @@ export class CommandGenerator {
       if (typeof packetDefaults.tx_checksum2 === 'string') {
         const checksumOrScript = packetDefaults.tx_checksum2 as string;
 
-        if (this.checksum2Types.has(checksumOrScript)) {
+        if (CommandGenerator.CHECKSUM2_TYPES.has(checksumOrScript)) {
           checksum = calculateChecksum2(headerPart, dataPart, checksumOrScript as Checksum2Type);
         } else {
           // CEL Expression

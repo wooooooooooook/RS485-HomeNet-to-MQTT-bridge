@@ -350,7 +350,10 @@ export class HomeNetBridge extends EventEmitter {
     }
 
     context.automationManager.runAutomationThen(automation).catch((err: any) => {
-      logger.error({ err, automationId: automation.id }, '[core] Failed to execute automation in background');
+      logger.error(
+        { err, automationId: automation.id },
+        '[core] Failed to execute automation in background',
+      );
     });
     return { success: true };
   }

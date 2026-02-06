@@ -29,10 +29,10 @@ describe('Controls Routes - Optimistic Switch', () => {
     } as unknown as RateLimiter;
 
     mockBridge = {
-        bridge: {
-            executeCommand: vi.fn().mockResolvedValue({ success: true }),
-        },
-        configFile: 'homenet_bridge.yaml',
+      bridge: {
+        executeCommand: vi.fn().mockResolvedValue({ success: true }),
+      },
+      configFile: 'homenet_bridge.yaml',
     };
 
     mockCtx = {
@@ -60,8 +60,12 @@ describe('Controls Routes - Optimistic Switch', () => {
     expect(response.status).toBe(200);
     const commands = response.body.commands;
 
-    const onCommand = commands.find((c: any) => c.entityId === 'opt_switch' && c.commandName === 'command_on');
-    const offCommand = commands.find((c: any) => c.entityId === 'opt_switch' && c.commandName === 'command_off');
+    const onCommand = commands.find(
+      (c: any) => c.entityId === 'opt_switch' && c.commandName === 'command_on',
+    );
+    const offCommand = commands.find(
+      (c: any) => c.entityId === 'opt_switch' && c.commandName === 'command_off',
+    );
 
     expect(onCommand).toBeDefined();
     expect(onCommand.displayName).toContain('On');
@@ -70,14 +74,12 @@ describe('Controls Routes - Optimistic Switch', () => {
   });
 
   it('should execute optimistic command even if not listed', async () => {
-      const response = await request(app)
-        .post('/api/commands/execute')
-        .send({
-            entityId: 'opt_switch',
-            commandName: 'command_on'
-        });
+    const response = await request(app).post('/api/commands/execute').send({
+      entityId: 'opt_switch',
+      commandName: 'command_on',
+    });
 
-      expect(response.status).toBe(200);
-      expect(mockBridge.bridge.executeCommand).toHaveBeenCalledWith('opt_switch', 'on', undefined);
+    expect(response.status).toBe(200);
+    expect(mockBridge.bridge.executeCommand).toHaveBeenCalledWith('opt_switch', 'on', undefined);
   });
 });

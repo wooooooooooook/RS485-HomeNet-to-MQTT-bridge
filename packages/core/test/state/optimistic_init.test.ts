@@ -32,7 +32,7 @@ describe('StateManager Optimistic Initialization', () => {
           id: 'virtual_switch',
           name: 'Virtual Switch',
           type: 'switch',
-          optimistic: true
+          optimistic: true,
           // No command or data, purely virtual
         } as any,
       ],
@@ -60,7 +60,7 @@ describe('StateManager Optimistic Initialization', () => {
     expect(mockMqttPublisher.publish).toHaveBeenCalledWith(
       expectedTopic,
       expectedPayload,
-      expect.objectContaining({ retain: true })
+      expect.objectContaining({ retain: true }),
     );
   });
 });

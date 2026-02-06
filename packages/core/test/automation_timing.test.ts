@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HomeNetBridge } from '../src/service/bridge.service';
 import { EventEmitter } from 'node:events';
@@ -98,8 +97,8 @@ describe('Automation Timing Verification', () => {
 
     expect(result.success).toBe(true);
     // Should be much faster than the 50ms delay in the mock
-    expect(duration).toBeLessThan(20); 
-    
+    expect(duration).toBeLessThan(20);
+
     // Validating that the background task was indeed called
     expect(mockRunAutomationThen).toHaveBeenCalled();
   });

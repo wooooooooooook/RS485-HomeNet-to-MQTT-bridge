@@ -29,3 +29,7 @@
 ## 2026-02-04 - Deprecated CommandGenerator
 **Observation:** `CommandGenerator` is verified to be unused in production code (replaced by `PacketProcessor` and `Device`).
 **Action:** Marked the class with `@deprecated` to warn developers and signal future removal.
+
+## 2026-02-04 - Optimize CommandGenerator
+**Observation:** `CommandGenerator` created new `Set` instances for checksum types in every constructor call, and had an unused `_decodeValue` method flagged by strict linters.
+**Action:** Converted Sets to `static readonly` to reduce memory allocation. Removed the unused `_decodeValue` method entirely as requested in code review.

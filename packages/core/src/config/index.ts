@@ -71,6 +71,15 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
       if (entity && typeof entity === 'object') {
         (entity as any).type = type;
 
+        if (type === 'button') {
+          if (
+            !(entity as any).discovery_linked_id &&
+            (entity as any).discovery_always === undefined
+          ) {
+            (entity as any).discovery_always = true;
+          }
+        }
+
         // Map packet_defaults (YAML) to packet_parameters (Internal)
         if ((entity as any).packet_defaults && !(entity as any).packet_parameters) {
           (entity as any).packet_parameters = (entity as any).packet_defaults;

@@ -938,7 +938,7 @@
                   <span class="payload-value">{item.value}</span>
                 </div>
               {/each}
-              {#if !entity.statePayload}
+              {#if !entity.statePayload && entity.type !== 'button'}
                 <div class="no-data">{$t('entity_detail.status.no_data')}</div>
               {/if}
             </div>

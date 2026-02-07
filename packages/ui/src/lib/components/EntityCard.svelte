@@ -123,7 +123,7 @@
         {:else}
           <strong class="payload-raw">{entity.statePayload}</strong>
         {/if}
-      {:else}
+      {:else if entity.type !== 'button'}
         <span class="no-status">{$t('dashboard.entity_card.no_status')}</span>
       {/if}
     </div>

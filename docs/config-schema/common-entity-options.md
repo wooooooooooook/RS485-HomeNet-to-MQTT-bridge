@@ -30,8 +30,9 @@ Home Assistant에 엔티티 정보를 발행(Discovery)하는 시점과 방식�
 ### `discovery_always`
 
 - **타입**: `boolean`
-- **기본값**: `false`
+- **기본값**: `false` (단, **Button** 엔티티는 `true`)
 - **설명**: 기본적으로 브릿지는 해당 엔티티의 상태(State) 패킷을 최초 1회 수신한 후에만 Discovery 정보를 발행합니다. 이는 실제 존재하는 장치만 HA에 등록하기 위함입니다. 그러나 상태를 주기적으로 보내지 않는 장치나, 명령만 수행하는 장치의 경우 이 옵션을 `true`로 설정하여 부팅 시 즉시 Discovery를 발행하도록 강제할 수 있습니다.
+- **예외**: `button` 엔티티는 대부분 상태 패킷이 없으므로, 편의를 위해 기본값이 `true`로 설정됩니다. (`discovery_linked_id`가 지정된 경우 제외)
 
 ```yaml
 light:

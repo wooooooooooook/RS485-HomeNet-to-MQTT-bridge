@@ -1,4 +1,4 @@
-# RS485-HomeNet-to-MQTT-bridge 문서
+# homenet2mqtt 문서
 
 ## 구성 스키마
 - **엔티티 스키마 총람**: [config-schema/README.md](./config-schema/README.md) – 엔티티별 문서와 공통 옵션 인덱스.

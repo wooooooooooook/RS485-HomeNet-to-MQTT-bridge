@@ -1,4 +1,4 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/homenet2mqtt)
 
 # Homenet2MQTT - RS485 HomeNet to MQTT Bridge
 
@@ -20,7 +20,7 @@
 
 4. `/homeassistant/homenet2mqtt/` 에서 생성된 설정 파일을 열어서 집에 맞게 수정하세요. 
     - 월패드 설정 파일을 ChatGPT 등에 넣고 본인 집 월패드에 등록된 디바이스들 개수를 설명해주면 AI가 작성을 도와줍니다.
-    - [Config 문서](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/tree/main/docs/config-schema)를 참고하세요.
+    - [Config 문서](https://github.com/wooooooooooook/homenet2mqtt/tree/main/docs/config-schema)를 참고하세요.
 
 5. 애드온의 **[구성(Configuration)]** 탭에서 MQTT 로그인 정보 및 필요한 경우 브릿지 관련 상세 설정을 변경해주세요.
    - `mqtt_url`: MQTT 브로커 주소 (HA 내장 `Mosquitto broker` 애드온 사용 시 기본값 `mqtt://core-mosquitto:1883` 유지)
@@ -54,11 +54,11 @@
 - 각 설정파일의 serial.path에 사용할 시리얼 장치의 경로를 입력해줍니다. serial.portId로 UI및 MQTT토픽이 구분되므로 중복되지 않게 설정해주세요.
 - 구성의 config_files에 복제한 설정파일 이름들을 차례대로 입력하고 애드온을 재시작 하면 됩니다.
 
-## [Config 작성법 문서 바로가기](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/tree/main/docs/config-schema)
+## [Config 작성법 문서 바로가기](https://github.com/wooooooooooook/homenet2mqtt/tree/main/docs/config-schema)
 
 
 ## 문의 및 지원
-[GitHub Issues](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/issues)
+[GitHub Issues](https://github.com/wooooooooooook/homenet2mqtt/issues)
 [Discord](https://discord.gg/kGwhUBMe5z)
 
 ## 라이센스

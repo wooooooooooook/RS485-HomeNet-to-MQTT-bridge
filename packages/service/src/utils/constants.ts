@@ -35,7 +35,7 @@ export const CONFIG_RESTART_FLAG = path.join(CONFIG_DIR, '.restart-required');
 // --- External URLs ---
 
 export const GALLERY_RAW_BASE_URL =
-  'https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery';
+  'https://raw.githubusercontent.com/wooooooooooook/homenet2mqtt/main/gallery';
 export const GALLERY_LIST_URL = `${GALLERY_RAW_BASE_URL}/list_new.json`;
 export const GALLERY_STATS_URL = 'https://h2m-gallery-stats.nubiz.workers.dev/';
 

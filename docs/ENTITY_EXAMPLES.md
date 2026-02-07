@@ -1,6 +1,6 @@
 # 엔티티 설정 예제
 
-이 문서는 RS485-HomeNet-to-MQTT-bridge에서 지원하는 다양한 엔티티 타입의 설정 예제를 제공합니다.
+이 문서는 homenet2mqtt에서 지원하는 다양한 엔티티 타입의 설정 예제를 제공합니다.
 
 ## 목차
 - [Lock Entity](#lock-entity)

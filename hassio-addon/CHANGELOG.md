@@ -36,7 +36,7 @@ v2.3.0
 - fix: 오류가 발생한 엔티티의 활동로그를 보려할때 key 중복으로 열리지 않는현상 수정.
 
 v2.2.0
-- [상태 프록시 (`state_proxy`) 도입](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/common-entity-options.md#)
+- [상태 프록시 (`state_proxy`) 도입](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/config-schema/common-entity-options.md#)
   - 서로 다른 종류의 패킷이나 여러 소스로부터 하나의 엔티티 상태를 업데이트해야 할 때 사용합니다. 이 옵션을 사용하면 해당 엔티티는 자신의 상태를 갖지 않고, 파싱된 결과를 지정된 `target_id` 엔티티로 전달합니다.
   - 현대통신의 주기적 상태업데이트로직에 사용됩니다. 갤러리에서 업데이트된 설정을 적용해보세요
 
@@ -52,7 +52,7 @@ v2.0.0
 - ## **🚨Breaking change**
   - offset의 해석의 일관성을 위해 수정사항이 있으며 이로인해 설정이 깨졌을수 있습니다!
   - 모든 offset은 헤더를 포함한 수신패킷 전체의 0-based index로 해석됩니다.
-  - [Breaking change 안내](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/BREAKING_CHANGES.md)
+  - [Breaking change 안내](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/BREAKING_CHANGES.md)
     > **요약**
     > 
     > 대상: **kocom, betin, cvnet, ezville, 현대통신**
@@ -73,7 +73,7 @@ v1.17.0
 - 기타 성능 향상 및 UI수정
 
 v1.16.0
-- feat: CEL에서 states, state에 안전하게 접근하기위한 헬퍼함수 추가 [CEL가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/CEL_GUIDE.md#%ED%97%AC%ED%8D%BC-%ED%95%A8%EC%88%98)
+- feat: CEL에서 states, state에 안전하게 접근하기위한 헬퍼함수 추가 [CEL가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/CEL_GUIDE.md#%ED%97%AC%ED%8D%BC-%ED%95%A8%EC%88%98)
 - 헬퍼함수 적용하여 갤러리 파일들 업데이트
 
 v1.15.0
@@ -99,11 +99,11 @@ v1.13.0
 - samsung_sds기본 설정에서 rx_header를 삭제. samsung_xor체크섬을 신규도입
   - 현관문과 엘리베이터호출에서 b0가 아닌 패킷을 수신하기위한 변경입니다. 
   - 기존 사용자분들은 초기화 한뒤 초기설정마법사를통해 새 구조로 변경해야 갤러리의 samsung_sds파일을 업데이트할 수 있습니다.
-- feat: [packet_defaults](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/packet-defaults.md)에 rx_valid_headers, rx_length_expr 옵션 도입 
+- feat: [packet_defaults](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/config-schema/packet-defaults.md)에 rx_valid_headers, rx_length_expr 옵션 도입
   - **rx_valid_headers**: rx_header, rx_footer모두 없는경우 체크섬 충돌가능성이 있는데, rx_valid_headers 배열에 정의된 바이트로 시작하는 경우만 유효한 패킷으로 간주합니다. (삼성sds에서 rx_header를 b0로 쓰던것을 rx_header를 폐지한뒤 발생한 문제를 해결)
   - **rx_length_expr**: rx_length는 동적이지만 패킷에 길이를 나타내는 정보가 있는경우 사용하면 패킷파싱성능향상에 도움이됩니다. (bestin 설정에서 사용)
 - feat: automation의 packet trigger에 prev_packet 속성을 추가하여 가드로 사용가능.
-  - [AUTOMATION.md](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md)
+  - [AUTOMATION.md](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/AUTOMATION.md)
 - feat: 엔티티 상세 모달에서 해당 엔티티의 활동로그 확인 기능 추가.
 - feat: 설정에서 로그파일 목록 확인 및 삭제 기능 추가.
 - feat: 활동로그에서 자동화/스크립트의 로그를 가리는 기능 추가. 
@@ -165,7 +165,7 @@ v1.11.0
 v1.10.0
 - feat: 일정시간 패킷이 수신되지 않으면 시리얼에 재연결을 시도하는 로직 추가.
   - config파일에 serial에 `serial_idle`를 옵션으로 추가할수 있습니다. 기본값은 10분이며, `0`으로 설정하면 비활성화됩니다.
-  - [serial 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/serial.md)
+  - [serial 설정 가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/config-schema/serial.md)
 - feat: light, fan에도 optimistic 옵션을 사용할 수 있습니다.
 - fix:
   - 아이폰 모바일에서 엔티티상세모달 등 일부모달이 나타나지 않는 문제 수정
@@ -186,14 +186,14 @@ v1.9.0
 
 v1.8.0
 - feat: 자동화 액션에 state_update를 추가.
-  - [state_update](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#%EC%83%81%ED%83%9C-%EA%B0%B1%EC%8B%A0-update-state)
+  - [state_update](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/AUTOMATION.md#%EC%83%81%ED%83%9C-%EA%B0%B1%EC%8B%A0-update-state)
 - feat: packet log 검색기능추가 및 성능최적화
 - 로그보관으로 로그가쌓이는경우 성능저하가 심하여 기간을 24->6시간으로 줄였습니다.
   - 그럼에도 로그가 쌓이면 분석페이지 진입 및 로그확인에 지연이 심하므로 분석이 꼭 필요한 경우가 아니면 로그보관을 끄고 사용하세요.
 - 각종 성능개선 및 ui수정
 
 v1.7.0
-- feat: commandSchema에 ack를 추가하였습니다. [schema 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/config-schema/schemas.md#CommandSchema)
+- feat: commandSchema에 ack를 추가하였습니다. [schema 가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/config-schema/schemas.md#CommandSchema)
   - 기존: 명령패킷 전송 후 해당 엔티티의 상태변화가 있으면 전송 성공으로판단.
   - 변경: ack가 정의된경우 상태변화와 ack패킷 중 먼저온 것을 성공으로 판단. (button 등 state가 없는 엔티티에서도 ack판단이 가능해졌습니다.)
 - fix: 명령이 없는 엔티티가 대시보드에 나타나지 않는 문제 수정
@@ -234,7 +234,7 @@ v1.4.0
 
 v1.3.0
 - feat: automation action에 choose, wait_until, repeat 등 더 많은 로직을 구현할수 있게되었습니다.
-  - [자동화 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#)
+  - [자동화 설정 가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/AUTOMATION.md#)
   - 엔티티에 optimistic옵션을 추가하여 switch,text엔티티를 자동화 변수로 사용하는등 유연한 사용이 가능해졌습니다.
 - feat: 강화된 자동화를 기반으로 [uartex](https://github.com/eigger/espcomponents/tree/master/components/uartex)에 구현되어있던 코콤, 현대통신, 삼성SDS 현관문을 업데이트하였습니다.
   - 갤러리에서 설정을 다운받아 적용할 수 있습니다. (작동할지 테스트는 안되었습니다. 되면 제보부탁드립니다.)
@@ -246,8 +246,8 @@ v1.2.0
   - 기본 설정파일에 없던 기능을 추가하거나 아파트별로 다른 환경에 맞춰 업데이트하는데 사용할 수 있습니다. (엘리베이터 기능 추가, 단지별 설정 업데이트 등)
   - 기본 설정파일이 망가진 경우에 업데이트하여 되돌리는데 사용할 수도 있습니다.
   - 설정 스니펫은 github PR을 통해 제공해주실 수 있습니다.
-- feat: 스크립트 추가. HA의 automation, script의 관계와 유사합니다. [스크립트 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/SCRIPTS.md)
-- feat: automation에 mode를 추가하였습니다. ha의 것과 유사합니다. [자동화 설정 가이드](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs/AUTOMATION.md#)
+- feat: 스크립트 추가. HA의 automation, script의 관계와 유사합니다. [스크립트 설정 가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/SCRIPTS.md)
+- feat: automation에 mode를 추가하였습니다. ha의 것과 유사합니다. [자동화 설정 가이드](https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs/AUTOMATION.md#)
 - fix: CEL을 사용하는 명령을 가진 엔티티를 HA에서 제어할때 정상적으로 패킷이 생성되지 않는 문제를 수정하였습니다. 
 - etc: 성능개선
   

@@ -181,7 +181,7 @@
   });
 
   const currentDocUrl = $derived.by<string | null>(() => {
-    const baseUrl = 'https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs';
+    const baseUrl = 'https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs';
     if (selectedCategory === 'automation') return `${baseUrl}/AUTOMATION.md`;
     if (selectedCategory === 'script') return `${baseUrl}/SCRIPTS.md`;
     if (selectedEntityType)

@@ -2,7 +2,7 @@
 
 # Gemini Project Analysis
 
-This document provides a comprehensive overview of the `RS485-HomeNet-to-MQTT-bridge` project, intended to be used as a context for AI-driven development.
+This document provides a comprehensive overview of the `homenet2mqtt` project, intended to be used as a context for AI-driven development.
 
 ## Project Overview
 

@@ -788,7 +788,7 @@
   });
 
   const currentDocUrl = $derived.by<string | null>(() => {
-    const baseUrl = 'https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/blob/main/docs';
+    const baseUrl = 'https://github.com/wooooooooooook/homenet2mqtt/blob/main/docs';
     if (isAutomation) return `${baseUrl}/AUTOMATION.md`;
     if (isScript) return `${baseUrl}/SCRIPTS.md`;
     if (entity.type) return `${baseUrl}/config-schema/${entity.type.replace('_', '-')}.md`;

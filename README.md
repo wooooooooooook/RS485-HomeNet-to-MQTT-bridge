@@ -1,5 +1,5 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge)
-[github wiki](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/wiki/%EC%8B%9C%EC%9E%91%ED%95%98%EA%B8%B0)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/homenet2mqtt)
+[github wiki](https://github.com/wooooooooooook/homenet2mqtt/wiki/%EC%8B%9C%EC%9E%91%ED%95%98%EA%B8%B0)
 
 # RS485 HomeNet to MQTT Bridge (H2M)
 
@@ -90,7 +90,7 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
 - 각 파일의 `serial.path`에 해당 장치 경로를 입력하고, `serial.portId`가 중복되지 않도록 설정합니다.
 - 애드온 구성(또는 Docker 환경 변수)의 `CONFIG_FILES`에 파일 이름들을 쉼표로 구분하여 입력한 후 재시작합니다.
 
-- [Config 작성법 (상세 스키마)](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/tree/main/docs/config-schema)
+- [Config 작성법 (상세 스키마)](https://github.com/wooooooooooook/homenet2mqtt/tree/main/docs/config-schema)
 
 ## ❓ 자주 묻는 질문 (Troubleshooting)
 
@@ -134,9 +134,9 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
   - 브라우저의 광고 차단 확장 프로그램이 간혹 웹소켓 연결을 차단할 수 있습니다. 시크릿 모드에서 시도해보세요.
 
 ## 문의 및 지원
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/homenet2mqtt)
 
-[GitHub Issues](https://github.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/issues)
+[GitHub Issues](https://github.com/wooooooooooook/homenet2mqtt/issues)
 
 [Discord](https://discord.gg/kGwhUBMe5z)
 

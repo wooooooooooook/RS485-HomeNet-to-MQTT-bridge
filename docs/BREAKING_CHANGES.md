@@ -85,6 +85,6 @@ climate:
 
 ## 도움이 필요한 경우
 
-설정 파일 마이그레이션에 도움이 필요하면 [GitHub Issues](https://github.com/RS485-HomeNet-to-MQTT-bridge/issues) 또는 [Discord](https://discord.gg/kGwhUBMe5z) 로 문의주세요.
+설정 파일 마이그레이션에 도움이 필요하면 [GitHub Issues](https://github.com/wooooooooooook/homenet2mqtt/issues) 또는 [Discord](https://discord.gg/kGwhUBMe5z) 로 문의주세요.
 
 설정파일(default.homenet_bridge.yaml)과 분석페이지의 `패킷딕셔너리`를 복사해서 보내주시면 큰 도움이 됩니다.

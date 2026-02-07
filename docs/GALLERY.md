@@ -8,7 +8,7 @@
 - 스니펫 파일: `/api/gallery/file?path=<vendor/file.yaml>`
 - ⚠️ 위 파일들은 갤러리 업데이트 후 저장소에 push될 때 github actions로 자동으로 업데이트 되므로 수동으로 업데이트할 필요 없음.
 
-서비스는 GitHub 저장소(`https://raw.githubusercontent.com/wooooooooooook/RS485-HomeNet-to-MQTT-bridge/main/gallery/`)에서 파일을 가져와 위 API로 프록시합니다. 이를 통해 갤러리 업데이트가 GitHub에 push되면 자동으로 반영됩니다.
+서비스는 GitHub 저장소(`https://raw.githubusercontent.com/wooooooooooook/homenet2mqtt/main/gallery/`)에서 파일을 가져와 위 API로 프록시합니다. 이를 통해 갤러리 업데이트가 GitHub에 push되면 자동으로 반영됩니다.
 
 ## 스니펫 구성
 

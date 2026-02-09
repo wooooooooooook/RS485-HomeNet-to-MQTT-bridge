@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateDiscovery, DiscoverySchema } from '../src/services/discovery.service.js';
+import {
+  evaluateDiscovery,
+  prepareDiscoveryPackets,
+  DiscoverySchema,
+} from '../src/services/discovery.service.js';
 import { expandGalleryTemplate, GallerySnippet } from '../src/utils/gallery-template.js';
 
 describe('Discovery Logic Improvements', () => {
@@ -17,7 +21,8 @@ describe('Discovery Logic Improvements', () => {
       '3': 'B0 41 00 03', // No Match
     };
 
-    const result = evaluateDiscovery(schema, packets, []);
+    const discoveryPackets = prepareDiscoveryPackets(packets, []);
+    const result = evaluateDiscovery(schema, discoveryPackets);
     expect(result.matched).toBe(true);
     expect(result.matchedPacketCount).toBe(2);
   });
@@ -35,7 +40,8 @@ describe('Discovery Logic Improvements', () => {
       '2': 'B0 41 05 02', // No Match (0x05 <= 0x10)
     };
 
-    const result = evaluateDiscovery(schema, packets, []);
+    const discoveryPackets = prepareDiscoveryPackets(packets, []);
+    const result = evaluateDiscovery(schema, discoveryPackets);
     expect(result.matched).toBe(true);
     expect(result.matchedPacketCount).toBe(1);
   });
@@ -64,7 +70,8 @@ describe('Discovery Logic Improvements', () => {
       '1': 'B0 05', // val=50, shifted=10
     };
 
-    const result = evaluateDiscovery(schema, packets, []);
+    const discoveryPackets = prepareDiscoveryPackets(packets, []);
+    const result = evaluateDiscovery(schema, discoveryPackets);
     expect(result.parameterValues.val).toBe(50);
     expect(result.parameterValues.shifted).toBe(10);
   });

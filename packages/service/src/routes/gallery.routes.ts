@@ -31,6 +31,7 @@ import {
 import { saveBackup } from '../services/backup.service.js';
 import {
   evaluateDiscovery,
+  prepareDiscoveryPackets,
   type DiscoverySchema,
   type DiscoveryResult,
 } from '../services/discovery.service.js';
@@ -255,6 +256,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
       // Get packet dictionary and unmatched packets (filtered by portId if provided)
       const packetDictionary = ctx.logRetentionService.getPacketDictionary(portId);
       const unmatchedPackets = ctx.logRetentionService.getUnmatchedPackets(portId);
+      const discoveryPackets = prepareDiscoveryPackets(packetDictionary, unmatchedPackets);
 
       // Fetch gallery list (list_new.json includes discovery info)
       let galleryList: {
@@ -322,12 +324,7 @@ export function createGalleryRoutes(ctx: GalleryRoutesContext): Router {
               defaultOffset = vendor.requirements.packet_defaults.rx_header.length;
             }
 
-            const result = evaluateDiscovery(
-              item.discovery,
-              packetDictionary,
-              unmatchedPackets,
-              defaultOffset,
-            );
+            const result = evaluateDiscovery(item.discovery, discoveryPackets, defaultOffset);
             results[item.file] = result;
           }
         }

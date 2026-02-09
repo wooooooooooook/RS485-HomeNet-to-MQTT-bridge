@@ -42,6 +42,14 @@ export interface DiscoveryResult {
   parameterValues: Record<string, unknown>;
 }
 
+/**
+ * Represents a packet with both hex and byte formats for optimized discovery
+ */
+export interface DiscoveryPacket {
+  hex: string;
+  bytes: number[];
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -64,16 +72,40 @@ function bytesToHex(bytes: number[]): string {
 }
 
 /**
+ * Prepare packets for discovery by pre-converting them
+ */
+export function prepareDiscoveryPackets(
+  packetDictionary: Record<string, string>,
+  unmatchedPackets: string[],
+): DiscoveryPacket[] {
+  const allHexStrings = [...Object.values(packetDictionary), ...unmatchedPackets];
+  const cache = new Map<string, DiscoveryPacket>();
+
+  return allHexStrings.map((hex) => {
+    let packet = cache.get(hex);
+    if (!packet) {
+      const bytes = hexToBytes(hex);
+      packet = {
+        hex: bytesToHex(bytes),
+        bytes,
+      };
+      cache.set(hex, packet);
+    }
+    return packet;
+  });
+}
+
+/**
  * Check if a single match condition applies to a packet
  */
 function matchesCondition(
-  packet: number[],
+  packet: DiscoveryPacket,
   match: DiscoveryMatch,
   defaultOffset?: number,
 ): boolean {
   // 1. Regex Match (on Hex String)
   if (match.regex) {
-    const hexString = bytesToHex(packet);
+    const hexString = packet.hex;
     try {
       const regex = new RegExp(match.regex);
       if (!regex.test(hexString)) {
@@ -89,8 +121,8 @@ function matchesCondition(
   if (match.condition) {
     try {
       const result = CelExecutor.shared().execute(match.condition, {
-        data: packet,
-        len: packet.length,
+        data: packet.bytes,
+        len: packet.bytes.length,
       });
       if (!result) {
         return false;
@@ -107,15 +139,16 @@ function matchesCondition(
     const offset = match.offset ?? defaultOffset ?? 0;
     const data = match.data;
     const mask = match.mask ?? data.map(() => 0xff);
+    const bytes = packet.bytes;
 
     // Check if packet is long enough
-    if (packet.length < offset + data.length) {
+    if (bytes.length < offset + data.length) {
       return false;
     }
 
     // Check each byte
     for (let i = 0; i < data.length; i++) {
-      const packetByte = packet[offset + i];
+      const packetByte = bytes[offset + i];
       const dataByte = data[i];
       const maskByte = mask[i] ?? 0xff;
 
@@ -131,7 +164,11 @@ function matchesCondition(
 /**
  * Check if a packet matches the discovery match rules
  */
-function matchesPacket(packet: number[], match: DiscoveryMatch, defaultOffset?: number): boolean {
+function matchesPacket(
+  packet: DiscoveryPacket,
+  match: DiscoveryMatch,
+  defaultOffset?: number,
+): boolean {
   // Handle any_of (OR conditions)
   if (match.any_of && match.any_of.length > 0) {
     return match.any_of.some((subMatch) => matchesCondition(packet, subMatch, defaultOffset));
@@ -214,18 +251,14 @@ function extractDimensionValue(packet: number[], dimension: DiscoveryDimension):
  */
 export function evaluateDiscovery(
   discovery: DiscoverySchema,
-  packetDictionary: Record<string, string>, // id -> hex string
-  unmatchedPackets: string[], // hex strings
+  packets: DiscoveryPacket[],
   defaultOffset?: number,
 ): DiscoveryResult {
-  const allPackets = [...Object.values(packetDictionary), ...unmatchedPackets];
-
   // Parse and filter matching packets
-  const matchedPackets: number[][] = [];
-  for (const hexString of allPackets) {
-    const bytes = hexToBytes(hexString);
-    if (matchesPacket(bytes, discovery.match, defaultOffset)) {
-      matchedPackets.push(bytes);
+  const matchedPackets: DiscoveryPacket[] = [];
+  for (const packet of packets) {
+    if (matchesPacket(packet, discovery.match, defaultOffset)) {
+      matchedPackets.push(packet);
     }
   }
 
@@ -247,7 +280,7 @@ export function evaluateDiscovery(
 
   for (const packet of matchedPackets) {
     for (const dim of dimensions) {
-      const value = extractDimensionValue(packet, dim);
+      const value = extractDimensionValue(packet.bytes, dim);
       if (value !== null) {
         dimensionValues[dim.parameter].push(value);
       }
@@ -284,7 +317,7 @@ export function evaluateDiscovery(
         for (let i = 0; i < matchedPackets.length; i++) {
           const tuple: Record<string, number> = {};
           for (const dim of dimensions) {
-            const value = extractDimensionValue(matchedPackets[i], dim);
+            const value = extractDimensionValue(matchedPackets[i].bytes, dim);
             if (value !== null) {
               tuple[dim.parameter] = value;
             }
@@ -310,12 +343,12 @@ export function evaluateDiscovery(
           const groups: Record<number, Set<number>> = {};
 
           for (let i = 0; i < matchedPackets.length; i++) {
-            const packet = matchedPackets[i];
+            const packetBytes = matchedPackets[i].bytes;
             const dim0 = dimensions[0];
             const dim1 = dimensions[1];
 
-            const key = extractDimensionValue(packet, dim0);
-            const val = extractDimensionValue(packet, dim1);
+            const key = extractDimensionValue(packetBytes, dim0);
+            const val = extractDimensionValue(packetBytes, dim1);
 
             if (key !== null && val !== null) {
               if (!groups[key]) {

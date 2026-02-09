@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 
 # Home Assistant addon: options.json에서 설정을 읽어옴
 # Docker container: 환경변수에서 설정을 읽어옴
@@ -6,12 +6,39 @@ CONFIG_PATH=/data/options.json
 
 if [ -f "$CONFIG_PATH" ]; then
   # Home Assistant 애드온 환경
-  echo "[run.sh] Running as Home Assistant addon"
+  bashio::log.info "Running as Home Assistant addon"
   export LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
-  export MQTT_URL=$(jq --raw-output '.mqtt_url // "mqtt://127.0.0.1:1883"' $CONFIG_PATH)
+  export MQTT_URL=$(jq --raw-output '.mqtt_url // ""' $CONFIG_PATH)
   export MQTT_NEED_LOGIN=$(jq --raw-output '.mqtt_need_login // false' $CONFIG_PATH)
   export MQTT_USER=$(jq --raw-output '.mqtt_user // ""' $CONFIG_PATH)
   export MQTT_PASSWD=$(jq --raw-output '.mqtt_passwd // ""' $CONFIG_PATH)
+  
+  # MQTT 설정이 비어있거나 기본값이면 bashio를 통해 Supervisor의 MQTT 서비스 정보 사용
+  if [ -z "$MQTT_URL" ] || [ "$MQTT_URL" == "mqtt://core-mosquitto:1883" ]; then
+    if bashio::services.available "mqtt"; then
+      MQTT_HOST=$(bashio::services mqtt "host")
+      MQTT_PORT=$(bashio::services mqtt "port")
+      export MQTT_URL="mqtt://${MQTT_HOST}:${MQTT_PORT}"
+      bashio::log.info "Using Supervisor MQTT service: $MQTT_URL"
+    else
+      bashio::log.warning "MQTT service not available from Supervisor, using default"
+      export MQTT_URL="mqtt://127.0.0.1:1883"
+    fi
+  fi
+  
+  # MQTT 인증 정보가 비어있으면 bashio를 통해 가져오기
+  if [ -z "$MQTT_USER" ] || [ -z "$MQTT_PASSWD" ]; then
+    if bashio::services.available "mqtt"; then
+      BASHIO_MQTT_USER=$(bashio::services mqtt "username")
+      BASHIO_MQTT_PASSWD=$(bashio::services mqtt "password")
+      if [ -n "$BASHIO_MQTT_USER" ] && [ -n "$BASHIO_MQTT_PASSWD" ]; then
+        export MQTT_USER="$BASHIO_MQTT_USER"
+        export MQTT_PASSWD="$BASHIO_MQTT_PASSWD"
+        export MQTT_NEED_LOGIN="true"
+        bashio::log.info "Using Supervisor MQTT credentials for user: $MQTT_USER"
+      fi
+    fi
+  fi
   export MQTT_TOPIC_PREFIX=$(jq --raw-output '.mqtt_topic_prefix // "homenet2mqtt"' $CONFIG_PATH)
   CONFIG_FILES=$(jq --raw-output '.config_files // [] | join(",")' $CONFIG_PATH)
   LEGACY_CONFIG_FILE=$(jq --raw-output '.config_file // ""' $CONFIG_PATH)

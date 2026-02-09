@@ -1,3 +1,6 @@
+v2.6.1-2.6.3
+- fix: 애드온 시작 불가 수정함
+
 v2.6.0
 - feat: bashio도입으로 HA 애드온 환경에서 mqtt 자동 로그인 지원 (mqtt애드온 사용중인경우 mqtt_user, mqtt_passwd를 비워두면 자동로그인됩니다.)
 - refactor: HA discovery를 옵션으로 변경 (ha 애드온 환경에서는 기본값 true입니다.)

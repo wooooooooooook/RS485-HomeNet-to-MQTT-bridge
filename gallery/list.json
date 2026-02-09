@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-04T23:39:28.329Z",
+  "generated_at": "2026-02-09T00:25:19.814Z",
   "vendors": [
     {
       "id": "bestin",
@@ -976,7 +976,7 @@
           "name_en": "Old Kocom Elevator Call",
           "description": "구형 코콤 엘리베이터 호출 버튼입니다.",
           "description_en": "Old Kocom elevator call button",
-          "version": "1.0.0",
+          "version": "1.0.1",
           "author": "wooooooooooook",
           "tags": [
             "elevator",
@@ -987,6 +987,29 @@
           "content_summary": {
             "entities": {
               "button": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        },
+        {
+          "file": "kocom/elevator_switch.yaml",
+          "name": "코콤 엘리베이터 호출 스위치버전",
+          "name_en": "Kocom Elevator Call Switch Version",
+          "description": "코콤 엘리베이터 호출 스위치버전입니다.",
+          "description_en": "Kocom elevator call switch version",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "elevator",
+            "switch",
+            "kocom"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 2,
+              "switch": 1
             },
             "automations": 0,
             "scripts": 0

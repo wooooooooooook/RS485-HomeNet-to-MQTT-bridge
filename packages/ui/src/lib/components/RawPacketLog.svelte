@@ -244,14 +244,7 @@
       // 문자열 생성 최소화
       const payload = packet.payload;
       const direction = packet.direction ?? 'RX';
-      // 먼저 원본 payload로 테스트
       if (regex.test(payload) || regex.test(direction)) {
-        result.push(packet);
-        continue;
-      }
-      // 공백 포함 형식으로 재테스트
-      const formattedPayload = toHexPairs(payload).join(' ');
-      if (regex.test(formattedPayload)) {
         result.push(packet);
       }
     }

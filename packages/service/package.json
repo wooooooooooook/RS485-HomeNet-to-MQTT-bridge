@@ -1,6 +1,6 @@
 {
   "name": "@rs485-homenet/service",
-  "version": "2.6.4",
+  "version": "2.6.5",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

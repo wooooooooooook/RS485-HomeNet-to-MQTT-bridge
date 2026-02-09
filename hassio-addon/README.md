@@ -2,9 +2,6 @@
 
 # Homenet2MQTT - RS485 HomeNet to MQTT Bridge
 
-> **ℹ️ 베타 버전**
-> 이 프로젝트는 현재 **베타(Beta)** 단계입니다. 일부 기능에서 버그가 발생할 수 있습니다. 업데이트 시 **하위 호환성을 깨는 변경(Breaking Changes)**이 발생할 수 있으니 변경 로그를 확인해주세요.
-
 ## 준비물
 - RS485 USB serial 장치 또는 EW11같은 tcp-serial 변환 장치
 - USB 장치의 경우 HA에 연결한 후 ha설정-시스템-하드웨어-모든하드웨어에서 tty로 검색했을때 나오는 /dev/ttyUSB0 같은 경로를 입력해주세요.
@@ -25,8 +22,8 @@
 5. 애드온의 **[구성(Configuration)]** 탭에서 MQTT 로그인 정보 및 필요한 경우 브릿지 관련 상세 설정을 변경해주세요.
    - `mqtt_url`: MQTT 브로커 주소 (HA 내장 `Mosquitto broker` 애드온 사용 시 기본값 `mqtt://core-mosquitto:1883` 유지)
    - `mqtt_need_login`: **필수** MQTT 인증 필요 여부 (`true`/`false`), 아이디 패스워드를 모른다면 `Mosquitto broker`애드온의 구성에서 아이디 비밀번호를 추가하고, 아래에 입력해주세요.
-   - `mqtt_user`: **필수** MQTT 사용자 아이디
-   - `mqtt_passwd`: **필수** MQTT 비밀번호
+   - `mqtt_user`: MQTT 사용자 아이디, mqtt도 애드온으로 사용중이면 비워두면 자동 로그인됩니다.
+   - `mqtt_passwd`: MQTT 비밀번호, mqtt도 애드온으로 사용중이면 비워두면 자동 로그인됩니다.
    - `mqtt_topic_prefix`: MQTT 토픽 접두사. 기본값은 `homenet2mqtt`이며 변경할 필요 없습니다. 최종 토픽은 `${mqtt_topic_prefix}/{portId}/{entityId}/...` 형태로 발행됩니다.
    - `timezone`: 타임존(IANA). 비워두면 서버는 UTC, 프론트는 브라우저 설정을 따릅니다. 예: `Asia/Seoul`
    - `config_files`: **비워두면 애드온 시작시 초기설정 마법사를 통해 자동으로 설정파일을 구성하여 사용하게됩니다.** 또는 직접 사용할 설정 파일 목록을 나열할 수 있습니다. 여러 개의 포트를 사용할 경우 쉼표로 구분하여 나열합니다. (예: `livingroom.yaml, room1.yaml`) 기본값(`default.homenet_bridge.yaml,`)

@@ -22,6 +22,7 @@ options:
   config_files:
     - default.homenet_bridge.yaml
   mqtt_topic_prefix: homenet2mqtt
+  discovery_enabled: true
   timezone: ""
 hassio_role: default
 init: false
@@ -37,6 +38,7 @@ schema:
   mqtt_user: str?
   mqtt_passwd: str?
   mqtt_topic_prefix: str?
+  discovery_enabled: bool
   config_files:
     - str
   timezone: str?

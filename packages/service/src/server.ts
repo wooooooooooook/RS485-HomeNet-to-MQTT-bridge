@@ -506,6 +506,7 @@ async function loadAndStartBridges(filenames: string[]) {
           mqttPassword,
           mqttTopicPrefix: BASE_MQTT_PREFIX,
           configOverride: result.config,
+          enableDiscovery: process.env.DISCOVERY_ENABLED !== 'false',
         });
 
         // Listen for status changes from the bridge

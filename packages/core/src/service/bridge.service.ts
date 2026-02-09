@@ -45,7 +45,7 @@ interface PortContext {
   mqttPublisher: MqttPublisher;
   stateManager: StateManager;
   commandManager: CommandManager;
-  discoveryManager: DiscoveryManager;
+  discoveryManager: DiscoveryManager | null;
   automationManager: AutomationManager;
   rawPacketListener: ((data: Buffer) => void) | null;
   lastPacketTimestamp: number | null;
@@ -67,6 +67,7 @@ export interface BridgeOptions {
   mqttTopicPrefix?: string;
   configOverride?: HomenetBridgeConfig;
   serialFactory?: SerialFactory;
+  enableDiscovery?: boolean; // Enable Home Assistant MQTT Discovery (default: true)
 }
 
 import { EventEmitter } from 'node:events';
@@ -434,7 +435,7 @@ export class HomeNetBridge extends EventEmitter {
 
     // Try to revoke on all active ports/contexts to ensure cleanup
     for (const context of this.portContexts.values()) {
-      context.discoveryManager.revokeDiscovery(entityId);
+      context.discoveryManager?.revokeDiscovery(entityId);
     }
 
     return { success: true };
@@ -828,20 +829,27 @@ export class HomeNetBridge extends EventEmitter {
         this.client.on('connect', () => mqttSubscriber.setupSubscriptions());
       }
 
-      // Initialize DiscoveryManager
-      const discoveryManager = new DiscoveryManager(
-        normalizedPortId,
-        this.config,
-        mqttPublisher,
-        mqttSubscriber,
-        mqttTopicPrefix,
-      );
-      discoveryManager.setup();
+      // Initialize DiscoveryManager (conditionally based on enableDiscovery option)
+      const enableDiscovery = this.options.enableDiscovery !== false;
+      let discoveryManager: DiscoveryManager | null = null;
 
-      if (this._mqttClient.isConnected) {
-        discoveryManager.discover();
+      if (enableDiscovery) {
+        discoveryManager = new DiscoveryManager(
+          normalizedPortId,
+          this.config,
+          mqttPublisher,
+          mqttSubscriber,
+          mqttTopicPrefix,
+        );
+        discoveryManager.setup();
+
+        if (this._mqttClient.isConnected) {
+          discoveryManager.discover();
+        } else {
+          this.client.on('connect', () => discoveryManager!.discover());
+        }
       } else {
-        this.client.on('connect', () => discoveryManager.discover());
+        logger.info({ portId: normalizedPortId }, '[core] Home Assistant Discovery is disabled');
       }
 
       // Note: raw-tx-packet event is emitted directly from CommandManager.executeJob()

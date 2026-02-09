@@ -1,10 +1,8 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wooooooooooook/homenet2mqtt)
+
 [github wiki](https://github.com/wooooooooooook/homenet2mqtt/wiki/%EC%8B%9C%EC%9E%91%ED%95%98%EA%B8%B0)
 
-# RS485 HomeNet to MQTT Bridge (H2M)
-
-> **✅ 베타 버전 (Beta)**
-> 이 프로젝트는 현재 **베타 단계**입니다. 대부분의 기능이 안정적으로 작동하며, 일반적인 환경에서 사용하기 적합합니다. 다만 예상치 못한 버그가 있을 수 있으니 중요한 환경에서는 백업 후 사용하시기 바랍니다.
+# Homenet2MQTT (RS485 HomeNet to MQTT Bridge)
 
 RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home Assistant에서 제어하고 모니터링할 수 있게 해주는 브릿지 솔루션입니다.
 
@@ -57,12 +55,15 @@ RS485 기반의 월패드(홈넷) 신호를 MQTT 메시지로 변환하여 Home 
          MQTT_USER: ''
          MQTT_PASSWD: ''
          MQTT_TOPIC_PREFIX: homenet2mqtt
+         # HA discovery 사용 여부 (기본값: false)
+         # Home Assistant와 연동하려면 'true'로 설정
+         DISCOVERY_ENABLED: 'false'
        volumes:
          # 설정 파일 볼륨
          - ./h2m-config:/config
-         # 시리얼 포트 장치 (필요한 경우 주석 해제)
-         # devices:
-         #   - /dev/ttyUSB0:/dev/ttyUSB0
+       # 시리얼 포트 장치 (USB serial 장치를 사용하는 경우 주석 해제)
+       # devices:
+       #   - /dev/ttyUSB0:/dev/ttyUSB0
        ports:
          - '3000:3000'
        restart: unless-stopped

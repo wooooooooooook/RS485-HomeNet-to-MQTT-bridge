@@ -40,6 +40,7 @@ if [ -f "$CONFIG_PATH" ]; then
     fi
   fi
   export MQTT_TOPIC_PREFIX=$(jq --raw-output '.mqtt_topic_prefix // "homenet2mqtt"' $CONFIG_PATH)
+  export DISCOVERY_ENABLED=$(jq --raw-output '.discovery_enabled // "true"' $CONFIG_PATH)
   CONFIG_FILES=$(jq --raw-output '.config_files // [] | join(",")' $CONFIG_PATH)
   LEGACY_CONFIG_FILE=$(jq --raw-output '.config_file // ""' $CONFIG_PATH)
   
@@ -65,6 +66,7 @@ else
   export MQTT_USER="${MQTT_USER:-}"
   export MQTT_PASSWD="${MQTT_PASSWD:-}"
   export MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX:-homenet2mqtt}"
+  export DISCOVERY_ENABLED="${DISCOVERY_ENABLED:-false}"
   export CONFIG_FILES="${CONFIG_FILES:-default.homenet_bridge.yaml,}"
   
   # CONFIG_ROOT 환경변수 또는 기본값 /config 사용
@@ -110,6 +112,7 @@ echo "  CONFIG_ROOT: $CONFIG_ROOT"
 echo "  MQTT_NEED_LOGIN: $MQTT_NEED_LOGIN"
 echo "  MQTT_USER: $MQTT_USER"
 echo "  MQTT_TOPIC_PREFIX: $MQTT_TOPIC_PREFIX"
+echo "  DISCOVERY_ENABLED: $DISCOVERY_ENABLED"
 
 # Run the service with restart flag support for initialization flow
 while true; do

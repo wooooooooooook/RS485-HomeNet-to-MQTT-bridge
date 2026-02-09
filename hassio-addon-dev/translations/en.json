@@ -14,15 +14,19 @@
         },
         "mqtt_user": {
             "name": "MQTT Username",
-            "description": "Username for MQTT broker authentication. Enter the username configured in the mosquitto addon."
+            "description": "Username for MQTT broker authentication. Leave empty for auto-login."
         },
         "mqtt_passwd": {
             "name": "MQTT Password",
-            "description": "Password for MQTT broker authentication. Enter the password configured in the mosquitto addon."
+            "description": "Password for MQTT broker authentication. Leave empty for auto-login."
         },
         "mqtt_topic_prefix": {
             "name": "MQTT Topic Prefix",
             "description": "Prefix for MQTT topics (default: homenet2mqtt). No need to change unless in special circumstances."
+        },
+        "discovery_enabled":{
+            "name": "Discovery Enable",
+            "description": "Enable Home Assistant discovery function (automatic device/entity registration). (Default: true)"
         },
         "config_files": {
             "name": "Config Files",

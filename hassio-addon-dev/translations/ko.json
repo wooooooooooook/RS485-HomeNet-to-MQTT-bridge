@@ -14,15 +14,19 @@
         },
         "mqtt_user": {
             "name": "MQTT 아이디",
-            "description": "MQTT 브로커 접속 아이디입니다. mosquitto 애드온에서 설정한 아이디를 입력하세요."
+            "description": "MQTT 브로커 접속 아이디입니다. 비워두면 자동로그인을 시도합니다."
         },
         "mqtt_passwd": {
             "name": "MQTT 비밀번호",
-            "description": "MQTT 브로커 접속 비밀번호입니다. mosquitto 애드온에서 설정한 비밀번호를 입력하세요."
+            "description": "MQTT 브로커 접속 비밀번호입니다. 비워두면 자동로그인을 시도합니다."
         },
         "mqtt_topic_prefix": {
             "name": "MQTT 토픽 접두사",
             "description": "MQTT 토픽의 접두사를 설정합니다. (기본값: homenet2mqtt) 특수상황이 아니면 변경할 필요 없습니다."
+        },
+        "discovery_enabled":{
+            "name": "디스커버리 사용",
+            "description": "홈어시스턴트 디스커버리 기능(자동 기기/엔티티 등록)을 사용할지 여부입니다. (기본값: true)"
         },
         "config_files": {
             "name": "설정 파일 리스트",

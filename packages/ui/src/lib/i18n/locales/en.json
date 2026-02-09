@@ -395,6 +395,8 @@
     "tags": "Tags",
     "incompatible_port": "Port incompatible",
     "incompatible_version": "Incompatible version. Please update Homenet2MQTT to v{minVersion} or later. (Current: v{appVersion})",
+    "incompatible_warning_title": "Incompatible Configuration",
+    "incompatible_warning_message": "This configuration is not compatible with your current port settings. Applying it may cause issues or not work as expected.\n\nDo you want to proceed to view details?",
     "download_count": "Download count",
     "view_details": "View Details",
     "preview": {

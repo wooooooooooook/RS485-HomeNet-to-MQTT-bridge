@@ -395,6 +395,8 @@
     "tags": "태그",
     "incompatible_port": "포트 비호환",
     "incompatible_version": "호환되지 않는 버전입니다. Homenet2MQTT를 v{minVersion} 이상으로 업데이트해주세요. (현재: v{appVersion})",
+    "incompatible_warning_title": "호환되지 않는 설정",
+    "incompatible_warning_message": "이 설정은 현재 포트 설정과 호환되지 않습니다. 적용 시 문제가 발생하거나 올바르게 작동하지 않을 수 있습니다.\n\n상세 정보를 확인하시겠습니까?",
     "download_count": "다운로드 횟수",
     "view_details": "상세보기",
     "preview": {

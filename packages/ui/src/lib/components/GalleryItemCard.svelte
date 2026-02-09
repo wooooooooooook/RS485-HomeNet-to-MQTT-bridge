@@ -32,16 +32,11 @@
   const hasParameters = $derived((item.parameters?.length ?? 0) > 0);
 
   function handleViewDetails(e: MouseEvent) {
-    if (!isCompatible) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return;
-    }
     onViewDetails();
   }
 </script>
 
-<div class="card" class:disabled={!isCompatible} aria-disabled={!isCompatible}>
+<div class="card" class:incompatible={!isCompatible}>
   <div class="card-header">
     <div class="title-row">
       <h3 class="card-title">{displayName}</h3>
@@ -114,8 +109,7 @@
   <button
     class="view-btn"
     onclick={handleViewDetails}
-    aria-disabled={!isCompatible}
-    title={!isCompatible ? $t('gallery.incompatible_port') : undefined}
+    title={!isCompatible ? $t('gallery.incompatible_warning_title') : undefined}
   >
     {$t('gallery.view_details')}
   </button>
@@ -139,14 +133,10 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   }
 
-  .card.disabled {
-    opacity: 0.55;
+  .card.incompatible {
+    opacity: 0.75;
     border-color: rgba(148, 163, 184, 0.05);
-  }
-
-  .card.disabled:hover {
-    border-color: rgba(148, 163, 184, 0.05);
-    box-shadow: none;
+    background: rgba(30, 41, 59, 0.4);
   }
 
   .card-header {
@@ -321,8 +311,7 @@
     border-color: #3b82f6;
   }
 
-  .view-btn:disabled,
-  .view-btn[aria-disabled='true'] {
+  .view-btn:disabled {
     cursor: not-allowed;
     background: rgba(15, 23, 42, 0.4);
     border-color: rgba(148, 163, 184, 0.2);

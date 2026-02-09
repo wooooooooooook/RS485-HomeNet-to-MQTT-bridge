@@ -13,6 +13,7 @@
   } from '../types';
   import GalleryItemCard from '../components/GalleryItemCard.svelte';
   import GalleryPreviewModal from '../components/GalleryPreviewModal.svelte';
+  import Dialog from '../components/Dialog.svelte';
 
   const GALLERY_LIST_URL = './api/gallery/list';
   const GALLERY_STATS_URL = './api/gallery/stats';
@@ -43,6 +44,9 @@
 
   let selectedItem = $state<GalleryItemForPreview | null>(null);
   let showPreviewModal = $state(false);
+
+  let incompatibleWarningOpen = $state(false);
+  let pendingItem = $state<GalleryItemForPreview | null>(null);
 
   // Discovery results
   let discoveryResults = $state<Record<string, GalleryDiscoveryResult>>({});
@@ -342,6 +346,15 @@
     showPreviewModal = false;
     selectedItem = null;
   }
+
+  function handleItemClick(item: GalleryItemForPreview) {
+    if (item.isCompatible) {
+      openPreview(item);
+    } else {
+      pendingItem = item;
+      incompatibleWarningOpen = true;
+    }
+  }
 </script>
 
 <div class="gallery-container">
@@ -421,7 +434,7 @@
                 isCompatible={item.isCompatible}
                 discoveryResult={discoveryResults[item.file]}
                 downloadCount={downloadStats[item.file] ?? 0}
-                onViewDetails={() => item.isCompatible && openPreview(item)}
+                onViewDetails={() => handleItemClick(item)}
               />
             {/each}
           </div>
@@ -443,7 +456,7 @@
                 isCompatible={item.isCompatible}
                 discoveryResult={discoveryResults[item.file]}
                 downloadCount={downloadStats[item.file] ?? 0}
-                onViewDetails={() => item.isCompatible && openPreview(item)}
+                onViewDetails={() => handleItemClick(item)}
               />
             {/each}
           </div>
@@ -468,6 +481,26 @@
     onClose={closePreview}
   />
 {/if}
+
+<Dialog
+  open={incompatibleWarningOpen}
+  title={$t('gallery.incompatible_warning_title')}
+  message={$t('gallery.incompatible_warning_message')}
+  confirmText={$t('common.confirm')}
+  cancelText={$t('common.cancel')}
+  variant="danger"
+  onconfirm={() => {
+    incompatibleWarningOpen = false;
+    if (pendingItem) {
+      openPreview(pendingItem);
+      pendingItem = null;
+    }
+  }}
+  oncancel={() => {
+    incompatibleWarningOpen = false;
+    pendingItem = null;
+  }}
+/>
 
 <style>
   .gallery-container {

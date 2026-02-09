@@ -156,7 +156,7 @@ ARG LOG_COLLECTOR_API_KEY
 ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
 
 # Setup run script
-COPY hassio-addon/run.sh /run.sh
+COPY hassio-addon-dev/run.sh /run.sh
 RUN chmod +x /run.sh
 
 ENTRYPOINT [ "/init" ]

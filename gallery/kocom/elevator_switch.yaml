@@ -1,0 +1,54 @@
+meta:
+  name: "코콤 엘리베이터 호출 스위치버전"
+  name_en: "Kocom Elevator Call Switch Version"
+  description: "코콤 엘리베이터 호출 스위치버전입니다."
+  description_en: "Kocom elevator call switch version"
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["elevator", "switch", "kocom"]
+
+
+discovery:
+  match:
+    data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44]
+    mask: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
+entities:
+  sensor:
+    - id: 'elevator_floors'
+      name: 'Elevator Floors'
+      icon: 'mdi:elevator'
+      unit_of_measurement: '층'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 11
+
+    - id: 'elevator_direction'
+      name: 'Elevator Direction'
+      icon: 'mdi:elevator'
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      state_number:
+        offset: 10
+        mapping:
+          0: '정지'
+          1: '하강'
+          2: '상승'
+          3: '도착'
+
+  switch:
+    - id: elevator_call_switch
+      name: 엘리베이터 호출 스위치
+      icon: mdi:elevator
+      state:
+        data: [0x30, 0xd0, 0x00, 0x01, 0x00, 0x44, 0x00]
+        mask: [0xff, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff]
+      # data[10] 0x00: idle, 0x01: up, 0x02: down, 0x03: arrived
+      state_on: "data[10] == 1 || data[10] == 2"
+      state_off: "data[10] == 0 || data[10] == 3"
+      command_on:
+        data: [0x30, 0xbc, 0x00, 0x01, 0x00, 0x44, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ack: [0x30, 0xdc]

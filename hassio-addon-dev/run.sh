@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/env bashio
 
 # Home Assistant addon: options.json에서 설정을 읽어옴
 # Docker container: 환경변수에서 설정을 읽어옴

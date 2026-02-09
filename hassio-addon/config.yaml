@@ -27,7 +27,9 @@ options:
   discovery_enabled: true
   timezone: ""
 hassio_role: default
+init: false
 hassio_api: true
+auth_api: true
 uart: true
 services:
   - mqtt:need

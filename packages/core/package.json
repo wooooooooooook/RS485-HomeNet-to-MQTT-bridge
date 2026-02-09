@@ -1,6 +1,6 @@
 {
   "name": "@rs485-homenet/core",
-  "version": "2.5.3",
+  "version": "2.6.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

@@ -159,4 +159,5 @@ ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
 COPY hassio-addon/run.sh /run.sh
 RUN chmod +x /run.sh
 
+ENTRYPOINT [ "/init" ]
 CMD [ "/run.sh" ]

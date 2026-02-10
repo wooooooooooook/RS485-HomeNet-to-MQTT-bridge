@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-09T01:16:21.294Z",
+  "generated_at": "2026-02-10T00:08:07.390Z",
   "vendors": [
     {
       "id": "bestin",
@@ -403,30 +403,6 @@
       },
       "items": [
         {
-          "file": "ezville/air_quality_sensors.yaml",
-          "name": "공기질 센서 (CO2/PM)",
-          "name_en": "Air Quality Sensors (CO2/PM)",
-          "description": "Ezville 공기질 센서 설정입니다. 거실과 안방의 CO2 농도 및 미세먼지(PM) 측정값을 제공합니다.",
-          "description_en": "Ezville air quality sensors for CO2 concentration and PM (particulate matter) readings in the living room and main bedroom.",
-          "version": "1.0.2",
-          "author": "햇님이다",
-          "tags": [
-            "sensor",
-            "air_quality",
-            "co2",
-            "pm",
-            "ezville"
-          ],
-          "parameters": [],
-          "content_summary": {
-            "entities": {
-              "sensor": 4
-            },
-            "automations": 0,
-            "scripts": 0
-          }
-        },
-        {
           "file": "ezville/door_auto.yaml",
           "name": "현관문열림자동",
           "name_en": "door auto open",
@@ -519,7 +495,7 @@
           "name_en": "heat exchanger fan (auto mode)",
           "description": "Ezville 전열교환기 설정입니다. 자동 모드를 포함합니다.",
           "description_en": "Ezville heat exchanger fan configuration with auto mode.",
-          "version": "1.0.1",
+          "version": "1.0.2",
           "author": "loveangelsa",
           "tags": [
             "heat exchanger fan",

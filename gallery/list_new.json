@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-10T03:58:23.736Z",
+  "generated_at": "2026-02-10T04:05:47.268Z",
   "vendors": [
     {
       "id": "bestin",
@@ -2788,6 +2788,7 @@
           "parameters": [],
           "content_summary": {
             "entities": {
+              "text_sensor": 1,
               "switch": 1
             },
             "automations": 0,

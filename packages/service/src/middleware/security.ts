@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import crypto from 'node:crypto';
 
 /**
  * Global Security Headers Middleware
@@ -31,5 +32,43 @@ export const apiSecurityHeaders = (_req: Request, res: Response, next: NextFunct
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  next();
+};
+
+/**
+ * API Authentication Middleware
+ * Enforces token-based authentication if AUTH_TOKEN environment variable is set.
+ */
+export const apiAuthentication = (req: Request, res: Response, next: NextFunction) => {
+  const token = process.env.AUTH_TOKEN?.trim();
+
+  // If no token is configured, skip authentication (open access)
+  if (!token) {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Missing authentication token' });
+  }
+
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing or invalid authentication token' });
+  }
+
+  const receivedToken = authHeader.split(' ')[1];
+
+  // Use timingSafeEqual to prevent timing attacks
+  const tokenBuffer = Buffer.from(token);
+  const receivedBuffer = Buffer.from(receivedToken);
+
+  if (
+    tokenBuffer.length !== receivedBuffer.length ||
+    !crypto.timingSafeEqual(tokenBuffer, receivedBuffer)
+  ) {
+    return res.status(403).json({ error: 'Invalid authentication token' });
+  }
+
   next();
 };

@@ -47,7 +47,11 @@ import { initializeBackupDir, saveBackup } from './services/backup.service.js';
 import { loadFrontendSettings } from './services/frontend-settings.service.js';
 import { registerRoutes } from './routes/index.js';
 import { createStreamManager } from './websocket/stream-manager.js';
-import { globalSecurityHeaders, apiSecurityHeaders } from './middleware/security.js';
+import {
+  globalSecurityHeaders,
+  apiSecurityHeaders,
+  apiAuthentication,
+} from './middleware/security.js';
 
 // --- Path Constants ---
 const __filename = fileURLToPath(import.meta.url);
@@ -131,6 +135,9 @@ app.use(express.json({ limit: '1mb' }));
 
 // API Caching: API 응답에 대한 캐싱 비활성화 (보안 강화)
 app.use('/api', apiSecurityHeaders);
+
+// API Authentication: AUTH_TOKEN이 설정된 경우 인증 수행
+app.use('/api', apiAuthentication);
 
 // Global Rate Limiter Middleware
 app.use((req, res, next) => {

@@ -385,6 +385,188 @@ async function checkAndFixDuplicatePortIds(
   return { needsRestart: fixedFiles.length > 0, fixedFiles };
 }
 
+type LoadResult = { config: HomenetBridgeConfig | null; error: BridgeErrorPayload | null };
+
+async function loadConfigs(resolvedPaths: string[]): Promise<LoadResult[]> {
+  const loadResults: LoadResult[] = [];
+  for (const configPath of resolvedPaths) {
+    try {
+      const config = await loadConfigFile(configPath);
+      loadResults.push({ config, error: null });
+    } catch (err) {
+      logger.error({ err, configPath }, '[service] Failed to load config file');
+      loadResults.push({ config: null, error: mapConfigLoadError(err) });
+    }
+  }
+  return loadResults;
+}
+
+async function handleDuplicatePorts(filenames: string[], resolvedPaths: string[]): Promise<boolean> {
+  const { needsRestart, fixedFiles } = await checkAndFixDuplicatePortIds(
+    filenames,
+    resolvedPaths,
+  );
+
+  if (needsRestart) {
+    logger.warn(
+      { fixedFiles },
+      '[service] Duplicate portId(s) fixed. Restarting to apply changes...',
+    );
+
+    bridgeStatus = 'error';
+    bridgeError = createBridgeErrorPayload({
+      code: 'CORE_START_FAILED',
+      message: `Duplicate portId(s) auto-fixed (${fixedFiles.join(', ')}). Restarting...`,
+      source: 'core',
+      severity: 'warning',
+      retryable: true,
+    });
+    bridgeStartPromise = null;
+
+    // Trigger restart
+    await triggerRestart();
+
+    // Handle immediate restart in dev environment
+    setTimeout(async () => {
+      if (process.env.npm_lifecycle_event === 'dev') {
+        logger.info('[service] Dev mode detected. Touching file to trigger restart...');
+        try {
+          const now = new Date();
+          await fs.utimes(__filename, now, now);
+        } catch (err) {
+          logger.error({ err }, '[service] Failed to touch file for dev restart');
+        }
+      } else {
+        logger.info('[service] Exiting process to apply portId fixes...');
+        process.exit(0);
+      }
+    }, 500);
+
+    return true;
+  }
+  return false;
+}
+
+type MqttParams = {
+  url: string;
+  username?: string;
+  password?: string;
+};
+
+async function instantiateBridges(
+  filenames: string[],
+  resolvedPaths: string[],
+  loadResults: LoadResult[],
+  mqttParams: MqttParams,
+) {
+  const newBridges: BridgeInstance[] = [];
+  const newConfigErrors: (BridgeErrorPayload | null)[] = [];
+  const newConfigStatuses: ConfigStatus[] = [];
+  const loadedConfigs: HomenetBridgeConfig[] = [];
+  const loadedConfigFilesForCollector: { name: string; content: string; portIds?: string[] }[] =
+    [];
+
+  // Instantiate bridges only for successfully loaded configs
+  for (let i = 0; i < filenames.length; i += 1) {
+    const result = loadResults[i];
+    if (result.config) {
+      const bridge = new HomeNetBridge({
+        configPath: resolvedPaths[i],
+        mqttUrl: mqttParams.url,
+        mqttUsername: mqttParams.username,
+        mqttPassword: mqttParams.password,
+        mqttTopicPrefix: BASE_MQTT_PREFIX,
+        configOverride: result.config,
+        enableDiscovery: process.env.DISCOVERY_ENABLED !== 'false',
+      });
+
+      // Listen for status changes from the bridge
+      bridge.on('status', (event: { portId: string; status: BridgeStatus }) => {
+        const cfgIndex = filenames.indexOf(filenames[i]);
+        if (cfgIndex !== -1) {
+          currentConfigStatuses[cfgIndex] = event.status as ConfigStatus;
+        }
+      });
+
+      newBridges.push({
+        bridge,
+        configFile: filenames[i],
+        resolvedPath: resolvedPaths[i],
+        config: result.config,
+      });
+
+      loadedConfigs.push(result.config);
+      newConfigErrors.push(null);
+      newConfigStatuses.push('starting');
+
+      // Read file content for log collector
+      try {
+        const content = await fs.readFile(resolvedPaths[i], 'utf-8');
+        const portIds = result.config.serial
+          ? [normalizePortId(result.config.serial.portId, 0)]
+          : [];
+        loadedConfigFilesForCollector.push({ name: filenames[i], content, portIds });
+      } catch {
+        // Ignore read error for log collector
+      }
+    } else {
+      // Config failed to load - add placeholder entries
+      loadedConfigs.push({} as HomenetBridgeConfig); // Empty placeholder
+      newConfigErrors.push(result.error);
+      newConfigStatuses.push('error');
+    }
+  }
+
+  return {
+    newBridges,
+    newConfigErrors,
+    newConfigStatuses,
+    loadedConfigs,
+    loadedConfigFilesForCollector,
+  };
+}
+
+function startBridgesInBackground(bridgesToStart: BridgeInstance[], filenames: string[]) {
+  // 4. Start all bridges in background (non-blocking for API)
+  Promise.all(
+    bridgesToStart.map(async (instance) => {
+      // Find the original index in filenames array
+      const originalIndex = filenames.indexOf(instance.configFile);
+      try {
+        await instance.bridge.start();
+        if (originalIndex !== -1) {
+          currentConfigStatuses[originalIndex] = 'started';
+        }
+      } catch (err) {
+        logger.error(
+          { err, configFile: instance.configFile },
+          '[service] Failed to start bridge instance',
+        );
+        if (originalIndex !== -1) {
+          currentConfigStatuses[originalIndex] = 'error';
+          currentConfigErrors[originalIndex] = mapBridgeStartError(
+            err,
+            normalizePortId(instance.config.serial?.portId ?? 'unknown', 0),
+          );
+        }
+        // Remove failed bridge from the bridges array to prevent
+        // "Bridge not initialized" errors when executing commands on other bridges
+        const failedIndex = bridges.indexOf(instance);
+        if (failedIndex !== -1) {
+          bridges.splice(failedIndex, 1);
+          logger.info(
+            { configFile: instance.configFile },
+            '[service] Removed failed bridge instance from active bridges',
+          );
+        }
+      }
+    }),
+  ).catch((err) => {
+    // Should not happen as individual promises catch errors, but just in case
+    logger.error({ err }, '[service] Unexpected error in background startup');
+  });
+}
+
 async function loadAndStartBridges(filenames: string[]) {
   if (filenames.length === 0) {
     throw new Error('No configuration files provided.');
@@ -406,62 +588,14 @@ async function loadAndStartBridges(filenames: string[]) {
 
     // Check for duplicate portIds when multiple config files exist
     if (filenames.length > 1) {
-      const { needsRestart, fixedFiles } = await checkAndFixDuplicatePortIds(
-        filenames,
-        resolvedPaths,
-      );
-
+      const needsRestart = await handleDuplicatePorts(filenames, resolvedPaths);
       if (needsRestart) {
-        logger.warn(
-          { fixedFiles },
-          '[service] Duplicate portId(s) fixed. Restarting to apply changes...',
-        );
-
-        bridgeStatus = 'error';
-        bridgeError = createBridgeErrorPayload({
-          code: 'CORE_START_FAILED',
-          message: `Duplicate portId(s) auto-fixed (${fixedFiles.join(', ')}). Restarting...`,
-          source: 'core',
-          severity: 'warning',
-          retryable: true,
-        });
-        bridgeStartPromise = null;
-
-        // Trigger restart
-        await triggerRestart();
-
-        // Handle immediate restart in dev environment
-        setTimeout(async () => {
-          if (process.env.npm_lifecycle_event === 'dev') {
-            logger.info('[service] Dev mode detected. Touching file to trigger restart...');
-            try {
-              const now = new Date();
-              await fs.utimes(__filename, now, now);
-            } catch (err) {
-              logger.error({ err }, '[service] Failed to touch file for dev restart');
-            }
-          } else {
-            logger.info('[service] Exiting process to apply portId fixes...');
-            process.exit(0);
-          }
-        }, 500);
-
         return;
       }
     }
 
     // Load configs individually, capturing errors per config
-    const loadResults: { config: HomenetBridgeConfig | null; error: BridgeErrorPayload | null }[] =
-      [];
-    for (const configPath of resolvedPaths) {
-      try {
-        const config = await loadConfigFile(configPath);
-        loadResults.push({ config, error: null });
-      } catch (err) {
-        logger.error({ err, configPath }, '[service] Failed to load config file');
-        loadResults.push({ config: null, error: mapConfigLoadError(err) });
-      }
-    }
+    const loadResults = await loadConfigs(resolvedPaths);
 
     // Check if at least one config loaded successfully
     const successfulConfigs = loadResults.filter((r) => r.config !== null);
@@ -488,63 +622,17 @@ async function loadAndStartBridges(filenames: string[]) {
     const mqttUsername = process.env.MQTT_USER?.trim() || undefined;
     const mqttPassword = process.env.MQTT_PASSWD?.trim() || undefined;
 
-    const newBridges: BridgeInstance[] = [];
-    const newConfigErrors: (BridgeErrorPayload | null)[] = [];
-    const newConfigStatuses: ('idle' | 'starting' | 'started' | 'error' | 'stopped')[] = [];
-    const loadedConfigs: HomenetBridgeConfig[] = [];
-    const loadedConfigFilesForCollector: { name: string; content: string; portIds?: string[] }[] =
-      [];
-
-    // 1. Instantiate bridges only for successfully loaded configs
-    for (let i = 0; i < filenames.length; i += 1) {
-      const result = loadResults[i];
-      if (result.config) {
-        const bridge = new HomeNetBridge({
-          configPath: resolvedPaths[i],
-          mqttUrl,
-          mqttUsername,
-          mqttPassword,
-          mqttTopicPrefix: BASE_MQTT_PREFIX,
-          configOverride: result.config,
-          enableDiscovery: process.env.DISCOVERY_ENABLED !== 'false',
-        });
-
-        // Listen for status changes from the bridge
-        bridge.on('status', (event: { portId: string; status: BridgeStatus }) => {
-          const cfgIndex = filenames.indexOf(filenames[i]);
-          if (cfgIndex !== -1) {
-            currentConfigStatuses[cfgIndex] = event.status as ConfigStatus;
-          }
-        });
-
-        newBridges.push({
-          bridge,
-          configFile: filenames[i],
-          resolvedPath: resolvedPaths[i],
-          config: result.config,
-        });
-
-        loadedConfigs.push(result.config);
-        newConfigErrors.push(null);
-        newConfigStatuses.push('starting');
-
-        // Read file content for log collector
-        try {
-          const content = await fs.readFile(resolvedPaths[i], 'utf-8');
-          const portIds = result.config.serial
-            ? [normalizePortId(result.config.serial.portId, 0)]
-            : [];
-          loadedConfigFilesForCollector.push({ name: filenames[i], content, portIds });
-        } catch {
-          // Ignore read error for log collector
-        }
-      } else {
-        // Config failed to load - add placeholder entries
-        loadedConfigs.push({} as HomenetBridgeConfig); // Empty placeholder
-        newConfigErrors.push(result.error);
-        newConfigStatuses.push('error');
-      }
-    }
+    const {
+      newBridges,
+      newConfigErrors,
+      newConfigStatuses,
+      loadedConfigs,
+      loadedConfigFilesForCollector,
+    } = await instantiateBridges(filenames, resolvedPaths, loadResults, {
+      url: mqttUrl,
+      username: mqttUsername,
+      password: mqttPassword,
+    });
 
     currentConfigFiles = filenames;
     currentRawConfigs = loadedConfigs;
@@ -571,54 +659,10 @@ async function loadAndStartBridges(filenames: string[]) {
     );
 
     // 4. Start all bridges in background (non-blocking for API)
-    // We do not await this Promise.all, so the function returns and releases the lock.
-    Promise.all(
-      newBridges.map(async (instance) => {
-        // Find the original index in filenames array
-        const originalIndex = filenames.indexOf(instance.configFile);
-        try {
-          await instance.bridge.start();
-          if (originalIndex !== -1) {
-            currentConfigStatuses[originalIndex] = 'started';
-          }
-        } catch (err) {
-          logger.error(
-            { err, configFile: instance.configFile },
-            '[service] Failed to start bridge instance',
-          );
-          if (originalIndex !== -1) {
-            currentConfigStatuses[originalIndex] = 'error';
-            currentConfigErrors[originalIndex] = mapBridgeStartError(
-              err,
-              normalizePortId(instance.config.serial?.portId ?? 'unknown', 0),
-            );
-          }
-          // Remove failed bridge from the bridges array to prevent
-          // "Bridge not initialized" errors when executing commands on other bridges
-          const failedIndex = bridges.indexOf(instance);
-          if (failedIndex !== -1) {
-            bridges.splice(failedIndex, 1);
-            logger.info(
-              { configFile: instance.configFile },
-              '[service] Removed failed bridge instance from active bridges',
-            );
-          }
-        }
-      }),
-    ).catch((err) => {
-      // Should not happen as individual promises catch errors, but just in case
-      logger.error({ err }, '[service] Unexpected error in background startup');
-    });
+    startBridgesInBackground(newBridges, filenames);
   })();
 
   // We return a resolved promise immediately so the caller doesn't wait
-  // The actual initialization (loading config) is awaited above,
-  // but the connection phase (bridge.start) happens in background after bridgeStartPromise is cleared.
-  // Wait, the wrapper IIFE is async, so `bridgeStartPromise` is the Promise of that IIFE.
-  // We need to make sure `bridgeStartPromise` variable itself is cleared/resolved when we want API to follow.
-  // The current logic assigns the IIFE promise to `bridgeStartPromise`.
-  // To make it non-blocking for API check `if (bridgeStartPromise)`, we set `bridgeStartPromise = null` inside the IIFE.
-  // This is already done in step 3.
   return Promise.resolve();
 }
 

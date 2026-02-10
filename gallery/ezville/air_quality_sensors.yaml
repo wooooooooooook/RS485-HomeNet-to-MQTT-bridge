@@ -1,62 +1,98 @@
 meta:
   name: "공기질 센서 (CO2/PM)"
   name_en: "Air Quality Sensors (CO2/PM)"
-  description: "Ezville 공기질 센서 설정입니다. 거실과 안방의 CO2 농도 및 미세먼지(PM) 측정값을 제공합니다."
-  description_en: "Ezville air quality sensors for CO2 concentration and PM (particulate matter) readings in the living room and main bedroom."
-  version: "1.0.2"
-  author: "햇님이다"
+  description: "Ezville 공기질 센서 설정입니다. 방 개수를 선택하여 CO2 농도 및 미세먼지(PM) 측정값을 제공합니다."
+  description_en: "Ezville air quality sensors for CO2 concentration and PM (particulate matter) readings. Configurable by room count."
+  version: "2.1.0"
+  author: "loveangelsa"
   tags: ["sensor", "air_quality", "co2", "pm", "ezville"]
+
+parameters:
+  - name: room_count
+    type: integer
+    default: 2
+    min: 1
+    max: 8
+    label: "방 개수"
+    label_en: "Room Count"
+    description: "설치된 공기질 센서(방)의 개수를 입력하세요."
 
 discovery:
   match:
     data: [0x61]
     mask: [0xFF]
-    # 0x61 헤더를 사용하는 공기질 센서들 (CO2, PM)
+  dimensions:
+    - parameter: "room_count"
+      offset: 1
+  inference:
+    strategy: "count"
+
+automation:
+  - $repeat:
+      count: '{{room_count}}'
+      as: i
+    id: 'room_{{i}}_pm_update'
+    name: 'Room {{i}} PM Update'
+    trigger:
+      - type: startup
+      - type: schedule
+        every: 30m
+    then:
+      - action: send_packet
+        data: [0x61, '{{i}}', 0x47, 0x01, 0x00]
+        ack: [0x61]
+      - action: delay
+        milliseconds: 200
+      - action: send_packet
+        data: [0x61, '{{i}}', 0x47, 0x01, 0x01]
+        ack: [0x61]
+      - action: delay
+        milliseconds: 200
+      - action: send_packet
+        data: [0x61, '{{i}}', 0x47, 0x01, 0x02]
+        ack: [0x61]
 
 entities:
   sensor:
-    # CO2 센서들
-    - id: room1_co2
-      name: 'Co2(거실)'
+    - $repeat:
+        count: '{{room_count}}'
+        as: i
+      # CO2
+      id: 'co2_room{{i}}'
+      name: 'Co2(Room {{i}})'
+      device_class: carbon_dioxide
       state:
-        data: [0x61, 0x01, 0x81]
+        data: [0x61, '{{i}}', 0x81]
       unit_of_measurement: 'ppm'
       accuracy_decimals: 0
       state_number:
         offset: 12
         length: 2
         signed: false
-
-    - id: room2_co2
-      name: 'Co2(안방)'
+      
+      # PM1
+      id: 'pm1_room{{i}}'
+      name: 'PM1(Room {{i}})'
+      device_class: pm1
       state:
-        data: [0x61, 0x02, 0x81]
-      unit_of_measurement: 'ppm'
-      accuracy_decimals: 0
-      state_number:
-        offset: 12
-        length: 2
-        signed: false
-
-    # PM(미세먼지) 센서들
-    - id: room1_pm
-      name: 'PM(거실)'
+        data: [0x61, '{{i}}', 0x81]
+      unit_of_measurement: ㎍/㎥
+      state_number: 'data[10] == 0x00 ? int(data[11]) : get_from_state("value")'
+        
+      # PM2.5
+      id: 'pm25_room{{i}}'
+      name: 'PM2.5(Room {{i}})'
+      device_class: pm25
       state:
-        data: [0x61, 0x01, 0x81]
-      unit_of_measurement: '㎍/㎥'
-      accuracy_decimals: 0
-      state_number:
-        offset: 11
-        length: 1
-        signed: false
-
-    - id: room2_pm
-      name: 'PM(안방)'
+        data: [0x61, '{{i}}', 0x81]
+      unit_of_measurement: ㎍/㎥
+      state_number: 'data[10] == 0x40 ? int(data[11]) : get_from_state("value")'
+        
+      # PM10
+      id: 'pm10_room{{i}}'
+      name: 'PM10(Room {{i}})'
+      device_class: pm10
       state:
-        data: [0x61, 0x02, 0x81]
-      unit_of_measurement: '㎍/㎥'
-      accuracy_decimals: 0
-      state_number:
-        offset: 11
-        length: 1
-        signed: false
+        data: [0x61, '{{i}}', 0x81]
+      unit_of_measurement: ㎍/㎥
+      state_number: 'data[10] == 0x80 ? int(data[11]) : get_from_state("value")'

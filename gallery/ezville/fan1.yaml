@@ -3,14 +3,14 @@ meta:
   name_en: "heat exchanger fan (auto mode)"
   description: "Ezville 전열교환기 설정입니다. 자동 모드를 포함합니다."
   description_en: "Ezville heat exchanger fan configuration with auto mode."
-  version: "1.0.1"
+  version: "1.0.2"
   author: "loveangelsa"
   tags: ["heat exchanger fan", "ezville", "auto mode"]
 
 discovery:
   match:
-    data: [0x32, 0x01, 0x81]
-    mask: [0xFF, 0xFF, 0xFF]
+    data: [0x32, 0x01]
+    mask: [0xFF, 0xFF]
 
 entities:
   fan:
@@ -19,20 +19,18 @@ entities:
 
       # 상태 패킷 식별
       state:
-        data: [0x32, 0x01, 0x81]
+        data: [0x32, 0x01]
 
-      # 전원 상태 감지 (7번째 바이트 기준)
-      state_on: >-
-        data[7] != 0x00
-      state_off:
-        offset: 7
-        data: [0x00]
-
+      # 전원 상태 감지
+      state_on: data[3] == 0x81 && data[6] == 0x01
+      state_off: data[3] == 0x81 && data[6] == 0x00
       # 전원 제어
       command_on:
-        data: [0x32, 0x01, 0x42, 0x01, 0x01]  # 약풍으로 켜기
+        data: [0x32, 0x01, 0x42, 0x01, 0x01]
+        ack: [0x32, 0x01, 0x81]
       command_off:
         data: [0x32, 0x01, 0x41, 0x01, 0x00]
+        ack: [0x32, 0x01, 0x81]
       command_update:
         data: [0x32, 0x01, 0x01, 0x00]
         ack: [0x32, 0x01, 0x81]
@@ -42,11 +40,10 @@ entities:
 
       # 현재 속도 감지 (CEL 표현식)
       state_preset_mode: >-
-        data[7] == 0x01 ? "약" :
-        (data[7] == 0x02 ? "중" :
-        (data[7] == 0x03 ? "강" :
-        (data[7] == 0x04 ? "자동" : "")))
-
+        (data[3] == 0xC3 && data[8] == 0x04) ? "자동" :
+        (data[3] == 0x81 && data[7] == 0x01 ? "약" :
+        (data[3] == 0x81 && data[7] == 0x02 ? "중" :
+        (data[3] == 0x81 && data[7] == 0x03 ? "강" : "")))
       # 속도 제어 명령 (CEL 표현식)
       command_preset_mode: >-
         xstr == "약" ? [0x32, 0x01, 0x42, 0x01, 0x01] :

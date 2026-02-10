@@ -3,7 +3,7 @@ meta:
   name_en: "Air Purifier"
   description: "Ezville 공기청정기 전원 및 풍량 제어 설정입니다. 기기 개수를 지정할 수 있습니다."
   description_en: "Ezville air purifier fan control. You can set the number of devices."
-  version: "1.0.0"
+  version: "1.0.1"
   author: "loveangelsa"
   tags: ["fan", "air purifier", "ezville"]
 
@@ -36,22 +36,25 @@ entities:
       name: "공기청정기 {{i}}"
       state:
         data: [0x61, '{{i}}', 0x81]
-      state_on:
-        offset: 6
-        data: [0x01]
-      state_off:
-        offset: 6
-        data: [0x00]
+      state_on: "data[6] == 0x01"
+      state_off: "data[6] == 0x00"
       command_on:
-        data: [0x61, '{{i}}', 0x41, 0x01, '{{i == 1 ? 0x03 : 0x01}}']
+        data: [0x61, '{{i}}', 0x41, 0x01, 0x01]
       command_off:
         data: [0x61, '{{i}}', 0x41, 0x01, 0x00]
       preset_modes: ["약", "중", "강", "터보"]
-      state_preset_mode: >-
-        data[7] == 0x02 ? "약" :
+      state_speed: |
+        (data[7] == 0x02 ? "약" :
         (data[7] == 0x03 ? "중" :
         (data[7] == 0x04 ? "강" :
-        (data[7] == 0x05 ? "터보" : "")))
+        (data[7] == 0x05 ? "터보" :
+        (data[6] == 0x00 ? "OFF" : "")))))
+      state_preset_mode: |
+        (data[7] == 0x02 ? "약" :
+        (data[7] == 0x03 ? "중" :
+        (data[7] == 0x04 ? "강" :
+        (data[7] == 0x05 ? "터보" :
+        (data[6] == 0x00 ? "OFF" : "")))))
       command_preset_mode: >-
         xstr == "약" ? [0x61, int({{i}}), 0x42, 0x01, 0x02] :
         (xstr == "중" ? [0x61, int({{i}}), 0x42, 0x01, 0x03] :

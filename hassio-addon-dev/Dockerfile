@@ -144,6 +144,7 @@ RUN set -o pipefail \
     && tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio \
     && mv /tmp/bashio/lib /usr/lib/bashio \
     && ln -s /usr/lib/bashio/bashio /usr/bin/bashio \
+    && chmod +x /usr/bin/bashio \
     && rm -rf /tmp/*
 
 # Copy application from builder
@@ -158,6 +159,8 @@ ARG LOG_COLLECTOR_API_KEY
 ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
 
 # Setup run script
+# s6-overlay v3 uses /etc/s6-overlay/s6-rc.d/
+RUN mkdir -p /etc/services.d/homenet2mqtt
 COPY hassio-addon-dev/run.sh /etc/services.d/homenet2mqtt/run
 RUN chmod +x /etc/services.d/homenet2mqtt/run
 

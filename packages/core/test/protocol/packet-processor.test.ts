@@ -23,7 +23,7 @@ vi.mock('../../src/protocol/protocol-manager.js', () => {
         }),
         emit: vi.fn((event: string, ...args: any[]) => {
           if (handlers[event]) {
-            handlers[event].forEach(h => h(...args));
+            handlers[event].forEach((h) => h(...args));
           }
         }),
       };
@@ -66,7 +66,7 @@ describe('PacketProcessor', () => {
 
     config = {
       packet_defaults: {
-        rx_header: [0xAA],
+        rx_header: [0xaa],
         rx_length: 5,
       },
       light: [
@@ -134,21 +134,21 @@ describe('PacketProcessor', () => {
 
     // Emit events from ProtocolManager
     mockProtocolManager.emit('state', { deviceId: 'd1', state: 'ON' });
-    mockProtocolManager.emit('packet', [0xAA, 0xBB]);
+    mockProtocolManager.emit('packet', [0xaa, 0xbb]);
     mockProtocolManager.emit('parsed-packet', { some: 'data' });
     mockProtocolManager.emit('entity-error', { error: 'oops' });
-    mockProtocolManager.emit('unmatched-packet', [0xFF]);
+    mockProtocolManager.emit('unmatched-packet', [0xff]);
 
     expect(stateHandler).toHaveBeenCalledWith({ deviceId: 'd1', state: 'ON' });
-    expect(packetHandler).toHaveBeenCalledWith([0xAA, 0xBB]);
+    expect(packetHandler).toHaveBeenCalledWith([0xaa, 0xbb]);
     expect(parsedPacketHandler).toHaveBeenCalledWith({ some: 'data' });
     // Note: entity-error adds portId
     expect(entityErrorHandler).toHaveBeenCalledWith({ error: 'oops', portId: undefined });
-    expect(unmatchedPacketHandler).toHaveBeenCalledWith([0xFF]);
+    expect(unmatchedPacketHandler).toHaveBeenCalledWith([0xff]);
   });
 
   it('should process incoming chunk', () => {
-    const chunk = Buffer.from([0xAA, 0xBB]);
+    const chunk = Buffer.from([0xaa, 0xbb]);
     processor.processChunk(chunk);
     expect(mockProtocolManager.handleIncomingChunk).toHaveBeenCalledWith(chunk);
   });
@@ -224,11 +224,13 @@ describe('PacketProcessor', () => {
       const result = processor.constructCommandPacket(entity, 'on');
 
       expect(result).toBeNull();
-      expect(errorHandler).toHaveBeenCalledWith(expect.objectContaining({
-        entityId: 'light_1',
-        message: 'Construction failed',
-        type: 'command',
-      }));
+      expect(errorHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityId: 'light_1',
+          message: 'Construction failed',
+          type: 'command',
+        }),
+      );
     });
 
     it('should handle optimistic updates', () => {
@@ -271,16 +273,16 @@ describe('PacketProcessor', () => {
     });
 
     it('should normalize command name (remove command_ prefix)', () => {
-        const entity: EntityConfig = { id: 'light_1', name: 'Light' };
-        const mockDevice = {
-          constructCommand: vi.fn().mockReturnValue([0x01]),
-          setErrorReporter: vi.fn(),
-        };
-        mockProtocolManager.getDevice.mockReturnValue(mockDevice);
+      const entity: EntityConfig = { id: 'light_1', name: 'Light' };
+      const mockDevice = {
+        constructCommand: vi.fn().mockReturnValue([0x01]),
+        setErrorReporter: vi.fn(),
+      };
+      mockProtocolManager.getDevice.mockReturnValue(mockDevice);
 
-        processor.constructCommandPacket(entity, 'command_off');
+      processor.constructCommandPacket(entity, 'command_off');
 
-        expect(mockDevice.constructCommand).toHaveBeenCalledWith('off', undefined, undefined);
+      expect(mockDevice.constructCommand).toHaveBeenCalledWith('off', undefined, undefined);
     });
 
     it('should set up error reporter for fallback device', () => {

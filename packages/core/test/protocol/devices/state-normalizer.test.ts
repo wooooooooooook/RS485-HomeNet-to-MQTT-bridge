@@ -56,7 +56,7 @@ describe('normalizeDeviceState', () => {
         state_blue: { offset: 2, length: 1 },
         state_white: { offset: 3, length: 1 },
       };
-      const payload = new Uint8Array([0xFF, 0x00, 0x80, 0x40]);
+      const payload = new Uint8Array([0xff, 0x00, 0x80, 0x40]);
       const result = normalizeDeviceState(config, payload, {});
       expect(result).toEqual({
         red: 255,
@@ -84,7 +84,7 @@ describe('normalizeDeviceState', () => {
         state_speed: { offset: 0, length: 1 },
         state_percentage: { offset: 1, length: 1 },
       };
-      const payload = new Uint8Array([0x03, 0x4B]); // Speed 3, 75%
+      const payload = new Uint8Array([0x03, 0x4b]); // Speed 3, 75%
       const result = normalizeDeviceState(config, payload, {});
       expect(result).toEqual({ speed: 3, percentage: 75 });
     });
@@ -141,7 +141,10 @@ describe('normalizeDeviceState', () => {
       };
 
       // When mode is off, action defaults to off if undefined.
-      expect(normalizeDeviceState(config, new Uint8Array([0x00]), {})).toEqual({ mode: 'off', action: 'off' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x00]), {})).toEqual({
+        mode: 'off',
+        action: 'off',
+      });
       expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ mode: 'heat' });
       expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ mode: 'cool' });
     });
@@ -153,7 +156,9 @@ describe('normalizeDeviceState', () => {
         state_action_idle: { offset: 0, data: [0x00] },
       };
 
-      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ action: 'heating' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({
+        action: 'heating',
+      });
       expect(normalizeDeviceState(config, new Uint8Array([0x00]), {})).toEqual({ action: 'idle' });
     });
 
@@ -165,21 +170,23 @@ describe('normalizeDeviceState', () => {
       };
 
       expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ fan_mode: 'low' });
-      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ fan_mode: 'high' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({
+        fan_mode: 'high',
+      });
     });
 
     it('should fallback to custom_fan if fan_mode not matched', () => {
-         const config = { type: 'climate' };
-         const updates = { custom_fan: 'my_custom_mode' };
-         const result = normalizeDeviceState(config, new Uint8Array([]), updates);
-         expect(result).toEqual({ custom_fan: 'my_custom_mode', fan_mode: 'my_custom_mode' });
+      const config = { type: 'climate' };
+      const updates = { custom_fan: 'my_custom_mode' };
+      const result = normalizeDeviceState(config, new Uint8Array([]), updates);
+      expect(result).toEqual({ custom_fan: 'my_custom_mode', fan_mode: 'my_custom_mode' });
     });
 
-     it('should fallback to custom_preset if preset_mode not matched', () => {
-         const config = { type: 'climate' };
-         const updates = { custom_preset: 'my_preset' };
-         const result = normalizeDeviceState(config, new Uint8Array([]), updates);
-         expect(result).toEqual({ custom_preset: 'my_preset', preset_mode: 'my_preset' });
+    it('should fallback to custom_preset if preset_mode not matched', () => {
+      const config = { type: 'climate' };
+      const updates = { custom_preset: 'my_preset' };
+      const result = normalizeDeviceState(config, new Uint8Array([]), updates);
+      expect(result).toEqual({ custom_preset: 'my_preset', preset_mode: 'my_preset' });
     });
   });
 
@@ -214,7 +221,7 @@ describe('normalizeDeviceState', () => {
         type: 'sensor',
         state_number: { offset: 0, length: 1 },
       };
-      expect(normalizeDeviceState(config, new Uint8Array([0x0A]), {})).toEqual({ value: 10 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x0a]), {})).toEqual({ value: 10 });
     });
 
     it('should handle multi-byte values (big endian)', () => {
@@ -223,7 +230,9 @@ describe('normalizeDeviceState', () => {
         state_number: { offset: 0, length: 2, endian: 'big' },
       };
       // 0x0102 = 258
-      expect(normalizeDeviceState(config, new Uint8Array([0x01, 0x02]), {})).toEqual({ value: 258 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x01, 0x02]), {})).toEqual({
+        value: 258,
+      });
     });
 
     it('should handle multi-byte values (little endian)', () => {
@@ -232,7 +241,9 @@ describe('normalizeDeviceState', () => {
         state_number: { offset: 0, length: 2, endian: 'little' },
       };
       // 0x0201 = 258
-      expect(normalizeDeviceState(config, new Uint8Array([0x02, 0x01]), {})).toEqual({ value: 258 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x02, 0x01]), {})).toEqual({
+        value: 258,
+      });
     });
 
     it('should handle BCD decoding', () => {
@@ -250,9 +261,9 @@ describe('normalizeDeviceState', () => {
         state_number: { offset: 0, length: 1, signed: true },
       };
       // 0xFF -> -1 (255 - 256)
-      expect(normalizeDeviceState(config, new Uint8Array([0xFF]), {})).toEqual({ value: -1 });
+      expect(normalizeDeviceState(config, new Uint8Array([0xff]), {})).toEqual({ value: -1 });
       // 0x7F -> 127
-      expect(normalizeDeviceState(config, new Uint8Array([0x7F]), {})).toEqual({ value: 127 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x7f]), {})).toEqual({ value: 127 });
     });
 
     it('should handle precision', () => {
@@ -262,59 +273,67 @@ describe('normalizeDeviceState', () => {
       };
       // 0x14 = 20 -> 2.0
       expect(normalizeDeviceState(config, new Uint8Array([0x14]), {})).toEqual({ value: 2 });
-       // 0x15 = 21 -> 2.1
+      // 0x15 = 21 -> 2.1
       expect(normalizeDeviceState(config, new Uint8Array([0x15]), {})).toEqual({ value: 2.1 });
     });
 
-     it('should handle ASCII decoding', () => {
+    it('should handle ASCII decoding', () => {
       const config = {
         type: 'sensor',
         state_number: { offset: 0, length: 3, decode: 'ascii' },
       };
       // 'ABC'
-      expect(normalizeDeviceState(config, new Uint8Array([0x41, 0x42, 0x43]), {})).toEqual({ value: 'ABC' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x41, 0x42, 0x43]), {})).toEqual({
+        value: 'ABC',
+      });
     });
 
-     it('should handle ASCII decoding little endian', () => {
+    it('should handle ASCII decoding little endian', () => {
       const config = {
         type: 'sensor',
         state_number: { offset: 0, length: 3, decode: 'ascii', endian: 'little' },
       };
       // 'CBA' -> 'ABC' (reversed)
-      expect(normalizeDeviceState(config, new Uint8Array([0x43, 0x42, 0x41]), {})).toEqual({ value: 'ABC' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x43, 0x42, 0x41]), {})).toEqual({
+        value: 'ABC',
+      });
     });
 
     it('should handle mapping', () => {
-        const config = {
-            type: 'sensor',
-            state_number: { offset: 0, length: 1, mapping: { 10: 'ten' } },
-        };
-        expect(normalizeDeviceState(config, new Uint8Array([0x0A]), {})).toEqual({ value: 'ten' });
-        expect(normalizeDeviceState(config, new Uint8Array([0x0B]), {})).toEqual({ value: 11 });
+      const config = {
+        type: 'sensor',
+        state_number: { offset: 0, length: 1, mapping: { 10: 'ten' } },
+      };
+      expect(normalizeDeviceState(config, new Uint8Array([0x0a]), {})).toEqual({ value: 'ten' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x0b]), {})).toEqual({ value: 11 });
     });
   });
 
   describe('Number Entity Actions', () => {
-      it('should detect increment/decrement actions', () => {
-          const config = {
-              type: 'number',
-              state_increment: { offset: 0, data: [0x01] },
-              state_decrement: { offset: 0, data: [0x02] }
-          };
-          expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ action: 'increment' });
-          expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ action: 'decrement' });
+    it('should detect increment/decrement actions', () => {
+      const config = {
+        type: 'number',
+        state_increment: { offset: 0, data: [0x01] },
+        state_decrement: { offset: 0, data: [0x02] },
+      };
+      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({
+        action: 'increment',
       });
-       it('should detect to_min/to_max actions', () => {
-          const config = {
-              type: 'number',
-              min_value: 0,
-              max_value: 100,
-              state_to_min: { offset: 0, data: [0x01] },
-              state_to_max: { offset: 0, data: [0x02] }
-          };
-          expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ value: 0 });
-          expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ value: 100 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({
+        action: 'decrement',
       });
+    });
+    it('should detect to_min/to_max actions', () => {
+      const config = {
+        type: 'number',
+        min_value: 0,
+        max_value: 100,
+        state_to_min: { offset: 0, data: [0x01] },
+        state_to_max: { offset: 0, data: [0x02] },
+      };
+      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ value: 0 });
+      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ value: 100 });
+    });
   });
 
   describe('Select Entity', () => {
@@ -327,8 +346,12 @@ describe('normalizeDeviceState', () => {
           map: { 1: 'option1', 2: 'option2' },
         },
       };
-      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ option: 'option1' });
-      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({ option: 'option2' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({
+        option: 'option1',
+      });
+      expect(normalizeDeviceState(config, new Uint8Array([0x02]), {})).toEqual({
+        option: 'option2',
+      });
       expect(normalizeDeviceState(config, new Uint8Array([0x03]), {})).toEqual({}); // No match
     });
   });
@@ -342,17 +365,19 @@ describe('normalizeDeviceState', () => {
       };
 
       expect(normalizeDeviceState(config, new Uint8Array([0x01]), {})).toEqual({ state: 'LOCKED' });
-      expect(normalizeDeviceState(config, new Uint8Array([0x00]), {})).toEqual({ state: 'UNLOCKED' });
+      expect(normalizeDeviceState(config, new Uint8Array([0x00]), {})).toEqual({
+        state: 'UNLOCKED',
+      });
     });
 
-     it('should clean up boolean flags', () => {
-         const config = {
-            type: 'lock',
-            state_locked: { offset: 0, data: [0x01] },
-        };
-         const updates = { locked: true };
-         const result = normalizeDeviceState(config, new Uint8Array([0x00]), updates);
-         expect(result.locked).toBeUndefined();
+    it('should clean up boolean flags', () => {
+      const config = {
+        type: 'lock',
+        state_locked: { offset: 0, data: [0x01] },
+      };
+      const updates = { locked: true };
+      const result = normalizeDeviceState(config, new Uint8Array([0x00]), updates);
+      expect(result.locked).toBeUndefined();
     });
   });
 
@@ -372,7 +397,7 @@ describe('normalizeDeviceState', () => {
         type: 'sensor',
         state_number: { length: 1 }, // offset undefined, uses headerLen
       };
-      const payload = new Uint8Array([0xAA, 0xBB, 0xCC]);
+      const payload = new Uint8Array([0xaa, 0xbb, 0xcc]);
       // headerLen = 1, so offset = 1. Value at index 1 is 0xBB (187)
       const result = normalizeDeviceState(config, payload, {}, { headerLen: 1 });
       expect(result).toEqual({ value: 187 });
@@ -383,7 +408,7 @@ describe('normalizeDeviceState', () => {
         type: 'sensor',
         state_number: { offset: 0, length: 1 }, // offset defined
       };
-      const payload = new Uint8Array([0xAA, 0xBB, 0xCC]);
+      const payload = new Uint8Array([0xaa, 0xbb, 0xcc]);
       // offset 0, value 0xAA (170)
       const result = normalizeDeviceState(config, payload, {}, { headerLen: 1 });
       expect(result).toEqual({ value: 170 });

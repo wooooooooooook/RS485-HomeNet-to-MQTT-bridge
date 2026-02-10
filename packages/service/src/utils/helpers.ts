@@ -115,7 +115,11 @@ export const parseEnvList = (
 export const triggerRestart = async (): Promise<void> => {
   await fs.writeFile(CONFIG_RESTART_FLAG, new Date().toISOString(), 'utf-8');
   logger.info('[service] Restart required. Please restart the addon/container to apply changes.');
-  process.exit(0);
+  
+  // Give some time for the response to be sent to the client before exiting
+  setTimeout(() => {
+    process.exit(0);
+  }, 500);
 };
 
 // --- Frontend Settings Helpers ---

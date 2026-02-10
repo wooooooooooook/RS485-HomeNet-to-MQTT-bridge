@@ -1,4 +1,4 @@
-#!/usr/bin/env bashio
+#!/usr/bin/env bash
 set -e
 source /usr/lib/bashio/bashio.sh
 cd /app

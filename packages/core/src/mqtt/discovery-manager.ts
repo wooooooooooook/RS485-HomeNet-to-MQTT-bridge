@@ -263,6 +263,11 @@ export class DiscoveryManager {
       return;
     }
 
+    if (entity.discovery_skip === true) {
+      logger.debug({ id: entity.id }, '[DiscoveryManager] Skipping discovery due to discovery_skip flag');
+      return;
+    }
+
     const discoveryKey = `${this.portId}:${entity.id}`;
 
     if (this.discoveryPublished.has(discoveryKey) && !force) {

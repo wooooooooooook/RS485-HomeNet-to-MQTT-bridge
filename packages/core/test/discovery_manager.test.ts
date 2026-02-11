@@ -100,6 +100,13 @@ describe('DiscoveryManager', () => {
           area: 'Living Room',
           state: {},
         },
+        {
+          id: 'skipped_switch',
+          name: 'Skipped Switch',
+          type: 'switch',
+          discovery_skip: true,
+          state: {},
+        },
       ],
     } as any;
 
@@ -170,6 +177,21 @@ describe('DiscoveryManager', () => {
     expect(payload.command_topic).toBe('homenet2mqtt/homedevice1/always_on_light/set');
     expect(payload.suggested_area).toBe('Living Room');
     expect(payload.device.suggested_area).toBeUndefined();
+  });
+
+  it('discovery_skip 플래그가 있으면 디스커버리를 발행하지 않는다', () => {
+    discoveryManager.discover();
+
+    const switchTopic = 'homeassistant/switch/homenet_main_skipped_switch/config';
+    expect(
+      mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === switchTopic).length,
+    ).toBe(0);
+
+    // 상태를 받아도 발행되지 않아야 함
+    eventBus.emit('state:changed', { entityId: 'skipped_switch', state: {}, portId: 'main' });
+    expect(
+      mockPublisher.publish.mock.calls.filter((args: any[]) => args[0] === switchTopic).length,
+    ).toBe(0);
   });
 
   it('디바이스 메타데이터와 영역 정보를 Discovery에 반영한다', () => {

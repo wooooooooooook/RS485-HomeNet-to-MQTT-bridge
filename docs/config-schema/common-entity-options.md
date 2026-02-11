@@ -54,6 +54,19 @@ sensor:
     # ...
 ```
 
+### `discovery_skip`
+
+- **타입**: `boolean`
+- **기본값**: `false`
+- **설명**: `true`로 설정하면 해당 엔티티에 대한 MQTT Discovery 메시지를 절대 발행하지 않습니다. Home Assistant 등에서 자동 발견 기능을 사용하지 않고, 수동으로 MQTT 엔티티를 구성하고자 할 때 유용합니다.
+
+```yaml
+switch:
+  - name: '수동 설정 스위치'
+    id: 'manual_switch'
+    discovery_skip: true # Discovery 발행 안 함 (수동 설정 필요)
+```
+
 ## 패킷 통신 설정 (`packet_parameters`)
 상위 `packet_defaults`에서 정의한 통신 설정을 개별 엔티티 수준에서 오버라이드할 수 있습니다. 특정 장치만 다른 체크섬 방식이나 타이밍을 사용할 때 유용합니다.
 

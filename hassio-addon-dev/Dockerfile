@@ -66,6 +66,10 @@ COPY --from=common-builder /app/packages/service/static ./packages/service/stati
 # Use turbo build as requested (dev addon does not support armv7)
 RUN pnpm turbo build --filter=@rs485-homenet/core
 
+# Remove development dependencies to reduce size of node_modules
+# We must do this BEFORE removing workspace packages that are in 'dependencies'
+RUN pnpm install --prod --frozen-lockfile
+
 # Clean up source code and build artifacts not needed for runtime
 # 1. packages/ui: Already built and copied to service/static
 # 2. */src, */test, */tsconfig*.json: Code is compiled to dist
@@ -75,10 +79,6 @@ RUN rm -rf packages/ui \
   packages/*/tsconfig*.json \
   packages/*/*.md \
   scripts
-
-# Remove development dependencies to reduce size of node_modules
-# We use 'install --prod' instead of 'prune --prod' because the latter can incorrectly remove workspace dependencies
-RUN pnpm install --prod --frozen-lockfile
 
 # Final cleanup of node_modules to remove unnecessary files
 # Removes: maps, TS sources, docs, licenses, C/C++ sources/headers (after build), and build artifacts

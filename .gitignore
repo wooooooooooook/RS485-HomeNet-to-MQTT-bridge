@@ -43,3 +43,4 @@ deploy/.configs/
 .vscode/
 packages/simulator/src/packets_from_userdata.ts
 .turbo/
+deploy/docker/h2m-config/

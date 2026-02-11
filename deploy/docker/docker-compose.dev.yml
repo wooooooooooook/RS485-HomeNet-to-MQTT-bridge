@@ -51,10 +51,10 @@ services:
     environment:
       CI: 'true'
       SIMULATOR_INTERVAL_MS: '100'
-      SIMULATOR_PROTOCOL: 'tcp'
+      SIMULATOR_PROTOCOL: 'serial'
       SIMULATOR_PORT_PATH: '/tmp/ttyRS485'
       SIMULATOR_DEVICE: 'userdata'
-      SIMULATOR_SLOW: '20'
+      SIMULATOR_SLOW: '5'
     volumes:
       # No workspace mount -> Uses built-in code from image
       - pnpm-store:/root/.local/share/pnpm
@@ -64,7 +64,10 @@ services:
         set -euo pipefail
         # Start socat if NOT in tcp mode (in tcp mode, the simulator itself binds the port)
         if [ "$$SIMULATOR_PROTOCOL" != "tcp" ]; then
-          nohup socat TCP-LISTEN:8888,fork PTY,link=/tmp/ttyRS485,raw,echo=0,mode=666,b9600,inpck=0 > /tmp/socat.log 2>&1 &
+          nohup socat PTY,link=/tmp/ttyRS485,raw,echo=0,mode=666 PTY,link=/tmp/ttyRS485_bridge,raw,echo=0,mode=666 > /tmp/socat_pty.log 2>&1 &
+          for i in $$(seq 1 50); do [ -e /tmp/ttyRS485_bridge ] && break; sleep 0.1; done
+          nohup socat TCP-LISTEN:8888,fork,reuseaddr OPEN:/tmp/ttyRS485_bridge,raw,nonblock > /tmp/socat_tcp.log 2>&1 &
+          for i in $$(seq 1 50); do [ -e /tmp/ttyRS485 ] && break; sleep 0.1; done
         fi
         
         corepack enable
@@ -75,7 +78,10 @@ services:
     restart: unless-stopped
 
   app:
-    <<: *dev-base
+    build:
+      context: ../../
+      dockerfile: deploy/docker/app.Dockerfile
+    image: nubiz/homenet2mqtt:dev
     container_name: rs485-app-dev
     environment:
       CI: 'true'
@@ -87,33 +93,19 @@ services:
       LOG_LEVEL: info
       MQTT_TOPIC_PREFIX: homenet
     volumes:
-      # No workspace mount -> Uses built-in code from image
-      - pnpm-store:/root/.local/share/pnpm
-      - app_node_modules:/workspace/node_modules
       - config_data:/config
       - /dev/pts:/dev/pts
       - ../../gallery:/gallery
     ports:
       - '3000:3000'
+    privileged: true
+    entrypoint: [ "/sbin/tini", "--" ]
     command: >
-      bash -lc "
-        set -euo pipefail
+      bash -c "
         # Connect to simulator via TCP and expose as PTY
-        nohup socat PTY,link=/dev/ttyRS485,raw,echo=0,mode=666,b9600,inpck=0 TCP:simulator:8888,retry=10,interval=1 > /tmp/socat.log 2>&1 &
-        
-        corepack enable
-        # Use frozen lockfile for faster install
-        pnpm install --filter @rs485-homenet/service... --filter @rs485-homenet/core... --filter @rs485-homenet/ui... --frozen-lockfile
-
-        # Pre-build packages to avoid race conditions and speed up startup
-        # Pre-build packages using Turbo for speed and caching
-        echo '[app] Building via Turbo...'
-        pnpm build
-        
-        # Start dev servers
-        echo '[app] Starting dev servers...'
-        pnpm --filter @rs485-homenet/core dev | pnpm pino-pretty &
-        pnpm --filter @rs485-homenet/service dev | pnpm pino-pretty
+        socat PTY,link=/dev/ttyRS485,raw,echo=0,mode=666,b9600,inpck=0 TCP:simulator:8888,retry=30,interval=2 &
+        sleep 1
+        exec /run.sh
       "
     restart: unless-stopped
 

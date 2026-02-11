@@ -6,9 +6,8 @@
 
 ## 필수 필드
 - `state`: 이 센서 값이 포함된 패킷을 식별하는 서명.
-- `state_number` 또는 `state_value` (CEL): 수치를 추출하는 방법 (둘 중 하나 필수).
-  - `state_number`: [`StateNumSchema`](./schemas.md#statenumschema)로 바이트를 숫자로 변환.
-  - `state_value`: CEL 표현식으로 숫자를 반환.
+- `state_number`: 수치를 추출하는 방법
+  - `state_number`: [`StateNumSchema`](./schemas.md#statenumschema)로 바이트를 숫자로 변환. 혹은 CEL 표현식으로 숫자를 반환.
 
 ## MQTT 디스커버리 메시지 구성
 - 토픽: `homeassistant/sensor/<unique_id>/config`
@@ -46,7 +45,7 @@ sensor:
     device_class: power
     state:
       data: [0x31, 0x01]
-    state_value: >-
+    state_number: >-
       (data[5] * 256 + data[6]) / 10.0
 ```
 

@@ -67,6 +67,8 @@ switch:
     discovery_skip: true # Discovery 발행 안 함 (수동 설정 필요)
 ```
 
+> **참고**: 특정 엔티티가 아닌 시스템 전체의 MQTT Discovery 기능을 비활성화하려면, 애드온 설정의 `Home Assistant MQTT 통합 연동` 옵션을 꺼주세요.
+
 ## 패킷 통신 설정 (`packet_parameters`)
 상위 `packet_defaults`에서 정의한 통신 설정을 개별 엔티티 수준에서 오버라이드할 수 있습니다. 특정 장치만 다른 체크섬 방식이나 타이밍을 사용할 때 유용합니다.
 

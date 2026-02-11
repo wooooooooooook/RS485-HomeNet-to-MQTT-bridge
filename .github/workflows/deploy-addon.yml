@@ -86,6 +86,28 @@ jobs:
             echo "Image not found. Will build."
           fi
 
+      - name: Determine Architectures
+        if: steps.check_image.outputs.exists != 'true'
+        id: determine_arch
+        run: |
+          echo "Determining architectures from hassio-addon/build.yaml..."
+          ARCHS=$(yq -r '.build_from | keys | .[]' hassio-addon/build.yaml)
+          PLATFORMS=""
+          for arch in $ARCHS; do
+            case $arch in
+              aarch64) PLAT="linux/arm64" ;;
+              amd64)   PLAT="linux/amd64" ;;
+              *)       echo "Warning: Unknown architecture $arch"; continue ;;
+            esac
+            if [ -z "$PLATFORMS" ]; then
+              PLATFORMS="$PLAT"
+            else
+              PLATFORMS="$PLATFORMS,$PLAT"
+            fi
+          done
+          echo "Platforms: $PLATFORMS"
+          echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         if: steps.check_image.outputs.exists != 'true'
         uses: docker/setup-qemu-action@v3
@@ -100,7 +122,7 @@ jobs:
         with:
           context: .
           file: hassio-addon/Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: ${{ steps.determine_arch.outputs.platforms }}
           push: true
           tags: |
             nubiz/homenet2mqtt:latest

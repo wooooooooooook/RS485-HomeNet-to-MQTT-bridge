@@ -1,4 +1,5 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22
+
 # Stage 1: Common Builder (Host Architecture)
 # Builds UI and Service packages which are architecture independent
 FROM --platform=$BUILDPLATFORM node:22-slim AS common-builder

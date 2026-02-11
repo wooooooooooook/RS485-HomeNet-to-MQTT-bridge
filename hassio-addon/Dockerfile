@@ -1,4 +1,13 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22
+# Dynamic Base Image Selection
+FROM ghcr.io/home-assistant/amd64-base:3.22 AS base-amd64
+FROM ghcr.io/home-assistant/aarch64-base:3.22 AS base-arm64
+FROM ghcr.io/home-assistant/armv7-base:3.22 AS base-armv7
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+FROM base-${TARGETARCH}${TARGETVARIANT} AS detected-base
+
+ARG BUILD_FROM=detected-base
 
 # Stage 1: Common Builder (Host Architecture)
 # Builds UI and Service packages which are architecture independent
@@ -108,7 +117,6 @@ RUN find node_modules -type f \( \
 
 # Stage 3: Runner (Home Assistant Base Image)
 # HA base image includes s6-overlay, bashio, jq, curl, bash
-ARG BUILD_FROM
 FROM ${BUILD_FROM} AS runner
 
 WORKDIR /app

@@ -97,8 +97,6 @@ jobs:
             case $arch in
               aarch64) PLAT="linux/arm64" ;;
               amd64)   PLAT="linux/amd64" ;;
-              armv7)   PLAT="linux/arm/v7" ;;
-              i386)    PLAT="linux/386" ;;
               *)       echo "Warning: Unknown architecture $arch"; continue ;;
             esac
             if [ -z "$PLATFORMS" ]; then

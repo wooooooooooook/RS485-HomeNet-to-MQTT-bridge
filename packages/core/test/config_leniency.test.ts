@@ -19,8 +19,6 @@ describe('Config Leniency', () => {
 
     expect(config.sensor[0].state_number).toBeDefined();
     expect(config.sensor[0].state_number.offset).toBe(1);
-    // Should preserve original if needed, or maybe not?
-    // Usually normalization modifies in place.
   });
 
   it('should treat state_value as state_text for text_sensor', () => {
@@ -57,5 +55,23 @@ describe('Config Leniency', () => {
 
     expect(config.sensor[0].state_number).toBeDefined();
     expect(config.sensor[0].state_number.offset).toBe(3);
+  });
+
+  it('should treat state_number as state_text for text_sensor', () => {
+    const config: any = {
+      serial: { portId: 'test', path: '/dev/test', baud_rate: 9600 },
+      text_sensor: [
+        {
+          id: 'test_text_num',
+          state: { data: [0x04] },
+          state_number: { offset: 4, length: 4 } // Wrong property
+        }
+      ]
+    };
+
+    normalizeConfig(config);
+
+    expect(config.text_sensor[0].state_text).toBeDefined();
+    expect(config.text_sensor[0].state_text.offset).toBe(4);
   });
 });

@@ -98,12 +98,14 @@ export function normalizeConfig(config: HomenetBridgeConfig) {
           }
         }
 
-        // Handle text_sensor state_value alias for leniency
+        // Handle text_sensor state_value/state_number aliases for leniency
         if (type === 'text_sensor') {
           const textSensor = entity as any;
           if (!textSensor.state_text) {
             if (textSensor.state_value) {
               textSensor.state_text = textSensor.state_value;
+            } else if (textSensor.state_number) {
+              textSensor.state_text = textSensor.state_number;
             }
           }
         }

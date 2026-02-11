@@ -1,6 +1,8 @@
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22
+
 # Stage 1: Common Builder (Host Architecture)
 # Builds UI and Service packages which are architecture independent
-FROM --platform=$BUILDPLATFORM node:20-slim AS common-builder
+FROM --platform=$BUILDPLATFORM node:22-slim AS common-builder
 
 ENV CI=true
 WORKDIR /app
@@ -31,7 +33,7 @@ RUN --mount=type=cache,target=/app/.turbo \
 
 # Stage 2: Builder (Target Architecture)
 # Rebuilds Core with native dependencies for the target architecture
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 
 ENV CI=true
 WORKDIR /app
@@ -98,53 +100,18 @@ RUN find node_modules -type f \( \
   -name "*.yaml" \
   \) -delete
 
-# Stage 3: Runner
-# node:20-alpine is used for a smaller runtime image
-FROM node:20-alpine AS runner
-
-# s6-overlay environment variables
-ENV \
-    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
-    S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
-    S6_CMD_WAIT_FOR_SERVICES=1
+# Stage 3: Runner (Home Assistant Base Image)
+# HA base image includes s6-overlay, bashio, jq, curl, bash
+ARG BUILD_FROM
+FROM ${BUILD_FROM} AS runner
 
 WORKDIR /app
 
 # Install runtime dependencies
-# bash: for run.sh script
-# jq: for parsing options.json
-# gcompat: provides glibc compatibility for native modules (like serialport) built in the debian stage
-# curl, xz: for downloading and extracting s6-overlay and bashio
-RUN apk add --no-cache bash jq gcompat curl xz
-
-# Install s6-overlay and bashio
-ARG TARGETARCH
-ARG TARGETVARIANT
-ARG S6_OVERLAY_VERSION="3.2.2.0"
-ARG BASHIO_VERSION="v0.17.5"
-RUN set -o pipefail \
-    # Determine s6 architecture
-    && S6_ARCH="${TARGETARCH}" \
-    && if [ "${TARGETARCH}" = "amd64" ]; then S6_ARCH="x86_64"; fi \
-    && if [ "${TARGETARCH}" = "arm64" ]; then S6_ARCH="aarch64"; fi \
-    && if [ "${TARGETARCH}" = "arm" ]; then S6_ARCH="arm"; fi \
-    # Download and install s6-overlay
-    && curl -L -s -f "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
-        | tar -C / -Jxpf - \
-    && curl -L -s -f "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" \
-        | tar -C / -Jxpf - \
-    && curl -L -s -f "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-noarch.tar.xz" \
-        | tar -C / -Jxpf - \
-    && curl -L -s -f "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-arch.tar.xz" \
-        | tar -C / -Jxpf - \
-    # Download and install bashio
-    && curl -J -L -f -o /tmp/bashio.tar.gz \
-        "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" \
-    && mkdir -p /tmp/bashio \
-    && tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio \
-    && mv /tmp/bashio/lib /usr/lib/bashio \
-    && ln -s /usr/lib/bashio/bashio /usr/bin/bashio \
-    && rm -rf /tmp/*
+# nodejs: HA base image doesn't include Node.js
+# tini: lightweight init for PID 1 (zigbee2mqtt pattern)
+# gcompat: glibc compatibility for native modules built in debian stage
+RUN apk add --no-cache nodejs tini gcompat
 
 # Copy application from builder
 # This copies everything including node_modules and built dist folders
@@ -161,5 +128,4 @@ ENV LOG_COLLECTOR_API_KEY=$LOG_COLLECTOR_API_KEY
 COPY hassio-addon-dev/run.sh /run.sh
 RUN chmod +x /run.sh
 
-ENTRYPOINT [ "/init" ]
-CMD [ "/run.sh" ]
+ENTRYPOINT [ "/sbin/tini", "--", "/run.sh" ]

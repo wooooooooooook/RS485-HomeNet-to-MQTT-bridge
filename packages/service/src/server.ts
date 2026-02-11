@@ -401,11 +401,11 @@ async function loadConfigs(resolvedPaths: string[]): Promise<LoadResult[]> {
   return loadResults;
 }
 
-async function handleDuplicatePorts(filenames: string[], resolvedPaths: string[]): Promise<boolean> {
-  const { needsRestart, fixedFiles } = await checkAndFixDuplicatePortIds(
-    filenames,
-    resolvedPaths,
-  );
+async function handleDuplicatePorts(
+  filenames: string[],
+  resolvedPaths: string[],
+): Promise<boolean> {
+  const { needsRestart, fixedFiles } = await checkAndFixDuplicatePortIds(filenames, resolvedPaths);
 
   if (needsRestart) {
     logger.warn(
@@ -463,8 +463,7 @@ async function instantiateBridges(
   const newConfigErrors: (BridgeErrorPayload | null)[] = [];
   const newConfigStatuses: ConfigStatus[] = [];
   const loadedConfigs: HomenetBridgeConfig[] = [];
-  const loadedConfigFilesForCollector: { name: string; content: string; portIds?: string[] }[] =
-    [];
+  const loadedConfigFilesForCollector: { name: string; content: string; portIds?: string[] }[] = [];
 
   // Instantiate bridges only for successfully loaded configs
   for (let i = 0; i < filenames.length; i += 1) {

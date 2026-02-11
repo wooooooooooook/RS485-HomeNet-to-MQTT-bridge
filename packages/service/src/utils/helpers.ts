@@ -137,6 +137,9 @@ const DEFAULT_FRONTEND_SETTINGS: FrontendSettings = {
   editor: {
     default: 'monaco',
   },
+  dashboard: {
+    showInternal: false,
+  },
 };
 
 /**
@@ -187,6 +190,12 @@ export const normalizeFrontendSettings = (
         value?.editor?.default === 'textarea' || value?.editor?.default === 'monaco'
           ? value.editor.default
           : DEFAULT_FRONTEND_SETTINGS.editor!.default,
+    },
+    dashboard: {
+      showInternal:
+        typeof value?.dashboard?.showInternal === 'boolean'
+          ? value.dashboard.showInternal
+          : DEFAULT_FRONTEND_SETTINGS.dashboard?.showInternal ?? false,
     },
   };
 };

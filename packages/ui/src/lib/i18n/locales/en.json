@@ -13,6 +13,14 @@
         "desc": "Show toast when sending command packets."
       }
     },
+    "dashboard": {
+      "title": "Dashboard Settings",
+      "desc": "Configure dashboard display options.",
+      "show_internal": {
+        "title": "Show Internal Entities",
+        "desc": "Display entities marked as internal: true in the list."
+      }
+    },
     "activity_log": {
       "title": "Activity Log",
       "desc": "Control which log types appear in dashboards and detail views.",

@@ -47,6 +47,7 @@
     onToggleAutomations,
     onToggleScripts,
     hideAutomationScripts = false,
+    showInternal = false,
   }: {
     bridgeInfo: BridgeInfo | null;
     infoLoading: boolean;
@@ -81,6 +82,7 @@
     onToggleAutomations?: () => void;
     onToggleScripts?: () => void;
     hideAutomationScripts?: boolean;
+    showInternal?: boolean;
   } = $props();
 
   const portIds = $derived.by<string[]>(() =>
@@ -158,7 +160,9 @@
 
   const searchedEntities = $derived.by<UnifiedEntity[]>(() => {
     const query = debouncedSearchText.trim().toLowerCase();
-    if (!query) return visibleEntities;
+    if (!query) {
+      return visibleEntities.filter((e) => showInternal || !e.internal);
+    }
     return visibleEntities.filter((entity) => {
       const searchText = [
         entity.displayName,

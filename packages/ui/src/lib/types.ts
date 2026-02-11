@@ -50,6 +50,9 @@ export type FrontendSettings = {
   editor?: {
     default: 'monaco' | 'textarea';
   };
+  dashboard?: {
+    showInternal?: boolean;
+  };
 };
 
 export type LogRetentionSettings = {
@@ -165,6 +168,7 @@ export type ConfigEntitySummary = {
   configFile?: string;
   discoveryAlways?: boolean;
   discoveryLinkedId?: string;
+  internal?: boolean;
 };
 
 export type EntityCategory = 'entity' | 'automation' | 'script';
@@ -232,6 +236,7 @@ export type UnifiedEntity = {
   portId?: string;
   discoveryAlways?: boolean;
   discoveryLinkedId?: string;
+  internal?: boolean;
   isActive?: boolean;
   errorCount?: number;
 };

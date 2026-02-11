@@ -55,6 +55,9 @@ export type FrontendSettings = {
   editor?: {
     default: 'monaco' | 'textarea';
   };
+  dashboard?: {
+    showInternal?: boolean;
+  };
 };
 
 // --- WebSocket/Stream Types ---
@@ -137,4 +140,5 @@ export interface ConfigEntityInfo {
   portId?: string;
   discoveryAlways?: boolean;
   discoveryLinkedId?: string;
+  internal?: boolean;
 }

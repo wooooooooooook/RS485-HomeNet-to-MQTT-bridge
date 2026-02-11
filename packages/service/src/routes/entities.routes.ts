@@ -44,8 +44,6 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
       if (!list) continue;
 
       for (const entity of list) {
-        if (entity.internal === true) continue;
-
         const entityId = entity.id as string;
         if (!entityId) continue;
 
@@ -57,6 +55,7 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
           entityName,
           entityType: entityType as string,
           portId,
+          internal: entity.internal === true,
         };
 
         if (entity.discovery_always === true) {

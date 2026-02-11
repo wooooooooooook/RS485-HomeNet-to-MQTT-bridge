@@ -69,9 +69,6 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       if (!entities) continue;
 
       for (const entity of entities) {
-        // Skip internal entities - they should not appear in dashboard
-        if (entity.internal === true) continue;
-
         const entityId = entity.id as string;
         const entityName = (entity.name as string) || entityId;
 

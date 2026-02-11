@@ -27,6 +27,7 @@
     onActivityLogChange,
     onLocaleChange,
     onEditorChange,
+    onDashboardChange,
   }: {
     frontendSettings?: FrontendSettings | null;
     bridgeInfo?: BridgeInfo | null;
@@ -37,6 +38,7 @@
     onActivityLogChange?: (value: boolean) => void;
     onLocaleChange?: (value: string) => void;
     onEditorChange?: (value: 'monaco' | 'textarea') => void;
+    onDashboardChange?: (value: boolean) => void;
   } = $props();
 
   const getToastValue = (key: ToastSettingKey) => {
@@ -839,6 +841,40 @@
           disabled={isSaving || isLoading}
           ariaLabelledBy="toast-command-title"
           ariaDescribedBy="toast-command-desc"
+        />
+      </div>
+    {/if}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2>{$t('settings.dashboard.title')}</h2>
+        <p>{$t('settings.dashboard.desc')}</p>
+      </div>
+      {#if isSaving}
+        <span class="badge">{$t('settings.saving')}</span>
+      {/if}
+    </div>
+
+    {#if isLoading}
+      <div class="loading">{$t('settings.loading')}</div>
+    {:else}
+      <div class="setting">
+        <div>
+          <div class="setting-title" id="dashboard-internal-title">
+            {$t('settings.dashboard.show_internal.title')}
+          </div>
+          <div class="setting-desc" id="dashboard-internal-desc">
+            {$t('settings.dashboard.show_internal.desc')}
+          </div>
+        </div>
+        <Toggle
+          checked={frontendSettings?.dashboard?.showInternal ?? false}
+          onchange={(checked) => onDashboardChange?.(checked)}
+          disabled={isSaving || isLoading}
+          ariaLabelledBy="dashboard-internal-title"
+          ariaDescribedBy="dashboard-internal-desc"
         />
       </div>
     {/if}

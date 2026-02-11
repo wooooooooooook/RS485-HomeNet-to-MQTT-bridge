@@ -345,6 +345,9 @@
     activityLog: {
       hideAutomationScripts: false,
     },
+    dashboard: {
+      showInternal: false,
+    },
   };
   let frontendSettings = $state<FrontendSettings | null>(null);
   let settingsLoading = $state(false);
@@ -849,6 +852,23 @@
       ...previous,
       toast: {
         ...previous.toast,
+        [key]: value,
+      },
+    };
+    frontendSettings = next;
+    try {
+      await persistFrontendSettings(next);
+    } catch {
+      frontendSettings = previous;
+    }
+  }
+
+  async function updateDashboardSetting(key: 'showInternal', value: boolean) {
+    const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
+    const next: FrontendSettings = {
+      ...previous,
+      dashboard: {
+        ...(previous.dashboard ?? { showInternal: false }),
         [key]: value,
       },
     };
@@ -1480,6 +1500,7 @@
           portId,
           discoveryAlways: entity.discoveryAlways,
           discoveryLinkedId: entity.discoveryLinkedId,
+          internal: entity.internal,
         });
       }
     }
@@ -1934,6 +1955,7 @@
             showAutomations={showAutomationCards}
             showScripts={showScriptCards}
             {hasInactiveEntities}
+            showInternal={frontendSettings?.dashboard?.showInternal ?? false}
             activityLogs={filteredActivityLogs}
             hideAutomationScripts={(frontendSettings ?? DEFAULT_FRONTEND_SETTINGS).activityLog
               ?.hideAutomationScripts ?? false}
@@ -1980,6 +2002,7 @@
             onActivityLogChange={(value) => updateActivityLogSetting(value)}
             onLocaleChange={(value) => updateLocaleSetting(value)}
             onEditorChange={(value) => updateEditorSetting(value)}
+            onDashboardChange={(value) => updateDashboardSetting('showInternal', value)}
           />
         {/if}
       </section>

@@ -1,5 +1,3 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22
-
 # Stage 1: Common Builder (Host Architecture)
 # Builds UI and Service packages which are architecture independent
 FROM --platform=$BUILDPLATFORM node:22-slim AS common-builder
@@ -108,8 +106,15 @@ RUN find node_modules -type f \( \
 
 # Stage 3: Runner (Home Assistant Base Image)
 # HA base image includes s6-overlay, bashio, jq, curl, bash
-ARG BUILD_FROM
-FROM ${BUILD_FROM} AS runner
+
+# Define base images for supported architectures
+# We map Docker's TARGETARCH to Home Assistant's architecture naming
+FROM ghcr.io/home-assistant/amd64-base:3.22 AS base-amd64
+FROM ghcr.io/home-assistant/aarch64-base:3.22 AS base-arm64
+
+# Select the correct base image based on TARGETARCH provided by Buildx
+ARG TARGETARCH
+FROM base-${TARGETARCH} AS runner
 
 WORKDIR /app
 

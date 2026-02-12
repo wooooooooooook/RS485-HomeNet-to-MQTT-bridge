@@ -1,0 +1,55 @@
+name: Verify ARM64 Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'hassio-addon/**'
+      - '.github/workflows/verify-arm64-runtime.yml'
+
+jobs:
+  verify-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build for ARM64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: hassio-addon/Dockerfile
+          platforms: linux/arm64
+          load: true
+          tags: verify-arm64:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Tini Architecture
+        run: |
+          echo "Verifying tini architecture..."
+          docker run --rm --platform linux/arm64 verify-arm64:latest /sbin/tini --version
+
+      - name: Verify Run Script Execution
+        run: |
+          echo "Verifying run script execution..."
+          # Run for 10 seconds. If it's still running (timeout), it's a pass.
+          # If it crashes immediately (exec format error), it's a fail.
+          timeout 10s docker run --rm --platform linux/arm64 verify-arm64:latest /run.sh; code=$?
+
+          if [ "$code" = "124" ]; then
+            echo "Success: Container ran and timed out as expected (it's a long running process)."
+            exit 0
+          elif [ "$code" = "0" ]; then
+             echo "Success: Container ran and exited normally."
+             exit 0
+          else
+            echo "Failure: Container exited with code $code"
+            exit 1
+          fi

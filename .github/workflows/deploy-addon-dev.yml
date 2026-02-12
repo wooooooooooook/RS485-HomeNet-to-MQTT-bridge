@@ -83,6 +83,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Multi-arch smoke test
+        run: |
+          for PLATFORM in linux/amd64 linux/arm64; do
+            echo "Testing $PLATFORM"
+            docker run --rm --entrypoint node --platform $PLATFORM nubiz/homenet2mqtt:${{ steps.version.outputs.VERSION }} \
+              -v || exit 1
+          done
+
   sync-addon-repo:
     needs: build
     runs-on: ubuntu-latest

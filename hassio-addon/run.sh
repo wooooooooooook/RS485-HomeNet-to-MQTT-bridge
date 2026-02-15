@@ -71,7 +71,7 @@ else
   export MQTT_TOPIC_PREFIX="${MQTT_TOPIC_PREFIX:-homenet2mqtt}"
   export TIMEZONE="${TIMEZONE:-}"
   export DISCOVERY_ENABLED="${DISCOVERY_ENABLED:-false}"
-  export CONFIG_FILES="${CONFIG_FILES:-default.homenet_bridge.yaml,}"
+  export CONFIG_FILES="${CONFIG_FILES:-}"
   
   # CONFIG_ROOT 환경변수 또는 기본값 /config 사용
   HA_CONFIG_DIR="${CONFIG_ROOT:-/config}"

@@ -119,7 +119,7 @@ services:
       - pnpm-store:/root/.local/share/pnpm
       - ui_node_modules:/workspace/node_modules
     ports:
-      - '5173:5173'
+      - '5174:5173'
     command: >
       bash -lc "
         set -euo pipefail

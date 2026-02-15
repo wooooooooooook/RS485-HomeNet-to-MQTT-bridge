@@ -79,7 +79,7 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
       const config = currentConfigs[i];
       if (!config.serial) continue;
 
-      const configPortId = normalizePortId(config.serial.portId, 0);
+      const configPortId = normalizePortId(config.serial.portId, i);
       if (configPortId === portId) {
         return i;
       }

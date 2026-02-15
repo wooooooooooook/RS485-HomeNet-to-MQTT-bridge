@@ -9,7 +9,7 @@ export type ChecksumType =
   | 'bestin_sum'
   | 'none';
 
-export type Checksum2Type = 'xor_add';
+export type Checksum2Type = 'xor_add' | 'crc_ccitt_xmodem';
 
 export type ByteArray = number[] | Buffer | Uint8Array;
 
@@ -241,6 +241,8 @@ export function calculateChecksum2(
   switch (type) {
     case 'xor_add':
       return xorAdd(header, data);
+    case 'crc_ccitt_xmodem':
+      return crcCcittXmodem(header, data);
     default:
       throw new Error(`Unknown 2-byte checksum type: ${type}`);
   }
@@ -257,11 +259,14 @@ export function calculateChecksum2FromBuffer(
   baseOffset: number = 0,
 ): number[] {
   const dataStart = baseOffset;
+  const headerStart = baseOffset + _headerLength;
   const dataStop = baseOffset + dataEnd;
   switch (type) {
     case 'xor_add':
       // xorAdd processes header then data linearly, so we can process range 0..dataEnd
       return xorAddRange(buffer, dataStart, dataStop);
+    case 'crc_ccitt_xmodem':
+      return crcCcittXmodemRange(buffer, headerStart, dataStop);
     default:
       throw new Error(`Unknown 2-byte checksum type: ${type}`);
   }
@@ -280,10 +285,13 @@ export function verifyChecksum2FromBuffer(
   expectedLow: number,
 ): boolean {
   const dataStart = baseOffset;
+  const headerStart = baseOffset + _headerLength;
   const dataStop = baseOffset + dataEnd;
   switch (type) {
     case 'xor_add':
       return verifyXorAddRange(buffer, dataStart, dataStop, expectedHigh, expectedLow);
+    case 'crc_ccitt_xmodem':
+      return verifyCrcCcittXmodemRange(buffer, headerStart, dataStop, expectedHigh, expectedLow);
     default: {
       const calculated = calculateChecksum2FromBuffer(
         buffer,
@@ -390,6 +398,8 @@ export function getChecksum2Verifier(type: Checksum2Type): Checksum2Verifier | n
   switch (type) {
     case 'xor_add':
       return verifyXorAddRange;
+    case 'crc_ccitt_xmodem':
+      return verifyCrcCcittXmodemRange;
     default:
       return null;
   }
@@ -429,4 +439,56 @@ function xorAddRange(buffer: ByteArray, start: number, end: number): number[] {
   const low = crc & 0xff;
 
   return [high, low];
+}
+
+/**
+ * CRC-CCITT (XModem) implementation
+ * Polynomial: 0x1021
+ * Initial Value: 0x0000
+ */
+function crcCcittXmodem(header: ByteArray, data: ByteArray): number[] {
+  let crc = 0x0000;
+
+  // For this specific checksum type (based on user request), we only calculate CRC on data
+  // The user provided: data = packet[2:17] (bytes 3 to 17), ignoring header
+  // So we ignore the header here.
+  
+  for (const byte of data) {
+    crc = updateCrcCcitt(crc, byte);
+  }
+
+  const high = (crc >> 8) & 0xff;
+  const low = crc & 0xff;
+
+  return [high, low];
+}
+
+function crcCcittXmodemRange(buffer: ByteArray, start: number, end: number): number[] {
+  let crc = 0x0000;
+
+  for (let i = start; i < end; i++) {
+    crc = updateCrcCcitt(crc, buffer[i]);
+  }
+
+  const high = (crc >> 8) & 0xff;
+  const low = crc & 0xff;
+
+  return [high, low];
+}
+
+function verifyCrcCcittXmodemRange(
+  buffer: ByteArray,
+  start: number,
+  end: number,
+  expectedHigh: number,
+  expectedLow: number,
+): boolean {
+  const [high, low] = crcCcittXmodemRange(buffer, start, end);
+  return high === expectedHigh && low === expectedLow;
+}
+
+function updateCrcCcitt(crc: number, byte: number): number {
+  let x = (crc >> 8) ^ byte;
+  x ^= x >> 4;
+  return ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xffff;
 }

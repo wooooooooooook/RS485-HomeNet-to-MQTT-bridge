@@ -1,19 +1,27 @@
-meta:
-  name: "현관문세트"
-  name_en: "Doorbell Set"
-  description: "코콤 현관문세트 설정입니다. 개인현관문과 공동현관문의 벨 감지, 통화, 문열기 기능을 지원합니다."
-  description_en: "Kocom doorbell set configuration. Supports bell detection, calling, and door opening for private and common entrances."
-  version: "2.1.2"
-  min_version: "1.16.0"
-  author: "wooooooooooook"
-  tags: ["doorbell", "kocom", "switch", "button"]
+homenet_bridge:
+  serial:
+    portId: kocom_doorbell
+    path: 192.168.0.83:8888
+    baud_rate: 9600
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1
 
-discovery:
-  match:
-    data: [0x70, 0x90]
-    mask: [0xF0, 0xF0]
+  packet_defaults: # New section for global packet defaults
+    rx_timeout: 10ms
+    tx_delay: 10ms
+    tx_timeout: 200ms
+    tx_retry_cnt: 5
 
-entities:
+    rx_header: [0xAA, 0x55]
+    rx_footer: [0x0D, 0x0D]
+    tx_header: [0xAA, 0x55]
+    tx_footer: [0x0D, 0x0D]
+
+    rx_checksum: none
+    tx_checksum: none
+    # tx_checksum2: crc_ccitt_xmodem
+
   # 벨 울림 감지 (개인현관)
   # 패킷 예시:
   # ON:  0xAA 0x55 0x7A 0x9E 0x02 0x02 0x00 0xFF 0xFF 0xFF 0xFF 0x31 0xFF 0xFF 0xFF 0x01 0x01 0x29 0xF6 0x0D 0x0D
@@ -54,9 +62,8 @@ entities:
     - id: 'doorbell_call_common'
       name: '공동현관 통화'
       icon: 'mdi:phone'
-      packet_parameters:
-        tx_checksum: none
       command_press:
+        #checksum 포함
         data: [0x79, 0xBC, 0x08, 0x02, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x03, 0x00, 0x26, 0x95]
         ack:
           data: [0x0F, 0x03]
@@ -64,9 +71,8 @@ entities:
     - id: 'doorbell_open_common'
       name: '공동현관 열기'
       icon: 'mdi:door-sliding-open'
-      packet_parameters:
-        tx_checksum: none
       command_press:
+        #checksum 포함
         data: [0x79, 0xBC, 0x08, 0x02, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x24, 0x00, 0xB9, 0xE4]
         ack:
           data: [0x0F, 0x24]
@@ -74,9 +80,8 @@ entities:
     - id: 'doorbell_call_private'
       name: '현관 통화'
       icon: 'mdi:phone'
-      packet_parameters:
-        tx_checksum: none
       command_press:
+        #checksum 포함
         data: [0x79, 0xBC, 0x02, 0x02, 0x00, 0x31, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x03, 0x00, 0x08, 0xD3]
         ack:
           data: [0x0F, 0x03]
@@ -84,9 +89,8 @@ entities:
     - id: 'doorbell_open_private'
       name: '현관 열기'
       icon: 'mdi:door-sliding-open'
-      packet_parameters:
-        tx_checksum: none
       command_press:
+        #checksum 포함
         data: [0x79, 0xBC, 0x02, 0x02, 0x00, 0x31, 0xFF, 0xFF, 0xFF, 0x61, 0xFF, 0xFF, 0xFF, 0x24, 0x00, 0x97, 0xA2]
         ack:
           data: [0x0F, 0x24]

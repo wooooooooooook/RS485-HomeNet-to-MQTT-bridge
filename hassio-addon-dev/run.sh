@@ -79,9 +79,6 @@ fi
 
 export PORT="${PORT:-3000}"
 
-IFS=',' read -r -a CONFIG_FILE_LIST <<< "$CONFIG_FILES"
-export CONFIG_FILE="${CONFIG_FILE_LIST[0]}"
-
 # Setup configuration directory
 DEFAULT_CONFIG_DIR="packages/core/config"
 INIT_MARKER="$HA_CONFIG_DIR/.initialized"

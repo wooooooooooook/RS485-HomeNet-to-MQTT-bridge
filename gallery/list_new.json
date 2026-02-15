@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-15T13:47:46.963Z",
+  "generated_at": "2026-02-15T13:57:34.644Z",
   "vendors": [
     {
       "id": "bestin",
@@ -3619,7 +3619,7 @@
         },
         "packet_defaults": {
           "rx_checksum": "none",
-          "tx_checksum": "none",
+          "tx_checksum2": "crc_ccitt_xmodem",
           "rx_header": [
             170,
             85

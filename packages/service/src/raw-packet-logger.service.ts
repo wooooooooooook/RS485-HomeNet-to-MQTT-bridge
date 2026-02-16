@@ -1,6 +1,7 @@
 import { eventBus } from '@rs485-homenet/core';
 import { logger } from '@rs485-homenet/core';
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { resolveSecurePath, getLocalTimestamp } from './utils/helpers.js';
 
@@ -19,15 +20,13 @@ export class RawPacketLoggerService {
     this.configDir = configDir;
   }
 
-  public start(meta?: any, options?: { mode?: RawPacketLogMode }) {
+  public async start(meta?: any, options?: { mode?: RawPacketLogMode }): Promise<void> {
     if (this.isLogging) return;
 
     try {
       this.logMode = options?.mode ?? 'all';
       const logDir = path.join(this.configDir, 'logs');
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-      }
+      await fsp.mkdir(logDir, { recursive: true });
 
       const timestamp = getLocalTimestamp().replace(/[:.]/g, '-');
       const filename = `packet_log_${timestamp}.txt`;
@@ -139,24 +138,30 @@ export class RawPacketLoggerService {
   public async listSavedFiles(): Promise<{ filename: string; size: number; createdAt: string }[]> {
     try {
       const logDir = path.join(this.configDir, 'logs');
-      if (!fs.existsSync(logDir)) {
-        return [];
-      }
 
-      const entries = fs.readdirSync(logDir, { withFileTypes: true });
-      const files: { filename: string; size: number; createdAt: string }[] = [];
-
-      for (const entry of entries) {
-        if (entry.isFile() && entry.name.endsWith('.txt')) {
-          const filePath = path.join(logDir, entry.name);
-          const stat = fs.statSync(filePath);
-          files.push({
-            filename: entry.name,
-            size: stat.size,
-            createdAt: stat.birthtime.toISOString(),
-          });
+      let entries: fs.Dirent[];
+      try {
+        entries = await fsp.readdir(logDir, { withFileTypes: true });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+          return [];
         }
+        throw err;
       }
+
+      const files = await Promise.all(
+        entries
+          .filter((entry) => entry.isFile() && entry.name.endsWith('.txt'))
+          .map(async (entry) => {
+            const filePath = path.join(logDir, entry.name);
+            const stat = await fsp.stat(filePath);
+            return {
+              filename: entry.name,
+              size: stat.size,
+              createdAt: stat.birthtime.toISOString(),
+            };
+          }),
+      );
 
       // Sort by creation date (newest first)
       files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -173,7 +178,7 @@ export class RawPacketLoggerService {
       if (!filePath) {
         return false;
       }
-      fs.unlinkSync(filePath);
+      await fsp.unlink(filePath);
       return true;
     } catch {
       return false;

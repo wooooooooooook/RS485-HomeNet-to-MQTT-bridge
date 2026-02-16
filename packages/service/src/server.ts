@@ -184,7 +184,6 @@ registerRoutes(app, {
     getPublicStatus: () => logCollectorService.getPublicStatus(),
     updateConsent: (consent: boolean) => logCollectorService.updateConsent(consent),
   },
-  getRawPacketMode: (value: unknown) => getRawPacketMode(value),
   configDir: CONFIG_DIR,
   activityLogService: {
     getRecentLogs: () => activityLogService.getRecentLogs(),
@@ -204,11 +203,6 @@ const streamManager = createStreamManager({
 // Export rebuildPortMappings from streamManager
 const rebuildPortMappings = streamManager.rebuildPortMappings;
 const latestStates = streamManager.getLatestStates();
-
-// Helper to get raw packet mode
-const getRawPacketMode = (value: unknown): RawPacketStreamMode => {
-  return value === 'valid' ? 'valid' : 'all';
-};
 
 streamManager.registerGlobalEventHandlers();
 streamManager.registerWebSocketHandlers();

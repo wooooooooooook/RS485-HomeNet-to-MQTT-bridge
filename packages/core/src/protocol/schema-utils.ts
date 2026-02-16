@@ -96,7 +96,7 @@ export const extractFromSchema = (packet: Buffer, schema: StateSchema | StateNum
       val = val & mByte;
     }
 
-    let res = val & 0x7f;
+    let res = signed ? val & 0x3f : val & 0x7f;
     if ((val & 0x80) !== 0) {
       res += 0.5;
     }

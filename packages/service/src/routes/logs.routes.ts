@@ -35,7 +35,6 @@ export interface LogsRoutesContext {
   getCurrentConfigs: () => HomenetBridgeConfig[];
   getCurrentConfigFiles: () => string[];
   getBridges: () => BridgeInstance[];
-  getRawPacketMode: (value: unknown) => RawPacketStreamMode;
   configDir: string;
   activityLogService: {
     getRecentLogs: () => any[];
@@ -123,8 +122,8 @@ export function createLogsRoutes(ctx: LogsRoutesContext): Router {
         stats,
       };
 
-      const mode = ctx.getRawPacketMode(req.body?.mode);
-      await ctx.rawPacketLogger.start(meta, { mode });
+      const mode: RawPacketStreamMode = req.body?.mode === 'valid' ? 'valid' : 'all';
+      ctx.rawPacketLogger.start(meta, { mode });
       res.json({ success: true, message: 'Logging started' });
     } catch (error) {
       logger.error({ err: error }, '[service] Failed to start packet logging');

@@ -127,10 +127,6 @@ export function createStreamManager(ctx: StreamManagerContext) {
     });
   };
 
-  const getRawPacketMode = (value: unknown): RawPacketStreamMode => {
-    return value === 'valid' ? 'valid' : 'all';
-  };
-
   const getRequestUrl = (req?: IncomingMessage) => {
     if (!req?.url) return null;
     const host = req.headers?.host || 'localhost';
@@ -281,7 +277,7 @@ export function createStreamManager(ctx: StreamManagerContext) {
         try {
           const parsed = JSON.parse(message);
           if (parsed.command === 'start') {
-            const mode = getRawPacketMode(parsed.mode);
+            const mode: RawPacketStreamMode = parsed.mode === 'valid' ? 'valid' : 'all';
             const wasEmpty = state.rawPacketSubscribers.size === 0;
             state.rawPacketSubscribers.set(socket, mode);
             if (wasEmpty) {

@@ -160,7 +160,7 @@ export class HomeNetBridge extends EventEmitter {
     }
     this.portContexts.clear();
 
-    this._mqttClient.end();
+    if (this._mqttClient) { this._mqttClient.end(); }
     this.startPromise = null;
   }
 

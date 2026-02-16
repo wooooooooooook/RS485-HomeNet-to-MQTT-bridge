@@ -149,7 +149,7 @@ export class PacketParser {
     }
 
     // Prepare CEL scripts if applicable
-    const executor = this.getExecutor();
+    const executor = CelExecutor.shared();
 
     // Initialize ReusableBufferView for zero-allocation parsing
     this.reusableBufferView = executor.createReusableBufferView();
@@ -195,10 +195,6 @@ export class PacketParser {
         }
       }
     }
-  }
-
-  private getExecutor(): CelExecutor {
-    return CelExecutor.shared();
   }
 
   /**
@@ -1113,7 +1109,7 @@ export class PacketParser {
           }
         } else {
           // Fallback (should not be reached if constructor works correctly)
-          const result = this.getExecutor().execute(checksumOrScript, {
+          const result = CelExecutor.shared().execute(checksumOrScript, {
             data: buffer.subarray(offset, dataEnd),
             len: dataEnd - offset,
           });
@@ -1178,7 +1174,7 @@ export class PacketParser {
           }
         } else {
           // Fallback (legacy path)
-          const result = this.getExecutor().execute(checksumOrScript, {
+          const result = CelExecutor.shared().execute(checksumOrScript, {
             data: buffer.subarray(offset, checksumStart),
             len: checksumStart - offset,
           });

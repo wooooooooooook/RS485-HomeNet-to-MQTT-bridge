@@ -71,6 +71,21 @@ type CommandSender = (
   },
 ) => Promise<void>;
 
+const SCHEMA_KEYS = [
+  'data',
+  'mask',
+  'offset',
+  'inverted',
+  'guard',
+  'except',
+  'length',
+  'precision',
+  'signed',
+  'endian',
+  'decode',
+  'mapping',
+];
+
 export class AutomationManager {
   private readonly automationList: AutomationConfig[];
   private readonly packetProcessor: PacketProcessor;
@@ -717,21 +732,7 @@ export class AutomationManager {
 
   private isSchemaValue(value: unknown): value is StateSchema | StateNumSchema {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    const schemaKeys = [
-      'data',
-      'mask',
-      'offset',
-      'inverted',
-      'guard',
-      'except',
-      'length',
-      'precision',
-      'signed',
-      'endian',
-      'decode',
-      'mapping',
-    ];
-    return schemaKeys.some((key) => key in (value as Record<string, unknown>));
+    return SCHEMA_KEYS.some((key) => key in (value as Record<string, unknown>));
   }
 
   private mapStateKey(key: string): string {

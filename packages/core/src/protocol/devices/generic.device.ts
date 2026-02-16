@@ -44,17 +44,13 @@ export class GenericDevice extends Device {
     this.prepareScripts();
   }
 
-  private getExecutor(): CelExecutor {
-    return CelExecutor.shared();
-  }
-
   /**
    * Pre-compiles all CEL scripts defined in the configuration.
    * This runs once during device initialization.
    */
   private prepareScripts() {
     const entityConfig = this.config as any;
-    const executor = this.getExecutor();
+    const executor = CelExecutor.shared();
 
     // Key mapping for CEL results to match HA discovery expectations
     const keyMapping: Record<string, string> = {
@@ -315,7 +311,7 @@ export class GenericDevice extends Device {
           // Note: tx_checksum is usually global, so we use shared execute (cached)
           // For further optimization, ProtocolManager could prepare these too.
           const fullData = [...txHeader, ...commandData];
-          const { result, error } = this.getExecutor().executeWithDiagnostics(checksumType, {
+          const { result, error } = CelExecutor.shared().executeWithDiagnostics(checksumType, {
             data: fullData,
             len: fullData.length,
           });
@@ -346,7 +342,7 @@ export class GenericDevice extends Device {
         } else {
           // CEL Expression for 2-byte checksum
           const fullData = [...txHeader, ...commandData];
-          const { result, error } = this.getExecutor().executeWithDiagnostics(checksumType, {
+          const { result, error } = CelExecutor.shared().executeWithDiagnostics(checksumType, {
             data: fullData,
             len: fullData.length,
           });

@@ -1,0 +1,3 @@
+## 2024-07-24 - Avoid array allocations in high-frequency statistical calculations
+**Learning:** In high-frequency backend tasks like packet processing, recalculating stats using `.map()` and `.reduce()` repeatedly allocates new arrays (especially `.map()`). For arrays containing hundreds or thousands of elements, this puts unnecessary pressure on the garbage collector and consumes substantial CPU time.
+**Action:** Replace functional array methods like `.map().reduce()` with standard O(n) `for` loops in hot paths that compute statistics or aggregate data to avoid hidden allocations and improve calculation speed.

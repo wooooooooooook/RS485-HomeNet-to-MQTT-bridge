@@ -47,6 +47,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath,
     );
+    await stateManager.init();
 
     // Update state to trigger save states
     stateManager.updateEntityState('light.livingroom', { state: 'ON' });
@@ -71,6 +72,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath,
     );
+    await nextStateManager.init();
 
     const restoredState = nextStateManager.getEntityState('light.livingroom');
     expect(restoredState).toEqual({ state: 'ON' });
@@ -111,6 +113,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath,
     );
+    await stateManager.init();
 
     // Valid entity should be restored
     expect(stateManager.getEntityState('light.livingroom')).toEqual({ state: 'ON' });
@@ -147,7 +150,16 @@ describe('Local State Persistence Cache', () => {
     );
 
     // Loading StateManager should filter and rewrite the cache
-    new StateManager(PORT_ID, config, packetProcessor, 'homenet', new Map(), undefined, configPath);
+    const smTemp = new StateManager(
+      PORT_ID,
+      config,
+      packetProcessor,
+      'homenet',
+      new Map(),
+      undefined,
+      configPath,
+    );
+    await smTemp.init();
 
     // Cache file should only contain the valid entity
     const cleanedCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
@@ -156,7 +168,7 @@ describe('Local State Persistence Cache', () => {
     expect(cleanedCache).not.toHaveProperty('old_sensor');
   });
 
-  it('should migrate from legacy shared cache file', () => {
+  it('should migrate from legacy shared cache file', async () => {
     const config: HomenetBridgeConfig = {
       serial: {
         portId: PORT_ID,
@@ -191,6 +203,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath,
     );
+    await stateManager.init();
 
     // Should restore valid entity from migrated cache
     expect(stateManager.getEntityState('light.livingroom')).toEqual({ state: 'ON' });
@@ -258,6 +271,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath1,
     );
+    await sm1.init();
     const sm2 = new StateManager(
       'port_b',
       config2,
@@ -267,6 +281,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath2,
     );
+    await sm2.init();
 
     // Each port should only see its own entities
     expect(sm1.getEntityState('light_a')).toEqual({ state: 'ON' });

@@ -868,6 +868,8 @@ export class HomeNetBridge extends EventEmitter {
         this.options.configPath,
       );
 
+      await stateManager.init();
+
       // For test suite spy check compatibility
       await this.restoreRetainedStatesForPort(this.config, mqttTopicPrefix, stateManager);
 

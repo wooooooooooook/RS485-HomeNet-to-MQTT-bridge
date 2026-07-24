@@ -111,7 +111,7 @@ export class StateManager {
         }
       }
 
-      this.loadLocalCache();
+      // Initialization moved to async init()
     }
 
     // Extract internal entity IDs from config
@@ -406,13 +406,22 @@ export class StateManager {
     }
   }
 
-  private loadLocalCache() {
+  public async init(): Promise<void> {
+    await this.loadLocalCache();
+  }
+
+  private async loadLocalCache(): Promise<void> {
     if (!this.statesCachePath) return;
     try {
-      if (!fs.existsSync(this.statesCachePath)) {
-        return;
+      let dataStr: string;
+      try {
+        dataStr = await fs.promises.readFile(this.statesCachePath, 'utf8');
+      } catch (err: any) {
+        if (err.code === 'ENOENT') {
+          return;
+        }
+        throw err;
       }
-      const dataStr = fs.readFileSync(this.statesCachePath, 'utf8');
       const cached = JSON.parse(dataStr) as Record<string, any>;
       if (cached && typeof cached === 'object') {
         let restoredCount = 0;
@@ -440,7 +449,11 @@ export class StateManager {
           // Rewrite cache file with only valid entities to permanently remove orphans
           try {
             const cleanedData = Object.fromEntries(this.deviceStates);
-            fs.writeFileSync(this.statesCachePath!, JSON.stringify(cleanedData, null, 2), 'utf8');
+            await fs.promises.writeFile(
+              this.statesCachePath!,
+              JSON.stringify(cleanedData, null, 2),
+              'utf8',
+            );
             logger.info(
               { path: this.statesCachePath },
               '[StateManager] Cleaned orphan entities from states cache file',

@@ -10,7 +10,7 @@ describe('StateManager', () => {
   let mockMqttPublisher: MqttPublisher;
   let config: HomenetBridgeConfig;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPacketProcessor = {
       on: vi.fn(),
       processChunk: vi.fn(),
@@ -40,10 +40,11 @@ describe('StateManager', () => {
       mockMqttPublisher,
       'homenet',
     );
+    await stateManager.init();
   });
 
   describe('getAllStates Caching', () => {
-    it('should return the same object reference on multiple calls if state allows caching logic', () => {
+    it('should return the same object reference on multiple calls if state allows caching logic', async () => {
       // Note: This test verifies behavior that is NOT YET implemented.
       // It serves as a verification for the upcoming optimization.
 
@@ -63,7 +64,7 @@ describe('StateManager', () => {
       // Once optimization is applied, this should be toBe(state2)
     });
 
-    it('should invalidate cache when state updates', () => {
+    it('should invalidate cache when state updates', async () => {
       const state1 = stateManager.getAllStates();
 
       stateManager.updateEntityState('light1', { state: 'on' });
@@ -74,7 +75,7 @@ describe('StateManager', () => {
       expect(state1).not.toBe(state2); // Should be different objects
     });
 
-    it('should NOT invalidate cache when state update results in NO change', () => {
+    it('should NOT invalidate cache when state update results in NO change', async () => {
       // First, set initial state
       stateManager.updateEntityState('light1', { state: 'on' });
       const state1 = stateManager.getAllStates();

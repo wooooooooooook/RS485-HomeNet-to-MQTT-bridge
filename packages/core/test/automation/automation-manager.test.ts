@@ -269,6 +269,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,
@@ -360,6 +361,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,
@@ -427,6 +429,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,
@@ -479,6 +482,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger as any);
 
     automationManager = new AutomationManager(
@@ -554,6 +558,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,
@@ -622,6 +627,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,
@@ -747,6 +753,7 @@ describe('AutomationManager', () => {
       mqttPublisherStub as any,
       'homenet2mqtt',
     );
+    await stateManager.init();
 
     automationManager = new AutomationManager(
       config,

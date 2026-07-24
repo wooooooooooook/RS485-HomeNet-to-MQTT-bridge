@@ -19,6 +19,7 @@ vi.mock('mqtt', () => ({
 
 vi.mock('../src/state/state-manager.js', () => ({
   StateManager: vi.fn().mockImplementation(() => ({
+    init: vi.fn().mockResolvedValue(undefined),
     processIncomingData: vi.fn(),
     getLightState: vi.fn(),
     getClimateState: vi.fn(),

@@ -87,6 +87,7 @@ export async function setupTest(configPath: string): Promise<TestContext> {
     DEFAULT_TOPIC_PREFIX,
     sharedStates,
   );
+  await stateManager.init();
 
   const commandManager = new CommandManager(mockSerialPort, config, portId, packetProcessor);
 

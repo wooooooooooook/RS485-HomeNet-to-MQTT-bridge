@@ -11,7 +11,7 @@ describe('StateManager Merging', () => {
   let mockPacketProcessor: any;
   let mockConfig: HomenetBridgeConfig;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPublisher = {
       publish: vi.fn(),
     } as unknown as MqttPublisher;
@@ -40,9 +40,10 @@ describe('StateManager Merging', () => {
       mockPublisher,
       'homenet2mqtt/homedevice1',
     );
+    await stateManager.init();
   });
 
-  it('should merge partial state updates', () => {
+  it('should merge partial state updates', async () => {
     const deviceId = 'climate1';
 
     // First update: temperature only

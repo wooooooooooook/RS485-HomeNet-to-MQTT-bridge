@@ -13,7 +13,7 @@ describe('StateManager Optimistic Initialization', () => {
   const PORT_ID = 'test-port';
   const TOPIC_PREFIX = 'homenet';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPacketProcessor = {
       on: vi.fn(),
       processChunk: vi.fn(),
@@ -40,7 +40,7 @@ describe('StateManager Optimistic Initialization', () => {
     };
   });
 
-  it('should publish initial OFF state for ALWAYS_OFF (default) optimistic entities', () => {
+  it('should publish initial OFF state for ALWAYS_OFF (default) optimistic entities', async () => {
     stateManager = new StateManager(
       PORT_ID,
       config,
@@ -48,6 +48,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     const state = stateManager.getEntityState('virtual_switch');
     expect(state).toEqual({ state: 'OFF' });
@@ -62,7 +63,7 @@ describe('StateManager Optimistic Initialization', () => {
     );
   });
 
-  it('should publish initial ON state for ALWAYS_ON optimistic entities', () => {
+  it('should publish initial ON state for ALWAYS_ON optimistic entities', async () => {
     config.switch = [
       {
         id: 'always_on_switch',
@@ -80,6 +81,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     const state = stateManager.getEntityState('always_on_switch');
     expect(state).toEqual({ state: 'ON' });
@@ -91,7 +93,7 @@ describe('StateManager Optimistic Initialization', () => {
     );
   });
 
-  it('should defer initial state for RESTORE_DEFAULT_OFF optimistic entities', () => {
+  it('should defer initial state for RESTORE_DEFAULT_OFF optimistic entities', async () => {
     config.switch = [
       {
         id: 'restorable_switch',
@@ -109,6 +111,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     expect(stateManager.getEntityState('restorable_switch')).toBeUndefined();
     expect(mockMqttPublisher.publish).not.toHaveBeenCalled();
@@ -123,7 +126,7 @@ describe('StateManager Optimistic Initialization', () => {
     );
   });
 
-  it('should defer initial state for RESTORE_DEFAULT_ON and fallback to ON', () => {
+  it('should defer initial state for RESTORE_DEFAULT_ON and fallback to ON', async () => {
     config.switch = [
       {
         id: 'restorable_on_switch',
@@ -141,6 +144,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     expect(stateManager.getEntityState('restorable_on_switch')).toBeUndefined();
     expect(mockMqttPublisher.publish).not.toHaveBeenCalled();
@@ -155,7 +159,7 @@ describe('StateManager Optimistic Initialization', () => {
     );
   });
 
-  it('should keep restored state instead of publishing default state', () => {
+  it('should keep restored state instead of publishing default state', async () => {
     config.switch = [
       {
         id: 'restorable_switch',
@@ -173,6 +177,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     stateManager.restoreEntityState('restorable_switch', { state: 'ON' });
     stateManager.initializeRestorableOptimisticDefaults(config);
@@ -185,7 +190,7 @@ describe('StateManager Optimistic Initialization', () => {
     );
   });
 
-  it('should emit state:changed and device specific events when state is restored', () => {
+  it('should emit state:changed and device specific events when state is restored', async () => {
     stateManager = new StateManager(
       PORT_ID,
       config,
@@ -193,6 +198,7 @@ describe('StateManager Optimistic Initialization', () => {
       mockMqttPublisher,
       TOPIC_PREFIX,
     );
+    await stateManager.init();
 
     const emitSpy = vi.spyOn(eventBus, 'emit');
 

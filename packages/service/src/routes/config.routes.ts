@@ -403,10 +403,25 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
         const targetList = existingList as any[];
 
         // Check for duplicate IDs before appending
+        const existingTargetIds = new Set(targetList.map((e: any) => e.id).filter(Boolean));
+
+        const otherEntityIdsMaps = new Map<string, Set<any>>();
+        if (ENTITY_TYPE_KEYS.includes(configKey)) {
+          for (const otherKey of ENTITY_TYPE_KEYS) {
+            if (otherKey === configKey) continue;
+            const otherList = normalizedFullConfig[otherKey];
+            if (Array.isArray(otherList)) {
+              otherEntityIdsMaps.set(
+                otherKey,
+                new Set(otherList.map((e: any) => e.id).filter(Boolean)),
+              );
+            }
+          }
+        }
+
         for (const newItem of newEntries) {
           if (newItem.id) {
-            const duplicate = targetList.find((existing: any) => existing.id === newItem.id);
-            if (duplicate) {
+            if (existingTargetIds.has(newItem.id)) {
               return res
                 .status(409)
                 .json({ error: `ID '${newItem.id}' already exists in ${configKey}.` });
@@ -416,11 +431,8 @@ export function createConfigRoutes(ctx: ConfigRoutesContext): Router {
             // Let's at least check within the current file's relevant lists if it's an entity type
 
             if (ENTITY_TYPE_KEYS.includes(configKey)) {
-              // Check if ID exists in OTHER entity lists in the SAME file
-              for (const otherKey of ENTITY_TYPE_KEYS) {
-                if (otherKey === configKey) continue;
-                const otherList = normalizedFullConfig[otherKey];
-                if (Array.isArray(otherList) && otherList.some((e: any) => e.id === newItem.id)) {
+              for (const [otherKey, idsSet] of otherEntityIdsMaps.entries()) {
+                if (idsSet.has(newItem.id)) {
                   return res
                     .status(409)
                     .json({ error: `ID '${newItem.id}' already exists in ${String(otherKey)}.` });

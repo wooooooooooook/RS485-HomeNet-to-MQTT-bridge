@@ -150,16 +150,11 @@ describe('Local State Persistence Cache', () => {
     );
 
     // Loading StateManager should filter and rewrite the cache
-    const smTemp = new StateManager(
-      PORT_ID,
-      config,
-      packetProcessor,
-      'homenet',
-      new Map(),
-      undefined,
-      configPath,
-    );
+    const smTemp = new StateManager(PORT_ID, config, packetProcessor, 'homenet', new Map(), undefined, configPath);
     await smTemp.init();
+
+    // Wait slightly to let async file write finish
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Cache file should only contain the valid entity
     const cleanedCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));

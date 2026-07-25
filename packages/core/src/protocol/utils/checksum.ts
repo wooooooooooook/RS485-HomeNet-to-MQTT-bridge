@@ -162,6 +162,15 @@ const CRC16_TABLES: Record<Crc16Variant, Uint16Array> = {
   crc16_x25: generateCrc16Table(CRC16_SPECS.crc16_x25),
 };
 
+const CRC16_TABLE_BY_SPEC = new Map<Crc16Spec, Uint16Array>([
+  [CRC16_SPECS.crc16_xmodem, CRC16_TABLES.crc16_xmodem],
+  [CRC16_SPECS.crc16_ccitt_false, CRC16_TABLES.crc16_ccitt_false],
+  [CRC16_SPECS.crc16_modbus, CRC16_TABLES.crc16_modbus],
+  [CRC16_SPECS.crc16_ibm, CRC16_TABLES.crc16_ibm],
+  [CRC16_SPECS.crc16_kermit, CRC16_TABLES.crc16_kermit],
+  [CRC16_SPECS.crc16_x25, CRC16_TABLES.crc16_x25],
+]);
+
 function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
   if (type === 'crc8' || type === 'crc8_maxim' || type === 'crc8_rohc' || type === 'crc8_wcdma') {
     return { kind: 'crc8', normalizedType: type, baseType: type, includeHeader: true };
@@ -892,10 +901,7 @@ export function crc16RangeCustom(
 
 function crc16Range(buffer: ByteArray, start: number, end: number, spec: Crc16Spec): number[] {
   // Find pre-computed table if available, otherwise generate
-  const variant = Object.entries(CRC16_SPECS).find(([, s]) => s === spec)?.[0] as
-    | Crc16Variant
-    | undefined;
-  const table = variant ? CRC16_TABLES[variant] : generateCrc16Table(spec);
+  const table = CRC16_TABLE_BY_SPEC.get(spec) ?? generateCrc16Table(spec);
   return crc16RangeWithTable(buffer, start, end, spec, table);
 }
 

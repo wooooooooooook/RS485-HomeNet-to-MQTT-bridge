@@ -149,6 +149,9 @@ describe('Local State Persistence Cache', () => {
     // Loading StateManager should filter and rewrite the cache
     new StateManager(PORT_ID, config, packetProcessor, 'homenet', new Map(), undefined, configPath);
 
+    // Wait slightly to let async file write finish
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     // Cache file should only contain the valid entity
     const cleanedCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
     expect(cleanedCache).toEqual({ plug_1: { state: 'OFF' } });

@@ -4,16 +4,6 @@ meta:
   description: |
     HAATZ PHES-150B 전열교환기의 공기질 센서 설정입니다.
     CO2, 초미세먼지(PM2.5), 미세먼지(PM10) 측정값을 제공합니다.
-
-    | Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-    | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-    | CO2 상태 | 0xF7 | 0xA0 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |
-    | PM2.5 상태 | 0xC8 | 0x31 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |
-    | PM10 상태 | 0xC8 | 0x39 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |
-
-    XX 설명:
-      상태 패킷:
-        - data[5], data[6]: BCD 형식 (4자리 수치)
   description_en: |
     HAATZ PHES-150B heat exchanger air quality sensors.
     Provides CO2, PM2.5 (fine dust), and PM10 (particulate matter) readings.

@@ -1,5 +1,5 @@
 name: Homenet2Matter
-version: 3.0.5
+version: 3.0.6
 breaking_versions: [2.0.0]
 slug: h2m-matter
 description: Bridge between RS485 HomeNet devices and Matter (supports multi-port mapping).

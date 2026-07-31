@@ -16,8 +16,7 @@ const HexSeqType = new yaml.Type('!hexSeq', {
     // Format each item as 0xXX and join with comma
     const hexItems = obj.items.map((v: unknown) => {
       if (typeof v === 'number') {
-        const h = v.toString(16).toUpperCase();
-        return '0x' + (h.length < 2 ? '0' + h : h);
+        return `0x${v.toString(16).padStart(2, '0').toUpperCase()}`;
       }
       return v;
     });

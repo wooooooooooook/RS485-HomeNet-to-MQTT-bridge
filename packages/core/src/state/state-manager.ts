@@ -2,6 +2,7 @@
 
 import { Buffer } from 'buffer';
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { HomenetBridgeConfig } from '../config/types.js';
 import { PacketProcessor } from '../protocol/packet-processor.js';
@@ -438,19 +439,22 @@ export class StateManager {
             '[StateManager] Skipped orphan entities not in current config',
           );
           // Rewrite cache file with only valid entities to permanently remove orphans
-          try {
-            const cleanedData = Object.fromEntries(this.deviceStates);
-            fs.writeFileSync(this.statesCachePath!, JSON.stringify(cleanedData, null, 2), 'utf8');
-            logger.info(
-              { path: this.statesCachePath },
-              '[StateManager] Cleaned orphan entities from states cache file',
-            );
-          } catch (writeErr) {
-            logger.error(
-              { err: writeErr, path: this.statesCachePath },
-              '[StateManager] Failed to clean states cache file',
-            );
-          }
+          const cleanedData = Object.fromEntries(this.deviceStates);
+          const cachePath = this.statesCachePath!;
+          fsPromises
+            .writeFile(cachePath, JSON.stringify(cleanedData, null, 2), 'utf8')
+            .then(() => {
+              logger.info(
+                { path: cachePath },
+                '[StateManager] Cleaned orphan entities from states cache file',
+              );
+            })
+            .catch((writeErr) => {
+              logger.error(
+                { err: writeErr, path: cachePath },
+                '[StateManager] Failed to clean states cache file',
+              );
+            });
         }
       }
     } catch (err) {
@@ -466,11 +470,15 @@ export class StateManager {
     if (this.saveTimer) {
       clearTimeout(this.saveTimer);
     }
-    this.saveTimer = setTimeout(() => {
+    this.saveTimer = setTimeout(async () => {
       this.saveTimer = null;
       try {
         const cacheData = Object.fromEntries(this.deviceStates);
-        fs.writeFileSync(this.statesCachePath!, JSON.stringify(cacheData, null, 2), 'utf8');
+        await fsPromises.writeFile(
+          this.statesCachePath!,
+          JSON.stringify(cacheData, null, 2),
+          'utf8',
+        );
         logger.debug({ path: this.statesCachePath }, '[StateManager] Saved states cache to disk');
       } catch (err) {
         logger.error(

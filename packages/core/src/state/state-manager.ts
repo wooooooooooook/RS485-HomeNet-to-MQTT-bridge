@@ -1,7 +1,6 @@
 // packages/core/src/state/state-manager.ts
 
 import { Buffer } from 'buffer';
-import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { HomenetBridgeConfig } from '../config/types.js';
@@ -11,6 +10,16 @@ import { eventBus } from '../service/event-bus.js';
 import { stateCache } from './store.js';
 import { ENTITY_TYPE_KEYS } from '../utils/entities.js';
 import { EntityConfig, RestoreMode } from '../domain/entities/base.entity.js';
+
+/** Async replacement for fs.existsSync – resolves to true when the path is accessible. */
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fsPromises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /** Check whether a restore_mode value requires MQTT retained restore. */
 function isRestorableMode(mode?: RestoreMode): boolean {
@@ -94,25 +103,6 @@ export class StateManager {
     if (configPath) {
       const configDir = path.dirname(configPath);
       this.statesCachePath = path.join(configDir, `states_cache_${portId}.json`);
-
-      // Migrate from legacy shared cache file if per-port cache doesn't exist yet
-      if (!fs.existsSync(this.statesCachePath)) {
-        const legacyCachePath = path.join(configDir, 'states_cache.json');
-        if (fs.existsSync(legacyCachePath)) {
-          try {
-            fs.copyFileSync(legacyCachePath, this.statesCachePath);
-            fs.unlinkSync(legacyCachePath);
-            logger.info(
-              { from: 'states_cache.json', to: `states_cache_${portId}.json` },
-              '[StateManager] Migrated and removed legacy shared cache',
-            );
-          } catch (err) {
-            logger.warn({ err }, '[StateManager] Failed to migrate legacy cache, starting fresh');
-          }
-        }
-      }
-
-      this.loadLocalCache();
     }
 
     // Extract internal entity IDs from config
@@ -407,13 +397,68 @@ export class StateManager {
     }
   }
 
-  private loadLocalCache() {
+  /**
+   * Static factory that constructs a StateManager and runs async I/O
+   * (legacy-cache migration + local-cache load) before returning.
+   */
+  static async create(
+    portId: string,
+    config: HomenetBridgeConfig,
+    packetProcessor: PacketProcessor,
+    mqttPublisherOrTopicPrefix: any,
+    mqttTopicPrefixOrSharedStates?: any,
+    legacySharedStates?: Map<string, Record<string, any>>,
+    configPath?: string,
+  ): Promise<StateManager> {
+    const sm = new StateManager(
+      portId,
+      config,
+      packetProcessor,
+      mqttPublisherOrTopicPrefix,
+      mqttTopicPrefixOrSharedStates,
+      legacySharedStates,
+      configPath,
+    );
+    await sm.init();
+    return sm;
+  }
+
+  /**
+   * Perform async initialisation that cannot run inside the constructor:
+   * legacy cache migration and local-cache loading.
+   */
+  async init(): Promise<void> {
+    if (!this.statesCachePath) return;
+
+    // Migrate from legacy shared cache file if per-port cache doesn't exist yet
+    const cacheExists = await fileExists(this.statesCachePath);
+    if (!cacheExists) {
+      const configDir = path.dirname(this.statesCachePath);
+      const legacyCachePath = path.join(configDir, 'states_cache.json');
+      if (await fileExists(legacyCachePath)) {
+        try {
+          await fsPromises.copyFile(legacyCachePath, this.statesCachePath);
+          await fsPromises.unlink(legacyCachePath);
+          logger.info(
+            { from: 'states_cache.json', to: path.basename(this.statesCachePath) },
+            '[StateManager] Migrated and removed legacy shared cache',
+          );
+        } catch (err) {
+          logger.warn({ err }, '[StateManager] Failed to migrate legacy cache, starting fresh');
+        }
+      }
+    }
+
+    await this.loadLocalCache();
+  }
+
+  private async loadLocalCache(): Promise<void> {
     if (!this.statesCachePath) return;
     try {
-      if (!fs.existsSync(this.statesCachePath)) {
+      if (!(await fileExists(this.statesCachePath))) {
         return;
       }
-      const dataStr = fs.readFileSync(this.statesCachePath, 'utf8');
+      const dataStr = await fsPromises.readFile(this.statesCachePath, 'utf8');
       const cached = JSON.parse(dataStr) as Record<string, any>;
       if (cached && typeof cached === 'object') {
         let restoredCount = 0;
@@ -440,21 +485,15 @@ export class StateManager {
           );
           // Rewrite cache file with only valid entities to permanently remove orphans
           const cleanedData = Object.fromEntries(this.deviceStates);
-          const cachePath = this.statesCachePath!;
-          fsPromises
-            .writeFile(cachePath, JSON.stringify(cleanedData, null, 2), 'utf8')
-            .then(() => {
-              logger.info(
-                { path: cachePath },
-                '[StateManager] Cleaned orphan entities from states cache file',
-              );
-            })
-            .catch((writeErr) => {
-              logger.error(
-                { err: writeErr, path: cachePath },
-                '[StateManager] Failed to clean states cache file',
-              );
-            });
+          await fsPromises.writeFile(
+            this.statesCachePath,
+            JSON.stringify(cleanedData, null, 2),
+            'utf8',
+          );
+          logger.info(
+            { path: this.statesCachePath },
+            '[StateManager] Cleaned orphan entities from states cache file',
+          );
         }
       }
     } catch (err) {

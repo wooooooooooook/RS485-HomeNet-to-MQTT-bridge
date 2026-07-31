@@ -16,13 +16,16 @@ vi.mock('mqtt', () => ({
   },
 }));
 
-vi.mock('../src/state/state-manager.js', () => ({
-  StateManager: vi.fn().mockImplementation(() => ({
+vi.mock('../src/state/state-manager.js', () => {
+  const mockInstance = {
     processIncomingData: vi.fn(),
     getLightState: vi.fn(),
     getClimateState: vi.fn(),
-  })),
-}));
+  };
+  const MockStateManager = vi.fn().mockImplementation(() => mockInstance) as any;
+  MockStateManager.create = vi.fn().mockResolvedValue(mockInstance);
+  return { StateManager: MockStateManager };
+});
 
 vi.mock('../src/config/index.js', () => ({
   loadConfig: () =>

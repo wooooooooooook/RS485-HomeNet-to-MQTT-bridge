@@ -858,7 +858,7 @@ export class HomeNetBridge extends EventEmitter {
       });
 
       const mqttTopicPrefix = this.getMqttTopicPrefix(normalizedPortId);
-      const stateManager = new StateManager(
+      const stateManager = await StateManager.create(
         normalizedPortId,
         this.config,
         packetProcessor,

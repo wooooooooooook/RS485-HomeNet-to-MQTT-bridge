@@ -38,7 +38,7 @@ describe('Local State Persistence Cache', () => {
     };
 
     const packetProcessor = new PacketProcessor(config, { getEntityState: () => undefined } as any);
-    const stateManager = new StateManager(
+    const stateManager = await StateManager.create(
       PORT_ID,
       config,
       packetProcessor,
@@ -62,7 +62,7 @@ describe('Local State Persistence Cache', () => {
     expect(cacheContent['light.livingroom']).toEqual({ state: 'ON' });
 
     // Create a new StateManager to load from disk
-    const nextStateManager = new StateManager(
+    const nextStateManager = await StateManager.create(
       PORT_ID,
       config,
       packetProcessor,
@@ -102,7 +102,7 @@ describe('Local State Persistence Cache', () => {
       'utf8',
     );
 
-    const stateManager = new StateManager(
+    const stateManager = await StateManager.create(
       PORT_ID,
       config,
       packetProcessor,
@@ -147,10 +147,15 @@ describe('Local State Persistence Cache', () => {
     );
 
     // Loading StateManager should filter and rewrite the cache
-    new StateManager(PORT_ID, config, packetProcessor, 'homenet', new Map(), undefined, configPath);
-
-    // Wait slightly to let async file write finish
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await StateManager.create(
+      PORT_ID,
+      config,
+      packetProcessor,
+      'homenet',
+      new Map(),
+      undefined,
+      configPath,
+    );
 
     // Cache file should only contain the valid entity
     const cleanedCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
@@ -159,7 +164,7 @@ describe('Local State Persistence Cache', () => {
     expect(cleanedCache).not.toHaveProperty('old_sensor');
   });
 
-  it('should migrate from legacy shared cache file', () => {
+  it('should migrate from legacy shared cache file', async () => {
     const config: HomenetBridgeConfig = {
       serial: {
         portId: PORT_ID,
@@ -185,7 +190,7 @@ describe('Local State Persistence Cache', () => {
       'utf8',
     );
 
-    const stateManager = new StateManager(
+    const stateManager = await StateManager.create(
       PORT_ID,
       config,
       packetProcessor,
@@ -252,7 +257,7 @@ describe('Local State Persistence Cache', () => {
       'utf8',
     );
 
-    const sm1 = new StateManager(
+    const sm1 = await StateManager.create(
       'port_a',
       config1,
       pp1,
@@ -261,7 +266,7 @@ describe('Local State Persistence Cache', () => {
       undefined,
       configPath1,
     );
-    const sm2 = new StateManager(
+    const sm2 = await StateManager.create(
       'port_b',
       config2,
       pp2,

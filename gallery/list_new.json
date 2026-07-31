@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-31T00:08:55.525Z",
+  "generated_at": "2026-07-31T00:10:32.749Z",
   "vendors": [
     {
       "id": "bestin",
@@ -785,7 +785,7 @@
           "file": "commax/haatz_air_quality_sensors.yaml",
           "name": "HAATZ 전열교환기 공기질 센서",
           "name_en": "HAATZ PHES-150B Air Quality Sensors",
-          "description": "HAATZ PHES-150B 전열교환기의 공기질 센서 설정입니다.\nCO2, 초미세먼지(PM2.5), 미세먼지(PM10) 측정값을 제공합니다.\n\n| Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |\n| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n| CO2 상태 | 0xF7 | 0xA0 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |\n| PM2.5 상태 | 0xC8 | 0x31 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |\n| PM10 상태 | 0xC8 | 0x39 | 0x01 | 0x00 | 0x00 | 0xXX | 0xXX | add checksum |\n\nXX 설명:\n  상태 패킷:\n    - data[5], data[6]: BCD 형식 (4자리 수치)\n",
+          "description": "HAATZ PHES-150B 전열교환기의 공기질 센서 설정입니다.\nCO2, 초미세먼지(PM2.5), 미세먼지(PM10) 측정값을 제공합니다.\n",
           "description_en": "HAATZ PHES-150B heat exchanger air quality sensors.\nProvides CO2, PM2.5 (fine dust), and PM10 (particulate matter) readings.\n",
           "version": "1.0.0",
           "author": "kzm168",

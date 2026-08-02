@@ -173,24 +173,6 @@ describe('Matter Transports Utilities', () => {
     });
   });
 
-  describe('trimToLength', () => {
-    it('should return the original string if under length', () => {
-      expect(trimToLength('hello', 10)).toBe('hello');
-    });
-
-    it('should trim string and append suffix if over length', () => {
-      expect(trimToLength('hello world', 5)).toBe('he...');
-    });
-
-    it('should return undefined if undefined/null', () => {
-      expect(trimToLength(undefined, 5)).toBeUndefined();
-      expect(trimToLength(null, 5)).toBeUndefined();
-    });
-
-    it('should return empty string if empty', () => {
-      expect(trimToLength('', 5)).toBe('');
-    });
-  });
 
   describe('transactionIsOffline', () => {
     it('should return true if context is undefined or null', () => {

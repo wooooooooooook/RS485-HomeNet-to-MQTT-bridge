@@ -6,6 +6,7 @@
   import './lib/i18n';
   import type {
     BridgeInfo,
+    BridgeEntry,
     BridgeErrorPayload,
     BridgeSerialInfo,
     BridgeStatus,
@@ -697,7 +698,14 @@
         mqttConnectionStatus = 'connected';
       }
 
-      connectWebSocket();
+      // WebSocket이 이미 연결되어 있으면 재연결하지 않음 (불필요한 로그 초기화 방지)
+      if (
+        !socket ||
+        socket.readyState === WebSocket.CLOSED ||
+        socket.readyState === WebSocket.CLOSING
+      ) {
+        connectWebSocket();
+      }
 
       if (bridgeInfo.configFiles && bridgeInfo.configFiles.length > 0) {
         loadCommands();
@@ -705,6 +713,7 @@
         loadAutomations();
         loadScripts();
         loadPacketHistory();
+        loadActivityLogs();
       }
     } catch (err) {
       bridgeInfo = null;
@@ -1143,8 +1152,26 @@
       entityErrorsByKey = new Map(entityErrorsByKey);
     };
 
-    const handleBridgeStatus = () => {
-      loadBridgeInfo(true);
+    const handleBridgeStatus = (data: {
+      portId: string;
+      status: string;
+      errorInfo?: BridgeErrorPayload | null;
+    }) => {
+      // 포트 상태만 인라인 업데이트 (WebSocket 재연결/로그 초기화 방지)
+      if (bridgeInfo?.bridges) {
+        bridgeInfo = {
+          ...bridgeInfo,
+          bridges: bridgeInfo.bridges.map((b) =>
+            b.serial?.portId === data.portId
+              ? {
+                  ...b,
+                  status: (data.status as BridgeEntry['status']) ?? b.status,
+                  errorInfo: data.errorInfo ?? b.errorInfo,
+                }
+              : b,
+          ),
+        };
+      }
     };
 
     const messageHandlers: Partial<Record<StreamEvent, (data: any) => void>> = {

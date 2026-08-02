@@ -2,8 +2,9 @@
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
 v3.0.7
-- state cache의 읽기 쓰기를 비동기로 전환
-- 기타 최적화
+- fix: 멀티포트 환경에서 하나의 포트에 오류가 있을 때 정상포트에서 raw패킷로그, 인터페이스로그가 올라오지 않는 문제 수정
+- improvement: state cache의 읽기 쓰기를 비동기로 전환
+- etc: 기타 최적화
 
 v3.0.6
 - 아래 수정으로 멀티포트환경에서 첫번째 포트에 여러포트의 엔티티가 섞이는 등 문제가 수정됩니다.

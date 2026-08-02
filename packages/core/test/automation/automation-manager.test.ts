@@ -1131,6 +1131,47 @@ describe('AutomationManager', () => {
     );
   });
 
+  it('should handle send_packet action with StateSchema ACK format', async () => {
+    const config: HomenetBridgeConfig = {
+      ...baseConfig,
+      automation: [
+        {
+          id: 'send_packet_schema_ack_test',
+          trigger: [{ type: 'startup' }],
+          then: [
+            {
+              action: 'send_packet',
+              data: [0x01, 0x02],
+              ack: { data: [0x06], index: 3 },
+            },
+          ],
+        },
+      ],
+    };
+
+    const mockSender = vi.fn().mockResolvedValue(undefined);
+
+    automationManager = new AutomationManager(
+      config,
+      packetProcessor as any,
+      commandManager as any,
+      mqttPublisher as any,
+      undefined,
+      mockSender, // inject mock sender
+    );
+    automationManager.start();
+
+    await vi.runAllTimersAsync();
+
+    expect(mockSender).toHaveBeenCalledWith(
+      undefined,
+      expect.arrayContaining([0x01, 0x02]),
+      expect.objectContaining({
+        ackMatch: { data: [0x06], index: 3 }, // Object is passed as is
+      }),
+    );
+  });
+
   describe('Automation Mode', () => {
     it('parallel 모드(기본)에서는 여러 실행이 병렬로 진행되어야 한다', async () => {
       const config: HomenetBridgeConfig = {

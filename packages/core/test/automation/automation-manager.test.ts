@@ -1101,14 +1101,13 @@ describe('AutomationManager', () => {
 
     const mockSender = vi.fn().mockResolvedValue(undefined);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      mockSender, // inject mock sender
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      commandSender: mockSender,
+    });
     automationManager.start();
 
     await vi.runAllTimersAsync();
@@ -1142,14 +1141,13 @@ describe('AutomationManager', () => {
 
     const mockSender = vi.fn().mockResolvedValue(undefined);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      mockSender, // inject mock sender
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      commandSender: mockSender,
+    });
     automationManager.start();
 
     await vi.runAllTimersAsync();

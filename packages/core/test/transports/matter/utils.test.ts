@@ -173,7 +173,6 @@ describe('Matter Transports Utilities', () => {
     });
   });
 
-
   describe('transactionIsOffline', () => {
     it('should return true if context is undefined or null', () => {
       expect(transactionIsOffline(undefined)).toBe(true);

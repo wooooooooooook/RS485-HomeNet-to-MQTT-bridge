@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { trimToLength } from '../../../../src/transports/matter/utils/trim-to-length.js';
 
 describe('trimToLength', () => {
+  it('should return undefined if input is undefined or null', () => {
+    expect(trimToLength(undefined, 10)).toBeUndefined();
+    expect(trimToLength(null, 10)).toBeUndefined();
+  });
+
   it('should return original string if byte length is less than or equal to maxLengthBytes', () => {
     expect(trimToLength('hello', 10)).toBe('hello');
     expect(trimToLength('world', 5)).toBe('world');

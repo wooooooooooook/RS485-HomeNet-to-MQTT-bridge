@@ -4,12 +4,19 @@
  * Trims a string to the specified maximum byte length when encoded as UTF-8.
  * This is useful for Matter constraints which strictly limit byte lengths.
  */
-export function trimToLength(str: string, maxLengthBytes: number): string {
+export function trimToLength(
+  value: string | undefined | null,
+  maxLengthBytes: number,
+): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
   const encoder = new TextEncoder();
-  const bytes = encoder.encode(str);
+  const bytes = encoder.encode(value);
 
   if (bytes.length <= maxLengthBytes) {
-    return str;
+    return value;
   }
 
   // Truncate bytes to the maximum length
@@ -19,9 +26,9 @@ export function trimToLength(str: string, maxLengthBytes: number): string {
   let result = decoder.decode(truncatedBytes);
 
   // If the last character was a multi-byte character that got split,
-  // the non-fatal decoder will insert a replacement character ().
-  // We should remove it if it occurs at the very end.
-  if (result.endsWith('\uFFFD')) {
+  // the non-fatal decoder will insert replacement characters (\uFFFD).
+  // We should remove them if they occur at the very end.
+  while (result.endsWith('\uFFFD')) {
     result = result.slice(0, -1);
   }
 

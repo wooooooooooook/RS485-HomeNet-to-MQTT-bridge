@@ -27,9 +27,9 @@ export class BasicInformationServer extends Base {
     applyPatchState(this.state, {
       vendorId: VendorId(0xfff1),
       vendorName: 'rs485-homenet',
-      productName: trimToLength(model ?? '', 32) || 'Homenet Bridge Device',
-      productLabel: trimToLength(friendlyName ?? '', 64),
-      nodeLabel: trimToLength(friendlyName ?? '', 32),
+      productName: trimToLength(model, 32) || 'Homenet Bridge Device',
+      productLabel: trimToLength(friendlyName, 64),
+      nodeLabel: trimToLength(friendlyName, 32),
       reachable: entityState != null && entityState.state !== 'unavailable',
       serialNumber: crypto.createHash('md5').update(config.id).digest('hex').substring(0, 32),
       uniqueId: crypto.createHash('md5').update(config.id).digest('hex').substring(0, 32),

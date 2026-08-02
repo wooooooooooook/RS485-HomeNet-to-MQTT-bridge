@@ -39,13 +39,13 @@ export class BridgeServerNode extends ServerNode {
       },
       basicInformation: {
         uniqueId: id,
-        nodeLabel: trimToLength(name ?? '', 32) || 'Homenet Bridge',
+        nodeLabel: trimToLength(name, 32) || 'Homenet Bridge',
         vendorId: VendorId(options.vendorId ?? 0xfff1),
         vendorName: 'rs485-homenet',
         productId: options.productId ?? 0x8000,
         productName:
           trimToLength(options.productName ?? 'Homenet Bridge', 32) || 'Homenet Matter Bridge',
-        productLabel: trimToLength(name ?? '', 64),
+        productLabel: trimToLength(name, 64),
         serialNumber: crypto
           .createHash('md5')
           .update(`serial-${id}`)

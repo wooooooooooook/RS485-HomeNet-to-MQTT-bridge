@@ -3358,13 +3358,16 @@
           "type": "string"
         },
         "ack": {
-          "description": "Wait for specific ACK packet.\nCan be byte array or CEL expression.",
+          "description": "Wait for specific ACK packet.\nCan be byte array, StateSchema, or CEL expression.",
           "anyOf": [
             {
               "type": "array",
               "items": {
                 "type": "number"
               }
+            },
+            {
+              "$ref": "#/definitions/StateSchema"
             },
             {
               "type": "string"

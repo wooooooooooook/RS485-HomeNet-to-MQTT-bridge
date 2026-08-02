@@ -199,9 +199,9 @@ export interface AutomationActionSendPacket {
   portId?: string;
   /**
    * Wait for specific ACK packet.
-   * Can be byte array or CEL expression.
+   * Can be byte array, StateSchema, or CEL expression.
    */
-  ack?: number[] | string;
+  ack?: number[] | StateSchema | string;
 }
 
 /**

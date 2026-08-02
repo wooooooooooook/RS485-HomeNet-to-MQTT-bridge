@@ -71,7 +71,7 @@ type CommandSender = (
   packet: number[],
   options?: {
     priority?: 'normal' | 'low';
-    ackMatch?: any;
+    ackMatch?: StateSchema;
     retry?: number;
     timeout?: number;
     interval?: number;
@@ -1119,7 +1119,15 @@ export class AutomationManager {
 
     if (this.commandSender) {
       // ack가 배열로 입력된 경우 StateSchema 형태로 변환하여 호환성 확보
-      const ackMatch = Array.isArray(action.ack) ? { data: action.ack } : action.ack;
+      let ackMatch: StateSchema | undefined = undefined;
+      if (Array.isArray(action.ack)) {
+        ackMatch = { data: action.ack };
+      } else if (typeof action.ack === 'object' && action.ack !== null) {
+        ackMatch = action.ack as StateSchema;
+      } else if (typeof action.ack === 'string') {
+        // CEL string is used as a guard condition for the ACK packet
+        ackMatch = { guard: action.ack };
+      }
 
       await this.commandSender(targetPortId, finalPacket, {
         ackMatch,

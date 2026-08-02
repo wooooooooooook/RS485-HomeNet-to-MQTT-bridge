@@ -60,7 +60,7 @@ interface TriggerContext {
   packet?: number[];
   prev_packet?: number[];
   timestamp: number;
-  args?: Record<string, any>;
+  args?: Record<string, unknown>;
   /** Original entity ID that triggered the script (for command-packet attribution) */
   sourceEntityId?: string;
 }
@@ -246,7 +246,7 @@ export class AutomationManager {
   public async runScript(
     scriptId: string,
     context: TriggerContext,
-    args: Record<string, any> = {},
+    args: Record<string, unknown> = {},
     stack: string[] = [],
   ): Promise<void> {
     const script = this.scripts.get(scriptId);
@@ -261,7 +261,7 @@ export class AutomationManager {
       return;
     }
 
-    const evaluatedArgs: Record<string, any> = {};
+    const evaluatedArgs: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(args)) {
       if (
         typeof value === 'string' &&
@@ -1179,7 +1179,7 @@ export class AutomationManager {
 
     if (schema && typeof schema === 'object' && (schema as any).script) {
       const schemaArgs = (schema as any).args || {};
-      const evaluatedArgs: Record<string, any> = {};
+      const evaluatedArgs: Record<string, unknown> = {};
 
       // Build context with 'x' for command value (injection)
       const evalContext = this.buildContext(context);

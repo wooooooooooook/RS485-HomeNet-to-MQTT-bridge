@@ -53,12 +53,12 @@ describe('Automation Trigger ID', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     // trigger_a에 매칭되는 패킷 전송
@@ -105,12 +105,12 @@ describe('Automation Trigger ID', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     // state:changed 이벤트 발생 (ON)

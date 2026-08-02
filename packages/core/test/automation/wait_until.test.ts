@@ -76,12 +76,12 @@ describe('wait_until action', () => {
       },
     ]);
 
-    automationManager = new AutomationManager(
-      config,
-      mockPacketProcessor,
-      mockCommandManager,
-      mockMqttPublisher,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: mockPacketProcessor,
+      commandManager: mockCommandManager,
+      mqttPublisher: mockMqttPublisher,
+    });
 
     // Set initial state to 'on'
     eventBus.emit('state:changed', { entityId: 'test_sensor', state: { state: 'on' } });
@@ -119,12 +119,12 @@ describe('wait_until action', () => {
       },
     ]);
 
-    automationManager = new AutomationManager(
-      config,
-      mockPacketProcessor,
-      mockCommandManager,
-      mockMqttPublisher,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: mockPacketProcessor,
+      commandManager: mockCommandManager,
+      mqttPublisher: mockMqttPublisher,
+    });
 
     // Set initial state
     eventBus.emit('state:changed', { entityId: 'test_sensor', state: { state: 'on' } });
@@ -155,12 +155,12 @@ describe('wait_until action', () => {
       },
     ]);
 
-    automationManager = new AutomationManager(
-      config,
-      mockPacketProcessor,
-      mockCommandManager,
-      mockMqttPublisher,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: mockPacketProcessor,
+      commandManager: mockCommandManager,
+      mqttPublisher: mockMqttPublisher,
+    });
 
     // Set initial state
     eventBus.emit('state:changed', { entityId: 'test_sensor', state: { state: 'off' } });
@@ -193,12 +193,12 @@ describe('wait_until action', () => {
       },
     ]);
 
-    automationManager = new AutomationManager(
-      config,
-      mockPacketProcessor,
-      mockCommandManager,
-      mockMqttPublisher,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: mockPacketProcessor,
+      commandManager: mockCommandManager,
+      mqttPublisher: mockMqttPublisher,
+    });
 
     automationManager.start();
 

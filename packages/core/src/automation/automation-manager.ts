@@ -94,7 +94,18 @@ const SCHEMA_KEYS = [
   'mapping',
 ];
 
+export interface AutomationManagerOptions {
+  config: HomenetBridgeConfig;
+  packetProcessor: PacketProcessor;
+  commandManager: CommandManager;
+  contextPortId?: string;
+  commandSender?: CommandSender;
+  stateManager?: StateManager;
+  mqttPublisher?: StatePublisher;
+}
+
 export class AutomationManager {
+  private readonly config: HomenetBridgeConfig;
   private readonly automationList: AutomationConfig[];
   private readonly packetProcessor: PacketProcessor;
   private readonly commandManager: CommandManager;
@@ -123,36 +134,22 @@ export class AutomationManager {
   private isStarted = false;
   private lastPacket: Buffer | undefined;
 
-  constructor(
-    private readonly config: HomenetBridgeConfig,
-    packetProcessor: PacketProcessor,
-    commandManager: CommandManager,
-    mqttPublisherOrContextPortId?: string | StatePublisher,
-    contextPortIdOrCommandSender?: string | CommandSender,
-    commandSenderOrStateManager?: CommandSender | StateManager,
-    legacyStateManager?: StateManager,
-  ) {
-    this.automationList = (config.automation || []).filter(
+  constructor(options: AutomationManagerOptions = {} as any) {
+    this.config = options.config || ({} as any);
+    this.automationList = ((options.config && options.config.automation) || []).filter(
       (automation) => automation.enabled !== false,
     );
-    this.packetProcessor = packetProcessor;
-    this.commandManager = commandManager;
+    this.packetProcessor = options.packetProcessor;
+    this.commandManager = options.commandManager;
 
-    const isLegacy =
-      mqttPublisherOrContextPortId && typeof mqttPublisherOrContextPortId === 'object';
+    this.contextPortId = options.contextPortId;
+    this.commandSender = options.commandSender;
+    this.stateManager = options.stateManager;
+    this.mqttPublisher = options.mqttPublisher;
 
-    if (isLegacy) {
-      this.mqttPublisher = mqttPublisherOrContextPortId as StatePublisher;
-      this.contextPortId = contextPortIdOrCommandSender as string;
-      this.commandSender = commandSenderOrStateManager as CommandSender;
-      this.stateManager = legacyStateManager;
-    } else {
-      this.contextPortId = mqttPublisherOrContextPortId as string;
-      this.commandSender = contextPortIdOrCommandSender as CommandSender;
-      this.stateManager = commandSenderOrStateManager as StateManager;
-    }
-
-    (config.scripts || []).forEach((script) => this.scripts.set(script.id, script));
+    ((options.config && options.config.scripts) || []).forEach((script) =>
+      this.scripts.set(script.id, script),
+    );
     this.preAnalyzeUpdateStateActions();
   }
 
@@ -409,7 +406,9 @@ export class AutomationManager {
     this.bind(eventBus, 'state:changed', stateListener);
 
     const packetListener = (packet: Buffer) => this.handlePacketTriggers(packet);
-    this.bind(this.packetProcessor, 'packet', packetListener);
+    if (this.packetProcessor && typeof (this.packetProcessor as any).on === 'function') {
+      this.bind(this.packetProcessor as any, 'packet', packetListener);
+    }
 
     for (const automation of this.automationList) {
       this.setupAutomationTriggers(automation);

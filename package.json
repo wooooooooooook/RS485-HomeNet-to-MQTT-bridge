@@ -49,6 +49,7 @@
     "vitest": "^1.5.0"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "ts-morph": "^28.0.0"
   }
 }

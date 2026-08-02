@@ -74,12 +74,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Set state to match second choice
       eventBus.emit('state:changed', { entityId: 'sensor', state: { value: 20 } });
@@ -110,12 +110,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Set state that doesn't match any choice
       eventBus.emit('state:changed', { entityId: 'sensor', state: { value: 50 } });
@@ -147,12 +147,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Set state that doesn't match any choice
       eventBus.emit('state:changed', { entityId: 'sensor', state: { value: 50 } });
@@ -186,12 +186,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Both conditions would match, but only first should execute
       eventBus.emit('state:changed', { entityId: 'sensor', state: { value: 20 } });
@@ -220,12 +220,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       automationManager.start();
       await vi.advanceTimersByTimeAsync(10);
@@ -252,12 +252,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Enable safety mode
       eventBus.emit('state:changed', { entityId: 'safety', state: { enabled: true } });
@@ -284,12 +284,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Disable safety mode
       eventBus.emit('state:changed', { entityId: 'safety', state: { enabled: false } });
@@ -324,12 +324,12 @@ describe('choose and stop actions', () => {
         },
       ]);
 
-      automationManager = new AutomationManager(
-        config,
-        mockPacketProcessor,
-        mockCommandManager,
-        mockMqttPublisher,
-      );
+      automationManager = new AutomationManager({
+        config: config,
+        packetProcessor: mockPacketProcessor,
+        commandManager: mockCommandManager,
+        mqttPublisher: mockMqttPublisher,
+      });
 
       // Set emergency mode
       eventBus.emit('state:changed', { entityId: 'mode', state: { state: 'emergency' } });

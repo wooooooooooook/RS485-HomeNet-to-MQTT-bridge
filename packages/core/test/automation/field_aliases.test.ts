@@ -49,12 +49,12 @@ describe('Automation Field Aliases', () => {
       ],
     } as any);
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager as any,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     // 첫 번째 트리거
@@ -91,12 +91,12 @@ describe('Automation Field Aliases', () => {
       ],
     } as any);
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager as any,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     await vi.advanceTimersByTimeAsync(0);
@@ -123,12 +123,12 @@ describe('Automation Field Aliases', () => {
       ],
     } as any);
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager as any,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     await vi.advanceTimersByTimeAsync(0);

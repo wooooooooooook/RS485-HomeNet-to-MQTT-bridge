@@ -56,12 +56,12 @@ describe('AutomationManager (Cron Local Time)', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager as any,
+      mqttPublisher: mqttPublisher as any,
+    });
     automationManager.start();
 
     // 1초 진행 -> 10:00:00 (로컬) 도달

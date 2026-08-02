@@ -98,15 +98,15 @@ export async function setupTest(configPath: string): Promise<TestContext> {
   };
 
   // Create AutomationManager for script-based command support
-  const automationManager = new AutomationManager(
-    config,
-    packetProcessor,
-    commandManager,
-    mqttPublisherMock,
-    portId,
-    commandSender,
-    stateManager,
-  );
+  const automationManager = new AutomationManager({
+    config: config,
+    packetProcessor: packetProcessor,
+    commandManager: commandManager,
+    mqttPublisher: mqttPublisherMock,
+    contextPortId: portId,
+    commandSender: commandSender,
+    stateManager: stateManager,
+  });
 
   return {
     packetProcessor,

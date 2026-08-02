@@ -213,14 +213,13 @@ describe('Samsung SDS Doorbell Automation', () => {
     mqttPublisher = { publish: vi.fn() };
     mockSender.mockClear();
 
-    automationManager = new AutomationManager(
-      config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      mockSender,
-    );
+    automationManager = new AutomationManager({
+      config: config,
+      packetProcessor: packetProcessor as any,
+      commandManager: commandManager as any,
+      mqttPublisher: mqttPublisher as any,
+      commandSender: mockSender,
+    });
     automationManager.start();
   });
 

@@ -877,12 +877,12 @@ export class HomeNetBridge extends EventEmitter {
         normalizedPortId,
         packetProcessor,
       );
-      const automationManager = new AutomationManager(
-        this.config,
+      const automationManager = new AutomationManager({
+        config: this.config,
         packetProcessor,
         commandManager,
-        normalizedPortId,
-        (portId: string | undefined, packet: number[], options: any) => {
+        contextPortId: normalizedPortId,
+        commandSender: (portId: string | undefined, packet: number[], options: any) => {
           const context =
             (portId ? this.portContexts.get(portId) : undefined) || this.getDefaultContext();
           if (!context) {
@@ -892,7 +892,7 @@ export class HomeNetBridge extends EventEmitter {
           return context.commandManager.sendRaw(packet, options);
         },
         stateManager,
-      );
+      });
       automationManager.start();
 
       const context: PortContext = {

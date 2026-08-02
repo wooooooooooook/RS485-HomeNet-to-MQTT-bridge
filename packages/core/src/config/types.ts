@@ -167,7 +167,7 @@ export interface AutomationActionScript {
   /** Inline code (not implemented in all contexts). */
   code?: string;
   /** Arguments to pass to the script. */
-  args?: Record<string, any>;
+  args?: Record<string, unknown>;
 }
 
 export type AutomationActionUpdateStateValue = StateSchema | StateNumSchema | any;

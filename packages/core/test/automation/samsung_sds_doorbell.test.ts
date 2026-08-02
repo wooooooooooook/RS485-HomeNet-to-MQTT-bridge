@@ -1,14 +1,19 @@
 import { EventEmitter } from 'events';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { AutomationManager } from '../../src/automation/automation-manager.js';
+import type { PacketProcessor } from '../../src/protocol/packet-processor.js';
+import type { CommandManager } from '../../src/service/command.manager.js';
+import type { StatePublisher } from '../../src/state/state-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 
 describe('Samsung SDS Doorbell Automation', () => {
   let automationManager: AutomationManager | undefined;
-  let packetProcessor: EventEmitter & { constructCommandPacket: any };
-  let commandManager: { send: any };
-  let mqttPublisher: { publish: any };
+  let packetProcessor: PacketProcessor & EventEmitter & { constructCommandPacket: Mock };
+  let commandManager: CommandManager & { send: Mock };
+  let mqttPublisher: {
+    publish: Mock<Parameters<StatePublisher['publish']>, ReturnType<StatePublisher['publish']>>;
+  };
   const mockSender = vi.fn().mockResolvedValue(undefined);
 
   // Checksum calculation for Samsung SDS TX (xor with 0x80)
@@ -208,19 +213,20 @@ describe('Samsung SDS Doorbell Automation', () => {
     vi.useFakeTimers();
     packetProcessor = Object.assign(new EventEmitter(), {
       constructCommandPacket: vi.fn().mockReturnValue([]),
-    });
-    commandManager = { send: vi.fn().mockResolvedValue(undefined) };
+    }) as unknown as PacketProcessor & EventEmitter & { constructCommandPacket: Mock };
+    commandManager = { send: vi.fn().mockResolvedValue(undefined) } as unknown as CommandManager & {
+      send: Mock;
+    };
     mqttPublisher = { publish: vi.fn() };
     mockSender.mockClear();
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      mockSender,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      commandSender: mockSender,
+    });
     automationManager.start();
   });
 

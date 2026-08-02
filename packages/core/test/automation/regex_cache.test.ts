@@ -32,15 +32,14 @@ describe('AutomationManager Regex Caching', () => {
       getAllStates: vi.fn().mockReturnValue({}),
     } as any;
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
       packetProcessor,
       commandManager,
       mqttPublisher,
-      'test-port',
-      undefined,
+      contextPortId: 'test-port',
       stateManager,
-    );
+    });
   });
 
   afterEach(() => {

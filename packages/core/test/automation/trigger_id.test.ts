@@ -1,19 +1,24 @@
 import { EventEmitter } from 'events';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { AutomationManager } from '../../src/automation/automation-manager.js';
+import type { PacketProcessor } from '../../src/protocol/packet-processor.js';
+import type { CommandManager } from '../../src/service/command.manager.js';
+import type { StatePublisher } from '../../src/state/state-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 
 describe('Automation Trigger ID', () => {
   let automationManager: AutomationManager | undefined;
-  let packetProcessor: EventEmitter;
-  let commandManager: any;
-  let mqttPublisher: { publish: ReturnType<typeof vi.fn> };
+  let packetProcessor: PacketProcessor & EventEmitter;
+  let commandManager: CommandManager;
+  let mqttPublisher: {
+    publish: Mock<Parameters<StatePublisher['publish']>, ReturnType<StatePublisher['publish']>>;
+  };
 
   beforeEach(() => {
     vi.useFakeTimers();
-    packetProcessor = new EventEmitter();
-    commandManager = { send: vi.fn().mockResolvedValue(undefined) };
+    packetProcessor = new EventEmitter() as unknown as PacketProcessor & EventEmitter;
+    commandManager = { send: vi.fn().mockResolvedValue(undefined) } as unknown as CommandManager;
     mqttPublisher = { publish: vi.fn() };
   });
 
@@ -53,12 +58,12 @@ describe('Automation Trigger ID', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
+      packetProcessor,
       commandManager,
-      mqttPublisher as any,
-    );
+      mqttPublisher,
+    });
     automationManager.start();
 
     // trigger_a에 매칭되는 패킷 전송
@@ -105,12 +110,12 @@ describe('Automation Trigger ID', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
+      packetProcessor,
       commandManager,
-      mqttPublisher as any,
-    );
+      mqttPublisher,
+    });
     automationManager.start();
 
     // state:changed 이벤트 발생 (ON)

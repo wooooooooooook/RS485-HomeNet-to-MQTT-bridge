@@ -1,14 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { EventEmitter } from 'events';
 import { AutomationManager } from '../../src/automation/automation-manager.js';
+import type { PacketProcessor } from '../../src/protocol/packet-processor.js';
+import type { CommandManager } from '../../src/service/command.manager.js';
+import type { StatePublisher } from '../../src/state/state-manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 
 describe('AutomationManager (Cron Local Time)', () => {
   let automationManager: AutomationManager;
-  let packetProcessor: EventEmitter;
-  let commandManager: any;
-  let mqttPublisher: { publish: ReturnType<typeof vi.fn> };
+  let packetProcessor: PacketProcessor & EventEmitter;
+  let commandManager: CommandManager;
+  let mqttPublisher: {
+    publish: Mock<Parameters<StatePublisher['publish']>, ReturnType<StatePublisher['publish']>>;
+  };
 
   const baseConfig: HomenetBridgeConfig = {
     serial: { portId: 'main' } as any,
@@ -16,8 +21,8 @@ describe('AutomationManager (Cron Local Time)', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    packetProcessor = new EventEmitter();
-    commandManager = { send: vi.fn(), sendRaw: vi.fn() };
+    packetProcessor = new EventEmitter() as unknown as PacketProcessor & EventEmitter;
+    commandManager = { send: vi.fn(), sendRaw: vi.fn() } as unknown as CommandManager;
     mqttPublisher = { publish: vi.fn() };
   });
 
@@ -56,12 +61,12 @@ describe('AutomationManager (Cron Local Time)', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 1초 진행 -> 10:00:00 (로컬) 도달

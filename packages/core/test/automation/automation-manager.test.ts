@@ -1,8 +1,10 @@
 import { EventEmitter } from 'events';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 
 import { AutomationManager } from '../../src/automation/automation-manager.js';
-import { StateManager } from '../../src/state/state-manager.js';
+import { StateManager, type StatePublisher } from '../../src/state/state-manager.js';
+import { PacketProcessor } from '../../src/protocol/packet-processor.js';
+import { CommandManager } from '../../src/service/command.manager.js';
 import { eventBus } from '../../src/service/event-bus.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
 import { logger } from '../../src/utils/logger.js';
@@ -24,16 +26,20 @@ const baseConfig: HomenetBridgeConfig = {
 
 describe('AutomationManager', () => {
   let automationManager: AutomationManager | undefined;
-  let packetProcessor: EventEmitter & { constructCommandPacket: ReturnType<typeof vi.fn> };
-  let commandManager: { send: ReturnType<typeof vi.fn> };
-  let mqttPublisher: { publish: ReturnType<typeof vi.fn> };
+  let packetProcessor: PacketProcessor & EventEmitter & { constructCommandPacket: Mock };
+  let commandManager: CommandManager & { send: Mock };
+  let mqttPublisher: {
+    publish: Mock<Parameters<StatePublisher['publish']>, ReturnType<StatePublisher['publish']>>;
+  };
 
   beforeEach(() => {
     vi.useFakeTimers();
     packetProcessor = Object.assign(new EventEmitter(), {
       constructCommandPacket: vi.fn(),
-    });
-    commandManager = { send: vi.fn().mockResolvedValue(undefined) };
+    }) as unknown as PacketProcessor & EventEmitter & { constructCommandPacket: Mock };
+    commandManager = { send: vi.fn().mockResolvedValue(undefined) } as unknown as CommandManager & {
+      send: Mock;
+    };
     mqttPublisher = { publish: vi.fn() };
   });
 
@@ -69,12 +75,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 상태 변경 이벤트 발생
@@ -110,12 +116,12 @@ describe('AutomationManager', () => {
 
     packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     eventBus.emit('state:changed', { entityId: 'light_1', state: { state_on: true } });
@@ -141,12 +147,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // setTimeout 0으로 스케줄된 startup 트리거 실행 대기
@@ -166,12 +172,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 100ms 경과 후 첫 번째 실행 확인
@@ -203,12 +209,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 일치하는 패킷 수신
@@ -265,20 +271,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x01, 0x00, 0x89]));
@@ -356,20 +360,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     packetProcessor.emit('packet', Buffer.from([0xf7, 0x10, 0x01, 0x01, 0x00, 0x89]));
@@ -423,20 +425,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     packetProcessor.emit('packet', Buffer.from([0x02, 0x10, 0x01]));
@@ -475,21 +475,19 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger as any);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     const emitSpy = vi.spyOn(eventBus, 'emit');
@@ -550,20 +548,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     packetProcessor.emit('packet', Buffer.from([0xf7, 0x20, 0x02, 0x03]));
@@ -618,20 +614,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     packetProcessor.emit('packet', Buffer.from([0xf7, 0x30, 0x03, 0x19]));
@@ -743,20 +737,18 @@ describe('AutomationManager', () => {
     const stateManager = new StateManager(
       'main',
       config,
-      packetProcessor as any,
-      mqttPublisherStub as any,
+      packetProcessor,
+      mqttPublisherStub,
       'homenet2mqtt',
     );
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      undefined,
-      stateManager as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      stateManager,
+    });
     automationManager.start();
 
     const protocolConfig = { packet_defaults: config.packet_defaults } as any;
@@ -802,12 +794,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 조건 불만족 (10 <= 50)
@@ -841,12 +833,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 첫 번째 트리거 발생 (즉시 실행)
@@ -881,12 +873,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // The guard 'false' should evaluate to false.
@@ -895,12 +887,12 @@ describe('AutomationManager', () => {
   });
 
   it('자동화를 동적으로 추가 및 제거할 수 있어야 한다', async () => {
-    automationManager = new AutomationManager(
-      baseConfig,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+    automationManager = new AutomationManager({
+      config: baseConfig,
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 동적으로 확인 가능한 상태 트리거 자동화 추가
@@ -943,12 +935,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 첫 번째 액션 실행 확인
@@ -990,12 +982,12 @@ describe('AutomationManager', () => {
 
     packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     await vi.runAllTimersAsync();
@@ -1034,12 +1026,12 @@ describe('AutomationManager', () => {
 
     packetProcessor.constructCommandPacket.mockReturnValue([0x01]);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     await vi.runAllTimersAsync();
@@ -1069,14 +1061,13 @@ describe('AutomationManager', () => {
 
     const mockSender = vi.fn().mockResolvedValue(undefined);
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-      undefined,
-      mockSender, // inject mock sender
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+      commandSender: mockSender,
+    });
     automationManager.start();
 
     await vi.runAllTimersAsync();
@@ -1113,12 +1104,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 첫 번째 트리거
@@ -1161,12 +1152,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 첫 번째 트리거
@@ -1209,12 +1200,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 첫 번째 트리거
@@ -1259,12 +1250,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 첫 번째 트리거
@@ -1316,12 +1307,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 상태 설정 후 패킷 트리거
@@ -1357,12 +1348,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 상태 설정 (조건 false) 후 패킷 트리거
@@ -1397,12 +1388,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       eventBus.emit('state:changed', { entityId: 'sensor_temp', state: { value: 15 } });
@@ -1432,12 +1423,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       await vi.runAllTimersAsync();
@@ -1469,12 +1460,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       // 초기 카운터 설정
@@ -1513,12 +1504,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       await vi.runAllTimersAsync();
@@ -1556,12 +1547,12 @@ describe('AutomationManager', () => {
         ],
       };
 
-      automationManager = new AutomationManager(
+      automationManager = new AutomationManager({
         config,
-        packetProcessor as any,
-        commandManager as any,
-        mqttPublisher as any,
-      );
+        packetProcessor,
+        commandManager,
+        mqttPublisher,
+      });
       automationManager.start();
 
       eventBus.emit('state:changed', { entityId: 'switch_1', state: { power: 'on' } });
@@ -1591,12 +1582,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 1. 요청 패킷 수신 (AB 41 00) -> lastPacket 업데이트
@@ -1638,12 +1629,12 @@ describe('AutomationManager', () => {
       ],
     };
 
-    automationManager = new AutomationManager(
+    automationManager = new AutomationManager({
       config,
-      packetProcessor as any,
-      commandManager as any,
-      mqttPublisher as any,
-    );
+      packetProcessor,
+      commandManager,
+      mqttPublisher,
+    });
     automationManager.start();
 
     // 첫 번째 트리거 (파싱 수행 및 캐싱)

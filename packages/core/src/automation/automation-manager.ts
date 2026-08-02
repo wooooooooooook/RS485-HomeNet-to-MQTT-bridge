@@ -31,7 +31,7 @@ import { PacketProcessor } from '../protocol/packet-processor.js';
 import { CelExecutor } from '../protocol/cel-executor.js';
 import { CommandManager } from '../service/command.manager.js';
 import { eventBus } from '../service/event-bus.js';
-import { StateManager } from '../state/state-manager.js';
+import { StateManager, type StatePublisher } from '../state/state-manager.js';
 import { parseDuration } from '../utils/duration.js';
 import { findEntityById } from '../utils/entities.js';
 import { logger } from '../utils/logger.js';
@@ -78,6 +78,16 @@ type CommandSender = (
   },
 ) => Promise<void>;
 
+export interface AutomationManagerOptions {
+  config: HomenetBridgeConfig;
+  packetProcessor: PacketProcessor;
+  commandManager: CommandManager;
+  contextPortId?: string;
+  commandSender?: CommandSender;
+  stateManager?: StateManager;
+  mqttPublisher?: StatePublisher;
+}
+
 const SCHEMA_KEYS = [
   'data',
   'mask',
@@ -95,13 +105,14 @@ const SCHEMA_KEYS = [
 ];
 
 export class AutomationManager {
+  private readonly config: HomenetBridgeConfig;
   private readonly automationList: AutomationConfig[];
   private readonly packetProcessor: PacketProcessor;
   private readonly commandManager: CommandManager;
   private readonly contextPortId?: string;
   private readonly commandSender?: CommandSender;
   private readonly stateManager?: StateManager;
-  private readonly mqttPublisher?: any;
+  private readonly mqttPublisher?: StatePublisher;
   private readonly celExecutor = new CelExecutor();
   private readonly debounceTracker = new Map<string, number>();
   private readonly triggerDebounceCache = new WeakMap<AutomationTriggerState, number>();
@@ -123,36 +134,19 @@ export class AutomationManager {
   private isStarted = false;
   private lastPacket: Buffer | undefined;
 
-  constructor(
-    private readonly config: HomenetBridgeConfig,
-    packetProcessor: PacketProcessor,
-    commandManager: CommandManager,
-    mqttPublisherOrContextPortId?: any,
-    contextPortIdOrCommandSender?: any,
-    commandSenderOrStateManager?: any,
-    legacyStateManager?: StateManager,
-  ) {
-    this.automationList = (config.automation || []).filter(
+  constructor(options: AutomationManagerOptions) {
+    this.config = options.config;
+    this.automationList = (options.config.automation || []).filter(
       (automation) => automation.enabled !== false,
     );
-    this.packetProcessor = packetProcessor;
-    this.commandManager = commandManager;
+    this.packetProcessor = options.packetProcessor;
+    this.commandManager = options.commandManager;
+    this.contextPortId = options.contextPortId;
+    this.commandSender = options.commandSender;
+    this.stateManager = options.stateManager;
+    this.mqttPublisher = options.mqttPublisher;
 
-    const isLegacy =
-      mqttPublisherOrContextPortId && typeof mqttPublisherOrContextPortId === 'object';
-
-    if (isLegacy) {
-      this.mqttPublisher = mqttPublisherOrContextPortId;
-      this.contextPortId = contextPortIdOrCommandSender;
-      this.commandSender = commandSenderOrStateManager;
-      this.stateManager = legacyStateManager;
-    } else {
-      this.contextPortId = mqttPublisherOrContextPortId;
-      this.commandSender = contextPortIdOrCommandSender;
-      this.stateManager = commandSenderOrStateManager;
-    }
-
-    (config.scripts || []).forEach((script) => this.scripts.set(script.id, script));
+    (options.config.scripts || []).forEach((script) => this.scripts.set(script.id, script));
     this.preAnalyzeUpdateStateActions();
   }
 

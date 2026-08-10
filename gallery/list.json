@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-31T00:10:32.742Z",
+  "generated_at": "2026-08-10T01:06:28.468Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1497,6 +1497,61 @@
               "switch": 2
             },
             "automations": 2,
+            "scripts": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "samsung_hvac",
+      "name": "samsung_hvac",
+      "requirements": {
+        "serial": {
+          "baud_rate": 2400,
+          "data_bits": 8,
+          "parity": "even",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "xor_no_header",
+          "tx_checksum": "xor_no_header",
+          "rx_header": [
+            50
+          ],
+          "tx_header": [
+            50
+          ],
+          "rx_footer": [
+            52
+          ],
+          "tx_footer": [
+            52
+          ],
+          "rx_length": 14
+        }
+      },
+      "items": [
+        {
+          "file": "samsung_hvac/outdoor_sensors.yaml",
+          "name": "삼성 에어컨 실외기 센서 (NonNASA)",
+          "name_en": "Samsung HVAC Outdoor Sensors (NonNASA)",
+          "description": "삼성 에어컨 NonNASA 프로토콜 실외기 센서 설정입니다.\n실외 온도, 인버터 전력/전류/전압 및 에러코드를 모니터링합니다.\n\nCmdC0 (0xC0): 실외 온도 (data[8] - 55 °C)\nCmd8D (0x8D): 인버터 전류 (data[8]/10 A), 전압 (data[10]*2 V), 소비전력 (W)\nCmdF0 (0xF0): 에러코드 (data[10])\n",
+          "description_en": "Samsung HVAC NonNASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power/current/voltage, and error codes.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "outdoor",
+            "samsung",
+            "nonnasa"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 5
+            },
+            "automations": 0,
             "scripts": 0
           }
         }

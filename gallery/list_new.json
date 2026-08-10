@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T01:18:24.937Z",
+  "generated_at": "2026-08-10T01:37:11.921Z",
   "vendors": [
     {
       "id": "bestin",
@@ -4117,6 +4117,41 @@
           "discovery": null
         },
         {
+          "file": "samsung_hvac/indoor_sensors.yaml",
+          "name": "삼성 에어컨 실내기 상세 센서 (NonNASA)",
+          "name_en": "Samsung HVAC Indoor Sensors (NonNASA)",
+          "description": "삼성 에어컨 NonNASA 프로토콜 실내기 추가 센서 설정입니다.\n열교환기 입구/출구 온도 (EVA In/Out)를 모니터링합니다.\n\nCmd20 (0x20):\n- data[6]: EVA In 온도 (-55 °C)\n- data[7]: EVA Out 온도 (-55 °C)\n",
+          "description_en": "Samsung HVAC NonNASA protocol indoor unit sensors.\nMonitors EVA In/Out temperatures.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "indoor",
+            "samsung",
+            "nonnasa"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 2,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 2
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
+        },
+        {
           "file": "samsung_hvac/outdoor_sensors.yaml",
           "name": "삼성 에어컨 실외기 센서 (NonNASA)",
           "name_en": "Samsung HVAC Outdoor Sensors (NonNASA)",
@@ -4210,11 +4245,47 @@
           "discovery": null
         },
         {
+          "file": "samsung_hvac_nasa/indoor_sensors.yaml",
+          "name": "삼성 에어컨 실내기 상세 센서 (NASA)",
+          "name_en": "Samsung HVAC Indoor Sensors (NASA)",
+          "description": "삼성 에어컨 NASA 프로토콜 실내기 추가 센서 설정입니다.\n열교환기 입구/출구 온도 (EVA In/Out), 습도 및 필터 청소 알림을 모니터링합니다.\n\nMessage Numbers:\n- 0x4204: 실내 습도 (VAR: value / 10.0 %)\n- 0x4205: EVA In 온도 (VAR: value / 10.0 °C)\n- 0x4206: EVA Out 온도 (VAR: value / 10.0 °C)\n- 0x4011: 필터 청소 상태 (ENUM: 0=Clean, 1=Dirty)\n",
+          "description_en": "Samsung HVAC NASA protocol indoor unit sensors.\nMonitors EVA In/Out temperatures, indoor humidity, and filter clean warning.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "indoor",
+            "samsung",
+            "nasa"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 2,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 3,
+              "binary_sensor": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
+        },
+        {
           "file": "samsung_hvac_nasa/outdoor_sensors.yaml",
           "name": "삼성 에어컨 실외기 센서 (NASA)",
           "name_en": "Samsung HVAC Outdoor Sensors (NASA)",
-          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 설정입니다.\n외기 온도, 인버터 소비전력 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x8003: 에러 코드 (ENUM)\n",
-          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power, and error codes.\n",
+          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 상세 설정입니다.\n외기 온도, 인버터 소비전력, 전류, 컴프레서 주파수, 토출/응축기 온도, 고압/저압 센서 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8202: 인버터 전류 (VAR: value / 10.0 A)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x820B: 컴프레서 1 운전 주파수 (VAR: Hz)\n- 0x820C: 컴프레서 2 운전 주파수 (VAR: Hz)\n- 0x8217: 토출 온도 (VAR: value / 10.0 °C)\n- 0x8218: 응축기 출구 온도 (VAR: value / 10.0 °C)\n- 0x822A: 고압 센서 (VAR: value / 10.0 bar)\n- 0x822B: 저압 센서 (VAR: value / 10.0 bar)\n- 0x8003: 에러 코드 (ENUM)\n",
+          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temp, inverter power/current, comp frequencies, discharge/condenser temps, high/low pressures, and error codes.\n",
           "version": "1.0.0",
           "author": "wooooooooooook",
           "tags": [
@@ -4227,7 +4298,7 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "sensor": 3
+              "sensor": 10
             },
             "automations": 0,
             "scripts": 0

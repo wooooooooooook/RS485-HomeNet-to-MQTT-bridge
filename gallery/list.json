@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T01:18:24.931Z",
+  "generated_at": "2026-08-10T01:37:11.914Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1592,8 +1592,8 @@
           "file": "samsung_hvac_nasa/outdoor_sensors.yaml",
           "name": "삼성 에어컨 실외기 센서 (NASA)",
           "name_en": "Samsung HVAC Outdoor Sensors (NASA)",
-          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 설정입니다.\n외기 온도, 인버터 소비전력 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x8003: 에러 코드 (ENUM)\n",
-          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power, and error codes.\n",
+          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 상세 설정입니다.\n외기 온도, 인버터 소비전력, 전류, 컴프레서 주파수, 토출/응축기 온도, 고압/저압 센서 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8202: 인버터 전류 (VAR: value / 10.0 A)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x820B: 컴프레서 1 운전 주파수 (VAR: Hz)\n- 0x820C: 컴프레서 2 운전 주파수 (VAR: Hz)\n- 0x8217: 토출 온도 (VAR: value / 10.0 °C)\n- 0x8218: 응축기 출구 온도 (VAR: value / 10.0 °C)\n- 0x822A: 고압 센서 (VAR: value / 10.0 bar)\n- 0x822B: 저압 센서 (VAR: value / 10.0 bar)\n- 0x8003: 에러 코드 (ENUM)\n",
+          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temp, inverter power/current, comp frequencies, discharge/condenser temps, high/low pressures, and error codes.\n",
           "version": "1.0.0",
           "author": "wooooooooooook",
           "tags": [
@@ -1606,7 +1606,7 @@
           "parameters": [],
           "content_summary": {
             "entities": {
-              "sensor": 3
+              "sensor": 10
             },
             "automations": 0,
             "scripts": 0

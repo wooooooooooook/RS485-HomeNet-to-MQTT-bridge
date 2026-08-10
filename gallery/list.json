@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T01:06:28.468Z",
+  "generated_at": "2026-08-10T01:18:24.931Z",
   "vendors": [
     {
       "id": "bestin",
@@ -1550,6 +1550,63 @@
           "content_summary": {
             "entities": {
               "sensor": 5
+            },
+            "automations": 0,
+            "scripts": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "samsung_hvac_nasa",
+      "name": "samsung_hvac_nasa",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "even",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+          "tx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+          "rx_header": [
+            50
+          ],
+          "tx_header": [
+            50
+          ],
+          "rx_footer": [
+            52
+          ],
+          "tx_footer": [
+            52
+          ],
+          "rx_length_expr": "(int(data[1]) << 8) + int(data[2]) + 2",
+          "rx_min_length": 14,
+          "rx_max_length": 100
+        }
+      },
+      "items": [
+        {
+          "file": "samsung_hvac_nasa/outdoor_sensors.yaml",
+          "name": "삼성 에어컨 실외기 센서 (NASA)",
+          "name_en": "Samsung HVAC Outdoor Sensors (NASA)",
+          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 설정입니다.\n외기 온도, 인버터 소비전력 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x8003: 에러 코드 (ENUM)\n",
+          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power, and error codes.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "outdoor",
+            "samsung",
+            "nasa"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 3
             },
             "automations": 0,
             "scripts": 0

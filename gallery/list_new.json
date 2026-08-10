@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T01:06:28.472Z",
+  "generated_at": "2026-08-10T01:18:24.937Z",
   "vendors": [
     {
       "id": "bestin",
@@ -4135,6 +4135,99 @@
           "content_summary": {
             "entities": {
               "sensor": 5
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
+        }
+      ]
+    },
+    {
+      "id": "samsung_hvac_nasa",
+      "name": "samsung_hvac_nasa",
+      "requirements": {
+        "serial": {
+          "baud_rate": 9600,
+          "data_bits": 8,
+          "parity": "even",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+          "tx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+          "rx_header": [
+            50
+          ],
+          "tx_header": [
+            50
+          ],
+          "rx_footer": [
+            52
+          ],
+          "tx_footer": [
+            52
+          ],
+          "rx_length_expr": "(int(data[1]) << 8) + int(data[2]) + 2",
+          "rx_min_length": 14,
+          "rx_max_length": 100
+        }
+      },
+      "items": [
+        {
+          "file": "samsung_hvac_nasa/climate.yaml",
+          "name": "삼성 에어컨 (NASA)",
+          "name_en": "Samsung HVAC (NASA)",
+          "description": "삼성 에어컨 NASA 프로토콜 설정입니다.\n신형 에어컨 (무풍, 360 카세트 등) RS485 버스를 제어합니다.\n\n패킷 구조 (가변 길이):\n[0x32] [LEN_HI] [LEN_LO] [SA_3B] [DA_3B] [CMD_3B] [MSG_COUNT] [MSG_DATA...] [CRC_2B] [0x34]\n\nMessage Numbers:\n- 0x4000: Power Enum (0=Off, 1=On)\n- 0x4001: Mode Enum (0=Auto, 1=Cool, 2=Dry, 3=Fan, 4=Heat)\n- 0x4006: Fan Mode Enum (0=Auto, 1=Low, 2=Mid, 3=High, 4=Turbo)\n- 0x4201: Target Temp Variable (value * 10, e.g. 240 = 24.0°C)\n- 0x4203: Current Room Temp Variable (value * 10, e.g. 220 = 22.0°C)\n",
+          "description_en": "Samsung HVAC NASA protocol configuration for modern AC models (WindFree, 360 Cassette).\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "hvac",
+            "aircon",
+            "samsung",
+            "nasa"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 2,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
+        },
+        {
+          "file": "samsung_hvac_nasa/outdoor_sensors.yaml",
+          "name": "삼성 에어컨 실외기 센서 (NASA)",
+          "name_en": "Samsung HVAC Outdoor Sensors (NASA)",
+          "description": "삼성 에어컨 NASA 프로토콜 실외기 센서 설정입니다.\n외기 온도, 인버터 소비전력 및 에러코드를 모니터링합니다.\n\nMessage Numbers:\n- 0x8201: 외기 온도 (VAR: value / 10.0 °C)\n- 0x8204: 인버터 전력 (VAR: W)\n- 0x8003: 에러 코드 (ENUM)\n",
+          "description_en": "Samsung HVAC NASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power, and error codes.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "outdoor",
+            "samsung",
+            "nasa"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 3
             },
             "automations": 0,
             "scripts": 0

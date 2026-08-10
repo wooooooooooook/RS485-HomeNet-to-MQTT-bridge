@@ -1340,7 +1340,10 @@ export class PacketParser {
             const result = this.preparedChecksum2.executeRaw(this.reusableContext);
 
             if (Array.isArray(result) && result.length === 2) {
-              return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
+              return (
+                Number(result[0]) === buffer[checksumStart] &&
+                Number(result[1]) === buffer[checksumStart + 1]
+              );
             }
           } else {
             const result = this.preparedChecksum2.execute({
@@ -1349,7 +1352,10 @@ export class PacketParser {
               header_len: this.headerLength,
             });
             if (Array.isArray(result) && result.length === 2) {
-              return result[0] === buffer[checksumStart] && result[1] === buffer[checksumStart + 1];
+              return (
+                Number(result[0]) === buffer[checksumStart] &&
+                Number(result[1]) === buffer[checksumStart + 1]
+              );
             }
           }
         } else {

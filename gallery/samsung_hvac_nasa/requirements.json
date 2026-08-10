@@ -1,0 +1,19 @@
+{
+    "serial": {
+        "baud_rate": 9600,
+        "data_bits": 8,
+        "parity": "even",
+        "stop_bits": 1
+    },
+    "packet_defaults": {
+        "rx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+        "tx_checksum2": "crc16_no_header(data, 3, 0x1021, 0, false, false, 0)",
+        "rx_header": [50],
+        "tx_header": [50],
+        "rx_footer": [52],
+        "tx_footer": [52],
+        "rx_length_expr": "(int(data[1]) << 8) + int(data[2]) + 2",
+        "rx_min_length": 14,
+        "rx_max_length": 100
+    }
+}

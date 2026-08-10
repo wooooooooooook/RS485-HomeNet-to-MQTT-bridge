@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-31T00:10:32.749Z",
+  "generated_at": "2026-08-10T01:06:28.472Z",
   "vendors": [
     {
       "id": "bestin",
@@ -4048,6 +4048,98 @@
               ]
             }
           }
+        }
+      ]
+    },
+    {
+      "id": "samsung_hvac",
+      "name": "samsung_hvac",
+      "requirements": {
+        "serial": {
+          "baud_rate": 2400,
+          "data_bits": 8,
+          "parity": "even",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_checksum": "xor_no_header",
+          "tx_checksum": "xor_no_header",
+          "rx_header": [
+            50
+          ],
+          "tx_header": [
+            50
+          ],
+          "rx_footer": [
+            52
+          ],
+          "tx_footer": [
+            52
+          ],
+          "rx_length": 14
+        }
+      },
+      "items": [
+        {
+          "file": "samsung_hvac/climate.yaml",
+          "name": "삼성 에어컨 (NonNASA)",
+          "name_en": "Samsung HVAC (NonNASA)",
+          "description": "삼성 에어컨 NonNASA 프로토콜 설정입니다.\nF1/F2 버스를 통한 직접 RS485 통신으로 실내기를 제어합니다.\n\n패킷 구조 (14바이트 고정):\n[0x32] [SRC] [DST] [CMD] [D4~D11] [CRC] [0x34]\n\nCmd20 (실내기 상태 보고):\n| Index | 0    | 1   | 2   | 3    | 4       | 5       | 6       | 7            | 8             | 9~10 | 11      | 12  | 13   |\n| :---  | :--: | :-: | :-: | :--: | :-----: | :-----: | :-----: | :----------: | :-----------: | :--: | :-----: | :-: | :--: |\n| 의미  | Start| SRC | DST | 0x20 | 목표온도 | 실내온도 | 배관입구 | 풍향\\|팬속도 | 전원\\|운전모드 | -    | 배관출구 | CRC | End  |\n\nCmdB0 (제어 명령):\n| Index | 0    | 1    | 2   | 3    | 4    | 5       | 6             | 7    | 8         | 9    | 10~11 | 12  | 13   |\n| :---  | :--: | :--: | :-: | :--: | :--: | :-----: | :-----------: | :--: | :-------: | :--: | :---: | :-: | :--: |\n| 의미  | Start| 0xD0 | DST | 0xB0 | Swing| 실내온도 | 목표온도\\|팬  | 모드  | 전원\\|플래그| 0x21 | 0x00  | CRC | End  |\n\n온도 디코딩: raw_byte - 55 (°C)\n온도 인코딩 (제어): 목표온도 값 그대로 (하위 5비트)\n",
+          "description_en": "Samsung HVAC NonNASA protocol configuration.\nControls indoor units via direct RS485 communication through F1/F2 bus.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "climate",
+            "hvac",
+            "aircon",
+            "samsung",
+            "nonnasa"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 2,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1,
+              "automation": 2
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
+        },
+        {
+          "file": "samsung_hvac/outdoor_sensors.yaml",
+          "name": "삼성 에어컨 실외기 센서 (NonNASA)",
+          "name_en": "Samsung HVAC Outdoor Sensors (NonNASA)",
+          "description": "삼성 에어컨 NonNASA 프로토콜 실외기 센서 설정입니다.\n실외 온도, 인버터 전력/전류/전압 및 에러코드를 모니터링합니다.\n\nCmdC0 (0xC0): 실외 온도 (data[8] - 55 °C)\nCmd8D (0x8D): 인버터 전류 (data[8]/10 A), 전압 (data[10]*2 V), 소비전력 (W)\nCmdF0 (0xF0): 에러코드 (data[10])\n",
+          "description_en": "Samsung HVAC NonNASA protocol outdoor unit sensors.\nMonitors outdoor temperature, inverter power/current/voltage, and error codes.\n",
+          "version": "1.0.0",
+          "author": "wooooooooooook",
+          "tags": [
+            "sensor",
+            "hvac",
+            "outdoor",
+            "samsung",
+            "nonnasa"
+          ],
+          "parameters": [],
+          "content_summary": {
+            "entities": {
+              "sensor": 5
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
         }
       ]
     },

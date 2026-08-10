@@ -1,0 +1,75 @@
+meta:
+  name: "삼성 에어컨 실외기 센서 (NonNASA)"
+  name_en: "Samsung HVAC Outdoor Sensors (NonNASA)"
+  description: |
+    삼성 에어컨 NonNASA 프로토콜 실외기 센서 설정입니다.
+    실외 온도, 인버터 전력/전류/전압 및 에러코드를 모니터링합니다.
+
+    CmdC0 (0xC0): 실외 온도 (data[8] - 55 °C)
+    Cmd8D (0x8D): 인버터 전류 (data[8]/10 A), 전압 (data[10]*2 V), 소비전력 (W)
+    CmdF0 (0xF0): 에러코드 (data[10])
+  description_en: |
+    Samsung HVAC NonNASA protocol outdoor unit sensors.
+    Monitors outdoor temperature, inverter power/current/voltage, and error codes.
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["sensor", "hvac", "outdoor", "samsung", "nonnasa"]
+
+entities:
+  sensor:
+    - id: 'outdoor_temperature'
+      name: 'Outdoor Temperature'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0xC8, 0x00, 0xC0]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+      state_value: >-
+        double(data[8]) - 55.0
+
+    - id: 'outdoor_inverter_current'
+      name: 'Outdoor Inverter Current'
+      device_class: 'current'
+      state_class: 'measurement'
+      unit_of_measurement: 'A'
+      state:
+        data: [0xC8, 0x00, 0x8D]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+      state_value: >-
+        double(data[8]) / 10.0
+
+    - id: 'outdoor_inverter_voltage'
+      name: 'Outdoor Inverter Voltage'
+      device_class: 'voltage'
+      state_class: 'measurement'
+      unit_of_measurement: 'V'
+      state:
+        data: [0xC8, 0x00, 0x8D]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+      state_value: >-
+        double(data[10]) * 2.0
+
+    - id: 'outdoor_inverter_power'
+      name: 'Outdoor Inverter Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      state:
+        data: [0xC8, 0x00, 0x8D]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+      state_value: >-
+        (double(data[8]) / 10.0) * 0.1 * (double(data[10]) * 2.0)
+
+    - id: 'outdoor_error_code'
+      name: 'Outdoor Error Code'
+      state:
+        data: [0xC8, 0x00, 0xF0]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+      state_value: >-
+        int(data[10])

@@ -1,0 +1,179 @@
+meta:
+  name: "삼성 에어컨 (NonNASA)"
+  name_en: "Samsung HVAC (NonNASA)"
+  description: |
+    삼성 에어컨 NonNASA 프로토콜 설정입니다.
+    F1/F2 버스를 통한 직접 RS485 통신으로 실내기를 제어합니다.
+
+    패킷 구조 (14바이트 고정):
+    [0x32] [SRC] [DST] [CMD] [D4~D11] [CRC] [0x34]
+
+    Cmd20 (실내기 상태 보고):
+    | Index | 0    | 1   | 2   | 3    | 4       | 5       | 6       | 7            | 8             | 9~10 | 11      | 12  | 13   |
+    | :---  | :--: | :-: | :-: | :--: | :-----: | :-----: | :-----: | :----------: | :-----------: | :--: | :-----: | :-: | :--: |
+    | 의미  | Start| SRC | DST | 0x20 | 목표온도 | 실내온도 | 배관입구 | 풍향\|팬속도 | 전원\|운전모드 | -    | 배관출구 | CRC | End  |
+
+    CmdB0 (제어 명령):
+    | Index | 0    | 1    | 2   | 3    | 4    | 5       | 6             | 7    | 8         | 9    | 10~11 | 12  | 13   |
+    | :---  | :--: | :--: | :-: | :--: | :--: | :-----: | :-----------: | :--: | :-------: | :--: | :---: | :-: | :--: |
+    | 의미  | Start| 0xD0 | DST | 0xB0 | Swing| 실내온도 | 목표온도\|팬  | 모드  | 전원\|플래그| 0x21 | 0x00  | CRC | End  |
+
+    온도 디코딩: raw_byte - 55 (°C)
+    온도 인코딩 (제어): 목표온도 값 그대로 (하위 5비트)
+  description_en: |
+    Samsung HVAC NonNASA protocol configuration.
+    Controls indoor units via direct RS485 communication through F1/F2 bus.
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["climate", "hvac", "aircon", "samsung", "nonnasa"]
+
+parameters:
+  - name: unit_count
+    type: integer
+    default: 2
+    min: 1
+    max: 16
+    label: "실내기 수"
+    label_en: "Number of Indoor Units"
+
+entities:
+  climate:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'hvac_{{i}}'
+      name: 'HVAC {{i}}'
+      visual:
+        min_temperature: 16
+        max_temperature: 30
+        temperature_step: 1
+      modes: ["off", "auto", "cool", "heat", "dry", "fan_only"]
+      fan_modes: ["auto", "low", "medium", "high"]
+      # Cmd20 (0x20) 상태 패킷 매칭: src 주소로 실내기 식별
+      # 실내기 주소: 0x20 = 32, 0x21 = 33, ...
+      state:
+        data: ['{{31 + i}}', 0x00, 0x20]
+        mask: [0xFF, 0x00, 0xFF]
+        index: 1
+
+      # 온도: raw_byte - 55
+      state_temperature_target: >-
+        double(data[4]) - 55.0
+      state_temperature_current: >-
+        double(data[5]) - 55.0
+
+      # 전원 + 모드 (data[8])
+      # 전원: bit7 (0x80)
+      # 모드: 하위 6비트 (0x3F)
+      #   0x01=Heat, 0x02=Cool, 0x04=Dry, 0x08=Fan, 0x21/0x22=Auto
+      state_off:
+        index: 8
+        data: [0x00]
+        mask: [0x80]
+      state_heat:
+        index: 8
+        data: [0x81]
+        mask: [0xBF]
+      state_cool:
+        index: 8
+        data: [0x82]
+        mask: [0xBF]
+      state_dry:
+        index: 8
+        data: [0x84]
+        mask: [0xBF]
+      state_fan_only:
+        index: 8
+        data: [0x88]
+        mask: [0xBF]
+      state_auto:
+        index: 8
+        data: [0xA2]
+        mask: [0xA2]
+
+      # 팬 속도 (data[7] & 0x07)
+      # 0=Auto, 2=Low, 4=Medium, 5=High
+      state_fan_auto:
+        index: 7
+        data: [0x00]
+        mask: [0x07]
+      state_fan_low:
+        index: 7
+        data: [0x02]
+        mask: [0x07]
+      state_fan_medium:
+        index: 7
+        data: [0x04]
+        mask: [0x07]
+      state_fan_high:
+        index: 7
+        data: [0x05]
+        mask: [0x07]
+
+      # 제어 명령 (CmdB0)
+      # 형식: [0x32, 0xD0, DST, 0xB0, swing, room_temp, target|fan, mode, power|flags, 0x21, 0x00, 0x00, CRC, 0x34]
+      # DST: 실내기 주소 (0x20 + i - 1)
+      # swing: 0x1F (Stop)
+      # room_temp: 0x04 (기본값)
+      # target|fan: (target & 0x1F) | fan_speed_encoded
+      # mode: 0=Auto, 1=Cool, 2=Dry, 3=Fan, 4=Heat
+      # power: OFF=0xC4, ON=0xF4
+
+      command_off:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x00, 0xC4, 0x21, 0x00, 0x00]
+      command_heat:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x04, 0xF4, 0x21, 0x00, 0x00]
+      command_cool:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x01, 0xF4, 0x21, 0x00, 0x00]
+      command_dry:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x02, 0xF4, 0x21, 0x00, 0x00]
+      command_fan_only:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x03, 0xF4, 0x21, 0x00, 0x00]
+      command_auto:
+        data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x00, 0xF4, 0x21, 0x00, 0x00]
+
+      # 온도 설정: target 값은 하위 5비트에 들어감
+      # 바이트 5 = (target & 0x1F) | 0x00 (fan auto)
+      command_temperature: >-
+        [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, bitAnd(int(x), 31), 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+      # 팬 모드: 바이트 5의 상위 비트
+      # Auto=0x00, Low=0x40, Medium=0x80, High=0xA0
+      command_fan_mode: >-
+        x == 'low' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x40, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'medium' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x80, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'high' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0xA0, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x00, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+  # 컨트롤러 등록/폴링 자동화
+  automation:
+    # 시작 시 컨트롤러 등록 (D1 패킷)
+    - id: samsung_hvac_register
+      name: "Samsung HVAC 컨트롤러 등록"
+      trigger:
+        - type: startup
+      then:
+        - action: delay
+          duration: '3s'
+        - action: send_packet
+          data: [0xD0, 0xC8, 0xD1, 0xD2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          header: true
+          footer: true
+          checksum: true
+        - action: log
+          level: info
+          message: "Samsung HVAC 컨트롤러 등록 패킷 전송 완료"
+
+    # 주기적 등록 유지 (10초마다)
+    - id: samsung_hvac_keepalive
+      name: "Samsung HVAC 등록 유지"
+      trigger:
+        - type: schedule
+          every: '10s'
+      then:
+        - action: send_packet
+          data: [0xD0, 0xC8, 0xD1, 0xD2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          header: true
+          footer: true
+          checksum: true

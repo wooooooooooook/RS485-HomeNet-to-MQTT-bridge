@@ -1,0 +1,249 @@
+homenet_bridge:
+  serial:
+    portId: samsung_hvac
+    path: /dev/ttyUSB0
+    baud_rate: 2400
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 1
+
+  packet_defaults:
+    rx_timeout: 10ms
+    tx_delay: 10ms
+    tx_timeout: 200ms
+    tx_retry_cnt: 3
+    rx_checksum: xor_no_header
+    tx_checksum: xor_no_header
+    rx_header: [0x32]
+    tx_header: [0x32]
+    rx_footer: [0x34]
+    tx_footer: [0x34]
+    rx_length: 14
+
+  climate:
+    - id: 'hvac_1'
+      name: 'HVAC 1'
+      visual:
+        min_temperature: 16
+        max_temperature: 30
+        temperature_step: 1
+      modes: ['off', 'auto', 'cool', 'heat', 'dry', 'fan_only']
+      fan_modes: ['auto', 'low', 'medium', 'high']
+      state:
+        data: [0x20, 0x00, 0x20]
+        mask: [0xff, 0x00, 0xff]
+        index: 1
+
+      state_temperature_target: >-
+        double(data[4]) - 55.0
+      state_temperature_current: >-
+        double(data[5]) - 55.0
+
+      state_off:
+        index: 8
+        data: [0x00]
+        mask: [0x80]
+      state_heat:
+        index: 8
+        data: [0x81]
+        mask: [0xbf]
+      state_cool:
+        index: 8
+        data: [0x82]
+        mask: [0xbf]
+      state_dry:
+        index: 8
+        data: [0x84]
+        mask: [0xbf]
+      state_fan_only:
+        index: 8
+        data: [0x88]
+        mask: [0xbf]
+      state_auto:
+        index: 8
+        data: [0xa2]
+        mask: [0xa2]
+
+      state_fan_auto:
+        index: 7
+        data: [0x00]
+        mask: [0x07]
+      state_fan_low:
+        index: 7
+        data: [0x02]
+        mask: [0x07]
+      state_fan_medium:
+        index: 7
+        data: [0x04]
+        mask: [0x07]
+      state_fan_high:
+        index: 7
+        data: [0x05]
+        mask: [0x07]
+
+      command_off:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x00, 0xc4, 0x21, 0x00, 0x00]
+      command_heat:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x04, 0xf4, 0x21, 0x00, 0x00]
+      command_cool:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x01, 0xf4, 0x21, 0x00, 0x00]
+      command_dry:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x02, 0xF4, 0x21, 0x00, 0x00]
+      command_fan_only:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x03, 0xf4, 0x21, 0x00, 0x00]
+      command_auto:
+        data: [0xd0, 0x20, 0xb0, 0x1f, 0x04, 0x00, 0x00, 0xf4, 0x21, 0x00, 0x00]
+
+      command_temperature: >-
+        [[0xD0, 0x20, 0xB0, 0x1F, 0x04, bitAnd(int(x), 31), 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+      command_fan_mode: >-
+        x == 'low' ? [[0xD0, 0x20, 0xB0, 0x1F, 0x04, 0x40, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'medium' ? [[0xD0, 0x20, 0xB0, 0x1F, 0x04, 0x80, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'high' ? [[0xD0, 0x20, 0xB0, 0x1F, 0x04, 0xA0, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : [[0xD0, 0x20, 0xB0, 0x1F, 0x04, 0x00, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+    - id: 'hvac_2'
+      name: 'HVAC 2'
+      visual:
+        min_temperature: 16
+        max_temperature: 30
+        temperature_step: 1
+      modes: ['off', 'auto', 'cool', 'heat', 'dry', 'fan_only']
+      fan_modes: ['auto', 'low', 'medium', 'high']
+      state:
+        data: [0x21, 0x00, 0x20]
+        mask: [0xff, 0x00, 0xff]
+        index: 1
+
+      state_temperature_target: >-
+        double(data[4]) - 55.0
+      state_temperature_current: >-
+        double(data[5]) - 55.0
+
+      state_off:
+        index: 8
+        data: [0x00]
+        mask: [0x80]
+      state_heat:
+        index: 8
+        data: [0x81]
+        mask: [0xbf]
+      state_cool:
+        index: 8
+        data: [0x82]
+        mask: [0xbf]
+      state_dry:
+        index: 8
+        data: [0x84]
+        mask: [0xbf]
+      state_fan_only:
+        index: 8
+        data: [0x88]
+        mask: [0xbf]
+      state_auto:
+        index: 8
+        data: [0xa2]
+        mask: [0xa2]
+
+      state_fan_auto:
+        index: 7
+        data: [0x00]
+        mask: [0x07]
+      state_fan_low:
+        index: 7
+        data: [0x02]
+        mask: [0x07]
+      state_fan_medium:
+        index: 7
+        data: [0x04]
+        mask: [0x07]
+      state_fan_high:
+        index: 7
+        data: [0x05]
+        mask: [0x07]
+
+      command_off:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x00, 0xc4, 0x21, 0x00, 0x00]
+      command_heat:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x04, 0xf4, 0x21, 0x00, 0x00]
+      command_cool:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x01, 0xf4, 0x21, 0x00, 0x00]
+      command_dry:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x02, 0xf4, 0x21, 0x00, 0x00]
+      command_fan_only:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x03, 0xf4, 0x21, 0x00, 0x00]
+      command_auto:
+        data: [0xd0, 0x21, 0xb0, 0x1f, 0x04, 0x00, 0x00, 0xf4, 0x21, 0x00, 0x00]
+
+      command_temperature: >-
+        [[0xD0, 0x21, 0xB0, 0x1F, 0x04, bitAnd(int(x), 31), 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+      command_fan_mode: >-
+        x == 'low' ? [[0xD0, 0x21, 0xB0, 0x1F, 0x04, 0x40, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'medium' ? [[0xD0, 0x21, 0xB0, 0x1F, 0x04, 0x80, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : x == 'high' ? [[0xD0, 0x21, 0xB0, 0x1F, 0x04, 0xA0, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+        : [[0xD0, 0x21, 0xB0, 0x1F, 0x04, 0x00, 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+  sensor:
+    - id: 'outdoor_temperature'
+      name: 'Outdoor Temperature'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0xc8, 0x00, 0xc0]
+        mask: [0xff, 0x00, 0xff]
+        index: 1
+      state_value: >-
+        double(data[8]) - 55.0
+
+    - id: 'outdoor_inverter_power'
+      name: 'Outdoor Inverter Power'
+      device_class: 'power'
+      state_class: 'measurement'
+      unit_of_measurement: 'W'
+      state:
+        data: [0xc8, 0x00, 0x8d]
+        mask: [0xff, 0x00, 0xff]
+        index: 1
+      state_value: >-
+        (double(data[8]) / 10.0) * 0.1 * (double(data[10]) * 2.0)
+
+    - id: 'outdoor_error_code'
+      name: 'Outdoor Error Code'
+      state:
+        data: [0xc8, 0x00, 0xf0]
+        mask: [0xff, 0x00, 0xff]
+        index: 1
+      state_value: >-
+        int(data[10])
+
+  automation:
+    - id: samsung_hvac_register
+      name: 'Samsung HVAC 컨트롤러 등록'
+      trigger:
+        - type: startup
+      then:
+        - action: delay
+          duration: '3s'
+        - action: send_packet
+          data: [0xd0, 0xc8, 0xd1, 0xd2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          header: true
+          footer: true
+          checksum: true
+        - action: log
+          level: info
+          message: 'Samsung HVAC 컨트롤러 등록 패킷 전송 완료'
+
+    - id: samsung_hvac_keepalive
+      name: 'Samsung HVAC 등록 유지'
+      trigger:
+        - type: schedule
+          every: '10s'
+      then:
+        - action: send_packet
+          data: [0xd0, 0xc8, 0xd1, 0xd2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+          header: true
+          footer: true
+          checksum: true

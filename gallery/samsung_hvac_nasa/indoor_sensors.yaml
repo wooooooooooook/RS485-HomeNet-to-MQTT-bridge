@@ -1,0 +1,92 @@
+meta:
+  name: "삼성 에어컨 실내기 상세 센서 (NASA)"
+  name_en: "Samsung HVAC Indoor Sensors (NASA)"
+  description: |
+    삼성 에어컨 NASA 프로토콜 실내기 추가 센서 설정입니다.
+    열교환기 입구/출구 온도 (EVA In/Out), 습도 및 필터 청소 알림을 모니터링합니다.
+
+    Message Numbers:
+    - 0x4204: 실내 습도 (VAR: value / 10.0 %)
+    - 0x4205: EVA In 온도 (VAR: value / 10.0 °C)
+    - 0x4206: EVA Out 온도 (VAR: value / 10.0 °C)
+    - 0x4011: 필터 청소 상태 (ENUM: 0=Clean, 1=Dirty)
+  description_en: |
+    Samsung HVAC NASA protocol indoor unit sensors.
+    Monitors EVA In/Out temperatures, indoor humidity, and filter clean warning.
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["sensor", "hvac", "indoor", "samsung", "nasa"]
+
+parameters:
+  - name: unit_count
+    type: integer
+    default: 2
+    min: 1
+    max: 16
+    label: "실내기 수"
+    label_en: "Number of Indoor Units"
+
+entities:
+  sensor:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_eva_in_temperature'
+      name: 'Indoor {{i}} EVA In Temp'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x20, 0x00, '{{i}}']
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x42 && int(data[14]) == 0x05) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_eva_out_temperature'
+      name: 'Indoor {{i}} EVA Out Temp'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x20, 0x00, '{{i}}']
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x42 && int(data[14]) == 0x06) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_humidity'
+      name: 'Indoor {{i}} Humidity'
+      device_class: 'humidity'
+      state_class: 'measurement'
+      unit_of_measurement: '%'
+      state:
+        data: [0x20, 0x00, '{{i}}']
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x42 && int(data[14]) == 0x04) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+  binary_sensor:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_filter_clean'
+      name: 'Indoor {{i}} Filter Clean Warning'
+      device_class: 'problem'
+      state:
+        data: [0x20, 0x00, '{{i}}']
+        index: 3
+      state_on:
+        index: 13
+        data: [0x40, 0x11, 0x01]
+      state_off:
+        index: 13
+        data: [0x40, 0x11, 0x00]

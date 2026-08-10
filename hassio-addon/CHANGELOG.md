@@ -1,6 +1,10 @@
 ** ⚠️ 업데이트 전 백업 권장 **
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
+v3.1.0
+- add: samsung hvac 지원 추가 (NASA, non-NASA프로토콜) [esphome용 컴포넌트](https://docs.samsung-hvac.aran.net.tr/wiki/), [https://github.com/eigger/esphome_samsung_hvac_bus](https://github.com/eigger/esphome_samsung_hvac_bus)에서 프로토콜 정보를 가져와서 추가했습니다.
+
+
 v3.0.7
 - fix: 멀티포트 환경에서 하나의 포트에 오류가 있을 때 정상포트에서 raw패킷로그, 인터페이스로그가 올라오지 않는 문제 수정
 - improvement: state cache의 읽기 쓰기를 비동기로 전환

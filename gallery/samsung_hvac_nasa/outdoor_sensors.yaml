@@ -2,16 +2,23 @@ meta:
   name: "삼성 에어컨 실외기 센서 (NASA)"
   name_en: "Samsung HVAC Outdoor Sensors (NASA)"
   description: |
-    삼성 에어컨 NASA 프로토콜 실외기 센서 설정입니다.
-    외기 온도, 인버터 소비전력 및 에러코드를 모니터링합니다.
+    삼성 에어컨 NASA 프로토콜 실외기 센서 상세 설정입니다.
+    외기 온도, 인버터 소비전력, 전류, 컴프레서 주파수, 토출/응축기 온도, 고압/저압 센서 및 에러코드를 모니터링합니다.
 
     Message Numbers:
     - 0x8201: 외기 온도 (VAR: value / 10.0 °C)
+    - 0x8202: 인버터 전류 (VAR: value / 10.0 A)
     - 0x8204: 인버터 전력 (VAR: W)
+    - 0x820B: 컴프레서 1 운전 주파수 (VAR: Hz)
+    - 0x820C: 컴프레서 2 운전 주파수 (VAR: Hz)
+    - 0x8217: 토출 온도 (VAR: value / 10.0 °C)
+    - 0x8218: 응축기 출구 온도 (VAR: value / 10.0 °C)
+    - 0x822A: 고압 센서 (VAR: value / 10.0 bar)
+    - 0x822B: 저압 센서 (VAR: value / 10.0 bar)
     - 0x8003: 에러 코드 (ENUM)
   description_en: |
     Samsung HVAC NASA protocol outdoor unit sensors.
-    Monitors outdoor temperature, inverter power, and error codes.
+    Monitors outdoor temp, inverter power/current, comp frequencies, discharge/condenser temps, high/low pressures, and error codes.
   version: "1.0.0"
   author: "wooooooooooook"
   tags: ["sensor", "hvac", "outdoor", "samsung", "nasa"]
@@ -30,6 +37,17 @@ entities:
       state_value: >-
         (int(data[13]) == 0x82 && int(data[14]) == 0x01) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
 
+    - id: 'outdoor_inverter_current'
+      name: 'Outdoor Inverter Current'
+      device_class: 'current'
+      state_class: 'measurement'
+      unit_of_measurement: 'A'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x02) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
     - id: 'outdoor_inverter_power'
       name: 'Outdoor Inverter Power'
       device_class: 'power'
@@ -40,6 +58,68 @@ entities:
         index: 3
       state_value: >-
         (int(data[13]) == 0x82 && int(data[14]) == 0x04) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16]))) : null
+
+    - id: 'outdoor_comp1_frequency'
+      name: 'Outdoor Comp1 Frequency'
+      state_class: 'measurement'
+      unit_of_measurement: 'Hz'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x0B) ? dyn(int(data[15])) : null
+
+    - id: 'outdoor_comp2_frequency'
+      name: 'Outdoor Comp2 Frequency'
+      state_class: 'measurement'
+      unit_of_measurement: 'Hz'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x0C) ? dyn(int(data[15])) : null
+
+    - id: 'outdoor_discharge_temperature'
+      name: 'Outdoor Discharge Temperature'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x17) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+    - id: 'outdoor_condenser_out_temperature'
+      name: 'Outdoor Condenser Out Temperature'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x18) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+    - id: 'outdoor_high_pressure'
+      name: 'Outdoor High Pressure'
+      state_class: 'measurement'
+      unit_of_measurement: 'bar'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x2A) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
+
+    - id: 'outdoor_low_pressure'
+      name: 'Outdoor Low Pressure'
+      state_class: 'measurement'
+      unit_of_measurement: 'bar'
+      state:
+        data: [0x10, 0x00, 0x00]
+        index: 3
+      state_value: >-
+        (int(data[13]) == 0x82 && int(data[14]) == 0x2B) ? dyn(double(bitShiftLeft(int(data[15]), 8) + int(data[16])) / 10.0) : null
 
     - id: 'outdoor_error_code'
       name: 'Outdoor Error Code'

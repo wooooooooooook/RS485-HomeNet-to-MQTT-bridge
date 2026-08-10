@@ -1,0 +1,57 @@
+meta:
+  name: "삼성 에어컨 실내기 상세 센서 (NonNASA)"
+  name_en: "Samsung HVAC Indoor Sensors (NonNASA)"
+  description: |
+    삼성 에어컨 NonNASA 프로토콜 실내기 추가 센서 설정입니다.
+    열교환기 입구/출구 온도 (EVA In/Out)를 모니터링합니다.
+
+    Cmd20 (0x20):
+    - data[6]: EVA In 온도 (-55 °C)
+    - data[7]: EVA Out 온도 (-55 °C)
+  description_en: |
+    Samsung HVAC NonNASA protocol indoor unit sensors.
+    Monitors EVA In/Out temperatures.
+  version: "1.0.0"
+  author: "wooooooooooook"
+  tags: ["sensor", "hvac", "indoor", "samsung", "nonnasa"]
+
+parameters:
+  - name: unit_count
+    type: integer
+    default: 2
+    min: 1
+    max: 16
+    label: "실내기 수"
+    label_en: "Number of Indoor Units"
+
+entities:
+  sensor:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_eva_in_temperature'
+      name: 'Indoor {{i}} EVA In Temp'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x32, 0x20, '{{i}}']
+        index: 0
+      state_value: >-
+        double(data[6]) - 55.0
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 1
+      id: 'indoor_{{i}}_eva_out_temperature'
+      name: 'Indoor {{i}} EVA Out Temp'
+      device_class: 'temperature'
+      state_class: 'measurement'
+      unit_of_measurement: '°C'
+      state:
+        data: [0x32, 0x20, '{{i}}']
+        index: 0
+      state_value: >-
+        double(data[7]) - 55.0

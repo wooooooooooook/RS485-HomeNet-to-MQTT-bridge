@@ -5,13 +5,14 @@ import os from 'node:os';
 import { StateManager } from '../../src/state/state-manager.js';
 import { PacketProcessor } from '../../src/protocol/packet-processor.js';
 import { HomenetBridgeConfig } from '../../src/config/types.js';
+import { eventBus } from '../../src/service/event-bus.js';
+
+const PORT_ID = 'test-port';
+const cacheFileName = `states_cache_${PORT_ID}.json`;
 
 describe('Local State Persistence Cache', () => {
   let tempDir: string;
   let configPath: string;
-
-  const PORT_ID = 'test-port';
-  const cacheFileName = `states_cache_${PORT_ID}.json`;
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'homenet-test-'));
@@ -282,5 +283,124 @@ describe('Local State Persistence Cache', () => {
 
     expect(sm2.getEntityState('switch_b')).toEqual({ state: 'OFF' });
     expect(sm2.getEntityState('light_a')).toBeUndefined();
+  });
+});
+
+describe('Local State Restore Publishing', () => {
+  let tempDir: string;
+  let configPath: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'homenet-test-'));
+    configPath = path.join(tempDir, 'homenet_bridge.yaml');
+  });
+
+  afterEach(() => {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {}
+  });
+
+  it('should publish restored local states on the same topic as regular state updates', () => {
+    const config: HomenetBridgeConfig = {
+      serial: {
+        portId: PORT_ID,
+        path: '/dev/null',
+        baud_rate: 9600,
+        data_bits: 8,
+        parity: 'none',
+        stop_bits: 1,
+      },
+      light: [{ id: 'livingroom_light_1', name: 'Living Room Light' }],
+    };
+    const packetProcessor = new PacketProcessor(config, { getEntityState: () => undefined } as any);
+    const published: Array<{ topic: string; payload: string }> = [];
+    const listener = (event: { topic: string; payload: string }) =>
+      published.push({ topic: event.topic, payload: event.payload });
+    eventBus.on('state:changed', listener);
+    const stateManager = new StateManager(PORT_ID, config, packetProcessor, 'homenet');
+
+    try {
+      stateManager.updateEntityState('livingroom_light_1', { state: 'OFF' });
+      published.length = 0;
+
+      stateManager.publishRestoredLocalStates();
+    } finally {
+      eventBus.off('state:changed', listener);
+    }
+
+    expect(published).toEqual([
+      {
+        topic: 'homenet/livingroom_light_1/state',
+        payload: JSON.stringify({ state: 'OFF' }),
+      },
+    ]);
+  });
+
+  it('should preserve dots in restored local state topics', () => {
+    const config: HomenetBridgeConfig = {
+      serial: {
+        portId: PORT_ID,
+        path: '/dev/null',
+        baud_rate: 9600,
+        data_bits: 8,
+        parity: 'none',
+        stop_bits: 1,
+      },
+      light: [{ id: 'light.livingroom', name: 'Living Room Light' }],
+    };
+    const packetProcessor = new PacketProcessor(config, { getEntityState: () => undefined } as any);
+    const published: Array<{ topic: string; payload: string }> = [];
+    const listener = (event: { topic: string; payload: string }) =>
+      published.push({ topic: event.topic, payload: event.payload });
+    eventBus.on('state:changed', listener);
+    const stateManager = new StateManager(PORT_ID, config, packetProcessor, 'homenet');
+
+    try {
+      stateManager.updateEntityState('light.livingroom', { state: 'ON' });
+      published.length = 0;
+
+      stateManager.publishRestoredLocalStates();
+    } finally {
+      eventBus.off('state:changed', listener);
+    }
+
+    expect(published[0]?.topic).toBe('homenet/light.livingroom/state');
+  });
+
+  it('should not restore non-restorable optimistic entities from disk cache', async () => {
+    const config: HomenetBridgeConfig = {
+      serial: {
+        portId: PORT_ID,
+        path: '/dev/null',
+        baud_rate: 9600,
+        data_bits: 8,
+        parity: 'none',
+        stop_bits: 1,
+      },
+      light: [{ id: 'light.livingroom', name: 'Living Room Light', optimistic: true }],
+    };
+    const packetProcessor = new PacketProcessor(config, { getEntityState: () => undefined } as any);
+    const cacheFilePath = path.join(tempDir, cacheFileName);
+    fs.writeFileSync(
+      cacheFilePath,
+      JSON.stringify({ 'light.livingroom': { state: 'ON' } }),
+      'utf8',
+    );
+
+    const stateManager = await StateManager.create(
+      PORT_ID,
+      config,
+      packetProcessor,
+      'homenet',
+      new Map(),
+      undefined,
+      configPath,
+    );
+
+    expect(stateManager.getEntityState('light.livingroom')).toEqual({ state: 'OFF' });
+    expect(JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'))).toEqual({
+      'light.livingroom': { state: 'OFF' },
+    });
   });
 });

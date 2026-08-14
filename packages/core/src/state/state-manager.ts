@@ -52,6 +52,7 @@ export class StateManager {
   private sharedStates?: Map<string, Record<string, any>>;
   private internalEntityIds: Set<string>;
   private configEntityIds: Set<string>;
+  private nonRestorableOptimisticEntityIds: Set<string>;
   private statePublisher?: StatePublisher;
   private statesCachePath: string | null = null;
   private saveTimer: NodeJS.Timeout | null = null;
@@ -89,12 +90,17 @@ export class StateManager {
 
     // Build known entity ID set from config (must happen before loadLocalCache)
     this.configEntityIds = new Set<string>();
+    this.nonRestorableOptimisticEntityIds = new Set<string>();
     for (const type of ENTITY_TYPE_KEYS) {
       const entities = config[type] as EntityConfig[] | undefined;
       if (entities) {
         for (const entity of entities) {
           if (entity.id) {
             this.configEntityIds.add(entity.id);
+            const mode: RestoreMode = entity.restore_mode ?? 'ALWAYS_OFF';
+            if (entity.optimistic && !isRestorableMode(mode)) {
+              this.nonRestorableOptimisticEntityIds.add(entity.id);
+            }
           }
         }
       }
@@ -464,7 +470,10 @@ export class StateManager {
         let restoredCount = 0;
         let skippedCount = 0;
         for (const [entityId, state] of Object.entries(cached)) {
-          if (!this.configEntityIds.has(entityId)) {
+          if (
+            !this.configEntityIds.has(entityId) ||
+            this.nonRestorableOptimisticEntityIds.has(entityId)
+          ) {
             skippedCount++;
             continue;
           }
@@ -481,9 +490,9 @@ export class StateManager {
         if (skippedCount > 0) {
           logger.info(
             { skipped: skippedCount },
-            '[StateManager] Skipped orphan entities not in current config',
+            '[StateManager] Skipped unavailable or non-restorable entities from states cache',
           );
-          // Rewrite cache file with only valid entities to permanently remove orphans
+          // Rewrite cache file with only restorable valid entities to permanently remove stale entries
           const cleanedData = Object.fromEntries(this.deviceStates);
           await fsPromises.writeFile(
             this.statesCachePath,
@@ -492,7 +501,7 @@ export class StateManager {
           );
           logger.info(
             { path: this.statesCachePath },
-            '[StateManager] Cleaned orphan entities from states cache file',
+            '[StateManager] Cleaned skipped entities from states cache file',
           );
         }
       }
@@ -537,7 +546,7 @@ export class StateManager {
     for (const [entityId, state] of this.deviceStates.entries()) {
       if (this.internalEntityIds.has(entityId)) continue;
 
-      const topic = `${this.topicPrefix}/${this.portId}/${entityId.replace('.', '/')}/state`;
+      const topic = `${this.topicPrefix}/${entityId}/state`;
       const payload = typeof state === 'string' ? state : JSON.stringify(state);
       const timestamp = new Date().toISOString();
 

@@ -1,6 +1,12 @@
 ** ⚠️ 업데이트 전 백업 권장 **
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
+v3.1.1
+⚠️ 업데이트 후 `h2m설정 - 애플리케이션관리 - MQTT 메시지 초기화`를 실행하시기바랍니다.
+- fix: portId가 중복되거나 엔티티 ID의 .가 /로 바뀌는 문제를 수정
+- fix: optimistic: true이지만 restore_mode가 복원 모드가 아닌(ALWAYS_OFF/ALWAYS_ON) 엔티티가 낡은 캐시 값으로 덮어써지는 문제 수정
+
+
 v3.1.0
 - add: samsung hvac 지원 추가 (NASA, non-NASA프로토콜) [esphome용 컴포넌트](https://docs.samsung-hvac.aran.net.tr/wiki/), [https://github.com/eigger/esphome_samsung_hvac_bus](https://github.com/eigger/esphome_samsung_hvac_bus)에서 프로토콜 정보를 가져와서 추가했습니다.
 

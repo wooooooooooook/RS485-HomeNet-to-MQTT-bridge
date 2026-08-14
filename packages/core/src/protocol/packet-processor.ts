@@ -250,19 +250,4 @@ export class PacketProcessor extends EventEmitter {
 
     return cmd;
   }
-
-  /**
-   * @deprecated This method is legacy and incompatible with the stream-based parsing architecture.
-   * Use `processChunk` instead, which handles buffering and parsing via `ProtocolManager`.
-   */
-  public parseIncomingPacket(
-    _packet: number[],
-    _allEntities: EntityConfig[],
-  ): { parsedStates: { entityId: string; state: any }[]; checksumValid: boolean } {
-    // This method is no longer compatible with the stream-based approach.
-    // We should update the caller (StateManager) to use processChunk.
-    // For now, return empty to avoid breaking if called, but log warning.
-    logger.warn('PacketProcessor.parseIncomingPacket is deprecated. Use processChunk instead.');
-    return { parsedStates: [], checksumValid: true };
-  }
 }

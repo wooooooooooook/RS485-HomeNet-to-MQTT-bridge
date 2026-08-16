@@ -23,6 +23,7 @@ import {
   findConfigIndexForEntity,
   findBridgeForEntity,
 } from '../utils/config-helpers.js';
+import { resolveSecurePath } from '../utils/helpers.js';
 
 export interface EntitiesRoutesContext {
   configRateLimiter: RateLimiter;
@@ -138,7 +139,10 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;
@@ -233,7 +237,10 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;
@@ -367,7 +374,10 @@ export function createEntitiesRoutes(ctx: EntitiesRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;

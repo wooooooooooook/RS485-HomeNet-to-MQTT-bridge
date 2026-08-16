@@ -18,7 +18,6 @@ import type {
   InterfaceLogEvent,
 } from './service/event-bus.js';
 import type { HomenetBridgeConfig } from './config/types.js';
-import { CommandGenerator } from './protocol/generators/command.generator.js';
 import type { EntityConfig } from './domain/entities/base.entity.js';
 import { normalizeConfig, validateConfig } from './config/index.js';
 import { normalizePortId } from './utils/port.js';
@@ -34,7 +33,6 @@ export {
   logBuffer,
   eventBus,
   HomenetBridgeConfig,
-  CommandGenerator,
   normalizeConfig,
   normalizePortId,
   validateConfig,

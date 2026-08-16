@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { calculateChecksum2, verifyChecksum2FromBuffer } from '../src/protocol/utils/checksum';
-import { PacketParser } from '../src/protocol/packet-parser';
-import { CommandGenerator } from '../src/protocol/generators/command.generator';
+import { calculateChecksum2, verifyChecksum2FromBuffer } from '../src/protocol/utils/checksum.js';
+import { PacketParser } from '../src/protocol/packet-parser.js';
+import { GenericDevice } from '../src/protocol/devices/generic.device.js';
 
 describe('2-Byte Checksum', () => {
   it('should calculate xor_add checksum correctly', () => {
@@ -148,14 +148,11 @@ describe('2-Byte Checksum', () => {
       };
 
       const mockConfig = {
-        serial,
         packet_defaults: {
           tx_header: [0xf7],
           tx_checksum2: celScript,
         },
       };
-
-      const generator = new CommandGenerator(mockConfig);
 
       const mockEntity = {
         id: 'test',
@@ -166,7 +163,8 @@ describe('2-Byte Checksum', () => {
         },
       };
 
-      const packet = generator.constructCommandPacket(mockEntity, 'command_on');
+      const device = new GenericDevice(mockEntity as any, mockConfig as any);
+      const packet = device.constructCommand('on');
 
       // Expected: 0xF7 0x01 [0xAA 0xBB]
       expect(packet).toEqual([0xf7, 0x01, 0xaa, 0xbb]);

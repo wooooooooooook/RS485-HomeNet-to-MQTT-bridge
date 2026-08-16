@@ -136,3 +136,65 @@ describe('Controls Routes - Climate Temperature Parsing', () => {
     expect(tempCommand.step).toBe(0.5);
   });
 });
+
+describe('Controls Routes - Path Traversal Prevention', () => {
+  it('should return 404 when target config file attempts path traversal', async () => {
+    const mockRateLimiter = {
+      check: vi.fn().mockReturnValue(true),
+    } as unknown as RateLimiter;
+
+    const configWithAutomation = {
+      automation: [
+        {
+          id: 'auto_test',
+          name: 'Test Automation',
+          trigger: [],
+          action: [],
+        },
+      ],
+      scripts: [
+        {
+          id: 'script_test',
+          name: 'Test Script',
+          sequence: [],
+        },
+      ],
+    };
+
+    const mockCtx = {
+      commandRateLimiter: mockRateLimiter,
+      configRateLimiter: mockRateLimiter,
+      getBridges: vi.fn().mockReturnValue([]),
+      getCurrentConfigs: vi.fn().mockReturnValue([configWithAutomation]),
+      getCurrentConfigFiles: vi.fn().mockReturnValue(['../../../etc/passwd']),
+      getCurrentRawConfigs: vi.fn().mockReturnValue([configWithAutomation]),
+      getCurrentConfigStatuses: vi.fn().mockReturnValue(['started']),
+      getCurrentConfigErrors: vi.fn().mockReturnValue([null]),
+      configDir: '/tmp/homenet-config',
+      setCurrentConfigs: vi.fn(),
+      setCurrentRawConfigs: vi.fn(),
+      rebuildPortMappings: vi.fn(),
+    } as unknown as ControlsRoutesContext;
+
+    const app = express();
+    app.use(express.json());
+    app.use('/', createControlsRoutes(mockCtx));
+
+    // Toggle automation
+    const toggleRes = await request(app)
+      .patch('/api/automations/auto_test/enabled')
+      .send({ enabled: true });
+    expect(toggleRes.status).toBe(404);
+    expect(toggleRes.body.error).toBe('Config file not found');
+
+    // Delete automation
+    const deleteAutoRes = await request(app).delete('/api/automations/auto_test');
+    expect(deleteAutoRes.status).toBe(404);
+    expect(deleteAutoRes.body.error).toBe('Config file not found');
+
+    // Delete script
+    const deleteScriptRes = await request(app).delete('/api/scripts/script_test');
+    expect(deleteScriptRes.status).toBe(404);
+    expect(deleteScriptRes.body.error).toBe('Config file not found');
+  });
+});

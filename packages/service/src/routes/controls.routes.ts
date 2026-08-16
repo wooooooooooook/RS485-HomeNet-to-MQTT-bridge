@@ -19,6 +19,7 @@ import type {
 } from '../types/index.js';
 import { formatBridgeErrorMessage } from '../utils/bridge-errors.js';
 import { saveBackup } from '../services/backup.service.js';
+import { resolveSecurePath } from '../utils/helpers.js';
 import yaml from 'js-yaml';
 
 import {
@@ -404,7 +405,10 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;
@@ -549,7 +553,10 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;
@@ -618,7 +625,10 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     const targetConfigFile = currentConfigFiles[configIndex];
 
     try {
-      const configPath = path.join(ctx.configDir, targetConfigFile);
+      const configPath = resolveSecurePath(ctx.configDir, targetConfigFile);
+      if (!configPath) {
+        return res.status(404).json({ error: 'Config file not found' });
+      }
       const fileContent = await fs.readFile(configPath, 'utf8');
       const loadedYamlFromFile = yaml.load(fileContent) as {
         homenet_bridge: PersistableHomenetBridgeConfig;

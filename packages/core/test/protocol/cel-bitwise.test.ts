@@ -40,8 +40,6 @@ describe('CelExecutor - Bitwise Operations', () => {
     expect(res).toBe(1);
   });
 
-  // Large Integer Tests (Where the optimization also fixes bugs)
-
   it('should preserve precision for large integer bitwise AND', () => {
     // 2^32 (4294967296) & 2^32 = 2^32
     // If using Number() (32-bit ops), this becomes 0 & 0 = 0

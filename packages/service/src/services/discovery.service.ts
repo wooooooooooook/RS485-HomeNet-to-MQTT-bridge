@@ -333,22 +333,35 @@ export function evaluateDiscovery(
     case 'unique_tuples':
       // Return array of unique tuples across all dimensions
       {
-        const tuples = new Set<string>();
+        const tupleMap = new Map<string, Record<string, number>>();
         const dimNames = Object.keys(dimensionValues);
 
         for (let i = 0; i < matchedPackets.length; i++) {
           const tuple: Record<string, number> = {};
+          const keyParts: number[] = [];
+          let valid = true;
+
           for (const dim of dimensions) {
             const value = extractDimensionValue(matchedPackets[i].bytes, dim);
             if (value !== null) {
               tuple[dim.parameter] = value;
+              keyParts.push(value);
+            } else {
+              valid = false;
+              break;
             }
           }
-          tuples.add(JSON.stringify(tuple));
+
+          if (valid && keyParts.length === dimensions.length) {
+            const key = keyParts.join(':');
+            if (!tupleMap.has(key)) {
+              tupleMap.set(key, tuple);
+            }
+          }
         }
 
         const outputParam = discovery.inference?.output ?? 'items';
-        parameterValues[outputParam] = Array.from(tuples).map((t) => JSON.parse(t));
+        parameterValues[outputParam] = Array.from(tupleMap.values());
 
         // Also provide individual counts
         for (const dim of dimNames) {

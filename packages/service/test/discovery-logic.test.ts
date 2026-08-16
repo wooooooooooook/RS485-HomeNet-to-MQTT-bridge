@@ -75,6 +75,47 @@ describe('Discovery Logic Improvements', () => {
     expect(result.parameterValues.val).toBe(50);
     expect(result.parameterValues.shifted).toBe(10);
   });
+
+  it('should infer unique tuples and deduplicate properly', () => {
+    const schema: DiscoverySchema = {
+      match: {
+        data: [0xb0],
+      },
+      dimensions: [
+        {
+          parameter: 'room',
+          offset: 1,
+        },
+        {
+          parameter: 'light',
+          offset: 2,
+        },
+      ],
+      inference: {
+        strategy: 'unique_tuples',
+        output: 'items',
+      },
+    };
+
+    const packets = {
+      '1': 'B0 01 01', // room 1, light 1
+      '2': 'B0 01 02', // room 1, light 2
+      '3': 'B0 01 01', // duplicate (room 1, light 1)
+      '4': 'B0 02 01', // room 2, light 1
+    };
+
+    const discoveryPackets = prepareDiscoveryPackets(packets, []);
+    const result = evaluateDiscovery(schema, discoveryPackets);
+    expect(result.matched).toBe(true);
+    expect(result.matchedPacketCount).toBe(4);
+    expect(result.parameterValues.items).toEqual([
+      { room: 1, light: 1 },
+      { room: 1, light: 2 },
+      { room: 2, light: 1 },
+    ]);
+    expect(result.parameterValues.room_count).toBe(2);
+    expect(result.parameterValues.light_count).toBe(2);
+  });
 });
 
 describe('Gallery Template Improvements', () => {

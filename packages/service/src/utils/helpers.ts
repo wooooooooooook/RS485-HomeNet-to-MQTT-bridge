@@ -364,27 +364,29 @@ export const isDefaultGallerySettings = (gallery?: {
  */
 export async function discoverConfigFiles(configDir: string): Promise<string[]> {
   try {
-    const files = await fs.readdir(configDir);
-    const discovered: string[] = [];
+    const entries = await fs.readdir(configDir, { withFileTypes: true });
+    const yamlEntries = entries.filter((e) => e.isFile() && /\.ya?ml$/.test(e.name));
 
-    for (const file of files) {
-      if (!/\.ya?ml$/.test(file)) continue;
-      const filePath = path.resolve(configDir, file);
-      try {
-        const stat = await fs.stat(filePath);
-        if (!stat.isFile()) continue;
-
-        const content = await fs.readFile(filePath, 'utf-8');
-        const parsed = yaml.load(content) as Record<string, unknown>;
-        if (parsed && typeof parsed === 'object' && 'homenet_bridge' in parsed) {
-          discovered.push(file);
+    const results = await Promise.all(
+      yamlEntries.map(async (entry) => {
+        const filePath = path.resolve(configDir, entry.name);
+        try {
+          const content = await fs.readFile(filePath, 'utf-8');
+          const parsed = yaml.load(content) as Record<string, unknown>;
+          if (parsed && typeof parsed === 'object' && 'homenet_bridge' in parsed) {
+            return entry.name;
+          }
+        } catch (err) {
+          logger.warn(
+            { err, file: entry.name },
+            `[service] Failed to verify config file during auto-discovery`,
+          );
         }
-      } catch (err) {
-        logger.warn({ err, file }, `[service] Failed to verify config file during auto-discovery`);
-      }
-    }
+        return null;
+      }),
+    );
 
-    return discovered;
+    return results.filter((file): file is string => file !== null);
   } catch (err) {
     logger.error({ err }, '[service] Failed to read config directory during auto-discovery');
     return [];

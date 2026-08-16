@@ -642,18 +642,24 @@ export class LogRetentionService {
       await fsp.mkdir(this.logsSubDir, { recursive: true });
       const entries = await fsp.readdir(this.logsSubDir, { withFileTypes: true });
 
-      const files: SavedLogFile[] = [];
-      for (const entry of entries) {
-        if (entry.isFile() && entry.name.endsWith('.json')) {
-          const filePath = path.join(this.logsSubDir, entry.name);
-          const stat = await fsp.stat(filePath);
-          files.push({
-            filename: entry.name,
-            size: stat.size,
-            createdAt: stat.birthtime.toISOString(),
-          });
-        }
-      }
+      const jsonEntries = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.json'));
+      const fileResults = await Promise.all(
+        jsonEntries.map(async (entry) => {
+          try {
+            const filePath = path.join(this.logsSubDir, entry.name);
+            const stat = await fsp.stat(filePath);
+            return {
+              filename: entry.name,
+              size: stat.size,
+              createdAt: stat.birthtime.toISOString(),
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      const files: SavedLogFile[] = fileResults.filter((f): f is SavedLogFile => f !== null);
 
       // Sort by creation date (newest first)
       files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

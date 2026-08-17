@@ -13,12 +13,13 @@ export class FanControlServer extends FeaturedBase {
     const homenet = await this.agent.load(HomenetEntityBehavior);
     this.update(homenet.entityState);
     this.reactTo(homenet.onChange, this.update, { offline: true });
-    this.reactTo(this.events.speedSetting$Changed, this.targetSpeedSettingChanged);
+    this.reactTo(this.events.speedSetting$Changed, this.targetSpeedSettingChanged, {
+      offline: true,
+    });
   }
 
-  private update(entityState: any) {
-    const homenet = this.agent.get(HomenetEntityBehavior);
-    const config = homenet.entityConfig as any;
+  private update(entityState: any, entityConfig?: any) {
+    const config = entityConfig ?? (this.agent.get(HomenetEntityBehavior).entityConfig as any);
 
     // Default steps is 3 (Low, Med, High)
     const speedMax = config.speed_range_max ?? 3;
@@ -59,31 +60,53 @@ export class FanControlServer extends FeaturedBase {
     });
   }
 
+  override async step(request: FanControl.StepRequest) {
+    const speedMax = this.state.speedMax ?? 3;
+    const lowestSpeed = request.lowestOff ? 0 : 1;
+    const currentSpeed = this.state.speedSetting ?? this.state.speedCurrent ?? 0;
+    const direction = request.direction;
+
+    let nextSpeed =
+      direction === FanControl.StepDirection.Increase ? currentSpeed + 1 : currentSpeed - 1;
+
+    if (request.wrap) {
+      if (nextSpeed > speedMax) {
+        nextSpeed = lowestSpeed;
+      } else if (nextSpeed < lowestSpeed) {
+        nextSpeed = speedMax;
+      }
+    } else {
+      nextSpeed = Math.min(speedMax, Math.max(lowestSpeed, nextSpeed));
+    }
+
+    await this.targetSpeedSettingChanged(nextSpeed);
+  }
+
   private async targetSpeedSettingChanged(speed: number | null) {
     if (speed == null) return;
     const homenet = await this.agent.load(HomenetEntityBehavior);
-    const config = homenet.entityConfig as any;
+    const config = { ...(homenet.entityConfig as any) };
+    const entityId = homenet.entityId;
     const speedMax = config.speed_range_max ?? 3;
 
-    try {
-      // If target speed is 0, turn off the fan
-      if (speed === 0) {
-        await homenet.executeCommand(homenet.entityId, 'off');
-        return;
-      }
+    // If target speed is 0, turn off the fan
+    if (speed === 0) {
+      await homenet.executeCommand(entityId, 'off');
+      this.update({ state: 'OFF', speed: 0 }, config);
+      return;
+    }
 
-      // Determine command mapping:
-      // If the entity supports 'speed' command, send the speed number directly or map to percentage.
-      // If fan uses percentage:
-      const hasPercentage = config.command_percentage || config.state_percentage;
-      if (hasPercentage) {
-        const percent = Math.round((speed / speedMax) * 100);
-        await homenet.executeCommand(homenet.entityId, 'percentage', percent);
-      } else {
-        await homenet.executeCommand(homenet.entityId, 'speed', speed);
-      }
-    } finally {
-      this.update(homenet.entityState);
+    // Determine command mapping:
+    // If the entity supports 'speed' command, send the speed number directly or map to percentage.
+    // If fan uses percentage:
+    const hasPercentage = config.command_percentage || config.state_percentage;
+    if (hasPercentage) {
+      const percent = Math.round((speed / speedMax) * 100);
+      await homenet.executeCommand(entityId, 'percentage', percent);
+      this.update({ state: 'ON', percentage: percent }, config);
+    } else {
+      await homenet.executeCommand(entityId, 'speed', speed);
+      this.update({ state: 'ON', speed }, config);
     }
   }
 }

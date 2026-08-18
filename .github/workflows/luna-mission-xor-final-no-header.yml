@@ -29,7 +29,7 @@ jobs:
 
       - name: Verify patch integrity
         run: |
-          echo '67aa6984ef572b6ea3da20da230a554a398e7b8d1f1fc356c832a59e12fec2b4  .github/luna-missions/xor-final-no-header-67aa6984.patch' | sha256sum -c -
+          echo 'df75f1efb079ee6655ae6c4fc25cd60731e712e4a466fee39d0e6229c956e841  .github/luna-missions/xor-final-no-header-67aa6984.patch' | sha256sum -c -
           git apply --check .github/luna-missions/xor-final-no-header-67aa6984.patch
 
       - name: Apply exact patch

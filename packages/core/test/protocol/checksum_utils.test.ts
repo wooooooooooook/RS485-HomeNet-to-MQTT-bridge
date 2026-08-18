@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  calculateChecksum,
+  calculateChecksumFromBuffer,
   getChecksumFunction,
   getChecksum2Verifier,
   getChecksumOffsetType,
@@ -19,6 +21,19 @@ describe('Checksum Utils', () => {
       expect(getChecksumFunction('bestin_sum')).toBeDefined();
     });
 
+    it('should support parameterized xor_final()', () => {
+      const fn = getChecksumFunction('xor_final(0x55)' as any);
+      expect(fn).toBeDefined();
+      expect(fn!([0x01, 0x02, 0x03], 0, 3)).toBe((0x01 ^ 0x02 ^ 0x03) ^ 0x55);
+    });
+
+    it('should support all byte-sized xor_final values', () => {
+      expect(getChecksumFunction('xor_final(0x00)' as any)).toBeDefined();
+      expect(getChecksumFunction('xor_final(0xff)' as any)).toBeDefined();
+      expect(getChecksumFunction('xor_final(0x100)' as any)).toBeNull();
+      expect(getChecksumFunction('xor_final(0x5)' as any)).toBeNull();
+    });
+
     it('should return null for "none"', () => {
       expect(getChecksumFunction('none')).toBeNull();
     });
@@ -29,12 +44,25 @@ describe('Checksum Utils', () => {
 
     it('should return functions that work correctly', () => {
       const addFn = getChecksumFunction('add')!;
-      // addRange: sum & 0xff
       expect(addFn([1, 2, 3], 0, 3)).toBe(6);
 
       const xorFn = getChecksumFunction('xor')!;
-      // xorRange: 1 ^ 2 ^ 3 = 0
       expect(xorFn([1, 2, 3], 0, 3)).toBe(0);
+    });
+  });
+
+  describe('calculateChecksum', () => {
+    it('should apply xor_final to the entire frame including the header', () => {
+      const header = [0xaa, 0x55];
+      const data = [0x10, 0x20, 0x30];
+      const expected = 0xaa ^ 0x55 ^ 0x10 ^ 0x20 ^ 0x30 ^ 0x55;
+      expect(calculateChecksum(header, data, 'xor_final(0x55)' as any)).toBe(expected);
+    });
+
+    it('should apply xor_final to a buffer range', () => {
+      const frame = [0xaa, 0x10, 0x20, 0x30, 0x00];
+      const expected = 0xaa ^ 0x10 ^ 0x20 ^ 0x30 ^ 0x55;
+      expect(calculateChecksumFromBuffer(frame, 'xor_final(0x55)' as any, 1, 4)).toBe(expected);
     });
   });
 
@@ -63,6 +91,7 @@ describe('Checksum Utils', () => {
     it('should return "base" for other types', () => {
       expect(getChecksumOffsetType('add')).toBe('base');
       expect(getChecksumOffsetType('xor')).toBe('base');
+      expect(getChecksumOffsetType('xor_final(0x55)' as any)).toBe('base');
       expect(getChecksumOffsetType('samsung_xor')).toBe('base');
       expect(getChecksumOffsetType('bestin_sum')).toBe('base');
       expect(getChecksumOffsetType('none')).toBe('base');

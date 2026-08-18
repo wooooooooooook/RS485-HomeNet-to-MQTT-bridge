@@ -1,43 +1,48 @@
-*** Begin Patch
-*** Update File: packages/core/src/protocol/types.ts
-@@
+diff --git a/packages/core/src/protocol/types.ts b/packages/core/src/protocol/types.ts
+--- a/packages/core/src/protocol/types.ts
++++ b/packages/core/src/protocol/types.ts
+@@ -7,1 +7,5 @@ export type RestoreMode = 'ALWAYS_ON' | 'ALWAYS_OFF' | 'RESTORE_DEFAULT_ON' | 'RESTORE_DEFAULT_OFF';
  export type RestoreMode = 'ALWAYS_ON' | 'ALWAYS_OFF' | 'RESTORE_DEFAULT_ON' | 'RESTORE_DEFAULT_OFF';
 +
 +type HexDigit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 +type HexByte = `${HexDigit}${HexDigit}`;
 +type XorFinalChecksumType = `xor_final(0x${HexByte})` | `xor_final_no_header(0x${HexByte})`;
-@@
+@@ -15,4 +17,6 @@ export type RestoreMode = 'ALWAYS_ON' | 'ALWAYS_OFF' | 'RESTORE_DEFAULT_ON' | 'RESTORE_DEFAULT_OFF';
   * - `xor`: XOR of all bytes (header + data).
   * - `xor_no_header`: XOR of data bytes (excluding header).
 + * - `xor_final(0xNN)`: XOR of all bytes (header + data), then XOR with `0xNN`.
 + * - `xor_final_no_header(0xNN)`: XOR of data bytes (excluding header), then XOR with `0xNN`.
-@@
-   | 'xor'
+  * - `samsung_rx`: (@deprecated) Specialized Samsung Wallpad RX checksum (0xB0 ^ XOR). If data[0] < 0x7C, result ^= 0x80.
+@@ -25,4 +27,5 @@ export type ChecksumType =
    | 'add_no_header'
    | 'xor_no_header'
 +  | XorFinalChecksumType
-*** Update File: packages/core/src/protocol/utils/checksum.ts
-@@
+   | 'samsung_rx'
+   | 'samsung_tx'
+   | 'samsung_xor'
+diff --git a/packages/core/src/protocol/utils/checksum.ts b/packages/core/src/protocol/utils/checksum.ts
+--- a/packages/core/src/protocol/utils/checksum.ts
++++ b/packages/core/src/protocol/utils/checksum.ts
+@@ -4,3 +4,6 @@ export type { ChecksumType, Checksum2Type };
  const XOR_FINAL_TYPES = Array.from({ length: 256 }, (_, value) =>
    `xor_final(0x${value.toString(16).padStart(2, '0')})`,
  ) as ChecksumType[];
 +const XOR_FINAL_NO_HEADER_TYPES = Array.from({ length: 256 }, (_, value) =>
 +  `xor_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
 +) as ChecksumType[];
-@@
-   'none',
+@@ -23,2 +26,3 @@ export const STANDARD_CHECKSUM_TYPES = [
    ...XOR_FINAL_TYPES,
 +  ...XOR_FINAL_NO_HEADER_TYPES,
  ] as const satisfies readonly ChecksumType[];
-@@
+@@ -62,3 +62,3 @@ type Checksum1Resolution =
  type Checksum1Resolution =
    | { kind: 'native'; normalizedType: ChecksumType }
 -  | { kind: 'xor_final'; normalizedType: ChecksumType; finalXor: number }
 +  | { kind: 'xor_final'; normalizedType: ChecksumType; finalXor: number; includeHeader: boolean }
-@@
+@@ -178,9 +178,10 @@ function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
  function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
--  const xorFinalMatch = /^xor_final\\(0x([0-9a-fA-F]{2})\\)$/.exec(type);
-+  const xorFinalMatch = /^xor_final(_no_header)?\\(0x([0-9a-fA-F]{2})\\)$/.exec(type);
+-  const xorFinalMatch = /^xor_final\(0x([0-9a-fA-F]{2})\)$/.exec(type);
++  const xorFinalMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
    if (xorFinalMatch) {
      return {
        kind: 'xor_final',
@@ -46,28 +51,26 @@
 +      finalXor: Number.parseInt(xorFinalMatch[2], 16),
 +      includeHeader: !xorFinalMatch[1],
      };
-   }
-@@
+@@ -241,3 +241,3 @@ export function calculateChecksum(header: ByteArray, data: ByteArray, type: ChecksumType): number {
    const resolved = resolveChecksumType(type);
    if (resolved.kind === 'xor_final') {
 -    return xor(header, data) ^ resolved.finalXor;
 +    return (resolved.includeHeader ? xor(header, data) : xorNoHeader(data)) ^ resolved.finalXor;
-@@
+@@ -303,3 +303,4 @@ export function calculateChecksumFromBuffer(
    const resolved = resolveChecksumType(type);
    if (resolved.kind === 'xor_final') {
 -    return xorRange(buffer, dataStart, dataStop) ^ resolved.finalXor;
 +    const start = resolved.includeHeader ? dataStart : headerStart;
 +    return xorRange(buffer, start, dataStop) ^ resolved.finalXor;
-@@
- export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
+@@ -800,3 +800,3 @@ export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
    const resolved = resolveChecksumType(type);
    if (resolved.kind === 'xor_final') {
 -    return 'base';
 +    return resolved.includeHeader ? 'base' : 'header';
-*** Update File: packages/core/test/packet-parser/xor-final-checksum.test.ts
-@@
-   it('rejects a frame with an incorrect xor_final checksum', () => {
-@@
+diff --git a/packages/core/test/packet-parser/xor-final-checksum.test.ts b/packages/core/test/packet-parser/xor-final-checksum.test.ts
+--- a/packages/core/test/packet-parser/xor-final-checksum.test.ts
++++ b/packages/core/test/packet-parser/xor-final-checksum.test.ts
+@@ -25,3 +25,21 @@ describe('PacketParser xor_final checksum', () => {
      expect(parser.parseChunk(packet)).toHaveLength(0);
    });
 +
@@ -94,9 +97,10 @@
 +    expect(parser.parseChunk(packet)).toHaveLength(0);
 +  });
  });
-*** Update File: packages/core/test/protocol/checksum_utils.test.ts
-@@
-     it('should support all byte-sized xor_final values', () => {
+diff --git a/packages/core/test/protocol/checksum_utils.test.ts b/packages/core/test/protocol/checksum_utils.test.ts
+--- a/packages/core/test/protocol/checksum_utils.test.ts
++++ b/packages/core/test/protocol/checksum_utils.test.ts
+@@ -30,6 +30,10 @@ describe('Checksum Utils', () => {
        expect(getChecksumFunction('xor_final(0x00)' as any)).toBeDefined();
        expect(getChecksumFunction('xor_final(0xff)' as any)).toBeDefined();
        expect(getChecksumFunction('xor_final(0x100)' as any)).toBeNull();
@@ -105,7 +109,8 @@
 +      expect(getChecksumFunction('xor_final_no_header(0xff)' as any)).toBeDefined();
 +      expect(getChecksumFunction('xor_final_no_header(0x100)' as any)).toBeNull();
 +      expect(getChecksumFunction('xor_final_no_header(0x5)' as any)).toBeNull();
-@@
+@@ -70,6 +74,17 @@ describe('Checksum Utils', () => {
+       const expected = 0xaa ^ 0x10 ^ 0x20 ^ 0x30 ^ 0x55;
        expect(calculateChecksumFromBuffer(frame, 'xor_final(0x55)' as any, 1, 4)).toBe(expected);
      });
 +
@@ -121,15 +126,17 @@
 +      const expected = 0x10 ^ 0x20 ^ 0x30 ^ 0x55;
 +      expect(calculateChecksumFromBuffer(frame, 'xor_final_no_header(0x55)' as any, 1, 4)).toBe(expected);
 +    });
-@@
+@@ -91,6 +106,7 @@ describe('Checksum Utils', () => {
        expect(getChecksumOffsetType('xor_final(0x55)' as any)).toBe('base');
 +      expect(getChecksumOffsetType('xor_final_no_header(0x55)' as any)).toBe('header');
-*** Update File: docs/config/xor-final-checksum.md
-@@
+diff --git a/docs/config/xor-final-checksum.md b/docs/config/xor-final-checksum.md
+--- a/docs/config/xor-final-checksum.md
++++ b/docs/config/xor-final-checksum.md
+@@ -14,7 +14,10 @@ Examples:
+ 
  - `xor_final(0x55)` → `XOR(frame bytes) ^ 0x55`
 +- `xor_final_no_header(0x55)` → `XOR(data bytes) ^ 0x55`
  - `xor_final(0x00)` → equivalent to plain `xor`
 +- `xor_final_no_header(0x00)` → equivalent to plain `xor_no_header`
  - `xor_final(0xff)` → `XOR(frame bytes) ^ 0xff`
 +- `xor_final_no_header(0xff)` → `XOR(data bytes) ^ 0xff`
-*** End Patch

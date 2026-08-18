@@ -31,7 +31,19 @@ https://homenet2mqtt-docs.vercel.app
 - [GitHub Issues](https://github.com/wooooooooooook/homenet2mqtt/issues)
 - [Discord](https://discord.gg/kGwhUBMe5z)
 
+## 기존 레포지토리에 Luna Chat Coder 추가하기
+
+이 레포지토리에 [Luna Chat Coder](https://github.com/wooooooooooook/luna-chat-coder)를 추가하려면:
+
+1. 전체 스킬 디렉토리를 복사:
+   ```
+   .agents/skills/luna-chat-coder/
+   ```
+
+2. 이 레포지토리의 기존 `AGENTS.md`에 Luna 진입점 지시사항을 병합합니다. 프로젝트 고유의 엔지니어링 가이드는 유지하고, Luna는 이를 대체하는 것이 아니라 연속성/폴백 계층으로 추가합니다.
+
+3. 검증된 ChatGPT Web 경로의 경우, GitHub Plugin을 연결하고 ChatGPT Codex Connector에 이 레포지토리 접근 권한을 부여한 후 챗에게 작업을 요청하세요.
+
 ## 라이선스
 
 MIT
-

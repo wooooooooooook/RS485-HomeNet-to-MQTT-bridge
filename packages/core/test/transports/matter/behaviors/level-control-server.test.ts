@@ -39,4 +39,14 @@ describe('LevelControlServer', () => {
     );
     expect(state.currentLevel).toBe(128);
   });
+
+  it('reconciles the optimistic level when Homenet reports a different brightness', () => {
+    const state: any = { minLevel: 1, maxLevel: 254, currentLevel: 128 };
+    const server: any = Object.create(LevelControlServer.prototype);
+    Object.defineProperty(server, 'state', { get: () => state });
+
+    server.update({ brightness: 80 });
+
+    expect(state.currentLevel).toBe(80);
+  });
 });

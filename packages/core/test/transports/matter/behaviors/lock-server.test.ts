@@ -63,4 +63,14 @@ describe('LockServer', () => {
     expect(mockHomenet.executeCommand).toHaveBeenCalledWith('lock_1', 'unlock');
     expect(state.lockState).toBe(DoorLock.LockState.Unlocked);
   });
+
+  it('reconciles the optimistic lock state when Homenet reports unlocked', () => {
+    const state: any = { lockState: DoorLock.LockState.Locked };
+    const server: any = Object.create(LockServer.prototype);
+    Object.defineProperty(server, 'state', { get: () => state });
+
+    server.update({ state: 'UNLOCKED' });
+
+    expect(state.lockState).toBe(DoorLock.LockState.Unlocked);
+  });
 });

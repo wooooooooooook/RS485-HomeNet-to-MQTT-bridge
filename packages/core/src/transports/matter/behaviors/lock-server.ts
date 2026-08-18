@@ -45,25 +45,21 @@ export class LockServer extends Base {
   }
 
   override async lockDoor() {
-    // Set lockState immediately for instant UI feedback
+    // Set lockState immediately for instant UI feedback. Do not re-read
+    // homenet.entityState after the command because the entity reference may
+    // be stale/expired by then; Homenet onChange performs reconciliation.
     applyPatchState(this.state, { lockState: LockState.Locked });
     const homenet = await this.agent.load(HomenetEntityBehavior);
-    try {
-      await homenet.executeCommand(homenet.entityId, 'lock');
-    } finally {
-      this.update(homenet.entityState);
-    }
+    await homenet.executeCommand(homenet.entityId, 'lock');
   }
 
   override async unlockDoor() {
-    // Set lockState immediately for instant UI feedback
+    // Set lockState immediately for instant UI feedback. Do not re-read
+    // homenet.entityState after the command because the entity reference may
+    // be stale/expired by then; Homenet onChange performs reconciliation.
     applyPatchState(this.state, { lockState: LockState.Unlocked });
     const homenet = await this.agent.load(HomenetEntityBehavior);
-    try {
-      await homenet.executeCommand(homenet.entityId, 'unlock');
-    } finally {
-      this.update(homenet.entityState);
-    }
+    await homenet.executeCommand(homenet.entityId, 'unlock');
   }
 }
 export namespace LockServer {

@@ -14,6 +14,8 @@ export type RestoreMode = 'ALWAYS_ON' | 'ALWAYS_OFF' | 'RESTORE_DEFAULT_ON' | 'R
  * - `add_no_header`: Sum of data bytes (excluding header) & 0xFF.
  * - `xor`: XOR of all bytes (header + data).
  * - `xor_no_header`: XOR of data bytes (excluding header).
+ * - `xor_final(0xNN)`: XOR of all bytes (header + data), then XOR with the configured final byte.
+ * - `xor_final_no_header(0xNN)`: XOR of data bytes (excluding header), then XOR with the configured final byte.
  * - `samsung_rx`: (@deprecated) Specialized Samsung Wallpad RX checksum (0xB0 ^ XOR). If data[0] < 0x7C, result ^= 0x80.
  * - `samsung_tx`: (@deprecated) Specialized Samsung Wallpad TX checksum.
  * - `samsung_xor`: XOR of all bytes & 0x7F (Msb 0).
@@ -26,6 +28,8 @@ export type ChecksumType =
   | 'xor'
   | 'add_no_header'
   | 'xor_no_header'
+  | `xor_final(0x${string})`
+  | `xor_final_no_header(0x${string})`
   | 'samsung_rx'
   | 'samsung_tx'
   | 'samsung_xor'

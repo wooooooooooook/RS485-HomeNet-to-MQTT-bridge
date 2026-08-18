@@ -84,15 +84,13 @@ export class LevelControlServer extends FeaturedBase {
     const percent = (level - minLevel) / (maxLevel - minLevel);
     const brightness = Math.min(255, Math.max(0, Math.round(percent * 255)));
 
-    // Update currentLevel immediately so controllers get instant feedback
+    // Update currentLevel immediately so controllers get instant feedback.
+    // Do not re-read homenet.entityState after executeCommand(): the entity
+    // reference may be stale/expired by the time the command completes.
     this.state.currentLevel = level;
 
     const homenet = await this.agent.load(HomenetEntityBehavior);
-    try {
-      await homenet.executeCommand(homenet.entityId, 'brightness', brightness);
-    } finally {
-      this.update(homenet.entityState);
-    }
+    await homenet.executeCommand(homenet.entityId, 'brightness', brightness);
   }
 }
 export namespace LevelControlServer {

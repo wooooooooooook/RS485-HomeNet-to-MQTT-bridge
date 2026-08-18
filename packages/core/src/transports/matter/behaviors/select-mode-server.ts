@@ -48,12 +48,10 @@ export class SelectModeServer extends Base {
 
     const option = options[newMode];
     if (option !== undefined) {
+      // Optimistic Matter update. Do not re-read homenet.entityState after
+      // executeCommand(); Homenet onChange performs reconciliation.
       this.state.currentMode = newMode;
-      try {
-        await homenet.executeCommand(homenet.entityId, 'select', option);
-      } finally {
-        this.update(homenet.entityState);
-      }
+      await homenet.executeCommand(homenet.entityId, 'select', option);
     }
   }
 }

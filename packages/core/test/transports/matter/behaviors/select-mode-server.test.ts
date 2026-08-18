@@ -37,4 +37,20 @@ describe('SelectModeServer', () => {
     expect(mockHomenet.executeCommand).toHaveBeenCalledWith('mode_1', 'select', 'HIGH');
     expect(state.currentMode).toBe(2);
   });
+
+  it('reconciles the optimistic mode when Homenet reports a different option', () => {
+    const state: any = { currentMode: 2 };
+    const mockHomenet: any = {
+      entityConfig: { options: ['AUTO', 'LOW', 'HIGH'] },
+    };
+    const server: any = Object.create(SelectModeServer.prototype);
+    Object.defineProperty(server, 'state', { get: () => state });
+    Object.defineProperty(server, 'agent', {
+      get: () => ({ get: vi.fn().mockReturnValue(mockHomenet) }),
+    });
+
+    server.update({ state: 'LOW' });
+
+    expect(state.currentMode).toBe(1);
+  });
 });

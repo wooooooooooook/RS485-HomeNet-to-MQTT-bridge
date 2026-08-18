@@ -1,0 +1,75 @@
+name: Luna mission - xor_final_no_header
+
+on:
+  push:
+    branches: [feat/xor-final-checksum]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: ${{ contains(github.event.head_commit.message, 'LUNA-MISSION') || hashFiles('.github/luna-missions/xor-final-no-header-67aa6984.patch') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Verify expected source identity
+        env:
+          EXPECTED_BASE: 13c000614b85220b43c28506b7d47c38291f82e2
+        run: |
+          git cat-file -e "$EXPECTED_BASE^{commit}"
+          git merge-base --is-ancestor "$EXPECTED_BASE" HEAD
+          git diff --exit-code "$EXPECTED_BASE" -- \
+            .github/luna-missions \
+            .github/workflows/luna-mission-xor-final-no-header.yml
+
+      - name: Verify patch integrity
+        run: |
+          echo '67aa6984ef572b6ea3da20da230a554a398e7b8d1f1fc356c832a59e12fec2b4  .github/luna-missions/xor-final-no-header-67aa6984.patch' | sha256sum -c -
+          git apply --check .github/luna-missions/xor-final-no-header-67aa6984.patch
+
+      - name: Apply exact patch
+        run: git apply .github/luna-missions/xor-final-no-header-67aa6984.patch
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format --check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Inspect and publish durable result
+        run: |
+          git diff --check
+          git status --short
+          git diff --stat
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/luna-missions/xor-final-no-header-67aa6984.patch .github/workflows/luna-mission-xor-final-no-header.yml
+          git add docs/config/xor-final-checksum.md packages/core/src/protocol/types.ts packages/core/src/protocol/utils/checksum.ts packages/core/test/packet-parser/xor-final-checksum.test.ts packages/core/test/protocol/checksum_utils.test.ts
+          git commit -m 'feat(protocol): support xor_final_no_header checksum syntax'
+          git push origin HEAD:feat/xor-final-checksum

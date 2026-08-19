@@ -4,6 +4,7 @@
 v3.2.0
 - add: LG airconditioner protocol 지원(https://github.com/jourdant/esphome-lgap)
 - feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원
+- fix: samsung hvac설정 중 command변수가 `xstr`대신 `x`로 잘못들어간 부분 수정
 
 
 v3.1.2 (matter 전용)

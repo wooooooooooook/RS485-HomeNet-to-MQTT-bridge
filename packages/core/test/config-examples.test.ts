@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config/index.js';
 
-const EXAMPLES_DIR = path.resolve(process.cwd(), 'packages/core/config/examples');
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const EXAMPLES_DIR = path.resolve(TEST_DIR, '../config/examples');
 
 async function getExampleFiles() {
   const entries = await fs.readdir(EXAMPLES_DIR, { withFileTypes: true });

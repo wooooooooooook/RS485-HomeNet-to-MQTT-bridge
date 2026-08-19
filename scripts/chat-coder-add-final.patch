@@ -46,7 +46,6 @@
 +  }
    const xorFinalMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
    if (xorFinalMatch) {
-     return {
 @@ -248,6 +268,11 @@
   */
  export function calculateChecksum(header: ByteArray, data: ByteArray, type: ChecksumType): number {
@@ -57,8 +56,6 @@
 +    ) & 0xff;
 +  }
    if (resolved.kind === 'xor_final') {
-     return (resolved.includeHeader ? xor(header, data) : xorNoHeader(data)) ^ resolved.finalXor;
-   }
 @@ -310,6 +335,12 @@
    const headerStart = baseOffset + _headerLength;
    const dataStop = baseOffset + dataEnd;
@@ -70,8 +67,6 @@
 +    ) & 0xff;
 +  }
    if (resolved.kind === 'xor_final') {
-     return (
-       xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^
 @@ -746,6 +777,10 @@
    type: ChecksumType,
  ): ((buffer: ByteArray, start: number, end: number) => number) | null {
@@ -81,8 +76,6 @@
 +      (addRange(buffer, start, end) + resolved.finalAdd) & 0xff;
 +  }
    if (resolved.kind === 'xor_final') {
-     return (buffer: ByteArray, start: number, end: number) =>
-       xorRange(buffer, start, end) ^ resolved.finalXor;
 @@ -810,7 +845,7 @@
   */
  export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
@@ -90,8 +83,8 @@
 -  if (resolved.kind === 'xor_final') {
 +  if (resolved.kind === 'add_final' || resolved.kind === 'xor_final') {
      return resolved.includeHeader ? 'base' : 'header';
-   }
-*** Update File: packages/core/src/protocol/packet-parser.ts
+--- a/packages/core/src/protocol/packet-parser.ts
++++ b/packages/core/src/protocol/packet-parser.ts
 @@ -45,6 +45,7 @@
    private validHeaderCount: number = 0;
    private isStandard1Byte: boolean = false;
@@ -128,7 +121,8 @@
 +              } else if (this.addFinalValue !== null) {
 +                finalChecksum = (finalChecksum + this.addFinalValue) & 0xff;
                } else if (this.xorFinalValue !== null) {
-*** Update File: packages/core/test/protocol/checksum_utils.test.ts
+--- a/packages/core/test/protocol/checksum_utils.test.ts
++++ b/packages/core/test/protocol/checksum_utils.test.ts
 @@ -21,12 +21,25 @@
        expect(getChecksumFunction('bestin_sum')).toBeDefined();
      });
@@ -173,14 +167,15 @@
 +      expect(calculateChecksumFromBuffer(frame, 'add_final(0x55)' as any, 1, 4)).toBe(expected);
 +    });
 +
-@@ -91,6 +125,8 @@
+@@ -91,6 +124,8 @@
      it('should return "base" for other types', () => {
        expect(getChecksumOffsetType('add')).toBe('base');
        expect(getChecksumOffsetType('xor')).toBe('base');
 +      expect(getChecksumOffsetType('add_final(0x55)' as any)).toBe('base');
 +      expect(getChecksumOffsetType('add_final_no_header(0x55)' as any)).toBe('header');
        expect(getChecksumOffsetType('xor_final(0x55)' as any)).toBe('base');
-*** Update File: packages/core/test/protocol/checksum_generation.test.ts
+--- a/packages/core/test/protocol/checksum_generation.test.ts
++++ b/packages/core/test/protocol/checksum_generation.test.ts
 @@ -30,6 +30,22 @@
      expect(packet).toEqual([0xf7, 0x01, 0xf8]);
    });
@@ -248,12 +243,4 @@
 +    const packet = Buffer.from([0xaa, 0x01, 0x02, 0x03]);
 +    expect(parser.parseChunk(packet)).toHaveLength(0);
 +  });
-*** Update File: docs/config/packet-defaults.md
-@@ -51,6 +51,8 @@
- | :--- | :--- | :--- |
- | `add` | 헤더 + 데이터 | `Sum(All Bytes) & 0xFF` |
- | `add_no_header` | 데이터 | `Sum(Data Bytes) & 0xFF` |
-+| `add_final(0xNN)` | 헤더 + 데이터 | `(SUM(All Bytes) + 0xNN) & 0xFF` |
-+| `add_final_no_header(0xNN)` | 데이터 | `(SUM(Data) + 0xNN) & 0xFF` |
- | `xor` | 헤더 + 데이터 | `XOR(All Bytes)` |
- | `xor_no_header` | 데이터 | `XOR(Data Bytes)` |
+*** End Patch

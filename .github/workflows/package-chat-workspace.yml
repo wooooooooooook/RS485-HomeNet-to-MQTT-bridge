@@ -34,10 +34,12 @@ jobs:
             printf 'run_id=%s\n' "$GITHUB_RUN_ID"
           } > workspace-artifacts/SOURCE-IDENTITY.txt
 
-      # Keep this workflow source-compatible with ChatGPT workspace packaging.
-      # When changing repository files through ChatGPT, update this comment and push
-      # to trigger packaging; then retrieve the generated chat-workspace artifact
-      # and use that artifact as the source of truth for subsequent edits/PR updates.
+      # This workflow is the canonical ChatGPT PR workspace transport.
+      # Start a PR by changing this comment and pushing the workflow file.
+      # That push packages the exact branch commit. Download chat-workspace,
+      # extract it locally/sandboxed, edit from that exact source, then publish
+      # the resulting changes back to the task branch/PR.
+      # Handoff protocol: source identity + checksums + manifest are mandatory.
       - name: Package repository source
         shell: bash
         run: |

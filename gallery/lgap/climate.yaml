@@ -143,10 +143,10 @@ entities:
           int(x) - 15]]
 
       command_fan_mode: >-
-        x == 'low' ?
+        xstr == 'low' ?
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x10), int(get_from_state('temperature_target', 22)) - 15]] :
-        x == 'medium' ?
+        xstr == 'medium' ?
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x20), int(get_from_state('temperature_target', 22)) - 15]] :
-        x == 'high' ?
+        xstr == 'high' ?
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x30), int(get_from_state('temperature_target', 22)) - 15]] :
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x40), int(get_from_state('temperature_target', 22)) - 15]]

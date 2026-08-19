@@ -34,6 +34,10 @@ jobs:
             printf 'run_id=%s\n' "$GITHUB_RUN_ID"
           } > workspace-artifacts/SOURCE-IDENTITY.txt
 
+      # Keep this workflow source-compatible with ChatGPT workspace packaging.
+      # When changing repository files through ChatGPT, update this comment and push
+      # to trigger packaging; then retrieve the generated chat-workspace artifact
+      # and use that artifact as the source of truth for subsequent edits/PR updates.
       - name: Package repository source
         shell: bash
         run: |

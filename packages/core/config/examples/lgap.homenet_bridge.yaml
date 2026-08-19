@@ -19,8 +19,8 @@ homenet_bridge:
     rx_length: 16
 
   # LGAP ODU does not continuously publish indoor-unit state.
-  # Poll each configured zone with the status-request frame documented
-  # by jourdant/esphome-lgap. RX responses are matched by zone in climate.
+  # Poll each configured zone with the 8-byte read request documented
+  # by jourdant/esphome-lgap. Zone 0 is used by this single-zone example.
   automation:
     - id: lgap_poll_zone_0
       name: 'LGAP Zone 0 상태 polling'
@@ -30,10 +30,13 @@ homenet_bridge:
           every: '5s'
       then:
         - action: send_packet
-          data: [0x00, 0xA0, 0x00]
+          # TX0 is supplied by packet_defaults.tx_header.
+          # TX1..TX6: command, command-id, zone, read/no-op state.
+          # Final packet: 80 00 A0 00 00 00 00 75
+          data: [0x00, 0xA0, 0x00, 0x00, 0x00, 0x00]
           header: true
-          footer: false
           checksum: true
+          portId: lgap
 
   climate:
     - id: 'lgap_zone_0'

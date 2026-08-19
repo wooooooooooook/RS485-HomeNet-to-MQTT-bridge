@@ -1,0 +1,63 @@
+name: Validate Gallery Schema
+
+on:
+  pull_request:
+    paths:
+      - 'gallery/**/*.yaml'
+      - 'gallery/**/*.yml'
+      - 'gallery/**/requirements.json'
+      - 'packages/core/config/examples/**/*.yaml'
+      - 'packages/core/config/examples/**/*.yml'
+      - 'packages/core/static/schema/homenet-bridge.schema.json'
+      - 'scripts/validate-gallery-schema.cjs'
+      - 'scripts/validate-gallery-schema-v2.cjs'
+      - 'packages/core/src/config/types.ts'
+      - 'packages/core/src/config/index.ts'
+      - 'packages/core/test/config-examples.test.ts'
+      - 'packages/service/src/utils/gallery-template.ts'
+      - '.github/workflows/validate-gallery-schema.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/**/*.yaml'
+      - 'gallery/**/*.yml'
+      - 'gallery/**/requirements.json'
+      - 'packages/core/config/examples/**/*.yaml'
+      - 'packages/core/config/examples/**/*.yml'
+      - 'packages/core/static/schema/homenet-bridge.schema.json'
+      - 'scripts/validate-gallery-schema.cjs'
+      - 'scripts/validate-gallery-schema-v2.cjs'
+      - 'packages/core/src/config/types.ts'
+      - 'packages/core/src/config/index.ts'
+      - 'packages/core/test/config-examples.test.ts'
+      - 'packages/service/src/utils/gallery-template.ts'
+      - '.github/workflows/validate-gallery-schema.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-gallery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate gallery files against core schema
+        run: node scripts/validate-gallery-schema.cjs
+
+      - name: Validate core config examples
+        run: pnpm exec vitest run packages/core/test/config-examples.test.ts

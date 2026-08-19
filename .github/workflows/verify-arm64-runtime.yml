@@ -5,6 +5,11 @@ on:
   push:
     paths:
       - 'hassio-addon/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/verify-arm64-runtime.yml'
 
 jobs:
@@ -37,14 +42,11 @@ jobs:
       - name: Verify Tini Architecture (${{ matrix.addon }})
         run: |
           echo "Verifying tini architecture for ${{ matrix.addon }}..."
-          # Override ENTRYPOINT to prevent app startup and only check tini version
           docker run --rm --platform linux/arm64 --entrypoint /sbin/tini verify-arm64-${{ matrix.addon }}:latest --version
 
       - name: Verify Run Script Execution (${{ matrix.addon }})
         run: |
           echo "Verifying run script execution for ${{ matrix.addon }}..."
-          # Run for 10 seconds. If it's still running (timeout), it's a pass.
-          # If it crashes immediately (exec format error), it's a fail.
           timeout 10s docker run --rm --platform linux/arm64 verify-arm64-${{ matrix.addon }}:latest /run.sh || code=$?
 
           echo "Exit code: $code"
@@ -53,8 +55,8 @@ jobs:
             echo "Success: Container ran and timed out as expected (it's a long running process)."
             exit 0
           elif [ "$code" = "0" ] || [ -z "$code" ]; then
-             echo "Success: Container ran and exited normally."
-             exit 0
+            echo "Success: Container ran and exited normally."
+            exit 0
           else
             echo "Failure: Container exited with code $code"
             exit 1

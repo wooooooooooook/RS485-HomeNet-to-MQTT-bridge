@@ -87,7 +87,6 @@ function resolveParameterValues(
         ? providedValues[definition.name]
         : definition.default;
 
-    // Handle hidden/computed parameters
     if (value === undefined && (definition.hidden || definition.computed)) {
       // Intentionally empty block - fall through to error check if truly missing
     }
@@ -118,7 +117,6 @@ function validateParameterValue(definition: GalleryParameterDefinition, value: u
 
   if (type === 'string') {
     if (typeof value !== 'string') {
-      // Auto-convert numbers to string if type is string
       if (typeof value === 'number') {
         return String(value);
       }
@@ -139,7 +137,6 @@ function validateParameterValue(definition: GalleryParameterDefinition, value: u
       throw new Error(`[gallery] Parameter ${name} must be an object array`);
     }
 
-    // Prepare defaults from schema
     const itemDefaults: Record<string, unknown> = {};
     if (definition.schema?.properties) {
       const properties = definition.schema.properties as Record<string, { default?: unknown }>;
@@ -155,7 +152,6 @@ function validateParameterValue(definition: GalleryParameterDefinition, value: u
       if (!item || typeof item !== 'object') {
         throw new Error(`[gallery] Parameter ${name} must contain objects`);
       }
-      // Merge defaults (item specific values override defaults)
       mergedValue.push({ ...itemDefaults, ...item });
     }
     return mergedValue;
@@ -194,10 +190,6 @@ function evaluateTemplateExpression(expression: string, context: Record<string, 
   return evaluateExpression(expression.trim(), context);
 }
 
-/**
- * Recursively convert values for CEL compatibility.
- * Specifically handles converting integers to BigInt.
- */
 function convertForCel(val: unknown): unknown {
   if (typeof val === 'number' && Number.isInteger(val)) {
     return BigInt(val);
@@ -220,7 +212,6 @@ function convertForCel(val: unknown): unknown {
 function evaluateExpression(expression: string, context: Record<string, unknown>): unknown {
   const env = new Environment();
 
-  // Register Helper Functions (replicated for local context)
   env.registerFunction('bcd_to_int(int): int', (bcd: bigint) => {
     const val = Number(bcd);
     const res = (val >> 4) * 10 + (val & 0x0f);
@@ -237,44 +228,28 @@ function evaluateExpression(expression: string, context: Record<string, unknown>
   env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
   env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
   env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
-  env.registerFunction('hex(int): string', (val: bigint) => {
-    return `0x${Number(val).toString(16).padStart(2, '0')}`;
-  });
-  env.registerFunction('pad(dyn, int): string', (val: unknown, length: bigint) => {
-    return String(typeof val === 'bigint' ? Number(val) : val).padStart(Number(length), '0');
-  });
+  env.registerFunction('hex(int): string', (val: bigint) => `0x${Number(val).toString(16).padStart(2, '0')}`);
+  env.registerFunction('pad(dyn, int): string', (val: unknown, length: bigint) =>
+    String(typeof val === 'bigint' ? Number(val) : val).padStart(Number(length), '0'),
+  );
 
-  // Dynamically register variables from context
   const safeContext: Record<string, any> = {};
-
   for (const [key, value] of Object.entries(context)) {
     const safeValue = convertForCel(value);
     safeContext[key] = safeValue;
 
-    let type = 'dyn'; // Default to dynamic
-    if (typeof safeValue === 'bigint') {
-      type = 'int';
-    } else {
-      if (typeof safeValue === 'string') {
-        type = 'string';
-      } else if (Array.isArray(safeValue)) {
-        type = 'list';
-      } else if (typeof safeValue === 'object' && safeValue !== null) {
-        type = 'map';
-      }
-    }
+    let type = 'dyn';
+    if (typeof safeValue === 'bigint') type = 'int';
+    else if (typeof safeValue === 'string') type = 'string';
+    else if (Array.isArray(safeValue)) type = 'list';
+    else if (typeof safeValue === 'object' && safeValue !== null) type = 'map';
     env.registerVariable(key, type);
   }
 
   try {
     const ast = env.parse(expression);
     const result = ast(safeContext);
-
-    // Convert BigInt results from CEL back to Number
-    if (typeof result === 'bigint') {
-      return Number(result);
-    }
-    return result;
+    return typeof result === 'bigint' ? Number(result) : result;
   } catch (error) {
     const err = error as Error;
     throw new Error(`[gallery] CEL Evaluation failed for "${expression}": ${err.message}`);
@@ -290,8 +265,8 @@ function expandRepeatBlock(
     throw new Error('[gallery] $repeat requires an "as" field');
   }
 
-  const template = node.$nested
-    ? (node.$nested as Record<string, unknown>)
+  const template = node.$nested !== undefined
+    ? node.$nested
     : Object.fromEntries(
         Object.entries(node).filter(([key]) => key !== '$repeat' && key !== '$nested'),
       );
@@ -322,15 +297,11 @@ function expandRepeatBlock(
       ...context,
       [repeat.as]: value,
     };
-    if (repeat.index) {
-      nextContext[repeat.index] = index;
-    }
+    if (repeat.index) nextContext[repeat.index] = index;
+
     const expanded = expandNode(template, nextContext);
-    if (Array.isArray(expanded)) {
-      results.push(...expanded);
-    } else {
-      results.push(expanded);
-    }
+    if (Array.isArray(expanded)) results.push(...expanded);
+    else if (expanded !== null) results.push(expanded);
   }
 
   return results;
@@ -338,48 +309,39 @@ function expandRepeatBlock(
 
 function expandNode(node: unknown, context: Record<string, unknown>): unknown {
   if (Array.isArray(node)) {
-    const expandedList = node.flatMap((item) => {
+    return node.flatMap((item) => {
       const expanded = expandNode(item, context);
-      if (expanded === null) return []; // Filter out null (from $if false)
+      if (expanded === null) return [];
       return Array.isArray(expanded) ? expanded : [expanded];
     });
-    return expandedList;
   }
 
   if (node && typeof node === 'object') {
     const record = node as Record<string, unknown>;
 
-    // $if conditional processing
     if (record.$if !== undefined) {
       const condition = record.$if;
       const conditionValue =
         typeof condition === 'string' ? resolveTemplateValue(condition, context) : condition;
-
-      if (!conditionValue) {
-        return null; // Condition not met, exclude this node
-      }
-
-      // Condition met, process remaining properties (excluding $if)
+      if (!conditionValue) return null;
       const filtered = Object.fromEntries(Object.entries(record).filter(([key]) => key !== '$if'));
       return expandNode(filtered, context);
     }
 
-    if (record.$repeat) {
-      return expandRepeatBlock(record, context);
-    }
+    if (record.$repeat) return expandRepeatBlock(record, context);
+
+    // $nested is a grouping/template operator. It must be expanded rather than
+    // silently discarded when it appears outside the $repeat handler.
+    if (record.$nested !== undefined) return expandNode(record.$nested, context);
 
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(record)) {
-      if (key === '$nested') continue;
       result[key] = expandNode(value, context);
     }
     return result;
   }
 
-  if (typeof node === 'string') {
-    return resolveTemplateValue(node, context);
-  }
-
+  if (typeof node === 'string') return resolveTemplateValue(node, context);
   return node;
 }
 

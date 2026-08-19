@@ -23,7 +23,7 @@ meta:
   description_en: |
     Samsung HVAC NonNASA protocol configuration.
     Controls indoor units via direct RS485 communication through F1/F2 bus.
-  version: "1.0.0"
+  version: "1.0.1"
   author: "wooooooooooook"
   tags: ["climate", "hvac", "aircon", "samsung", "nonnasa"]
 

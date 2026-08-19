@@ -16,6 +16,7 @@
 
 - [Serial](./serial.md)
 - [Packet Defaults](./packet-defaults.md)
+- [Parameterized XOR final checksum](./xor-final-checksum.md)
 - [유효 패킷 탐지 전략](./packet-validation-strategies.md)
 - [State/Command 스키마 정의](./schemas.md)
 - [CEL 가이드](./cel-guide.md)

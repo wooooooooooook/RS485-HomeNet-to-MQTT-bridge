@@ -16,36 +16,8 @@ discovery:
     data: [0x02, 0xD1]
     mask: [0xFF, 0xFF]
 
-# 에너지 상태패킷 구조 (General/Gen2, 53바이트):
-# 02 D1 33 91 A8 00 00 00 00 XX XX XX XX [realtime 데이터...] [checksum]
-# 
-# 바이트 범위:
-#   electric total: data[8:12]  - 4바이트
-#   water total:    data[17:20] - 3바이트
-#   hotwater total: data[24:28] - 4바이트
-#   gas total:      data[32:36] - 4바이트
-#   heat total:     data[40:44] - 4바이트
-#
-# 실시간 값 (2바이트씩, 8바이트 간격):
-#   electric realtime: data[13:15]
-#   water realtime:    data[21:23]  (13 + 8)
-#   hotwater realtime: data[29:31]  (13 + 16)
-#   gas realtime:      data[37:39]  (13 + 24)
-#   heat realtime:     data[45:47]  (13 + 32)
-#
-# 값 변환 규칙:
-#   전기 총 사용량: ÷ 100 (kWh)
-#   가스 총 사용량: ÷ 1000 (m³)
-#   가스 실시간: ÷ 10 (m³/h)
-#   수도/난방/온수 총 사용량: ÷ 1000 (m³)
-#   수도/난방/온수 실시간 (General): 원시 값 그대로 사용
-
 entities:
   sensor:
-    # ========================================
-    # Electric (전기) 센서
-    # ========================================
-    # 총 사용량: data[8:12] - 4바이트 BCD, ÷ 100
     - id: "energy_electric_total"
       name: "전기 총 사용량"
       device_class: energy
@@ -58,8 +30,6 @@ entities:
         length: 4
         decode: bcd
         precision: 2
-
-    # 실시간 사용량: data[13:15] - 2바이트 BCD
     - id: "energy_electric_realtime"
       name: "전기 실시간 사용량"
       device_class: power
@@ -71,11 +41,6 @@ entities:
         index: 13
         length: 2
         decode: bcd
-
-    # ========================================
-    # Water (수도) 센서
-    # ========================================
-    # 총 사용량: data[17:20] - 3바이트 BCD, ÷ 1000
     - id: "energy_water_total"
       name: "수도 총 사용량"
       device_class: water
@@ -88,8 +53,6 @@ entities:
         length: 3
         decode: bcd
         precision: 3
-
-    # 실시간 사용량: data[21:23] - 2바이트 BCD, General은 원시 값 그대로
     - id: "energy_water_realtime"
       name: "수도 실시간 사용량"
       unit_of_measurement: "m³/h"
@@ -100,11 +63,6 @@ entities:
         index: 21
         length: 2
         decode: bcd
-
-    # ========================================
-    # Hotwater (온수) 센서 - General/Gen2 전용
-    # ========================================
-    # 총 사용량: data[24:28] - 4바이트 BCD, ÷ 1000
     - id: "energy_hotwater_total"
       name: "온수 총 사용량"
       device_class: water
@@ -117,8 +75,6 @@ entities:
         length: 4
         decode: bcd
         precision: 3
-
-    # 실시간 사용량: data[29:31] - 2바이트 BCD, General은 원시 값 그대로
     - id: "energy_hotwater_realtime"
       name: "온수 실시간 사용량"
       unit_of_measurement: "m³/h"
@@ -129,11 +85,6 @@ entities:
         index: 29
         length: 2
         decode: bcd
-
-    # ========================================
-    # Gas (가스) 센서
-    # ========================================
-    # 총 사용량: data[32:36] - 4바이트 BCD, ÷ 1000
     - id: "energy_gas_total"
       name: "가스 총 사용량"
       device_class: gas
@@ -142,12 +93,10 @@ entities:
       state:
         data: [0x02, 0xD1]
       state_number:
-        index:
+        index: 32
         length: 4
         decode: bcd
         precision: 3
-
-    # 실시간 사용량: data[37:39] - 2바이트 BCD, ÷ 10
     - id: "energy_gas_realtime"
       name: "가스 실시간 사용량"
       unit_of_measurement: "m³/h"
@@ -159,11 +108,6 @@ entities:
         length: 2
         decode: bcd
         precision: 1
-
-    # ========================================
-    # Heat (난방) 센서 - General/Gen2 전용
-    # ========================================
-    # 총 사용량: data[40:44] - 4바이트 BCD, ÷ 1000
     - id: "energy_heat_total"
       name: "난방 총 사용량"
       unit_of_measurement: "m³"
@@ -175,8 +119,6 @@ entities:
         length: 4
         decode: bcd
         precision: 3
-
-    # 실시간 사용량: data[45:47] - 2바이트 BCD, General은 원시 값 그대로
     - id: "energy_heat_realtime"
       name: "난방 실시간 사용량"
       unit_of_measurement: "m³/h"

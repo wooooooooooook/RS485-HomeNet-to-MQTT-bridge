@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T01:37:11.921Z",
+  "generated_at": "2026-08-19T04:07:21.273Z",
   "vendors": [
     {
       "id": "bestin",
@@ -4048,6 +4048,134 @@
               ]
             }
           }
+        }
+      ]
+    },
+    {
+      "id": "lgap",
+      "name": "lgap",
+      "requirements": {
+        "serial": {
+          "baud_rate": 4800,
+          "data_bits": 8,
+          "parity": "none",
+          "stop_bits": 1
+        },
+        "packet_defaults": {
+          "rx_header": [
+            16
+          ],
+          "tx_header": [
+            128
+          ],
+          "rx_length": 16,
+          "rx_checksum": "xor_final(0x55)",
+          "tx_checksum": "xor_final(0x55)"
+        }
+      },
+      "items": [
+        {
+          "file": "lgap/climate.yaml",
+          "name": "LG 에어컨 (LGAP RS485)",
+          "name_en": "LG Air Conditioner (LGAP RS485)",
+          "description": "LGAP(LG Air Conditioner Protocol) 기반 LG HVAC 실내기 제어 설정입니다.\n4,800 bps 8N1 RS485 통신을 사용하며 ODU를 통해 zone별 상태를 polling합니다.\n\njourdant/esphome-lgap의 공개 프로토콜 분석을 기반으로 합니다.\n수신 상태 프레임은 16바이트, 송신 제어 프레임은 8바이트이며\n체크섬은 전체 프레임 바이트 XOR 결과에 0x55를 최종 XOR하는 방식입니다.\n",
+          "description_en": "LG HVAC configuration based on the LGAP RS485 protocol.\nUses 4800 bps 8N1 and polls each indoor-unit zone through the ODU.\nBased on the public protocol analysis in jourdant/esphome-lgap.\n",
+          "version": "1.0.0",
+          "author": "homenet2mqtt",
+          "tags": [
+            "climate",
+            "hvac",
+            "aircon",
+            "lg",
+            "lgap",
+            "rs485"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 1,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units",
+              "description": "LGAP zone으로 제어할 실내기 수입니다."
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "climate": 1
+            },
+            "automations": 1,
+            "scripts": 0
+          },
+          "discovery": {
+            "match": {
+              "data": [
+                16,
+                0,
+                160
+              ],
+              "mask": [
+                255,
+                0,
+                255
+              ],
+              "offset": 0
+            },
+            "dimensions": [
+              {
+                "parameter": "unit_count",
+                "offset": 4
+              }
+            ],
+            "inference": {
+              "strategy": "count"
+            },
+            "ui": {
+              "label": "LGAP 실내기",
+              "label_en": "LGAP Indoor Units",
+              "badge": "LGAP",
+              "summary": "LGAP 16-byte 상태 프레임에서 zone 수를 자동 추정합니다.",
+              "summary_en": "Infers the number of zones from LGAP 16-byte status frames."
+            }
+          }
+        },
+        {
+          "file": "lgap/sensors.yaml",
+          "name": "LGAP 진단 센서",
+          "name_en": "LGAP Diagnostic Sensors",
+          "description": "LGAP 응답의 에러 코드, 배관 온도, 부하 정보를 노출합니다.",
+          "description_en": "Exposes LGAP error, pipe temperature and load information.",
+          "version": "1.0.0",
+          "author": "homenet2mqtt",
+          "tags": [
+            "sensor",
+            "hvac",
+            "aircon",
+            "lg",
+            "lgap",
+            "rs485"
+          ],
+          "parameters": [
+            {
+              "name": "unit_count",
+              "type": "integer",
+              "default": 1,
+              "min": 1,
+              "max": 16,
+              "label": "실내기 수",
+              "label_en": "Number of Indoor Units"
+            }
+          ],
+          "content_summary": {
+            "entities": {
+              "sensor": 7
+            },
+            "automations": 0,
+            "scripts": 0
+          },
+          "discovery": null
         }
       ]
     },

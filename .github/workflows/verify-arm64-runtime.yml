@@ -12,6 +12,12 @@ on:
       - 'pnpm-workspace.yaml'
       - '.github/workflows/verify-arm64-runtime.yml'
 
+# Prevent multiple ARM64 verification runs from executing concurrently for the
+# same branch/ref. A newer push supersedes an older verification run.
+concurrency:
+  group: verify-arm64-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-arm64:
     runs-on: ubuntu-latest

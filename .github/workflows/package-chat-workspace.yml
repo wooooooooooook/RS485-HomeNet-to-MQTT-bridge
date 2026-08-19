@@ -1,0 +1,74 @@
+name: Package workspace for ChatGPT
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - docs/xor-final-documentation
+
+permissions:
+  contents: read
+
+env:
+  CHUNK_SIZE: 450m
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Package repository source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p workspace-artifacts
+          tar --exclude=.git --exclude=.github/workflows/package-chat-workspace.yml \
+            -czf workspace-artifacts/homenet2mqtt-source.tar.gz .
+
+      - name: Install pnpm and dependencies
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Populate pnpm store
+        run: pnpm install --frozen-lockfile
+
+      - name: Package pnpm store
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm store path
+          store_path="$(pnpm store path)"
+          tar -czf workspace-artifacts/pnpm-store.tar.gz -C "$store_path" .
+
+      - name: Split artifacts into transport-sized chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p workspace-artifacts/chunks
+          for archive in workspace-artifacts/*.tar.gz; do
+            name="$(basename "$archive")"
+            split -b "$CHUNK_SIZE" -d -a 3 "$archive" "workspace-artifacts/chunks/${name}.part-"
+          done
+          rm workspace-artifacts/*.tar.gz
+          sha256sum workspace-artifacts/chunks/* > workspace-artifacts/SHA256SUMS
+          find workspace-artifacts -type f -printf '%p %s bytes\n' | sort > workspace-artifacts/MANIFEST.txt
+
+      - name: Upload workspace source and dependency artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: homenet2mqtt-chat-workspace
+          path: workspace-artifacts/
+          retention-days: 7
+          compression-level: 0

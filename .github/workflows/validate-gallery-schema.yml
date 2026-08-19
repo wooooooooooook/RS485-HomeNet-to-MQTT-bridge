@@ -8,6 +8,7 @@ on:
       - 'gallery/**/requirements.json'
       - 'packages/core/static/schema/homenet-bridge.schema.json'
       - 'scripts/validate-gallery-schema.cjs'
+      - 'scripts/validate-gallery-schema-v2.cjs'
       - 'packages/core/src/config/types.ts'
       - 'packages/service/src/utils/gallery-template.ts'
       - '.github/workflows/validate-gallery-schema.yml'
@@ -19,6 +20,7 @@ on:
       - 'gallery/**/requirements.json'
       - 'packages/core/static/schema/homenet-bridge.schema.json'
       - 'scripts/validate-gallery-schema.cjs'
+      - 'scripts/validate-gallery-schema-v2.cjs'
       - 'packages/core/src/config/types.ts'
       - 'packages/service/src/utils/gallery-template.ts'
       - '.github/workflows/validate-gallery-schema.yml'
@@ -47,4 +49,4 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate gallery files against core schema
-        run: node scripts/validate-gallery-schema.cjs
+        run: node scripts/validate-gallery-schema-v2.cjs

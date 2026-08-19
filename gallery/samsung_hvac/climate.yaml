@@ -50,14 +50,23 @@ entities:
         temperature_step: 1
       modes: ["off", "auto", "cool", "heat", "dry", "fan_only"]
       fan_modes: ["auto", "low", "medium", "high"]
+      # Cmd20 (0x20) 상태 패킷 매칭: src 주소로 실내기 식별
+      # 실내기 주소: 0x20 = 32, 0x21 = 33, ...
       state:
         data: ['{{31 + i}}', 0x00, 0x20]
         mask: [0xFF, 0x00, 0xFF]
         index: 1
+
+      # 온도: raw_byte - 55
       state_temperature_target: >-
         double(data[4]) - 55.0
       state_temperature_current: >-
         double(data[5]) - 55.0
+
+      # 전원 + 모드 (data[8])
+      # 전원: bit7 (0x80)
+      # 모드: 하위 6비트 (0x3F)
+      #   0x01=Heat, 0x02=Cool, 0x04=Dry, 0x08=Fan, 0x21/0x22=Auto
       state_off:
         index: 8
         data: [0x00]
@@ -82,6 +91,9 @@ entities:
         index: 8
         data: [0xA2]
         mask: [0xA2]
+
+      # 팬 속도 (data[7] & 0x07)
+      # 0=Auto, 2=Low, 4=Medium, 5=High
       state_fan_auto:
         index: 7
         data: [0x00]
@@ -98,6 +110,16 @@ entities:
         index: 7
         data: [0x05]
         mask: [0x07]
+
+      # 제어 명령 (CmdB0)
+      # 형식: [0x32, 0xD0, DST, 0xB0, swing, room_temp, target|fan, mode, power|flags, 0x21, 0x00, 0x00, CRC, 0x34]
+      # DST: 실내기 주소 (0x20 + i - 1)
+      # swing: 0x1F (Stop)
+      # room_temp: 0x04 (기본값)
+      # target|fan: (target & 0x1F) | fan_speed_encoded
+      # mode: 0=Auto, 1=Cool, 2=Dry, 3=Fan, 4=Heat
+      # power: OFF=0xC4, ON=0xF4
+
       command_off:
         data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x00, 0xC4, 0x21, 0x00, 0x00]
       command_heat:
@@ -110,15 +132,23 @@ entities:
         data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x03, 0xF4, 0x21, 0x00, 0x00]
       command_auto:
         data: [0xD0, '{{31 + i}}', 0xB0, 0x1F, 0x04, 0x00, 0x00, 0xF4, 0x21, 0x00, 0x00]
+
+      # 온도 설정: target 값은 하위 5비트에 들어감
+      # 바이트 5 = (target & 0x1F) | 0x00 (fan auto)
       command_temperature: >-
         [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, bitAnd(int(x), 31), 0x04, 0xF4, 0x21, 0x00, 0x00]]
+
+      # 팬 모드: 문자열 command이므로 xstr을 사용
+      # Auto=0x00, Low=0x40, Medium=0x80, High=0xA0
       command_fan_mode: >-
         xstr == 'low' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x40, 0x04, 0xF4, 0x21, 0x00, 0x00]]
         : xstr == 'medium' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x80, 0x04, 0xF4, 0x21, 0x00, 0x00]]
         : xstr == 'high' ? [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0xA0, 0x04, 0xF4, 0x21, 0x00, 0x00]]
         : [[0xD0, {{31 + i}}, 0xB0, 0x1F, 0x04, 0x00, 0x04, 0xF4, 0x21, 0x00, 0x00]]
 
+  # 컨트롤러 등록/폴링 자동화
   automation:
+    # 시작 시 컨트롤러 등록 (D1 패킷)
     - id: samsung_hvac_register
       name: "Samsung HVAC 컨트롤러 등록"
       trigger:
@@ -134,6 +164,8 @@ entities:
         - action: log
           level: info
           message: "Samsung HVAC 컨트롤러 등록 패킷 전송 완료"
+
+    # 주기적 등록 유지 (10초마다)
     - id: samsung_hvac_keepalive
       name: "Samsung HVAC 등록 유지"
       trigger:

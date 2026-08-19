@@ -1,0 +1,307 @@
+name: Chat Coder publish add_final
+
+on:
+  push:
+    branches:
+      - feat/add-final-checksum
+    paths:
+      - .github/workflows/chat-coder-publish-add-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply artifact-derived source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/add-final.patch <<'PATCH'
+--- a/packages/core/src/protocol/utils/checksum.ts
++++ b/packages/core/src/protocol/utils/checksum.ts
+@@ -2,6 +2,14 @@
+ 
+ export type { ChecksumType, Checksum2Type };
+ 
++const ADD_FINAL_TYPES = Array.from(
++  { length: 256 },
++  (_, value) => `add_final(0x${value.toString(16).padStart(2, '0')})`,
++) as ChecksumType[];
++const ADD_FINAL_NO_HEADER_TYPES = Array.from(
++  { length: 256 },
++  (_, value) => `add_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
++) as ChecksumType[];
+ const XOR_FINAL_TYPES = Array.from(
+   { length: 256 },
+   (_, value) => `xor_final(0x${value.toString(16).padStart(2, '0')})`,
+@@ -29,6 +37,8 @@
+   'crc8_wcdma',
+   'crc8_wcdma_no_header',
+   'none',
++  ...ADD_FINAL_TYPES,
++  ...ADD_FINAL_NO_HEADER_TYPES,
+   ...XOR_FINAL_TYPES,
+   ...XOR_FINAL_NO_HEADER_TYPES,
+ ] as const satisfies readonly ChecksumType[];
+@@ -68,6 +78,7 @@
+ 
+ type Checksum1Resolution =
+   | { kind: 'native'; normalizedType: ChecksumType }
++  | { kind: 'add_final'; normalizedType: ChecksumType; finalAdd: number; includeHeader: boolean }
+   | { kind: 'xor_final'; normalizedType: ChecksumType; finalXor: number; includeHeader: boolean }
+   | { kind: 'crc8'; normalizedType: ChecksumType; baseType: Crc8Variant; includeHeader: boolean };
+@@ -184,6 +195,15 @@
+ ]);
+ 
+ function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
++  const addFinalMatch = /^add_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
++  if (addFinalMatch) {
++    return {
++      kind: 'add_final',
++      normalizedType: type,
++      finalAdd: Number.parseInt(addFinalMatch[2], 16),
++      includeHeader: addFinalMatch[1] !== '_no_header',
++    };
++  }
+   const xorFinalMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
+   if (xorFinalMatch) {
+     return {
+@@ -248,6 +268,11 @@
+  */
+ export function calculateChecksum(header: ByteArray, data: ByteArray, type: ChecksumType): number {
+   const resolved = resolveChecksumType(type);
++  if (resolved.kind === 'add_final') {
++    return (
++      (resolved.includeHeader ? add(header, data) : addNoHeader(data)) + resolved.finalAdd
++    ) & 0xff;
++  }
+   if (resolved.kind === 'xor_final') {
+     return (resolved.includeHeader ? xor(header, data) : xorNoHeader(data)) ^ resolved.finalXor;
+   }
+@@ -310,6 +335,12 @@
+   const headerStart = baseOffset + _headerLength;
+   const dataStop = baseOffset + dataEnd;
+   const resolved = resolveChecksumType(type);
++  if (resolved.kind === 'add_final') {
++    return (
++      addRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) +
++      resolved.finalAdd
++    ) & 0xff;
++  }
+   if (resolved.kind === 'xor_final') {
+     return (
+       xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^
+@@ -746,6 +777,10 @@
+   type: ChecksumType,
+ ): ((buffer: ByteArray, start: number, end: number) => number) | null {
+   const resolved = resolveChecksumType(type);
++  if (resolved.kind === 'add_final') {
++    return (buffer: ByteArray, start: number, end: number) =>
++      (addRange(buffer, start, end) + resolved.finalAdd) & 0xff;
++  }
+   if (resolved.kind === 'xor_final') {
+     return (buffer: ByteArray, start: number, end: number) =>
+       xorRange(buffer, start, end) ^ resolved.finalXor;
+@@ -810,7 +845,7 @@
+  */
+ export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
+   const resolved = resolveChecksumType(type);
+-  if (resolved.kind === 'xor_final') {
++  if (resolved.kind === 'add_final' || resolved.kind === 'xor_final') {
+     return resolved.includeHeader ? 'base' : 'header';
+   }
+*** Update File: packages/core/src/protocol/packet-parser.ts
+@@ -45,6 +45,7 @@
+   private validHeaderCount: number = 0;
+   private isStandard1Byte: boolean = false;
+   private isStandard2Byte: boolean = false;
++  private addFinalValue: number | null = null;
+   private xorFinalValue: number | null = null;
+@@ -126,6 +127,10 @@
+       PacketParser.CHECKSUM_TYPES.has(checksumType);
+ 
+     if (typeof checksumType === 'string') {
++      const addFinalMatch = /^add_final(?:_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(checksumType);
++      if (addFinalMatch) {
++        this.addFinalValue = Number.parseInt(addFinalMatch[1], 16);
++      }
+       const xorFinalMatch = /^xor_final(?:_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(checksumType);
+@@ -454,6 +459,8 @@
+                   }
+                 } else if (isSamsungXor) {
+                   finalChecksum &= 0x7f;
++                } else if (this.addFinalValue !== null) {
++                  finalChecksum = (finalChecksum + this.addFinalValue) & 0xff;
+                 } else if (this.xorFinalValue !== null) {
+@@ -618,6 +625,8 @@
+                 }
+               } else if (isSamsungXor) {
+                 finalChecksum &= 0x7f;
++              } else if (this.addFinalValue !== null) {
++                finalChecksum = (finalChecksum + this.addFinalValue) & 0xff;
+               } else if (this.xorFinalValue !== null) {
+@@ -871,6 +880,8 @@
+                 }
+               } else if (isSamsungXor) {
+                 finalChecksum &= 0x7f;
++              } else if (this.addFinalValue !== null) {
++                finalChecksum = (finalChecksum + this.addFinalValue) & 0xff;
+               } else if (this.xorFinalValue !== null) {
+*** Update File: packages/core/test/protocol/checksum_utils.test.ts
+@@ -21,12 +21,25 @@
+       expect(getChecksumFunction('bestin_sum')).toBeDefined();
+     });
+ 
++    it('should support parameterized add_final()', () => {
++      const fn = getChecksumFunction('add_final(0x55)' as any);
++      expect(fn).toBeDefined();
++      expect(fn!([0x01, 0x02, 0x03], 0, 3)).toBe((0x01 + 0x02 + 0x03 + 0x55) & 0xff);
++    });
++
+     it('should support parameterized xor_final()', () => {
+@@ -34,6 +47,13 @@
+       expect(fn!([0x01, 0x02, 0x03], 0, 3)).toBe(0x01 ^ 0x02 ^ 0x03 ^ 0x55);
+     });
+ 
++    it('should support all byte-sized add_final values', () => {
++      expect(getChecksumFunction('add_final(0x00)' as any)).toBeDefined();
++      expect(getChecksumFunction('add_final(0xff)' as any)).toBeDefined();
++      expect(getChecksumFunction('add_final(0x100)' as any)).toBeNull();
++      expect(getChecksumFunction('add_final(0x5)' as any)).toBeNull();
++    });
++
+@@ -52,6 +72,26 @@
+   describe('calculateChecksum', () => {
++    it('should apply add_final to the entire frame including the header', () => {
++      const header = [0xaa, 0x55];
++      const data = [0x10, 0x20, 0x30];
++      const expected = (0xaa + 0x55 + 0x10 + 0x20 + 0x30 + 0x55) & 0xff;
++      expect(calculateChecksum(header, data, 'add_final(0x55)' as any)).toBe(expected);
++    });
++
++    it('should apply add_final_no_header to data only', () => {
++      const header = [0xaa, 0x55];
++      const data = [0x10, 0x20, 0x30];
++      const expected = (0x10 + 0x20 + 0x30 + 0x55) & 0xff;
++      expect(calculateChecksum(header, data, 'add_final_no_header(0x55)' as any)).toBe(expected);
++    });
++
++    it('should apply add_final to a buffer range', () => {
++      const frame = [0xaa, 0x10, 0x20, 0x30, 0x00];
++      const expected = (0xaa + 0x10 + 0x20 + 0x30 + 0x55) & 0xff;
++      expect(calculateChecksumFromBuffer(frame, 'add_final(0x55)' as any, 1, 4)).toBe(expected);
++    });
++
+@@ -91,6 +131,8 @@
+     it('should return "base" for other types', () => {
+       expect(getChecksumOffsetType('add')).toBe('base');
+       expect(getChecksumOffsetType('xor')).toBe('base');
++      expect(getChecksumOffsetType('add_final(0x55)' as any)).toBe('base');
++      expect(getChecksumOffsetType('add_final_no_header(0x55)' as any)).toBe('header');
+       expect(getChecksumOffsetType('xor_final(0x55)' as any)).toBe('base');
+*** Update File: packages/core/test/protocol/checksum_generation.test.ts
+@@ -30,6 +30,22 @@
+     expect(packet).toEqual([0xf7, 0x01, 0xf8]);
+   });
+ 
++  it('should generate 1-byte checksum when tx_checksum is set to add_final(0x55)', () => {
++    const device = createDevice({
++      tx_header: [0xf7],
++      tx_checksum: 'add_final(0x55)',
++    });
++    const packet = device.constructCommand('on');
++
++    // F7 + 01 + 55 = 4D
++    expect(packet).toEqual([0xf7, 0x01, 0x4d]);
++  });
++
++  it('should generate 1-byte checksum when tx_checksum is set to add_final_no_header(0x55)', () => {
++    const device = createDevice({
++      tx_header: [0xf7],
++      tx_checksum: 'add_final_no_header(0x55)',
++    });
++    const packet = device.constructCommand('on');
++
++    // 01 + 55 = 56
++    expect(packet).toEqual([0xf7, 0x01, 0x56]);
++  });
++
+*** Update File: packages/core/test/packet-parser/xor-final-checksum.test.ts
+@@ -1,7 +1,40 @@
+ import { describe, expect, it } from 'vitest';
+ import { PacketParser } from '../../src/protocol/packet-parser';
+ 
+-describe('PacketParser xor_final checksum', () => {
++describe('PacketParser final checksum', () => {
++  it('parses a fixed-length frame using add_final(0x55)', () => {
++    const parser = new PacketParser({
++      rx_header: [0xaa],
++      rx_length: 4,
++      rx_checksum: 'add_final(0x55)',
++    });
++
++    // 0xAA + 0x01 + 0x02 + 0x55 = 0x02 (mod 0x100)
++    const packet = Buffer.from([0xaa, 0x01, 0x02, 0x02]);
++    expect(parser.parseChunk(packet)).toEqual([packet]);
++  });
++
++  it('parses a fixed-length frame using add_final_no_header(0x55)', () => {
++    const parser = new PacketParser({
++      rx_header: [0xaa],
++      rx_length: 4,
++      rx_checksum: 'add_final_no_header(0x55)',
++    });
++
++    // 0x01 + 0x02 + 0x55 = 0x58; header 0xAA is excluded.
++    const packet = Buffer.from([0xaa, 0x01, 0x02, 0x58]);
++    expect(parser.parseChunk(packet)).toEqual([packet]);
++  });
++
++  it('rejects an incorrect add_final checksum', () => {
++    const parser = new PacketParser({
++      rx_header: [0xaa],
++      rx_length: 4,
++      rx_checksum: 'add_final(0x55)',
++    });
++
++    const packet = Buffer.from([0xaa, 0x01, 0x02, 0x03]);
++    expect(parser.parseChunk(packet)).toHaveLength(0);
++  });
+*** Update File: docs/config/packet-defaults.md
+@@ -51,6 +51,8 @@
+ | :--- | :--- | :--- |
+ | `add` | 헤더 + 데이터 | `Sum(All Bytes) & 0xFF` |
+ | `add_no_header` | 데이터 | `Sum(Data Bytes) & 0xFF` |
++| `add_final(0xNN)` | 헤더 + 데이터 | `(SUM(All Bytes) + 0xNN) & 0xFF` |
++| `add_final_no_header(0xNN)` | 데이터 | `(SUM(Data) + 0xNN) & 0xFF` |
+ | `xor` | 헤더 + 데이터 | `XOR(All Bytes)` |
+ | `xor_no_header` | 데이터 | `XOR(Data Bytes)` |
+*** PATCH
+          git apply --check /tmp/add-final.patch
+          git apply /tmp/add-final.patch
+      - name: Test
+        run: pnpm --filter @rs485-homenet/core exec vitest run test/protocol/checksum_utils.test.ts test/protocol/checksum_generation.test.ts test/packet-parser/xor-final-checksum.test.ts
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/core/src/protocol/utils/checksum.ts packages/core/src/protocol/packet-parser.ts packages/core/test/protocol/checksum_utils.test.ts packages/core/test/protocol/checksum_generation.test.ts packages/core/test/packet-parser/xor-final-checksum.test.ts docs/config/packet-defaults.md
+          git diff --cached --check
+          git commit -m 'feat: add parameterized add_final checksums'
+          git push

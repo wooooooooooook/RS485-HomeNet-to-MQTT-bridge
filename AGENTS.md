@@ -9,6 +9,8 @@ ui: Svelte (built and served by service)
 gallery: per-vendor device YAML preset collection. list.json/list_new.json are auto-generated on deploy; no manual run needed.
 docs: VitePress documentation site.
 
+Addon versioning: `hassio-addon/config.yaml` and `hassio-addon/config-matter.yaml` versions are updated by the release CI/CD workflow. Do not manually change addon version fields in feature or fix PRs unless the task explicitly concerns the release/versioning workflow.
+
 TypeScript (ESM, 2-space).
 No hardcoded config.
 Inject typed options.

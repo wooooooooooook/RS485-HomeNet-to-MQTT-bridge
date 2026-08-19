@@ -36,7 +36,6 @@ homenet_bridge:
           data: [0x00, 0xA0, 0x00, 0x00, 0x00, 0x00]
           header: true
           checksum: true
-          portId: lgap
 
   climate:
     - id: 'lgap_zone_0'

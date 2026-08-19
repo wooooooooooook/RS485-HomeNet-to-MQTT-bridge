@@ -5,8 +5,7 @@ v3.2.0
 - feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원
   - XOR 결과에 지정한 최종 XOR 값을 한 번 더 적용하는 체크섬 형식을 지원합니다.
   - `xor_final(0xNN)`은 헤더를 포함하고, `xor_final_no_header(0xNN)`은 헤더를 제외한 데이터에 적용합니다.
-  - 기존 `xor` 체크섬과 같은 방식으로 패킷을 빠르게 검색하므로 패킷이 많이 오가는 환경에서도 불필요한 성능 저하를 줄였습니다.
-- improvement: `xor_final` 체크섬을 사용하는 장치의 패킷 검색 및 검증 안정성 개선
+  - 기존 `xor` 체크섬과 같은 방식으로 패킷을 빠르게 검색합니다.
 
 v3.1.2 (matter 전용)
 - fix: Matter에서 기기를 조작한 직후 상태가 이전 상태로 되돌아가거나 명령 처리 중 오류가 발생할 수 있는 문제 수정
@@ -80,7 +79,7 @@ v2.15.0 - 2.15.1
 
 
 v2.14.0
-- feat: 자동화 trigger에 id를 추가하여 이를 통해 자동화내에서 분기처리가 가능하도록 했습니다. [문서보기](https://homenet2mqtt-docs.vercel.app/guide/automation.html#%E1%84%90%E1%85%B3%E1%84%85%E1%85%B5%E1%84%80%E1%85%A5-triggers)
+- feat: 자동화 trigger에 id를 추가하여 이를 통해 자동화내에서 분기처리가 가능하도록 했습니다. [문서보기](https://homenet2mqtt-docs.vercel.app/guide/automation.html#%E1%84%90%E1%84%AE%E1%84%85%E1%85%B5%E1%84%80%E1%85%A5-triggers)
 - feat: 자동화 action - update_state의 target_id가 CEL도 받을 수 있도록 개선. [문서보기](https://homenet2mqtt-docs.vercel.app/guide/automation.html#update-state)
 - fix: `restore_mode` 사용 시 복원된 상태가 MQTT 브로커로 다시 발행되지 않아 대시보드에 상태 정보가 유실되던 문제 수정
 - fix: 자동화 `send_packet` 실행 시 CEL 평가 오류 등이 발생했을 때 에러로 처리되어 활동로그에 기록되도록 개선

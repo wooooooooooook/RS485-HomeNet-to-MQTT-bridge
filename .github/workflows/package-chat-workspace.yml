@@ -1,0 +1,99 @@
+name: Package workspace for ChatGPT
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/package-chat-workspace.yml
+
+permissions:
+  contents: read
+
+env:
+  CHUNK_SIZE: 450m
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Capture source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p workspace-artifacts
+          {
+            printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+            printf 'commit=%s\n' "$GITHUB_SHA"
+            printf 'ref=%s\n' "$GITHUB_REF"
+            printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+            printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+          } > workspace-artifacts/SOURCE-IDENTITY.txt
+
+      - name: Package repository source
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar --exclude=.git --exclude=.github/workflows/package-chat-workspace.yml \
+            -czf workspace-artifacts/source.tar.gz .
+
+      - name: Detect pnpm project
+        id: pnpm_project
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pnpm and dependencies
+        if: steps.pnpm_project.outputs.enabled == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+          run_install: false
+
+      - name: Setup Node.js
+        if: steps.pnpm_project.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Populate pnpm store
+        if: steps.pnpm_project.outputs.enabled == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Package pnpm store
+        if: steps.pnpm_project.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          store_path="$(pnpm store path)"
+          tar -czf workspace-artifacts/pnpm-store.tar.gz -C "$store_path" .
+
+      - name: Split artifacts into transport-sized chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p workspace-artifacts/chunks
+          for archive in workspace-artifacts/*.tar.gz; do
+            name="$(basename "$archive")"
+            split -b "$CHUNK_SIZE" -d -a 3 "$archive" "workspace-artifacts/chunks/${name}.part-"
+          done
+          rm workspace-artifacts/*.tar.gz
+          sha256sum workspace-artifacts/chunks/* > workspace-artifacts/SHA256SUMS
+          find workspace-artifacts -type f -printf '%p %s bytes\n' | sort > workspace-artifacts/MANIFEST.txt
+
+      - name: Upload workspace source and dependency artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-workspace
+          path: workspace-artifacts/
+          retention-days: 7
+          compression-level: 0

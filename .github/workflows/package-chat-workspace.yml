@@ -1,16 +1,21 @@
 name: Package workspace for ChatGPT
 
+# Transport helper for sandboxed ChatGPT/Codex sessions.
+# It is intentionally triggered only when this workflow file is added/changed on
+# a branch, so installing it does not cause every subsequent repository push to
+# package the workspace again. Run it manually with workflow_dispatch when needed.
 on:
   workflow_dispatch:
   push:
-    branches:
-      - docs/xor-final-documentation
+    paths:
+      - .github/workflows/package-chat-workspace.yml
 
 permissions:
   contents: read
 
 env:
   CHUNK_SIZE: 450m
+  ARTIFACT_NAME: chat-workspace
 
 jobs:
   package:
@@ -26,29 +31,43 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p workspace-artifacts
+          archive="workspace-artifacts/${GITHUB_REPOSITORY#*/}-source.tar.gz"
           tar --exclude=.git --exclude=.github/workflows/package-chat-workspace.yml \
-            -czf workspace-artifacts/homenet2mqtt-source.tar.gz .
+            -czf "$archive" .
 
-      - name: Install pnpm and dependencies
+      - name: Detect pnpm project
+        id: pnpm
+        shell: bash
+        run: |
+          if [[ -f pnpm-lock.yaml ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pnpm
+        if: steps.pnpm.outputs.enabled == 'true'
         uses: pnpm/action-setup@v4
         with:
           version: 10.18.2
           run_install: false
 
       - name: Setup Node.js
+        if: steps.pnpm.outputs.enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
       - name: Populate pnpm store
+        if: steps.pnpm.outputs.enabled == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Package pnpm store
+        if: steps.pnpm.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          pnpm store path
           store_path="$(pnpm store path)"
           tar -czf workspace-artifacts/pnpm-store.tar.gz -C "$store_path" .
 
@@ -57,7 +76,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p workspace-artifacts/chunks
-          for archive in workspace-artifacts/*.tar.gz; do
+          shopt -s nullglob
+          archives=(workspace-artifacts/*.tar.gz)
+          if ((${#archives[@]} == 0)); then
+            echo "No workspace archives were created" >&2
+            exit 1
+          fi
+          for archive in "${archives[@]}"; do
             name="$(basename "$archive")"
             split -b "$CHUNK_SIZE" -d -a 3 "$archive" "workspace-artifacts/chunks/${name}.part-"
           done
@@ -68,7 +93,7 @@ jobs:
       - name: Upload workspace source and dependency artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: homenet2mqtt-chat-workspace
+          name: ${{ env.ARTIFACT_NAME }}
           path: workspace-artifacts/
           retention-days: 7
           compression-level: 0

@@ -150,3 +150,21 @@ entities:
         xstr == 'high' ?
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x30), int(get_from_state('temperature_target', 22)) - 15]] :
           [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x40), int(get_from_state('temperature_target', 22)) - 15]]
+
+automation:
+  - id: lgap_polling
+    name: 'LGAP 실내기 상태 polling'
+    trigger:
+      - type: startup
+      - type: schedule
+        every: '5s'
+    then:
+      - $repeat:
+          count: '{{unit_count}}'
+          as: i
+          start: 0
+        $nested:
+          - action: send_packet
+            data: [0x00, 0xA0, '{{i}}', 0x00, 0x00, 0x00]
+            header: true
+            checksum: true

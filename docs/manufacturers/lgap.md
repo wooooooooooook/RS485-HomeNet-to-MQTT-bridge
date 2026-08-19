@@ -33,6 +33,39 @@ Homenet2MQTT의 `xor_final(0x55)`는 체크섬 범위의 바이트를 XOR한 뒤
 
 `tx_header`는 `esphome-lgap`의 현재 예제 설정에서 사용하는 `0x80`으로 잡았습니다. LGAP 프로토콜 문서에서는 TX0가 configurable이라고 설명하므로, 실제 설치 환경에서 캡처한 프레임과 일치하는지 확인해야 합니다.
 
+## Polling 자동화
+
+LGAP ODU는 실내기 상태를 지속적으로 broadcast하지 않으므로 상태 프레임을 받으려면 각 zone에 read request를 보내야 합니다. `lgap/climate.yaml` 갤러리 스니펫은 선택한 `unit_count`에 맞춰 이 polling automation을 자동으로 구성합니다.
+
+갤러리에서 `unit_count: 3`으로 확장하면 하나의 automation이 생성되며, 시작 시와 5초마다 다음과 같이 zone 0~2를 순서대로 조회합니다.
+
+```yaml
+automation:
+  - id: lgap_polling
+    name: 'LGAP 실내기 상태 polling'
+    trigger:
+      - type: startup
+      - type: schedule
+        every: '5s'
+    then:
+      - action: send_packet
+        data: [0x00, 0xA0, 0x00, 0x00, 0x00, 0x00]
+        header: true
+        checksum: true
+      - action: send_packet
+        data: [0x00, 0xA0, 0x01, 0x00, 0x00, 0x00]
+        header: true
+        checksum: true
+      - action: send_packet
+        data: [0x00, 0xA0, 0x02, 0x00, 0x00, 0x00]
+        header: true
+        checksum: true
+```
+
+각 `send_packet`의 `data`는 TX header와 checksum을 제외한 payload입니다. `header: true`와 `checksum: true`를 사용하면 `packet_defaults.tx_header`와 `packet_defaults.tx_checksum`이 적용됩니다.
+
+이 automation은 해당 bridge의 serial context에서 실행되므로 `send_packet`에 `portId`를 별도로 지정할 필요가 없습니다. 실제 구성에서는 `serial.portId`가 사용하는 RS485 포트를 정의합니다.
+
 ## RX 상태 프레임
 
 ```text
@@ -83,7 +116,7 @@ Homenet2MQTT의 `xor_final(0x55)`는 체크섬 범위의 바이트를 XOR한 뒤
 
 Homenet2MQTT 갤러리에서 다음 스니펫을 사용할 수 있습니다.
 
-- `lgap/climate.yaml` — zone별 LG 에어컨 Climate 엔티티
+- `lgap/climate.yaml` — zone별 LG 에어컨 Climate 엔티티와 자동 polling
 - `lgap/sensors.yaml` — 에러/배관온도/부하 진단 센서
 - `lgap/requirements.json` — 4800 8N1, 프레임 길이 및 LGAP checksum 요구사항
 

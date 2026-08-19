@@ -3,7 +3,10 @@
 
 v3.2.0
 - feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원
-- 
+  - XOR 결과에 지정한 최종 XOR 값을 한 번 더 적용하는 체크섬 형식을 지원합니다.
+  - `xor_final(0xNN)`은 헤더를 포함하고, `xor_final_no_header(0xNN)`은 헤더를 제외한 데이터에 적용합니다.
+  - 기존 `xor` 체크섬과 같은 방식으로 패킷을 빠르게 검색하므로 패킷이 많이 오가는 환경에서도 불필요한 성능 저하를 줄였습니다.
+- improvement: `xor_final` 체크섬을 사용하는 장치의 패킷 검색 및 검증 안정성 개선
 
 v3.1.2 (matter 전용)
 - fix: Matter에서 기기를 조작한 직후 상태가 이전 상태로 되돌아가거나 명령 처리 중 오류가 발생할 수 있는 문제 수정

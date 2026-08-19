@@ -1,0 +1,15 @@
+{
+  "serial": {
+    "baud_rate": 4800,
+    "data_bits": 8,
+    "parity": "none",
+    "stop_bits": 1
+  },
+  "packet_defaults": {
+    "rx_header": [16],
+    "tx_header": [128],
+    "rx_length": 16,
+    "rx_checksum": "xor_final(0x55)",
+    "tx_checksum": "xor_final(0x55)"
+  }
+}

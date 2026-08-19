@@ -38,6 +38,7 @@ jobs:
       # When changing repository files through ChatGPT, update this comment and push
       # to trigger packaging; then retrieve the generated chat-workspace artifact
       # and use that artifact as the source of truth for subsequent edits/PR updates.
+      # Task handoff: add_final/add_final_no_header checksum support.
       - name: Package repository source
         shell: bash
         run: |

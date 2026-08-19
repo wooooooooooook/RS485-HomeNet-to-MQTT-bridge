@@ -19,7 +19,6 @@ describe('Security Check', () => {
       console.log('Result:', JSON.stringify(result, null, 2));
       throw new Error('Should have failed execution of process.cwd()');
     } catch (e: any) {
-      // CEL error message for unknown variable
       expect(e.message).toContain('Unknown variable: process');
     }
   });
@@ -37,7 +36,7 @@ describe('Security Check', () => {
       },
     };
     const result = expandGalleryTemplate(snippet as any, { num: 5 });
-    // result comes back as a number if the whole string was a template expression and evaluated to a number
+    // result comes back as a number if the whole string is a template expression and evaluated to a number
     expect((result.entities as any).light[0].name).toBe(10);
   });
 
@@ -151,8 +150,6 @@ describe('$if conditional processing', () => {
     };
     const result = expandGalleryTemplate(snippet as any, {});
     const lights = (result.entities as any).light;
-    // Room 0: light_1, light_2 (count=2)
-    // Room 1: light_1 only (count=1)
     expect(lights).toHaveLength(3);
     expect(lights[0].id).toBe('room_0_light_1');
     expect(lights[1].id).toBe('room_0_light_2');
@@ -190,7 +187,6 @@ describe('Parameter Defaults', () => {
       },
     };
 
-    // Simulate discovery result where light_count is missing for one item
     const discoveryResult = {
       rooms: [{ room_idx: 0 }, { room_idx: 1, light_count: 3 }],
     };
@@ -199,9 +195,52 @@ describe('Parameter Defaults', () => {
     const lights = (result.entities as any).light;
 
     expect(lights).toHaveLength(2);
-    // Room 0: should use default light_count = 2
     expect(lights[0].name).toBe('Count: 2');
-    // Room 1: should use provided light_count = 3
     expect(lights[1].name).toBe('Count: 3');
+  });
+});
+
+describe('LGAP gallery polling automation', () => {
+  it('expands polling into one read request per configured zone', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const { load } = await import('js-yaml');
+
+    const source = await readFile(
+      new URL('../../../../gallery/lgap/climate.yaml', import.meta.url),
+      'utf8',
+    );
+    const snippet = load(source) as any;
+    const result = expandGalleryTemplate(snippet, { unit_count: 3 });
+
+    expect(result.automation).toEqual([
+      {
+        id: 'lgap_polling',
+        name: 'LGAP 실내기 상태 polling',
+        trigger: [
+          { type: 'startup' },
+          { type: 'schedule', every: '5s' },
+        ],
+        then: [
+          {
+            action: 'send_packet',
+            data: [0x00, 0xa0, 0x00, 0x00, 0x00, 0x00],
+            header: true,
+            checksum: true,
+          },
+          {
+            action: 'send_packet',
+            data: [0x00, 0xa0, 0x01, 0x00, 0x00, 0x00],
+            header: true,
+            checksum: true,
+          },
+          {
+            action: 'send_packet',
+            data: [0x00, 0xa0, 0x02, 0x00, 0x00, 0x00],
+            header: true,
+            checksum: true,
+          },
+        ],
+      },
+    ]);
   });
 });

@@ -1,0 +1,170 @@
+meta:
+  name: "LG 에어컨 (LGAP RS485)"
+  name_en: "LG Air Conditioner (LGAP RS485)"
+  description: |
+    LGAP(LG Air Conditioner Protocol) 기반 LG HVAC 실내기 제어 설정입니다.
+    4,800 bps 8N1 RS485 통신을 사용하며 ODU를 통해 zone별 상태를 polling합니다.
+
+    jourdant/esphome-lgap의 공개 프로토콜 분석을 기반으로 합니다.
+    수신 상태 프레임은 16바이트, 송신 제어 프레임은 8바이트이며
+    체크섬은 전체 프레임 바이트 XOR 결과에 0x55를 최종 XOR하는 방식입니다.
+  description_en: |
+    LG HVAC configuration based on the LGAP RS485 protocol.
+    Uses 4800 bps 8N1 and polls each indoor-unit zone through the ODU.
+    Based on the public protocol analysis in jourdant/esphome-lgap.
+  version: "1.0.0"
+  author: "homenet2mqtt"
+  tags: ["climate", "hvac", "aircon", "lg", "lgap", "rs485"]
+
+parameters:
+  - name: unit_count
+    type: integer
+    default: 1
+    min: 1
+    max: 16
+    label: "실내기 수"
+    label_en: "Number of Indoor Units"
+    description: "LGAP zone으로 제어할 실내기 수입니다."
+
+discovery:
+  match:
+    data: [0x10, 0x00, 0xA0]
+    mask: [0xFF, 0x00, 0xFF]
+    offset: 0
+  dimensions:
+    - parameter: "unit_count"
+      offset: 4
+  inference:
+    strategy: "count"
+  ui:
+    label: "LGAP 실내기"
+    label_en: "LGAP Indoor Units"
+    badge: "LGAP"
+    summary: "LGAP 16-byte 상태 프레임에서 zone 수를 자동 추정합니다."
+    summary_en: "Infers the number of zones from LGAP 16-byte status frames."
+
+entities:
+  climate:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_zone_{{i}}'
+      name: 'LG 에어컨 {{i + 1}}'
+      visual:
+        min_temperature: 16
+        max_temperature: 30
+        temperature_step: 1
+      modes: ["off", "auto", "cool", "heat", "dry", "fan_only"]
+      fan_modes: ["auto", "low", "medium", "high"]
+
+      # RX: [0x10, status, 0xA0, unknown, zone, error, mode|fan, target,
+      #      room, pipe_in, pipe_out, active_load, power_flag, design_load, total_load, checksum]
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+
+      state_temperature_target: >-
+        double(bitAnd(data[7], 15)) + 15.0
+      state_temperature_current: >-
+        (192.0 - double(data[8])) / 3.0
+
+      # RX1 bit0 = power. RX6 bits0-2 = mode.
+      state_off:
+        index: 1
+        data: [0x00]
+        mask: [0x01]
+      state_heat:
+        index: 6
+        data: [0x04]
+        mask: [0x07]
+      state_cool:
+        index: 6
+        data: [0x00]
+        mask: [0x07]
+      state_dry:
+        index: 6
+        data: [0x01]
+        mask: [0x07]
+      state_fan_only:
+        index: 6
+        data: [0x02]
+        mask: [0x07]
+      state_auto:
+        index: 6
+        data: [0x03]
+        mask: [0x07]
+
+      # RX6 bits4-6 = fan speed: 1=low, 2=medium, 3=high, 4=auto.
+      state_fan_auto:
+        index: 6
+        data: [0x40]
+        mask: [0x70]
+      state_fan_low:
+        index: 6
+        data: [0x10]
+        mask: [0x70]
+      state_fan_medium:
+        index: 6
+        data: [0x20]
+        mask: [0x70]
+      state_fan_high:
+        index: 6
+        data: [0x30]
+        mask: [0x70]
+
+      # TX: [0x80, 0x00, 0xA0, zone, ON|EXE|lock|plasma,
+      #      mode|fan, target, checksum]
+      # command_* data excludes the 0x80 header and checksum.
+      command_off:
+        data: [0x00, 0xA0, '{{i}}', 0x02, 0x00, 0x07]
+      command_heat: >-
+        [[0x00, 0xA0, {{i}}, 0x03, 0x44, int(get_from_state('temperature_target', 22)) - 15]]
+      command_cool: >-
+        [[0x00, 0xA0, {{i}}, 0x03, 0x40, int(get_from_state('temperature_target', 22)) - 15]]
+      command_dry: >-
+        [[0x00, 0xA0, {{i}}, 0x03, 0x41, int(get_from_state('temperature_target', 22)) - 15]]
+      command_fan_only: >-
+        [[0x00, 0xA0, {{i}}, 0x03, 0x42, int(get_from_state('temperature_target', 22)) - 15]]
+      command_auto: >-
+        [[0x00, 0xA0, {{i}}, 0x03, 0x43, int(get_from_state('temperature_target', 22)) - 15]]
+
+      command_temperature: >-
+        [[0x00, 0xA0, {{i}}, 0x03,
+          bitOr(
+            get_from_state('mode', 'cool') == 'heat' ? 0x04 :
+            get_from_state('mode', 'cool') == 'dry' ? 0x01 :
+            get_from_state('mode', 'cool') == 'fan_only' ? 0x02 :
+            get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00,
+            get_from_state('fan_mode', 'auto') == 'low' ? 0x10 :
+            get_from_state('fan_mode', 'auto') == 'medium' ? 0x20 :
+            get_from_state('fan_mode', 'auto') == 'high' ? 0x30 : 0x40),
+          int(x) - 15]]
+
+      command_fan_mode: >-
+        xstr == 'low' ?
+          [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x10), int(get_from_state('temperature_target', 22)) - 15]] :
+        xstr == 'medium' ?
+          [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x20), int(get_from_state('temperature_target', 22)) - 15]] :
+        xstr == 'high' ?
+          [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x30), int(get_from_state('temperature_target', 22)) - 15]] :
+          [[0x00, 0xA0, {{i}}, 0x03, bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 : get_from_state('mode', 'cool') == 'dry' ? 0x01 : get_from_state('mode', 'cool') == 'fan_only' ? 0x02 : get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x40), int(get_from_state('temperature_target', 22)) - 15]]
+
+automation:
+  - id: lgap_polling
+    name: 'LGAP 실내기 상태 polling'
+    trigger:
+      - type: startup
+      - type: schedule
+        every: '5s'
+    then:
+      - $repeat:
+          count: '{{unit_count}}'
+          as: i
+          start: 0
+        $nested:
+          - action: send_packet
+            data: [0x00, 0xA0, '{{i}}', 0x00, 0x00, 0x00]
+            header: true
+            checksum: true

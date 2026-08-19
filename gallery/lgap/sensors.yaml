@@ -1,0 +1,105 @@
+meta:
+  name: "LGAP 진단 센서"
+  name_en: "LGAP Diagnostic Sensors"
+  description: "LGAP 응답의 에러 코드, 배관 온도, 부하 정보를 노출합니다."
+  description_en: "Exposes LGAP error, pipe temperature and load information."
+  version: "1.0.0"
+  author: "homenet2mqtt"
+  tags: ["sensor", "hvac", "aircon", "lg", "lgap", "rs485"]
+
+parameters:
+  - name: unit_count
+    type: integer
+    default: 1
+    min: 1
+    max: 16
+    label: "실내기 수"
+    label_en: "Number of Indoor Units"
+
+entities:
+  sensor:
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_error_{{i}}'
+      name: 'LG 에러 코드 {{i + 1}}'
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: 'data[5]'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_pipe_in_{{i}}'
+      name: 'LG 배관 입구 온도 {{i + 1}}'
+      unit: "°C"
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: '(192.0 - double(data[9])) / 3.0'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_pipe_out_{{i}}'
+      name: 'LG 배관 출구 온도 {{i + 1}}'
+      unit: "°C"
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: '(192.0 - double(data[10])) / 3.0'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_active_load_{{i}}'
+      name: 'LG Zone Active Load {{i + 1}}'
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: 'data[11]'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_power_state_{{i}}'
+      name: 'LG Zone Power State {{i + 1}}'
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: 'data[12]'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_design_load_{{i}}'
+      name: 'LG Zone Design Load {{i + 1}}'
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: 'data[13]'
+
+    - $repeat:
+        count: '{{unit_count}}'
+        as: i
+        start: 0
+      id: 'lgap_odu_load_{{i}}'
+      name: 'LG ODU Total Load {{i + 1}}'
+      state:
+        data: [0x10, 0x00, 0xA0, 0x00, '{{i}}']
+        mask: [0xFF, 0x00, 0xFF, 0x00, 0xFF]
+        index: 0
+      state_value: 'data[14]'

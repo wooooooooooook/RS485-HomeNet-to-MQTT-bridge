@@ -2,10 +2,10 @@
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
 v3.2.0
+- add: LG airconditioner protocol 지원(https://github.com/jourdant/esphome-lgap)
 - feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원
-  - XOR 결과에 지정한 최종 XOR 값을 한 번 더 적용하는 체크섬 형식을 지원합니다.
-  - `xor_final(0xNN)`은 헤더를 포함하고, `xor_final_no_header(0xNN)`은 헤더를 제외한 데이터에 적용합니다.
-  - 기존 `xor` 체크섬과 같은 방식으로 패킷을 빠르게 검색합니다.
+- fix: samsung hvac설정 중 command변수가 `xstr`대신 `x`로 잘못들어간 부분 수정
+
 
 v3.1.2 (matter 전용)
 - fix: Matter에서 기기를 조작한 직후 상태가 이전 상태로 되돌아가거나 명령 처리 중 오류가 발생할 수 있는 문제 수정

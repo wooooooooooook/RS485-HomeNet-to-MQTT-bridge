@@ -39,6 +39,7 @@ jobs:
       # That push packages the exact branch commit. Download chat-workspace,
       # extract it locally/sandboxed, edit from that exact source, then publish
       # the resulting changes back to the task branch/PR.
+      # Handoff protocol: source identity + checksums + manifest are mandatory.
       - name: Package repository source
         shell: bash
         run: |

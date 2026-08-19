@@ -1,6 +1,10 @@
 ** ⚠️ 업데이트 전 백업 권장 **
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
+v3.2.0
+- feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원
+- 
+
 v3.1.2 (matter 전용)
 - fix: Matter에서 기기를 조작한 직후 상태가 이전 상태로 되돌아가거나 명령 처리 중 오류가 발생할 수 있는 문제 수정
   - 환기장치(fan), 밝기, 잠금, 선택(Select) 관련 기기에서 발생할 수 있었습니다.

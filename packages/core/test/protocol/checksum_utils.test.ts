@@ -24,7 +24,7 @@ describe('Checksum Utils', () => {
     it('should support parameterized xor_final()', () => {
       const fn = getChecksumFunction('xor_final(0x55)' as any);
       expect(fn).toBeDefined();
-      expect(fn!([0x01, 0x02, 0x03], 0, 3)).toBe((0x01 ^ 0x02 ^ 0x03) ^ 0x55);
+      expect(fn!([0x01, 0x02, 0x03], 0, 3)).toBe(0x01 ^ 0x02 ^ 0x03 ^ 0x55);
     });
 
     it('should support all byte-sized xor_final values', () => {

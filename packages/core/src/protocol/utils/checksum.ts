@@ -2,11 +2,13 @@ import type { ChecksumType, Checksum2Type } from '../types.js';
 
 export type { ChecksumType, Checksum2Type };
 
-const XOR_FINAL_TYPES = Array.from({ length: 256 }, (_, value) =>
-  `xor_final(0x${value.toString(16).padStart(2, '0')})`,
+const XOR_FINAL_TYPES = Array.from(
+  { length: 256 },
+  (_, value) => `xor_final(0x${value.toString(16).padStart(2, '0')})`,
 ) as ChecksumType[];
-const XOR_FINAL_NO_HEADER_TYPES = Array.from({ length: 256 }, (_, value) =>
-  `xor_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
+const XOR_FINAL_NO_HEADER_TYPES = Array.from(
+  { length: 256 },
+  (_, value) => `xor_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
 ) as ChecksumType[];
 
 export const STANDARD_CHECKSUM_TYPES = [
@@ -310,7 +312,8 @@ export function calculateChecksumFromBuffer(
   const resolved = resolveChecksumType(type);
   if (resolved.kind === 'xor_final') {
     return (
-      xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^ resolved.finalXor
+      xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^
+      resolved.finalXor
     );
   }
   if (resolved.kind === 'crc8') {

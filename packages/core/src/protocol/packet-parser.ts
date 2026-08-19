@@ -45,6 +45,7 @@ export class PacketParser {
   private validHeaderCount: number = 0;
   private isStandard1Byte: boolean = false;
   private isStandard2Byte: boolean = false;
+  private xorFinalValue: number | null = null;
 
   // Optimized checksum function (bypasses switch/call overhead)
   private checksumFn: ((buffer: ByteArray, start: number, end: number) => number) | null = null;
@@ -123,6 +124,13 @@ export class PacketParser {
       typeof checksumType === 'string' &&
       !this.isChecksumNone &&
       PacketParser.CHECKSUM_TYPES.has(checksumType);
+
+    if (typeof checksumType === 'string') {
+      const xorFinalMatch = /^xor_final(?:_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(checksumType);
+      if (xorFinalMatch) {
+        this.xorFinalValue = Number.parseInt(xorFinalMatch[1], 16);
+      }
+    }
 
     // Bolt: Pre-resolve checksum function
     if (this.isStandard1Byte) {
@@ -334,7 +342,7 @@ export class PacketParser {
           // Threshold 16 is empirically determined (256/16 = 16x skips per match).
           const useSparseScan = this.validHeaderCount > 0 && this.validHeaderCount < 16;
 
-          if (!useSparseScan && this.isStandard1Byte && !isBestinSum && !typeStr.startsWith('xor_final(') && !typeStr.startsWith('xor_final_no_header(')) {
+          if (!useSparseScan && this.isStandard1Byte && !isBestinSum) {
             useSlidingWindow = true;
             const isNoHeader =
               typeStr.includes('no_header') || isSamsungRx || isSamsungTx || isSamsungXor;
@@ -446,6 +454,8 @@ export class PacketParser {
                   }
                 } else if (isSamsungXor) {
                   finalChecksum &= 0x7f;
+                } else if (this.xorFinalValue !== null) {
+                  finalChecksum ^= this.xorFinalValue;
                 }
 
                 const expected = this.buffer[currentOffset + checksumIndexRel];
@@ -608,6 +618,8 @@ export class PacketParser {
                 }
               } else if (isSamsungXor) {
                 finalChecksum &= 0x7f;
+              } else if (this.xorFinalValue !== null) {
+                finalChecksum ^= this.xorFinalValue;
               }
 
               const expected = this.buffer[baseOffset + len - 1 - footerLen];
@@ -858,6 +870,8 @@ export class PacketParser {
                 }
               } else if (isSamsungXor) {
                 finalChecksum &= 0x7f;
+              } else if (this.xorFinalValue !== null) {
+                finalChecksum ^= this.xorFinalValue;
               }
 
               const expected = this.buffer[baseOffset + len - 1];

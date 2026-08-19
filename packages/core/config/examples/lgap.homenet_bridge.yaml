@@ -18,10 +18,23 @@ homenet_bridge:
     tx_header: [0x80]
     rx_length: 16
 
-  # Example for LGAP zone 0.
-  # RX: [0x10, status, 0xA0, unknown, zone, error, mode|fan, target,
-  #      room, pipe_in, pipe_out, active_load, power_flag, design_load,
-  #      total_load, checksum]
+  # LGAP ODU does not continuously publish indoor-unit state.
+  # Poll each configured zone with the status-request frame documented
+  # by jourdant/esphome-lgap. RX responses are matched by zone in climate.
+  automation:
+    - id: lgap_poll_zone_0
+      name: 'LGAP Zone 0 상태 polling'
+      trigger:
+        - type: startup
+        - type: schedule
+          every: '5s'
+      then:
+        - action: send_packet
+          data: [0x00, 0xA0, 0x00]
+          header: true
+          footer: false
+          checksum: true
+
   climate:
     - id: 'lgap_zone_0'
       name: 'LG 에어컨 1'
@@ -84,10 +97,6 @@ homenet_bridge:
         data: [0x30]
         mask: [0x70]
 
-      # TX: [0x80, 0x00, 0xA0, zone, ON|EXE|lock|plasma,
-      #      mode|fan, target, checksum].
-      # command_* data excludes the 0x80 header; packet_defaults adds it
-      # and calculates the checksum with xor_final(0x55).
       command_off:
         data: [0x00, 0xA0, 0x00, 0x02, 0x00, 0x07]
       command_heat: >-
@@ -119,33 +128,10 @@ homenet_bridge:
           int(x) - 15]]
 
       command_fan_mode: >-
-        x == 'low' ?
-          [[0x00, 0xA0, 0x00, 0x03,
-            bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 :
-                  get_from_state('mode', 'cool') == 'dry' ? 0x01 :
-                  get_from_state('mode', 'cool') == 'fan_only' ? 0x02 :
-                  get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x10),
-            int(get_from_state('temperature_target', 22)) - 15]] :
-        x == 'medium' ?
-          [[0x00, 0xA0, 0x00, 0x03,
-            bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 :
-                  get_from_state('mode', 'cool') == 'dry' ? 0x01 :
-                  get_from_state('mode', 'cool') == 'fan_only' ? 0x02 :
-                  get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x20),
-            int(get_from_state('temperature_target', 22)) - 15]] :
-        x == 'high' ?
-          [[0x00, 0xA0, 0x00, 0x03,
-            bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 :
-                  get_from_state('mode', 'cool') == 'dry' ? 0x01 :
-                  get_from_state('mode', 'cool') == 'fan_only' ? 0x02 :
-                  get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x30),
-            int(get_from_state('temperature_target', 22)) - 15]] :
-          [[0x00, 0xA0, 0x00, 0x03,
-            bitOr(get_from_state('mode', 'cool') == 'heat' ? 0x04 :
-                  get_from_state('mode', 'cool') == 'dry' ? 0x01 :
-                  get_from_state('mode', 'cool') == 'fan_only' ? 0x02 :
-                  get_from_state('mode', 'cool') == 'auto' ? 0x03 : 0x00, 0x40),
-            int(get_from_state('temperature_target', 22)) - 15]]
+        x == 'low' ? [[0x00, 0xA0, 0x00, 0x03, 0x10, int(get_from_state('temperature_target', 22)) - 15]] :
+        x == 'medium' ? [[0x00, 0xA0, 0x00, 0x03, 0x20, int(get_from_state('temperature_target', 22)) - 15]] :
+        x == 'high' ? [[0x00, 0xA0, 0x00, 0x03, 0x30, int(get_from_state('temperature_target', 22)) - 15]] :
+        [[0x00, 0xA0, 0x00, 0x03, 0x40, int(get_from_state('temperature_target', 22)) - 15]]
 
   sensor:
     - id: 'lgap_error_0'

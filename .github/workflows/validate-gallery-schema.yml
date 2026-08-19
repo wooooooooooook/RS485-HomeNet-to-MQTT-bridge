@@ -6,10 +6,14 @@ on:
       - 'gallery/**/*.yaml'
       - 'gallery/**/*.yml'
       - 'gallery/**/requirements.json'
+      - 'packages/core/config/examples/**/*.yaml'
+      - 'packages/core/config/examples/**/*.yml'
       - 'packages/core/static/schema/homenet-bridge.schema.json'
       - 'scripts/validate-gallery-schema.cjs'
       - 'scripts/validate-gallery-schema-v2.cjs'
       - 'packages/core/src/config/types.ts'
+      - 'packages/core/src/config/index.ts'
+      - 'packages/core/test/config-examples.test.ts'
       - 'packages/service/src/utils/gallery-template.ts'
       - '.github/workflows/validate-gallery-schema.yml'
   push:
@@ -18,10 +22,14 @@ on:
       - 'gallery/**/*.yaml'
       - 'gallery/**/*.yml'
       - 'gallery/**/requirements.json'
+      - 'packages/core/config/examples/**/*.yaml'
+      - 'packages/core/config/examples/**/*.yml'
       - 'packages/core/static/schema/homenet-bridge.schema.json'
       - 'scripts/validate-gallery-schema.cjs'
       - 'scripts/validate-gallery-schema-v2.cjs'
       - 'packages/core/src/config/types.ts'
+      - 'packages/core/src/config/index.ts'
+      - 'packages/core/test/config-examples.test.ts'
       - 'packages/service/src/utils/gallery-template.ts'
       - '.github/workflows/validate-gallery-schema.yml'
   workflow_dispatch:
@@ -50,3 +58,6 @@ jobs:
 
       - name: Validate gallery files against core schema
         run: node scripts/validate-gallery-schema.cjs
+
+      - name: Validate core config examples
+        run: pnpm exec vitest run packages/core/test/config-examples.test.ts

@@ -29,8 +29,6 @@ homenet_bridge:
     tx_checksum: xor_final(0x55)
 ```
 
-Homenet2MQTT의 `xor_final(0x55)`는 체크섬 범위의 바이트를 XOR한 뒤 `0x55`를 한 번 더 XOR합니다. 기본 RX/TX 체크섬 범위에는 각각 프레임 헤더가 포함되며 체크섬 바이트 자체는 계산에 포함되지 않습니다. 자세한 내용은 `docs/config/xor-final-checksum.md`를 참고하세요.
-
 `tx_header`는 `esphome-lgap`의 현재 예제 설정에서 사용하는 `0x80`으로 잡았습니다. LGAP 프로토콜 문서에서는 TX0가 configurable이라고 설명하므로, 실제 설치 환경에서 캡처한 프레임과 일치하는지 확인해야 합니다.
 
 ## Polling 자동화
@@ -64,7 +62,6 @@ automation:
 
 각 `send_packet`의 `data`는 TX header와 checksum을 제외한 payload입니다. `header: true`와 `checksum: true`를 사용하면 `packet_defaults.tx_header`와 `packet_defaults.tx_checksum`이 적용됩니다.
 
-이 automation은 해당 bridge의 serial context에서 실행되므로 `send_packet`에 `portId`를 별도로 지정할 필요가 없습니다. 실제 구성에서는 `serial.portId`가 사용하는 RS485 포트를 정의합니다.
 
 ## RX 상태 프레임
 

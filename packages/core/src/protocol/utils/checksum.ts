@@ -2,6 +2,13 @@ import type { ChecksumType, Checksum2Type } from '../types.js';
 
 export type { ChecksumType, Checksum2Type };
 
+const XOR_FINAL_TYPES = Array.from({ length: 256 }, (_, value) =>
+  `xor_final(0x${value.toString(16).padStart(2, '0')})`,
+) as ChecksumType[];
+const XOR_FINAL_NO_HEADER_TYPES = Array.from({ length: 256 }, (_, value) =>
+  `xor_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
+) as ChecksumType[];
+
 export const STANDARD_CHECKSUM_TYPES = [
   'add',
   'add_no_header',
@@ -20,6 +27,8 @@ export const STANDARD_CHECKSUM_TYPES = [
   'crc8_wcdma',
   'crc8_wcdma_no_header',
   'none',
+  ...XOR_FINAL_TYPES,
+  ...XOR_FINAL_NO_HEADER_TYPES,
 ] as const satisfies readonly ChecksumType[];
 
 export const STANDARD_CHECKSUM2_TYPES = [
@@ -57,6 +66,7 @@ type Crc8Variant = 'crc8' | 'crc8_maxim' | 'crc8_rohc' | 'crc8_wcdma';
 
 type Checksum1Resolution =
   | { kind: 'native'; normalizedType: ChecksumType }
+  | { kind: 'xor_final'; normalizedType: ChecksumType; finalXor: number; includeHeader: boolean }
   | { kind: 'crc8'; normalizedType: ChecksumType; baseType: Crc8Variant; includeHeader: boolean };
 
 interface Crc16Spec {
@@ -172,6 +182,15 @@ const CRC16_TABLE_BY_SPEC = new Map<Crc16Spec, Uint16Array>([
 ]);
 
 function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
+  const xorFinalMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
+  if (xorFinalMatch) {
+    return {
+      kind: 'xor_final',
+      normalizedType: type,
+      finalXor: Number.parseInt(xorFinalMatch[2], 16),
+      includeHeader: xorFinalMatch[1] !== '_no_header',
+    };
+  }
   if (type === 'crc8' || type === 'crc8_maxim' || type === 'crc8_rohc' || type === 'crc8_wcdma') {
     return { kind: 'crc8', normalizedType: type, baseType: type, includeHeader: true };
   }
@@ -227,6 +246,9 @@ export type Checksum2Verifier = (
  */
 export function calculateChecksum(header: ByteArray, data: ByteArray, type: ChecksumType): number {
   const resolved = resolveChecksumType(type);
+  if (resolved.kind === 'xor_final') {
+    return (resolved.includeHeader ? xor(header, data) : xorNoHeader(data)) ^ resolved.finalXor;
+  }
   if (resolved.kind === 'crc8') {
     const spec = CRC8_SPECS[resolved.baseType];
     const table = CRC8_TABLES[resolved.baseType];
@@ -286,6 +308,11 @@ export function calculateChecksumFromBuffer(
   const headerStart = baseOffset + _headerLength;
   const dataStop = baseOffset + dataEnd;
   const resolved = resolveChecksumType(type);
+  if (resolved.kind === 'xor_final') {
+    return (
+      xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^ resolved.finalXor
+    );
+  }
   if (resolved.kind === 'crc8') {
     return crc8Range(
       buffer,
@@ -600,7 +627,6 @@ export function calculateChecksum2FromBuffer(
   const resolved = resolveChecksum2Type(type);
   switch (resolved.baseType) {
     case 'xor_add':
-      // xorAdd processes header then data linearly, so we can process range 0..dataEnd
       return xorAddRange(buffer, dataStart, dataStop);
     case 'crc16_xmodem':
     case 'crc16_ccitt_false':
@@ -675,25 +701,17 @@ export function verifyChecksum2FromBuffer(
 function xorAdd(header: ByteArray, data: ByteArray): number[] {
   let crc = 0;
   let temp = 0;
-
-  // Process header bytes
   for (const byte of header) {
     crc += byte;
     temp ^= byte;
   }
-
-  // Process data bytes
   for (const byte of data) {
     crc += byte;
     temp ^= byte;
   }
-
   crc += temp;
-
-  // Pack into 2 bytes: [XOR, ADD]
   const high = temp & 0xff;
   const low = crc & 0xff;
-
   return [high, low];
 }
 
@@ -706,18 +724,14 @@ export function verifyXorAddRange(
 ): boolean {
   let crc = 0;
   let temp = 0;
-
   for (let i = start; i < end; i++) {
     const byte = buffer[i];
     crc += byte;
     temp ^= byte;
   }
-
   crc += temp;
-
   const high = temp & 0xff;
   const low = crc & 0xff;
-
   return high === expectedHigh && low === expectedLow;
 }
 
@@ -729,6 +743,10 @@ export function getChecksumFunction(
   type: ChecksumType,
 ): ((buffer: ByteArray, start: number, end: number) => number) | null {
   const resolved = resolveChecksumType(type);
+  if (resolved.kind === 'xor_final') {
+    return (buffer: ByteArray, start: number, end: number) =>
+      xorRange(buffer, start, end) ^ resolved.finalXor;
+  }
   if (resolved.kind === 'crc8') {
     const spec = CRC8_SPECS[resolved.baseType];
     const table = CRC8_TABLES[resolved.baseType];
@@ -740,11 +758,11 @@ export function getChecksumFunction(
     case 'add':
       return addRange;
     case 'add_no_header':
-      return addRange; // Caller must adjust start
+      return addRange;
     case 'xor':
       return xorRange;
     case 'xor_no_header':
-      return xorRange; // Caller must adjust start
+      return xorRange;
     case 'samsung_rx':
       return samsungRxFromBuffer;
     case 'samsung_tx':
@@ -789,6 +807,9 @@ export function getChecksum2Verifier(type: Checksum2Type): Checksum2Verifier | n
  */
 export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
   const resolved = resolveChecksumType(type);
+  if (resolved.kind === 'xor_final') {
+    return resolved.includeHeader ? 'base' : 'header';
+  }
   if (resolved.kind === 'crc8') {
     return resolved.includeHeader ? 'base' : 'header';
   }
@@ -817,19 +838,14 @@ export function getChecksum2OffsetType(type: Checksum2Type): 'base' | 'header' {
 function xorAddRange(buffer: ByteArray, start: number, end: number): number[] {
   let crc = 0;
   let temp = 0;
-
   for (let i = start; i < end; i++) {
     const byte = buffer[i];
     crc += byte;
     temp ^= byte;
   }
-
   crc += temp;
-
-  // Pack into 2 bytes: [XOR, ADD]
   const high = temp & 0xff;
   const low = crc & 0xff;
-
   return [high, low];
 }
 
@@ -900,7 +916,6 @@ export function crc16RangeCustom(
 }
 
 function crc16Range(buffer: ByteArray, start: number, end: number, spec: Crc16Spec): number[] {
-  // Find pre-computed table if available, otherwise generate
   const table = CRC16_TABLE_BY_SPEC.get(spec) ?? generateCrc16Table(spec);
   return crc16RangeWithTable(buffer, start, end, spec, table);
 }

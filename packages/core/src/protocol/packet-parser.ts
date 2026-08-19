@@ -334,7 +334,7 @@ export class PacketParser {
           // Threshold 16 is empirically determined (256/16 = 16x skips per match).
           const useSparseScan = this.validHeaderCount > 0 && this.validHeaderCount < 16;
 
-          if (!useSparseScan && this.isStandard1Byte && !isBestinSum) {
+          if (!useSparseScan && this.isStandard1Byte && !isBestinSum && !typeStr.startsWith('xor_final(') && !typeStr.startsWith('xor_final_no_header(')) {
             useSlidingWindow = true;
             const isNoHeader =
               typeStr.includes('no_header') || isSamsungRx || isSamsungTx || isSamsungXor;

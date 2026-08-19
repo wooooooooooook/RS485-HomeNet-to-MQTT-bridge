@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-19T04:07:21.273Z",
+  "generated_at": "2026-08-19T05:37:40.528Z",
   "vendors": [
     {
       "id": "bestin",
@@ -391,7 +391,7 @@
           "name_en": "Bestin General/Gen2 Energy Sensors",
           "description": "Bestin General/Gen2 게이트웨이용 에너지 센서 설정입니다.  전기, 수도, 온수, 가스, 난방 5개 요소의 총 사용량과 실시간 사용량을 제공합니다.",
           "description_en": "Bestin General/Gen2 gateway energy sensors configuration. Provides total and realtime usage for 5 elements: electric, water, hotwater, gas, heat.",
-          "version": "2.0.0",
+          "version": "2.0.1",
           "author": "wooooooooooook",
           "tags": [
             "energy",
@@ -1809,7 +1809,7 @@
           "name_en": "Dimming Light Example",
           "description": "디밍 조명 예시입니다.",
           "description_en": "Dimming Light Example.",
-          "version": "1.0.1",
+          "version": "1.0.2",
           "author": "서울G하인츠",
           "tags": [
             "light",
@@ -1818,7 +1818,9 @@
           ],
           "parameters": [],
           "content_summary": {
-            "entities": {},
+            "entities": {
+              "light": 1
+            },
             "automations": 0,
             "scripts": 0
           },
@@ -4214,7 +4216,7 @@
           "name_en": "Samsung HVAC (NonNASA)",
           "description": "삼성 에어컨 NonNASA 프로토콜 설정입니다.\nF1/F2 버스를 통한 직접 RS485 통신으로 실내기를 제어합니다.\n\n패킷 구조 (14바이트 고정):\n[0x32] [SRC] [DST] [CMD] [D4~D11] [CRC] [0x34]\n\nCmd20 (실내기 상태 보고):\n| Index | 0    | 1   | 2   | 3    | 4       | 5       | 6       | 7            | 8             | 9~10 | 11      | 12  | 13   |\n| :---  | :--: | :-: | :-: | :--: | :-----: | :-----: | :-----: | :----------: | :-----------: | :--: | :-----: | :-: | :--: |\n| 의미  | Start| SRC | DST | 0x20 | 목표온도 | 실내온도 | 배관입구 | 풍향\\|팬속도 | 전원\\|운전모드 | -    | 배관출구 | CRC | End  |\n\nCmdB0 (제어 명령):\n| Index | 0    | 1    | 2   | 3    | 4    | 5       | 6             | 7    | 8         | 9    | 10~11 | 12  | 13   |\n| :---  | :--: | :--: | :-: | :--: | :--: | :-----: | :-----------: | :--: | :-------: | :--: | :---: | :-: | :--: |\n| 의미  | Start| 0xD0 | DST | 0xB0 | Swing| 실내온도 | 목표온도\\|팬  | 모드  | 전원\\|플래그| 0x21 | 0x00  | CRC | End  |\n\n온도 디코딩: raw_byte - 55 (°C)\n온도 인코딩 (제어): 목표온도 값 그대로 (하위 5비트)\n",
           "description_en": "Samsung HVAC NonNASA protocol configuration.\nControls indoor units via direct RS485 communication through F1/F2 bus.\n",
-          "version": "1.0.0",
+          "version": "1.0.1",
           "author": "wooooooooooook",
           "tags": [
             "climate",

@@ -34,7 +34,7 @@ describe('LGAP polling automation', () => {
     vi.useRealTimers();
   });
 
-  it('polls zone 0 immediately at startup with a valid LGAP read request', async () => {
+  it('polls zone 0 immediately at startup with the automation context port', async () => {
     const config: HomenetBridgeConfig = {
       serial,
       packet_defaults: {
@@ -51,7 +51,6 @@ describe('LGAP polling automation', () => {
               data: [0x00, 0xa0, 0x00, 0x00, 0x00, 0x00],
               header: true,
               checksum: true,
-              portId: 'lgap',
             },
           ],
         },
@@ -64,6 +63,7 @@ describe('LGAP polling automation', () => {
       commandManager,
       commandSender: sendRaw,
       stateManager: {} as StateManager,
+      contextPortId: 'lgap',
     });
     manager.start();
 
@@ -77,7 +77,7 @@ describe('LGAP polling automation', () => {
     );
   });
 
-  it('polls zone 0 every 5 seconds', async () => {
+  it('polls zone 0 every 5 seconds using the automation context port', async () => {
     const config: HomenetBridgeConfig = {
       serial,
       packet_defaults: {
@@ -87,16 +87,13 @@ describe('LGAP polling automation', () => {
       automation: [
         {
           id: 'lgap_poll_zone_0',
-          trigger: [
-            { type: 'schedule', every: '5s' },
-          ],
+          trigger: [{ type: 'schedule', every: '5s' }],
           then: [
             {
               action: 'send_packet',
               data: [0x00, 0xa0, 0x00, 0x00, 0x00, 0x00],
               header: true,
               checksum: true,
-              portId: 'lgap',
             },
           ],
         },
@@ -109,6 +106,7 @@ describe('LGAP polling automation', () => {
       commandManager,
       commandSender: sendRaw,
       stateManager: {} as StateManager,
+      contextPortId: 'lgap',
     });
     manager.start();
 
@@ -119,8 +117,18 @@ describe('LGAP polling automation', () => {
 
     await vi.advanceTimersByTimeAsync(1);
     expect(sendRaw).toHaveBeenCalledTimes(1);
+    expect(sendRaw).toHaveBeenLastCalledWith(
+      'lgap',
+      [0x80, 0x00, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x75],
+      expect.any(Object),
+    );
 
     await vi.advanceTimersByTimeAsync(5000);
     expect(sendRaw).toHaveBeenCalledTimes(2);
+    expect(sendRaw).toHaveBeenLastCalledWith(
+      'lgap',
+      [0x80, 0x00, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x75],
+      expect.any(Object),
+    );
   });
 });

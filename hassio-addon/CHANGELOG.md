@@ -1,6 +1,11 @@
 ** ⚠️ 업데이트 전 백업 권장 **
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
+v3.2.1
+- fix: 기존의 전체 프로세스 재시작 방식의 문제를 수정하고, Bridge 단위 recovery를 도입
+  - 브릿지 연결 장애 복구 개선 — 문제가 발생한 브릿지만 자동 재시작하여 EW11 등의 연결 장애를 복구하고, 다른 브릿지와 서비스 전체에 미치는 영향을 줄였습니다.
+  - 로그 저장 안정성 개선 — 브릿지 장애로 인한 불필요한 전체 서비스 재시작을 방지해 로그가 안정적으로 저장되도록 개선했습니다.
+
 v3.2.0
 - add: LG airconditioner protocol 지원(https://github.com/jourdant/esphome-lgap)
 - feat: `xor_final(0xNN)` 및 `xor_final_no_header(0xNN)` 체크섬 지원

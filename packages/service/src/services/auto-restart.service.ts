@@ -27,6 +27,7 @@ type ScheduledRestart = {
   timer: ReturnType<typeof setTimeout>;
   fault: AutoRestartFault;
   dueAt: number;
+  generation: number;
 };
 
 const DEFAULT_TIMEOUT_MINUTES = 5;
@@ -38,6 +39,7 @@ export class AutoRestartService {
   private readonly clearTimeoutFn: typeof clearTimeout;
   private readonly scheduled = new Map<string, ScheduledRestart>();
   private readonly recoveryAttempts = new Map<string, number>();
+  private currentGeneration = 0;
 
   constructor(options: AutoRestartServiceOptions) {
     this.options = options;
@@ -61,28 +63,45 @@ export class AutoRestartService {
 
     const delayMs = settings.timeoutMinutes * 60 * 1000;
     const dueAt = Date.now() + delayMs;
+    const generation = ++this.currentGeneration;
     const timer = this.setTimeoutFn(() => {
-      void this.executeRestart(fault);
+      void this.executeRestart(fault, generation);
     }, delayMs);
 
-    this.scheduled.set(fault.key, { timer, fault, dueAt });
+    this.scheduled.set(fault.key, { timer, fault, dueAt, generation });
     this.options.logger.warn(
-      { fault, timeoutMinutes: settings.timeoutMinutes, dueAt: new Date(dueAt).toISOString() },
+      {
+        fault,
+        timeoutMinutes: settings.timeoutMinutes,
+        dueAt: new Date(dueAt).toISOString(),
+        generation,
+      },
       '[service] Auto restart scheduled after persistent bridge fault',
     );
   }
 
-  clear(key: string): void {
-    this.recoveryAttempts.delete(key);
+  clear(key: string, maxGeneration?: number): void {
     const scheduled = this.scheduled.get(key);
     if (!scheduled) {
+      if (maxGeneration === undefined) {
+        this.recoveryAttempts.delete(key);
+      }
+      return;
+    }
+
+    if (maxGeneration !== undefined && scheduled.generation > maxGeneration) {
+      this.options.logger.info(
+        { key, scheduledGeneration: scheduled.generation, maxGeneration },
+        '[service] Newer auto restart schedule detected; skipping clear',
+      );
       return;
     }
 
     this.clearTimeoutFn(scheduled.timer);
     this.scheduled.delete(key);
+    this.recoveryAttempts.delete(key);
     this.options.logger.info(
-      { fault: scheduled.fault },
+      { fault: scheduled.fault, generation: scheduled.generation },
       '[service] Auto restart schedule cleared after recovery',
     );
   }
@@ -94,12 +113,20 @@ export class AutoRestartService {
     }
   }
 
-  getPending(): Array<AutoRestartFault & { dueAt: number }> {
-    return Array.from(this.scheduled.values()).map(({ fault, dueAt }) => ({ ...fault, dueAt }));
+  getPending(): Array<AutoRestartFault & { dueAt: number; generation: number }> {
+    return Array.from(this.scheduled.values()).map(({ fault, dueAt, generation }) => ({
+      ...fault,
+      dueAt,
+      generation,
+    }));
   }
 
   getRecoveryAttempts(key: string): number {
     return this.recoveryAttempts.get(key) ?? 0;
+  }
+
+  getCurrentGeneration(key: string): number | undefined {
+    return this.scheduled.get(key)?.generation;
   }
 
   private async resolveSettings(): Promise<AutoRestartSettings> {
@@ -110,8 +137,15 @@ export class AutoRestartService {
     };
   }
 
-  private async executeRestart(fault: AutoRestartFault): Promise<void> {
+  private async executeRestart(fault: AutoRestartFault, targetGeneration?: number): Promise<void> {
+    const currentScheduled = this.scheduled.get(fault.key);
+    if (targetGeneration !== undefined && currentScheduled?.generation !== targetGeneration) {
+      // The scheduled fault was already updated or cleared
+      return;
+    }
+
     this.scheduled.delete(fault.key);
+
     try {
       const settings = await this.resolveSettings();
       if (!settings.enabled || settings.timeoutMinutes <= 0) {
@@ -162,13 +196,18 @@ export class AutoRestartService {
           { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
           '[service] Failed to restart affected bridge; rescheduling recovery retry',
         );
-        // Reschedule recovery attempt
-        const delayMs = settings.timeoutMinutes * 60 * 1000;
-        const dueAt = Date.now() + delayMs;
-        const timer = this.setTimeoutFn(() => {
-          void this.executeRestart(fault);
-        }, delayMs);
-        this.scheduled.set(fault.key, { timer, fault, dueAt });
+
+        // If a new fault was already scheduled during recovery execution, keep it.
+        // Otherwise, schedule the retry.
+        if (!this.scheduled.has(fault.key)) {
+          const delayMs = settings.timeoutMinutes * 60 * 1000;
+          const dueAt = Date.now() + delayMs;
+          const generation = ++this.currentGeneration;
+          const timer = this.setTimeoutFn(() => {
+            void this.executeRestart(fault, generation);
+          }, delayMs);
+          this.scheduled.set(fault.key, { timer, fault, dueAt, generation });
+        }
         return;
       }
 

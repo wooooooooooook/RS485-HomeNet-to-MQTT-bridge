@@ -285,6 +285,18 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
       );
     }
 
+    if (targetBridge) {
+      const targetIndex = currentConfigFiles.indexOf(targetBridge.configFile);
+      const currentConfigStatuses = ctx.getCurrentConfigStatuses();
+      const currentConfigErrors = ctx.getCurrentConfigErrors();
+      if (targetIndex !== -1 && currentConfigStatuses[targetIndex] === 'error') {
+        const errorMessage = formatBridgeErrorMessage(currentConfigErrors[targetIndex]);
+        return res.status(503).json({
+          error: `Bridge for this entity is not active: ${errorMessage || 'Connection failed'}`,
+        });
+      }
+    }
+
     if (!targetBridge) {
       // Check if the entity exists in config but bridge is not active
       const configIndex = portId
@@ -359,6 +371,15 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     );
     if (!automation) {
       return res.status(404).json({ error: 'Automation not found in loaded configs' });
+    }
+
+    const currentConfigStatuses = ctx.getCurrentConfigStatuses();
+    const currentConfigErrors = ctx.getCurrentConfigErrors();
+    if (currentConfigStatuses[configIndex] === 'error') {
+      const errorMessage = formatBridgeErrorMessage(currentConfigErrors[configIndex]);
+      return res.status(503).json({
+        error: `Bridge for this automation is not active: ${errorMessage || 'Connection failed'}`,
+      });
     }
 
     const bridges = ctx.getBridges();
@@ -512,6 +533,15 @@ export function createControlsRoutes(ctx: ControlsRoutesContext): Router {
     );
     if (!script) {
       return res.status(404).json({ error: 'Script not found in loaded configs' });
+    }
+
+    const currentConfigStatuses = ctx.getCurrentConfigStatuses();
+    const currentConfigErrors = ctx.getCurrentConfigErrors();
+    if (currentConfigStatuses[configIndex] === 'error') {
+      const errorMessage = formatBridgeErrorMessage(currentConfigErrors[configIndex]);
+      return res.status(503).json({
+        error: `Bridge for this script is not active: ${errorMessage || 'Connection failed'}`,
+      });
     }
 
     const bridges = ctx.getBridges();

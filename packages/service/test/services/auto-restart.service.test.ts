@@ -184,4 +184,58 @@ describe('AutoRestartService', () => {
     expect(service.getPending()).toHaveLength(0);
     expect(service.getRecoveryAttempts('serial:retry_port')).toBe(0);
   });
+
+  it('recovery 도중 새 fault가 발생하면 이전 recovery 완료가 새 fault를 지우지 않는다', async () => {
+    let serviceRef: AutoRestartService | null = null;
+    const recoverFault = vi.fn().mockImplementation(async () => {
+      // 복구 도중 새로운 connection error 발생하여 새 fault schedule 시뮬레이션
+      if (serviceRef) {
+        await serviceRef.schedule({
+          key: 'serial:race_port',
+          portId: 'race_port',
+          reason: 'serial new error during start',
+        });
+      }
+      return true;
+    });
+
+    const triggerRestart = vi.fn();
+    const restartProcess = vi.fn();
+
+    const service = new AutoRestartService({
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }),
+      recoverFault,
+      triggerRestart,
+      restartProcess,
+      logger,
+    });
+    serviceRef = service;
+
+    // 1. 최초 fault 스케줄
+    await service.schedule({
+      key: 'serial:race_port',
+      portId: 'race_port',
+      reason: 'initial serial disconnect',
+    });
+    const initialGen = service.getCurrentGeneration('serial:race_port');
+    expect(initialGen).toBeDefined();
+
+    // 2. 5분 후 1차 recovery 실행 -> 내부에서 새 fault 스케줄됨
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+
+    expect(recoverFault).toHaveBeenCalledTimes(1);
+    // 새 fault가 여전히 pending에 남아있어야 함 (지워지지 않음)
+    const pending = service.getPending();
+    expect(pending).toHaveLength(1);
+    expect(pending[0].reason).toBe('serial new error during start');
+    expect(pending[0].generation).toBeGreaterThan(initialGen!);
+
+    // 3. 만약 이전 recovery 완료 후 clear(key, initialGen)을 시도해도 새 generation은 보호됨
+    service.clear('serial:race_port', initialGen);
+    expect(service.getPending()).toHaveLength(1);
+
+    // 4. 새 fault의 5분 타이머가 지나면 다시 recovery가 호출됨
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(recoverFault).toHaveBeenCalledTimes(2);
+  });
 });

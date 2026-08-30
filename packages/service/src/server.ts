@@ -23,7 +23,8 @@ import { LogRetentionService } from './log-retention.service.js';
 import { RateLimiter } from './utils/rate-limiter.js';
 import { createSetupWizardService } from './services/setup.service.js';
 import { createConfigEditorService } from './services/config-editor.service.js';
-import { AutoRestartService, type AutoRestartFault } from './services/auto-restart.service.js';
+import { AutoRestartService } from './services/auto-restart.service.js';
+import { createBridgeRecoveryHandler } from './services/bridge-recovery.service.js';
 
 import type {
   BridgeInstance,
@@ -139,88 +140,25 @@ let bridgeStatus: BridgeStatus = 'idle';
 let bridgeError: BridgeErrorPayload | null = null;
 let bridgeStartPromise: Promise<void> | null = null;
 let autoRestartSuppressed = false;
-const inFlightBridgeRecoveries = new Map<string, Promise<boolean>>();
 
-const recoverBridgeFault = async (fault: AutoRestartFault): Promise<boolean> => {
-  const portId = fault.portId;
-  if (!portId) {
-    return false;
-  }
-
-  if (autoRestartSuppressed || bridgeStartPromise) {
-    logger.info(
-      { portId },
-      '[service] Bridge recovery skipped because bridge startup/shutdown is in progress',
-    );
-    return false;
-  }
-
-  const existingPromise = inFlightBridgeRecoveries.get(portId);
-  if (existingPromise) {
-    logger.info({ portId }, '[service] Bridge recovery already in flight for portId');
-    return existingPromise;
-  }
-
-  const recoveryPromise = (async () => {
-    logger.warn({ portId }, '[service] Restarting affected bridge after persistent fault');
-
-    const instance = bridges.find((b) => {
-      const pId = normalizePortId(b.config.serial?.portId ?? 'unknown', 0);
-      return pId === portId;
-    });
-
-    if (!instance) {
-      logger.error(
-        { portId },
-        '[service] Failed to restart affected bridge: bridge instance not found',
-      );
-      return false;
-    }
-
-    const originalIndex = currentConfigFiles.indexOf(instance.configFile);
-    if (originalIndex !== -1) {
-      currentConfigStatuses[originalIndex] = 'starting';
-      currentConfigErrors[originalIndex] = null;
-    }
-
-    try {
-      await instance.bridge.stop();
-      await instance.bridge.start();
-
-      if (originalIndex !== -1) {
-        currentConfigStatuses[originalIndex] = 'started';
-        currentConfigErrors[originalIndex] = null;
-      }
-      autoRestartService.clear(`serial:${portId}`);
-      autoRestartService.clear(`integration:${portId}`);
-      eventBus.emit('bridge:status', {
-        portId,
-        status: 'started',
-      });
-      logger.info({ portId }, '[service] Affected bridge restarted successfully');
-      return true;
-    } catch (err) {
-      logger.error({ err, portId }, '[service] Failed to restart affected bridge');
-      let errorPayload: BridgeErrorPayload | null = null;
-      if (originalIndex !== -1) {
-        currentConfigStatuses[originalIndex] = 'error';
-        errorPayload = mapBridgeStartError(err, portId);
-        currentConfigErrors[originalIndex] = errorPayload;
-      }
-      eventBus.emit('bridge:status', {
-        portId,
-        status: 'error',
-        errorInfo: errorPayload,
-      });
-      return false;
-    } finally {
-      inFlightBridgeRecoveries.delete(portId);
-    }
-  })();
-
-  inFlightBridgeRecoveries.set(portId, recoveryPromise);
-  return recoveryPromise;
-};
+const bridgeRecoveryHandler = createBridgeRecoveryHandler({
+  getBridges: () => bridges,
+  getCurrentConfigFiles: () => currentConfigFiles,
+  getCurrentConfigStatuses: () => currentConfigStatuses,
+  getCurrentConfigErrors: () => currentConfigErrors,
+  setCurrentConfigStatus: (index, status) => {
+    currentConfigStatuses[index] = status;
+  },
+  setCurrentConfigError: (index, error) => {
+    currentConfigErrors[index] = error;
+  },
+  isAutoRestartSuppressed: () => autoRestartSuppressed,
+  isBridgeStarting: () => !!bridgeStartPromise,
+  emitBridgeStatus: (payload) => {
+    eventBus.emit('bridge:status', payload);
+  },
+  logger,
+});
 
 // FrontendSettings functions are now imported from ./services/frontend-settings.service.js
 
@@ -247,7 +185,7 @@ const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
 const logRetentionService = new LogRetentionService(CONFIG_DIR);
 const autoRestartService = new AutoRestartService({
   loadSettings: loadFrontendSettings,
-  recoverFault: recoverBridgeFault,
+  recoverFault: bridgeRecoveryHandler.recoverBridgeFault,
   triggerRestart,
   restartProcess,
   logger,

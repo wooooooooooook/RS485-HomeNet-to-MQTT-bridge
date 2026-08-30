@@ -238,4 +238,75 @@ describe('AutoRestartService', () => {
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     expect(recoverFault).toHaveBeenCalledTimes(2);
   });
+
+  it('recovery 중 새 generation fault가 발생했을 때 이전 세대의 recoveryAttempts가 상속되지 않고 0부터 독립적으로 계산된다', async () => {
+    let serviceRef: AutoRestartService | null = null;
+    let callCount = 0;
+
+    const recoverFault = vi.fn().mockImplementation(async () => {
+      callCount += 1;
+      if (callCount === 2 && serviceRef) {
+        // generation 1의 2회차 복구 시도 도중 새 fault(generation 2) 발생
+        await serviceRef.schedule({
+          key: 'serial:gen_port',
+          portId: 'gen_port',
+          reason: 'fresh error for generation 2',
+        });
+      }
+      // generation 1의 시도들은 실패로 처리
+      if (callCount <= 2) {
+        return false;
+      }
+      // generation 2의 복구 시도는 성공으로 처리
+      return true;
+    });
+
+    const triggerRestart = vi.fn();
+    const restartProcess = vi.fn();
+
+    const service = new AutoRestartService({
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }),
+      recoverFault,
+      triggerRestart,
+      restartProcess,
+      maxBridgeRecoveryAttempts: 3,
+      logger,
+    });
+    serviceRef = service;
+
+    // 1. Generation 1 최초 스케줄 (attempts = 0)
+    await service.schedule({
+      key: 'serial:gen_port',
+      portId: 'gen_port',
+      reason: 'gen 1 error',
+    });
+    const gen1 = service.getCurrentGeneration('serial:gen_port');
+
+    // 2. Generation 1 1차 시도 (5분 후) -> 실패 후 retry 스케줄 (attempts = 1)
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(callCount).toBe(1);
+    expect(service.getRecoveryAttempts('serial:gen_port')).toBe(1);
+    expect(triggerRestart).not.toHaveBeenCalled();
+
+    // 3. Generation 1 2차 시도 (추가 5분 후) -> 실행 도중 Generation 2 스케줄됨
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(callCount).toBe(2);
+
+    // Generation 2가 스케줄되어 있으므로 attempts는 0이어야 함 (Gen 1의 2회 실패를 상속받지 않음)
+    const gen2 = service.getCurrentGeneration('serial:gen_port');
+    expect(gen2).toBeGreaterThan(gen1!);
+    expect(service.getRecoveryAttempts('serial:gen_port')).toBe(0);
+
+    // Gen 1이 2회 실패했더라도 Gen 2로 새로 시작되었으므로 전체 process restart fallback이 트리거되지 않아야 함
+    expect(triggerRestart).not.toHaveBeenCalled();
+    expect(restartProcess).not.toHaveBeenCalled();
+
+    // 4. Generation 2 1차 시도 (추가 5분 후) -> 성공!
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(callCount).toBe(3);
+    expect(triggerRestart).not.toHaveBeenCalled();
+    expect(restartProcess).not.toHaveBeenCalled();
+    expect(service.getPending()).toHaveLength(0);
+    expect(service.getRecoveryAttempts('serial:gen_port')).toBe(0);
+  });
 });

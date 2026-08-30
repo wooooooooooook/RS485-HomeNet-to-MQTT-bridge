@@ -28,6 +28,7 @@ type ScheduledRestart = {
   fault: AutoRestartFault;
   dueAt: number;
   generation: number;
+  attempts: number;
 };
 
 const DEFAULT_TIMEOUT_MINUTES = 5;
@@ -68,7 +69,8 @@ export class AutoRestartService {
       void this.executeRestart(fault, generation);
     }, delayMs);
 
-    this.scheduled.set(fault.key, { timer, fault, dueAt, generation });
+    this.scheduled.set(fault.key, { timer, fault, dueAt, generation, attempts: 0 });
+    this.recoveryAttempts.set(fault.key, 0);
     this.options.logger.warn(
       {
         fault,
@@ -113,16 +115,17 @@ export class AutoRestartService {
     }
   }
 
-  getPending(): Array<AutoRestartFault & { dueAt: number; generation: number }> {
-    return Array.from(this.scheduled.values()).map(({ fault, dueAt, generation }) => ({
+  getPending(): Array<AutoRestartFault & { dueAt: number; generation: number; attempts: number }> {
+    return Array.from(this.scheduled.values()).map(({ fault, dueAt, generation, attempts }) => ({
       ...fault,
       dueAt,
       generation,
+      attempts,
     }));
   }
 
   getRecoveryAttempts(key: string): number {
-    return this.recoveryAttempts.get(key) ?? 0;
+    return this.scheduled.get(key)?.attempts ?? this.recoveryAttempts.get(key) ?? 0;
   }
 
   getCurrentGeneration(key: string): number | undefined {
@@ -144,6 +147,8 @@ export class AutoRestartService {
       return;
     }
 
+    const previousAttempts =
+      currentScheduled?.attempts ?? this.recoveryAttempts.get(fault.key) ?? 0;
     this.scheduled.delete(fault.key);
 
     try {
@@ -157,7 +162,7 @@ export class AutoRestartService {
       }
 
       if (this.options.recoverFault && fault.portId) {
-        const currentAttempts = (this.recoveryAttempts.get(fault.key) ?? 0) + 1;
+        const currentAttempts = previousAttempts + 1;
         const maxAttempts = this.options.maxBridgeRecoveryAttempts ?? DEFAULT_MAX_RECOVERY_ATTEMPTS;
 
         let recovered = false;
@@ -172,7 +177,9 @@ export class AutoRestartService {
         }
 
         if (recovered) {
-          this.recoveryAttempts.delete(fault.key);
+          if (!this.scheduled.has(fault.key)) {
+            this.recoveryAttempts.delete(fault.key);
+          }
           this.options.logger.info(
             { fault, portId: fault.portId },
             '[service] Affected bridge restarted successfully',
@@ -180,9 +187,8 @@ export class AutoRestartService {
           return;
         }
 
-        this.recoveryAttempts.set(fault.key, currentAttempts);
-
         if (currentAttempts >= maxAttempts) {
+          this.recoveryAttempts.set(fault.key, currentAttempts);
           this.options.logger.error(
             { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
             '[service] Affected bridge recovery failed repeatedly; falling back to process restart',
@@ -197,16 +203,23 @@ export class AutoRestartService {
           '[service] Failed to restart affected bridge; rescheduling recovery retry',
         );
 
-        // If a new fault was already scheduled during recovery execution, keep it.
-        // Otherwise, schedule the retry.
+        // If a new fault was already scheduled during recovery execution, keep it with its own clean attempts (0).
+        // Otherwise, schedule the retry with incremented attempts.
         if (!this.scheduled.has(fault.key)) {
+          this.recoveryAttempts.set(fault.key, currentAttempts);
           const delayMs = settings.timeoutMinutes * 60 * 1000;
           const dueAt = Date.now() + delayMs;
           const generation = ++this.currentGeneration;
           const timer = this.setTimeoutFn(() => {
             void this.executeRestart(fault, generation);
           }, delayMs);
-          this.scheduled.set(fault.key, { timer, fault, dueAt, generation });
+          this.scheduled.set(fault.key, {
+            timer,
+            fault,
+            dueAt,
+            generation,
+            attempts: currentAttempts,
+          });
         }
         return;
       }

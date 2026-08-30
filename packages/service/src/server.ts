@@ -24,6 +24,7 @@ import { RateLimiter } from './utils/rate-limiter.js';
 import { createSetupWizardService } from './services/setup.service.js';
 import { createConfigEditorService } from './services/config-editor.service.js';
 import { AutoRestartService } from './services/auto-restart.service.js';
+import { createBridgeRecoveryHandler } from './services/bridge-recovery.service.js';
 
 import type {
   BridgeInstance,
@@ -140,6 +141,25 @@ let bridgeError: BridgeErrorPayload | null = null;
 let bridgeStartPromise: Promise<void> | null = null;
 let autoRestartSuppressed = false;
 
+const bridgeRecoveryHandler = createBridgeRecoveryHandler({
+  getBridges: () => bridges,
+  getCurrentConfigFiles: () => currentConfigFiles,
+  getCurrentConfigStatuses: () => currentConfigStatuses,
+  getCurrentConfigErrors: () => currentConfigErrors,
+  setCurrentConfigStatus: (index, status) => {
+    currentConfigStatuses[index] = status;
+  },
+  setCurrentConfigError: (index, error) => {
+    currentConfigErrors[index] = error;
+  },
+  isAutoRestartSuppressed: () => autoRestartSuppressed,
+  isBridgeStarting: () => !!bridgeStartPromise,
+  emitBridgeStatus: (payload) => {
+    eventBus.emit('bridge:status', payload);
+  },
+  logger,
+});
+
 // FrontendSettings functions are now imported from ./services/frontend-settings.service.js
 
 // --- Express Middleware & Setup ---
@@ -165,6 +185,7 @@ const rawPacketLogger = new RawPacketLoggerService(CONFIG_DIR);
 const logRetentionService = new LogRetentionService(CONFIG_DIR);
 const autoRestartService = new AutoRestartService({
   loadSettings: loadFrontendSettings,
+  recoverFault: bridgeRecoveryHandler.recoverBridgeFault,
   triggerRestart,
   restartProcess,
   logger,
@@ -665,16 +686,6 @@ function startBridgesInBackground(bridgesToStart: BridgeInstance[], filenames: s
           status: 'error',
           errorInfo: errorPayload,
         });
-        // Remove failed bridge from the bridges array to prevent
-        // "Bridge not initialized" errors when executing commands on other bridges
-        const failedIndex = bridges.indexOf(instance);
-        if (failedIndex !== -1) {
-          bridges.splice(failedIndex, 1);
-          logger.info(
-            { configFile: instance.configFile },
-            '[service] Removed failed bridge instance from active bridges',
-          );
-        }
       }
     }),
   ).catch((err) => {

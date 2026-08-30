@@ -892,6 +892,7 @@
   async function updateAutoRestartSetting(autoRestart: {
     enabled: boolean;
     timeoutMinutes: number;
+    processFallback?: boolean;
   }) {
     const previous = frontendSettings ?? DEFAULT_FRONTEND_SETTINGS;
     const next: FrontendSettings = {

@@ -198,3 +198,90 @@ describe('Controls Routes - Path Traversal Prevention', () => {
     expect(deleteScriptRes.body.error).toBe('Config file not found');
   });
 });
+
+describe('Controls Routes - Failed Bridge Guard', () => {
+  it('should return 503 when target bridge is in error state', async () => {
+    const mockRateLimiter = {
+      check: vi.fn().mockReturnValue(true),
+    } as unknown as RateLimiter;
+
+    const failedConfig = {
+      light: [
+        {
+          id: 'living_light',
+          name: 'Living Light',
+          command_on: {},
+        },
+      ],
+      automation: [
+        {
+          id: 'auto_failed',
+          name: 'Failed Auto',
+          trigger: [],
+          action: [],
+        },
+      ],
+      scripts: [
+        {
+          id: 'script_failed',
+          name: 'Failed Script',
+          sequence: [],
+        },
+      ],
+    };
+
+    const mockBridge = {
+      configFile: 'failed_bridge.yaml',
+      bridge: {
+        executeCommand: vi.fn(),
+      },
+    };
+
+    const mockCtx = {
+      commandRateLimiter: mockRateLimiter,
+      configRateLimiter: mockRateLimiter,
+      getBridges: vi.fn().mockReturnValue([mockBridge]),
+      getCurrentConfigs: vi.fn().mockReturnValue([failedConfig]),
+      getCurrentConfigFiles: vi.fn().mockReturnValue(['failed_bridge.yaml']),
+      getCurrentRawConfigs: vi.fn().mockReturnValue([failedConfig]),
+      getCurrentConfigStatuses: vi.fn().mockReturnValue(['error']),
+      getCurrentConfigErrors: vi.fn().mockReturnValue([
+        {
+          code: 'CORE_START_FAILED',
+          message: 'Serial port disconnected',
+        },
+      ]),
+      configDir: '/tmp',
+      setCurrentConfigs: vi.fn(),
+      setCurrentRawConfigs: vi.fn(),
+      rebuildPortMappings: vi.fn(),
+    } as unknown as ControlsRoutesContext;
+
+    const app = express();
+    app.use(express.json());
+    app.use('/', createControlsRoutes(mockCtx));
+
+    // 1. Command execute
+    const cmdRes = await request(app).post('/api/commands/execute').send({
+      entityId: 'living_light',
+      commandName: 'command_on',
+    });
+    expect(cmdRes.status).toBe(503);
+    expect(cmdRes.body.error).toContain('Bridge for this entity is not active');
+    expect(mockBridge.bridge.executeCommand).not.toHaveBeenCalled();
+
+    // 2. Automation execute
+    const autoRes = await request(app).post('/api/automations/execute').send({
+      automationId: 'auto_failed',
+    });
+    expect(autoRes.status).toBe(503);
+    expect(autoRes.body.error).toContain('Bridge for this automation is not active');
+
+    // 3. Script execute
+    const scriptRes = await request(app).post('/api/scripts/execute').send({
+      scriptId: 'script_failed',
+    });
+    expect(scriptRes.status).toBe(503);
+    expect(scriptRes.body.error).toContain('Bridge for this script is not active');
+  });
+});

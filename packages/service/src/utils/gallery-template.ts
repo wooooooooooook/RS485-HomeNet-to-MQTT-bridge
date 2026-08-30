@@ -228,7 +228,10 @@ function evaluateExpression(expression: string, context: Record<string, unknown>
   env.registerFunction('bitNot(int): int', (a: bigint) => ~a);
   env.registerFunction('bitShiftLeft(int, int): int', (a: bigint, b: bigint) => a << b);
   env.registerFunction('bitShiftRight(int, int): int', (a: bigint, b: bigint) => a >> b);
-  env.registerFunction('hex(int): string', (val: bigint) => `0x${Number(val).toString(16).padStart(2, '0')}`);
+  env.registerFunction(
+    'hex(int): string',
+    (val: bigint) => `0x${Number(val).toString(16).padStart(2, '0')}`,
+  );
   env.registerFunction('pad(dyn, int): string', (val: unknown, length: bigint) =>
     String(typeof val === 'bigint' ? Number(val) : val).padStart(Number(length), '0'),
   );
@@ -265,11 +268,12 @@ function expandRepeatBlock(
     throw new Error('[gallery] $repeat requires an "as" field');
   }
 
-  const template = node.$nested !== undefined
-    ? node.$nested
-    : Object.fromEntries(
-        Object.entries(node).filter(([key]) => key !== '$repeat' && key !== '$nested'),
-      );
+  const template =
+    node.$nested !== undefined
+      ? node.$nested
+      : Object.fromEntries(
+          Object.entries(node).filter(([key]) => key !== '$repeat' && key !== '$nested'),
+        );
 
   const iterations: Array<{ value: unknown; index: number }> = [];
 

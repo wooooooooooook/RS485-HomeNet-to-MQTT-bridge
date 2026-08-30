@@ -41,7 +41,11 @@
     onLocaleChange?: (value: string) => void;
     onEditorChange?: (value: 'monaco' | 'textarea') => void;
     onDashboardChange?: (value: boolean) => void;
-    onAutoRestartChange?: (value: { enabled: boolean; timeoutMinutes: number }) => void;
+    onAutoRestartChange?: (value: {
+      enabled: boolean;
+      timeoutMinutes: number;
+      processFallback?: boolean;
+    }) => void;
     onGalleryChange?: (value: { githubUrl: string; branch: string; path: string }) => void;
   } = $props();
 

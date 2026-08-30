@@ -10,8 +10,10 @@ export type AutoRestartSettings = NonNullable<FrontendSettings['autoRestart']>;
 
 export type AutoRestartServiceOptions = {
   loadSettings: () => Promise<FrontendSettings> | FrontendSettings;
+  recoverFault?: (fault: AutoRestartFault) => Promise<boolean> | boolean;
   triggerRestart: () => Promise<void> | void;
   restartProcess: () => void;
+  maxBridgeRecoveryAttempts?: number;
   logger: {
     info: (obj: unknown, msg?: string) => void;
     warn: (obj: unknown, msg?: string) => void;
@@ -28,12 +30,14 @@ type ScheduledRestart = {
 };
 
 const DEFAULT_TIMEOUT_MINUTES = 5;
+const DEFAULT_MAX_RECOVERY_ATTEMPTS = 3;
 
 export class AutoRestartService {
   private readonly options: AutoRestartServiceOptions;
   private readonly setTimeoutFn: typeof setTimeout;
   private readonly clearTimeoutFn: typeof clearTimeout;
   private readonly scheduled = new Map<string, ScheduledRestart>();
+  private readonly recoveryAttempts = new Map<string, number>();
 
   constructor(options: AutoRestartServiceOptions) {
     this.options = options;
@@ -69,6 +73,7 @@ export class AutoRestartService {
   }
 
   clear(key: string): void {
+    this.recoveryAttempts.delete(key);
     const scheduled = this.scheduled.get(key);
     if (!scheduled) {
       return;
@@ -83,6 +88,7 @@ export class AutoRestartService {
   }
 
   clearAll(): void {
+    this.recoveryAttempts.clear();
     for (const key of this.scheduled.keys()) {
       this.clear(key);
     }
@@ -90,6 +96,10 @@ export class AutoRestartService {
 
   getPending(): Array<AutoRestartFault & { dueAt: number }> {
     return Array.from(this.scheduled.values()).map(({ fault, dueAt }) => ({ ...fault, dueAt }));
+  }
+
+  getRecoveryAttempts(key: string): number {
+    return this.recoveryAttempts.get(key) ?? 0;
   }
 
   private async resolveSettings(): Promise<AutoRestartSettings> {
@@ -109,6 +119,56 @@ export class AutoRestartService {
           { fault, settings },
           '[service] Auto restart was disabled before timeout; skipping restart',
         );
+        return;
+      }
+
+      if (this.options.recoverFault && fault.portId) {
+        const currentAttempts = (this.recoveryAttempts.get(fault.key) ?? 0) + 1;
+        const maxAttempts = this.options.maxBridgeRecoveryAttempts ?? DEFAULT_MAX_RECOVERY_ATTEMPTS;
+
+        let recovered = false;
+        try {
+          recovered = await this.options.recoverFault(fault);
+        } catch (error) {
+          this.options.logger.error(
+            { err: error, fault, portId: fault.portId },
+            '[service] Failed to restart affected bridge',
+          );
+          recovered = false;
+        }
+
+        if (recovered) {
+          this.recoveryAttempts.delete(fault.key);
+          this.options.logger.info(
+            { fault, portId: fault.portId },
+            '[service] Affected bridge restarted successfully',
+          );
+          return;
+        }
+
+        this.recoveryAttempts.set(fault.key, currentAttempts);
+
+        if (currentAttempts >= maxAttempts) {
+          this.options.logger.error(
+            { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
+            '[service] Affected bridge recovery failed repeatedly; falling back to process restart',
+          );
+          await this.options.triggerRestart();
+          this.options.restartProcess();
+          return;
+        }
+
+        this.options.logger.warn(
+          { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
+          '[service] Failed to restart affected bridge; rescheduling recovery retry',
+        );
+        // Reschedule recovery attempt
+        const delayMs = settings.timeoutMinutes * 60 * 1000;
+        const dueAt = Date.now() + delayMs;
+        const timer = this.setTimeoutFn(() => {
+          void this.executeRestart(fault);
+        }, delayMs);
+        this.scheduled.set(fault.key, { timer, fault, dueAt });
         return;
       }
 

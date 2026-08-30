@@ -216,10 +216,7 @@ describe('LGAP gallery polling automation', () => {
       {
         id: 'lgap_polling',
         name: 'LGAP 실내기 상태 polling',
-        trigger: [
-          { type: 'startup' },
-          { type: 'schedule', every: '5s' },
-        ],
+        trigger: [{ type: 'startup' }, { type: 'schedule', every: '5s' }],
         then: [
           {
             action: 'send_packet',

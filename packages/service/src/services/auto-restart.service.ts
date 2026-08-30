@@ -137,6 +137,7 @@ export class AutoRestartService {
     return {
       enabled: settings.autoRestart?.enabled ?? true,
       timeoutMinutes: settings.autoRestart?.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES,
+      processFallback: settings.autoRestart?.processFallback ?? false,
     };
   }
 
@@ -189,12 +190,19 @@ export class AutoRestartService {
 
         if (currentAttempts >= maxAttempts) {
           this.recoveryAttempts.set(fault.key, currentAttempts);
-          this.options.logger.error(
-            { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
-            '[service] Affected bridge recovery failed repeatedly; falling back to process restart',
-          );
-          await this.options.triggerRestart();
-          this.options.restartProcess();
+          if (settings.processFallback) {
+            this.options.logger.error(
+              { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
+              '[service] Affected bridge recovery failed repeatedly; falling back to process restart',
+            );
+            await this.options.triggerRestart();
+            this.options.restartProcess();
+          } else {
+            this.options.logger.warn(
+              { fault, attempts: currentAttempts, maxAttempts, portId: fault.portId },
+              '[service] Affected bridge recovery failed repeatedly; keeping bridge in error state without process restart (process fallback disabled)',
+            );
+          }
           return;
         }
 
@@ -224,9 +232,19 @@ export class AutoRestartService {
         return;
       }
 
-      this.options.logger.warn({ fault }, '[service] Auto restart timeout reached; restarting');
-      await this.options.triggerRestart();
-      this.options.restartProcess();
+      if (settings.processFallback) {
+        this.options.logger.warn(
+          { fault },
+          '[service] Auto restart timeout reached; restarting process',
+        );
+        await this.options.triggerRestart();
+        this.options.restartProcess();
+      } else {
+        this.options.logger.warn(
+          { fault },
+          '[service] Auto restart timeout reached; process restart disabled',
+        );
+      }
     } catch (error) {
       this.options.logger.error({ err: error, fault }, '[service] Failed to execute auto restart');
     }

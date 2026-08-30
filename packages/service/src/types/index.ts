@@ -61,6 +61,7 @@ export type FrontendSettings = {
   autoRestart?: {
     enabled: boolean;
     timeoutMinutes: number;
+    processFallback?: boolean;
   };
   gallery?: {
     githubUrl?: string; // e.g. "https://github.com/wooooooooooook/homenet2mqtt"

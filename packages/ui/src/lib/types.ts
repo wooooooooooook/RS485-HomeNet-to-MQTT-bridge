@@ -56,6 +56,7 @@ export type FrontendSettings = {
   autoRestart?: {
     enabled: boolean;
     timeoutMinutes: number;
+    processFallback?: boolean;
   };
   gallery?: {
     githubUrl?: string;

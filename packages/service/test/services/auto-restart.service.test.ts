@@ -23,11 +23,11 @@ describe('AutoRestartService', () => {
     vi.useRealTimers();
   });
 
-  it('설정된 장애 지속 시간이 지나면 재시작을 트리거한다', async () => {
+  it('processFallback: true일 때 설정된 장애 지속 시간이 지나면 프로세스 재시작을 트리거한다', async () => {
     const triggerRestart = vi.fn().mockResolvedValue(undefined);
     const restartProcess = vi.fn();
     const service = new AutoRestartService({
-      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }),
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5, processFallback: true }),
       triggerRestart,
       restartProcess,
       logger,
@@ -40,6 +40,26 @@ describe('AutoRestartService', () => {
 
     expect(triggerRestart).toHaveBeenCalledTimes(1);
     expect(restartProcess).toHaveBeenCalledTimes(1);
+    expect(service.getPending()).toHaveLength(0);
+  });
+
+  it('기본값(processFallback: false)일 때 전역 장애가 발생해도 프로세스 재시작을 수행하지 않는다', async () => {
+    const triggerRestart = vi.fn().mockResolvedValue(undefined);
+    const restartProcess = vi.fn();
+    const service = new AutoRestartService({
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }), // 기본 processFallback: false
+      triggerRestart,
+      restartProcess,
+      logger,
+    });
+
+    await service.schedule({ key: 'mqtt:default', reason: 'mqtt disconnected' });
+    expect(service.getPending()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+
+    expect(triggerRestart).not.toHaveBeenCalled();
+    expect(restartProcess).not.toHaveBeenCalled();
     expect(service.getPending()).toHaveLength(0);
   });
 
@@ -108,12 +128,12 @@ describe('AutoRestartService', () => {
     expect(service.getRecoveryAttempts('serial:custom_port')).toBe(0);
   });
 
-  it('recoverFault가 실패하면 retry를 스케줄링하고, 연속 실패 시 프로세스 재시작 fallback을 수행한다', async () => {
+  it('기본값(processFallback: false)일 때 recoverFault가 3회 연속 실패하면 프로세스 재시작 없이 브리지를 오류 상태로 유지한다', async () => {
     const triggerRestart = vi.fn().mockResolvedValue(undefined);
     const restartProcess = vi.fn();
     const recoverFault = vi.fn().mockResolvedValue(false);
     const service = new AutoRestartService({
-      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }),
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5 }), // processFallback 미지정 -> 기본 false
       recoverFault,
       triggerRestart,
       restartProcess,
@@ -127,7 +147,7 @@ describe('AutoRestartService', () => {
       reason: 'serial error',
     });
 
-    // 1차 시도 (5분 후) -> 실패 후 재스케줄
+    // 1차 시도 (5분 후) -> 실패 후 retry 스케줄 (attempts = 1)
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     expect(recoverFault).toHaveBeenCalledTimes(1);
     expect(triggerRestart).not.toHaveBeenCalled();
@@ -135,7 +155,7 @@ describe('AutoRestartService', () => {
     expect(service.getPending()).toHaveLength(1);
     expect(service.getRecoveryAttempts('serial:ew11_port')).toBe(1);
 
-    // 2차 시도 (추가 5분 후) -> 실패 후 재스케줄
+    // 2차 시도 (추가 5분 후) -> 실패 후 retry 스케줄 (attempts = 2)
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     expect(recoverFault).toHaveBeenCalledTimes(2);
     expect(triggerRestart).not.toHaveBeenCalled();
@@ -143,7 +163,45 @@ describe('AutoRestartService', () => {
     expect(service.getPending()).toHaveLength(1);
     expect(service.getRecoveryAttempts('serial:ew11_port')).toBe(2);
 
-    // 3차 시도 (추가 5분 후) -> 최대 시도 도달, 전체 프로세스 재시작 fallback 실행
+    // 3차 시도 (추가 5분 후) -> 최대 시도 도달, processFallback: false이므로 프로세스 재시작 없이 종료
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(recoverFault).toHaveBeenCalledTimes(3);
+    expect(triggerRestart).not.toHaveBeenCalled();
+    expect(restartProcess).not.toHaveBeenCalled();
+    expect(service.getPending()).toHaveLength(0); // 더 이상 retry 스케줄 없음
+    expect(service.getRecoveryAttempts('serial:ew11_port')).toBe(3);
+  });
+
+  it('processFallback: true 설정 시 3회 연속 실패 후 프로세스 재시작 fallback을 수행한다', async () => {
+    const triggerRestart = vi.fn().mockResolvedValue(undefined);
+    const restartProcess = vi.fn();
+    const recoverFault = vi.fn().mockResolvedValue(false);
+    const service = new AutoRestartService({
+      loadSettings: () => makeSettings({ enabled: true, timeoutMinutes: 5, processFallback: true }),
+      recoverFault,
+      triggerRestart,
+      restartProcess,
+      maxBridgeRecoveryAttempts: 3,
+      logger,
+    });
+
+    await service.schedule({
+      key: 'serial:fallback_port',
+      portId: 'fallback_port',
+      reason: 'serial error',
+    });
+
+    // 1차 시도
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(recoverFault).toHaveBeenCalledTimes(1);
+    expect(triggerRestart).not.toHaveBeenCalled();
+
+    // 2차 시도
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(recoverFault).toHaveBeenCalledTimes(2);
+    expect(triggerRestart).not.toHaveBeenCalled();
+
+    // 3차 시도 -> processFallback: true이므로 프로세스 재시작 실행
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     expect(recoverFault).toHaveBeenCalledTimes(3);
     expect(triggerRestart).toHaveBeenCalledTimes(1);

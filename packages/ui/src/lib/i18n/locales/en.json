@@ -184,6 +184,10 @@
       "timeout": {
         "title": "Restart delay (minutes)",
         "desc": "Restart after the fault persists for this duration. The default is 5 minutes."
+      },
+      "process_fallback": {
+        "title": "Process restart fallback",
+        "desc": "Restart the entire service process if individual bridge recovery fails 3 consecutive times. When disabled, the bridge stays in error state while the process continues running."
       }
     }
   },

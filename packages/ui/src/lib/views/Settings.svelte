@@ -72,12 +72,23 @@
   };
 
   const getAutoRestartSettings = () => {
-    return frontendSettings?.autoRestart ?? { enabled: true, timeoutMinutes: 5 };
+    return (
+      frontendSettings?.autoRestart ?? {
+        enabled: true,
+        timeoutMinutes: 5,
+        processFallback: false,
+      }
+    );
   };
 
   const handleAutoRestartToggle = (checked: boolean) => {
     const current = getAutoRestartSettings();
     onAutoRestartChange?.({ ...current, enabled: checked });
+  };
+
+  const handleAutoRestartFallbackToggle = (checked: boolean) => {
+    const current = getAutoRestartSettings();
+    onAutoRestartChange?.({ ...current, processFallback: checked });
   };
 
   const handleAutoRestartTimeoutChange = (event: Event) => {
@@ -1823,6 +1834,22 @@
                   max="1440"
                   value={getAutoRestartSettings().timeoutMinutes}
                   onchange={handleAutoRestartTimeoutChange}
+                  disabled={isSaving || isLoading}
+                />
+              </div>
+
+              <div class="setting sub-setting">
+                <div>
+                  <div class="setting-title">
+                    {$t('settings.auto_restart.process_fallback.title')}
+                  </div>
+                  <div class="setting-desc">
+                    {$t('settings.auto_restart.process_fallback.desc')}
+                  </div>
+                </div>
+                <Toggle
+                  checked={getAutoRestartSettings().processFallback ?? false}
+                  onchange={handleAutoRestartFallbackToggle}
                   disabled={isSaving || isLoading}
                 />
               </div>

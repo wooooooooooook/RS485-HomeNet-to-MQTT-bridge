@@ -14,10 +14,16 @@ export type RestoreMode = 'ALWAYS_ON' | 'ALWAYS_OFF' | 'RESTORE_DEFAULT_ON' | 'R
  * - `add_no_header`: Sum of data bytes (excluding header) & 0xFF.
  * - `xor`: XOR of all bytes (header + data).
  * - `xor_no_header`: XOR of data bytes (excluding header).
- * - `xor_final(0xNN)`: XOR of all bytes (header + data), then XOR with the configured final byte.
- * - `xor_final_no_header(0xNN)`: XOR of data bytes (excluding header), then XOR with the configured final byte.
+ * - `add_final_xor(0xNN)`: Sum of all bytes (header + data) & 0xFF, then XOR with configured final byte.
+ * - `add_final_xor_no_header(0xNN)`: Sum of data bytes (excluding header) & 0xFF, then XOR with configured final byte.
+ * - `add_final_add(0xNN)`: Sum of all bytes (header + data) + configured final byte & 0xFF.
+ * - `add_final_add_no_header(0xNN)`: Sum of data bytes (excluding header) + configured final byte & 0xFF.
+ * - `xor_final_xor(0xNN)` / `xor_final(0xNN)`: XOR of all bytes (header + data), then XOR with configured final byte.
+ * - `xor_final_xor_no_header(0xNN)` / `xor_final_no_header(0xNN)`: XOR of data bytes (excluding header), then XOR with configured final byte.
+ * - `xor_final_add(0xNN)`: XOR of all bytes (header + data), then add configured final byte & 0xFF.
+ * - `xor_final_add_no_header(0xNN)`: XOR of data bytes (excluding header), then add configured final byte & 0xFF.
  * - `samsung_rx`: (@deprecated) Specialized Samsung Wallpad RX checksum (0xB0 ^ XOR). If data[0] < 0x7C, result ^= 0x80.
- * - `samsung_tx`: (@deprecated) Specialized Samsung Wallpad TX checksum.
+ * - `samsung_tx`: (@deprecated) Specialized Samsung Wallpad TX checksum (equivalent to xor_final_xor_no_header(0x80)).
  * - `samsung_xor`: XOR of all bytes & 0x7F (Msb 0).
  * - `bestin_sum`: Cumulative XOR-based sum algorithm.
  * - `crc8*`: CRC-8 variants. 기본형은 헤더+데이터, `_no_header`는 데이터만.
@@ -28,6 +34,14 @@ export type ChecksumType =
   | 'xor'
   | 'add_no_header'
   | 'xor_no_header'
+  | `add_final_xor(0x${string})`
+  | `add_final_xor_no_header(0x${string})`
+  | `add_final_add(0x${string})`
+  | `add_final_add_no_header(0x${string})`
+  | `xor_final_xor(0x${string})`
+  | `xor_final_xor_no_header(0x${string})`
+  | `xor_final_add(0x${string})`
+  | `xor_final_add_no_header(0x${string})`
   | `xor_final(0x${string})`
   | `xor_final_no_header(0x${string})`
   | 'samsung_rx'

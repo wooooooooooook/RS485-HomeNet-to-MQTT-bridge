@@ -13,7 +13,7 @@ LG의 HVAC ODU/IDU 통신에 사용되는 **LGAP(LG Air Conditioner Protocol)**�
 - 1 stop bit
 - 상태 응답: 16 bytes
 - 제어 요청: 8 bytes
-- 체크섬: 체크섬 바이트를 제외한 전체 프레임의 XOR 결과에 `0x55`를 최종 XOR
+- 체크섬: 체크섬 바이트를 제외한 전체 프레임의 합산(Sum & 0xFF) 결과에 `0x55`를 최종 XOR (`add_final_xor(0x55)`)
 
 프로토콜 분석 문서에 따르면 ODU는 자발적으로 상태를 보내지 않으므로 zone별 polling이 필요합니다.
 
@@ -25,8 +25,8 @@ homenet_bridge:
     rx_header: [0x10]
     tx_header: [0x80]
     rx_length: 16
-    rx_checksum: xor_final(0x55)
-    tx_checksum: xor_final(0x55)
+    rx_checksum: add_final_xor(0x55)
+    tx_checksum: add_final_xor(0x55)
 ```
 
 `tx_header`는 `esphome-lgap`의 현재 예제 설정에서 사용하는 `0x80`으로 잡았습니다. LGAP 프로토콜 문서에서는 TX0가 configurable이라고 설명하므로, 실제 설치 환경에서 캡처한 프레임과 일치하는지 확인해야 합니다.
@@ -107,7 +107,7 @@ automation:
 80 00 A0 00 03 40 07 ??
 ```
 
-마지막 `??`는 앞의 7바이트를 XOR한 결과에 `0x55`를 최종 XOR한 값입니다.
+마지막 `??`는 앞의 7바이트를 합산(SUM & 0xFF)한 결과에 `0x55`를 최종 XOR한 값입니다 (`add_final_xor(0x55)`).
 
 ## 갤러리
 

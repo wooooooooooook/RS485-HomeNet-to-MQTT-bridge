@@ -2,14 +2,22 @@ import type { ChecksumType, Checksum2Type } from '../types.js';
 
 export type { ChecksumType, Checksum2Type };
 
-const XOR_FINAL_TYPES = Array.from(
-  { length: 256 },
-  (_, value) => `xor_final(0x${value.toString(16).padStart(2, '0')})`,
-) as ChecksumType[];
-const XOR_FINAL_NO_HEADER_TYPES = Array.from(
-  { length: 256 },
-  (_, value) => `xor_final_no_header(0x${value.toString(16).padStart(2, '0')})`,
-) as ChecksumType[];
+const PARAMETERIZED_FINAL_TYPES = Array.from({ length: 256 }, (_, value) => {
+  const hex = value.toString(16).padStart(2, '0');
+  return [
+    `add_final_xor(0x${hex})`,
+    `add_final_xor_no_header(0x${hex})`,
+    `add_final_add(0x${hex})`,
+    `add_final_add_no_header(0x${hex})`,
+    `xor_final_xor(0x${hex})`,
+    `xor_final_xor_no_header(0x${hex})`,
+    `xor_final_add(0x${hex})`,
+    `xor_final_add_no_header(0x${hex})`,
+    // Legacy aliases
+    `xor_final(0x${hex})`,
+    `xor_final_no_header(0x${hex})`,
+  ] as const;
+}).flat() as ChecksumType[];
 
 export const STANDARD_CHECKSUM_TYPES = [
   'add',
@@ -29,8 +37,7 @@ export const STANDARD_CHECKSUM_TYPES = [
   'crc8_wcdma',
   'crc8_wcdma_no_header',
   'none',
-  ...XOR_FINAL_TYPES,
-  ...XOR_FINAL_NO_HEADER_TYPES,
+  ...PARAMETERIZED_FINAL_TYPES,
 ] as const satisfies readonly ChecksumType[];
 
 export const STANDARD_CHECKSUM2_TYPES = [
@@ -66,9 +73,18 @@ type Checksum2Resolution = {
 
 type Crc8Variant = 'crc8' | 'crc8_maxim' | 'crc8_rohc' | 'crc8_wcdma';
 
+type ParameterizedFinalResolution = {
+  kind: 'parameterized_final';
+  normalizedType: ChecksumType;
+  baseOp: 'add' | 'xor';
+  finalOp: 'xor' | 'add';
+  finalVal: number;
+  includeHeader: boolean;
+};
+
 type Checksum1Resolution =
   | { kind: 'native'; normalizedType: ChecksumType }
-  | { kind: 'xor_final'; normalizedType: ChecksumType; finalXor: number; includeHeader: boolean }
+  | ParameterizedFinalResolution
   | { kind: 'crc8'; normalizedType: ChecksumType; baseType: Crc8Variant; includeHeader: boolean };
 
 interface Crc16Spec {
@@ -184,13 +200,27 @@ const CRC16_TABLE_BY_SPEC = new Map<Crc16Spec, Uint16Array>([
 ]);
 
 function resolveChecksumType(type: ChecksumType): Checksum1Resolution {
-  const xorFinalMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
-  if (xorFinalMatch) {
+  const match = /^(add|xor)_final_(xor|add)(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
+  if (match) {
     return {
-      kind: 'xor_final',
+      kind: 'parameterized_final',
       normalizedType: type,
-      finalXor: Number.parseInt(xorFinalMatch[2], 16),
-      includeHeader: xorFinalMatch[1] !== '_no_header',
+      baseOp: match[1] as 'add' | 'xor',
+      finalOp: match[2] as 'xor' | 'add',
+      includeHeader: match[3] !== '_no_header',
+      finalVal: Number.parseInt(match[4], 16),
+    };
+  }
+  // Legacy alias support: xor_final(0xNN) / xor_final_no_header(0xNN)
+  const legacyXorMatch = /^xor_final(_no_header)?\(0x([0-9a-fA-F]{2})\)$/.exec(type);
+  if (legacyXorMatch) {
+    return {
+      kind: 'parameterized_final',
+      normalizedType: type,
+      baseOp: 'xor',
+      finalOp: 'xor',
+      includeHeader: legacyXorMatch[1] !== '_no_header',
+      finalVal: Number.parseInt(legacyXorMatch[2], 16),
     };
   }
   if (type === 'crc8' || type === 'crc8_maxim' || type === 'crc8_rohc' || type === 'crc8_wcdma') {
@@ -248,8 +278,18 @@ export type Checksum2Verifier = (
  */
 export function calculateChecksum(header: ByteArray, data: ByteArray, type: ChecksumType): number {
   const resolved = resolveChecksumType(type);
-  if (resolved.kind === 'xor_final') {
-    return (resolved.includeHeader ? xor(header, data) : xorNoHeader(data)) ^ resolved.finalXor;
+  if (resolved.kind === 'parameterized_final') {
+    const baseVal =
+      resolved.baseOp === 'add'
+        ? resolved.includeHeader
+          ? add(header, data)
+          : addNoHeader(data)
+        : resolved.includeHeader
+          ? xor(header, data)
+          : xorNoHeader(data);
+    return resolved.finalOp === 'xor'
+      ? baseVal ^ resolved.finalVal
+      : (baseVal + resolved.finalVal) & 0xff;
   }
   if (resolved.kind === 'crc8') {
     const spec = CRC8_SPECS[resolved.baseType];
@@ -310,11 +350,15 @@ export function calculateChecksumFromBuffer(
   const headerStart = baseOffset + _headerLength;
   const dataStop = baseOffset + dataEnd;
   const resolved = resolveChecksumType(type);
-  if (resolved.kind === 'xor_final') {
-    return (
-      xorRange(buffer, resolved.includeHeader ? dataStart : headerStart, dataStop) ^
-      resolved.finalXor
-    );
+  if (resolved.kind === 'parameterized_final') {
+    const start = resolved.includeHeader ? dataStart : headerStart;
+    const baseVal =
+      resolved.baseOp === 'add'
+        ? addRange(buffer, start, dataStop)
+        : xorRange(buffer, start, dataStop);
+    return resolved.finalOp === 'xor'
+      ? baseVal ^ resolved.finalVal
+      : (baseVal + resolved.finalVal) & 0xff;
   }
   if (resolved.kind === 'crc8') {
     return crc8Range(
@@ -746,9 +790,24 @@ export function getChecksumFunction(
   type: ChecksumType,
 ): ((buffer: ByteArray, start: number, end: number) => number) | null {
   const resolved = resolveChecksumType(type);
-  if (resolved.kind === 'xor_final') {
-    return (buffer: ByteArray, start: number, end: number) =>
-      xorRange(buffer, start, end) ^ resolved.finalXor;
+  if (resolved.kind === 'parameterized_final') {
+    const { baseOp, finalOp, finalVal } = resolved;
+    if (baseOp === 'add' && finalOp === 'xor') {
+      return (buffer: ByteArray, start: number, end: number) =>
+        addRange(buffer, start, end) ^ finalVal;
+    }
+    if (baseOp === 'add' && finalOp === 'add') {
+      return (buffer: ByteArray, start: number, end: number) =>
+        (addRange(buffer, start, end) + finalVal) & 0xff;
+    }
+    if (baseOp === 'xor' && finalOp === 'xor') {
+      return (buffer: ByteArray, start: number, end: number) =>
+        xorRange(buffer, start, end) ^ finalVal;
+    }
+    if (baseOp === 'xor' && finalOp === 'add') {
+      return (buffer: ByteArray, start: number, end: number) =>
+        (xorRange(buffer, start, end) + finalVal) & 0xff;
+    }
   }
   if (resolved.kind === 'crc8') {
     const spec = CRC8_SPECS[resolved.baseType];
@@ -810,7 +869,7 @@ export function getChecksum2Verifier(type: Checksum2Type): Checksum2Verifier | n
  */
 export function getChecksumOffsetType(type: ChecksumType): 'base' | 'header' {
   const resolved = resolveChecksumType(type);
-  if (resolved.kind === 'xor_final') {
+  if (resolved.kind === 'parameterized_final') {
     return resolved.includeHeader ? 'base' : 'header';
   }
   if (resolved.kind === 'crc8') {

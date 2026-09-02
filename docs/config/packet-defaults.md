@@ -52,10 +52,16 @@
 | `add_no_header` | 데이터 | `Sum(Data Bytes) & 0xFF` |
 | `xor` | 헤더 + 데이터 | `XOR(All Bytes)` |
 | `xor_no_header` | 데이터 | `XOR(Data Bytes)` |
-| `xor_final(0xNN)` | 헤더 + 데이터 | `XOR(All Bytes) ^ 0xNN` |
-| `xor_final_no_header(0xNN)` | 데이터 | `XOR(Data Bytes) ^ 0xNN` |
+| `add_final_xor(0xNN)` | 헤더 + 데이터 | `(Sum(All Bytes) & 0xFF) ^ 0xNN` (LGAP 등) |
+| `add_final_xor_no_header(0xNN)` | 데이터 | `(Sum(Data Bytes) & 0xFF) ^ 0xNN` |
+| `add_final_add(0xNN)` | 헤더 + 데이터 | `(Sum(All Bytes) + 0xNN) & 0xFF` |
+| `add_final_add_no_header(0xNN)` | 데이터 | `(Sum(Data Bytes) + 0xNN) & 0xFF` |
+| `xor_final_xor(0xNN)` / `xor_final(0xNN)` | 헤더 + 데이터 | `XOR(All Bytes) ^ 0xNN` |
+| `xor_final_xor_no_header(0xNN)` / `xor_final_no_header(0xNN)` | 데이터 | `XOR(Data Bytes) ^ 0xNN` |
+| `xor_final_add(0xNN)` | 헤더 + 데이터 | `(XOR(All Bytes) + 0xNN) & 0xFF` |
+| `xor_final_add_no_header(0xNN)` | 데이터 | `(XOR(Data Bytes) + 0xNN) & 0xFF` |
 | `samsung_rx` (Deprecated) | 데이터 | 초기값 `0xB0`.<br>1. `crc = 0xB0 ^ XOR(Data)`<br>2. 만약 `data[0] < 0x7C`이면, `crc ^= 0x80` |
-| `samsung_tx` (Deprecated) | 데이터 | 초기값 `0x00`.<br>`crc = 0x00 ^ XOR(Data) ^ 0x80` |
+| `samsung_tx` (Deprecated) | 데이터 | 초기값 `0x00`.<br>`crc = 0x00 ^ XOR(Data) ^ 0x80` (`xor_final_xor_no_header(0x80)`와 동일) |
 | `samsung_xor` | 패킷 전체 | 모든 바이트를 XOR한 후 최상위 비트를 0으로 설정 (`crc & 0x7F`) |
 | `bestin_sum` | 헤더 + 데이터 | 초기값 `3`.<br>각 바이트 `b`에 대해: `sum = ((b ^ sum) + 1) & 0xFF` |
 | `crc8` / `crc8_no_header` | 헤더+데이터 / 데이터 | CRC-8 (`poly=0x07`, `init=0x00`, `refin=false`, `refout=false`, `xorOut=0x00`) |

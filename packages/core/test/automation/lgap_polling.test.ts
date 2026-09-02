@@ -39,7 +39,7 @@ describe('LGAP polling automation', () => {
       serial,
       packet_defaults: {
         tx_header: [0x80],
-        tx_checksum: 'xor_final(0x55)',
+        tx_checksum: 'add_final_xor(0x55)',
       },
       automation: [
         {
@@ -82,7 +82,7 @@ describe('LGAP polling automation', () => {
       serial,
       packet_defaults: {
         tx_header: [0x80],
-        tx_checksum: 'xor_final(0x55)',
+        tx_checksum: 'add_final_xor(0x55)',
       },
       automation: [
         {

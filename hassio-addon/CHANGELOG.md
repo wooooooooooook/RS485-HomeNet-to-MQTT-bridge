@@ -1,6 +1,9 @@
 ** ⚠️ 업데이트 전 백업 권장 **
 - 오류가 있으면 homeassistant [카페](https://cafe.naver.com/koreassistant), [깃헙](https://github.com/wooooooooooook/homenet2mqtt), [디스코드](https://discord.gg/kGwhUBMe5z) 등으로 알려주세요.
 
+v3.3.0
+- feat: 매개변수화 체크섬 8종 체계(add/xor 조합 2,048종) 지원 및 LGAP 체크섬 연산(add_final_xor) 정정
+
 v3.2.1
 - fix: 기존의 전체 프로세스 재시작 방식의 문제를 수정하고, Bridge 단위 recovery를 도입
   - 브릿지 연결 장애 복구 개선 — 문제가 발생한 브릿지만 자동 재시작하여 EW11 등의 연결 장애를 복구하고, 다른 브릿지와 서비스 전체에 미치는 영향을 줄였습니다.

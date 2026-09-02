@@ -41,6 +41,8 @@ export class GenericDevice extends Device {
   private stateScripts: StateScript[] = [];
   private commandScripts: Map<string, CompiledScript> = new Map();
   private static readonly EMPTY_STATES = {};
+  private static readonly STANDARD_CHECKSUMS = new Set<string>(STANDARD_CHECKSUM_TYPES);
+  private static readonly STANDARD_CHECKSUM2S = new Set<string>(STANDARD_CHECKSUM2_TYPES);
   // private reusableBufferView & reusableContext are inherited from Device
 
   constructor(config: DeviceConfig, protocolConfig: ProtocolConfig) {
@@ -292,10 +294,8 @@ export class GenericDevice extends Device {
     if (packetDefaults.tx_checksum && packetDefaults.tx_checksum !== 'none') {
       const checksumType = packetDefaults.tx_checksum as ChecksumType | string;
 
-      const standardChecksums = new Set<string>(STANDARD_CHECKSUM_TYPES);
-
       if (typeof checksumType === 'string') {
-        if (standardChecksums.has(checksumType)) {
+        if (GenericDevice.STANDARD_CHECKSUMS.has(checksumType)) {
           const checksum = calculateChecksum(headerPart, dataPart, checksumType as ChecksumType);
           checksumPart.push(checksum);
         } else {
@@ -325,10 +325,9 @@ export class GenericDevice extends Device {
     // Check for 2-byte checksum if 1-byte checksum is not used
     else if (packetDefaults.tx_checksum2) {
       const checksumType = packetDefaults.tx_checksum2 as Checksum2Type | string;
-      const standardChecksums2 = new Set<string>(STANDARD_CHECKSUM2_TYPES);
 
       if (typeof checksumType === 'string') {
-        if (standardChecksums2.has(checksumType)) {
+        if (GenericDevice.STANDARD_CHECKSUM2S.has(checksumType)) {
           const checksum = calculateChecksum2(headerPart, dataPart, checksumType as Checksum2Type);
           checksumPart.push(...checksum);
         } else {

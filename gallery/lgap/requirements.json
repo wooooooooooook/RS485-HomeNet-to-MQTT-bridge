@@ -9,7 +9,7 @@
     "rx_header": [16],
     "tx_header": [128],
     "rx_length": 16,
-    "rx_checksum": "xor_final(0x55)",
-    "tx_checksum": "xor_final(0x55)"
+    "rx_checksum": "add_final_xor(0x55)",
+    "tx_checksum": "add_final_xor(0x55)"
   }
 }

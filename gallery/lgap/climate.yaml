@@ -7,7 +7,7 @@ meta:
 
     jourdant/esphome-lgap의 공개 프로토콜 분석을 기반으로 합니다.
     수신 상태 프레임은 16바이트, 송신 제어 프레임은 8바이트이며
-    체크섬은 전체 프레임 바이트 XOR 결과에 0x55를 최종 XOR하는 방식입니다.
+    체크섬은 전체 프레임 바이트 합산(Sum) 결과에 0x55를 최종 XOR(add_final_xor(0x55))하는 방식입니다.
   description_en: |
     LG HVAC configuration based on the LGAP RS485 protocol.
     Uses 4800 bps 8N1 and polls each indoor-unit zone through the ODU.

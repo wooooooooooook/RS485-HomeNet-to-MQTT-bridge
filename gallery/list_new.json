@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-19T05:37:40.528Z",
+  "generated_at": "2026-09-02T09:30:06.761Z",
   "vendors": [
     {
       "id": "bestin",
@@ -4071,8 +4071,8 @@
             128
           ],
           "rx_length": 16,
-          "rx_checksum": "xor_final(0x55)",
-          "tx_checksum": "xor_final(0x55)"
+          "rx_checksum": "add_final_xor(0x55)",
+          "tx_checksum": "add_final_xor(0x55)"
         }
       },
       "items": [
@@ -4080,7 +4080,7 @@
           "file": "lgap/climate.yaml",
           "name": "LG 에어컨 (LGAP RS485)",
           "name_en": "LG Air Conditioner (LGAP RS485)",
-          "description": "LGAP(LG Air Conditioner Protocol) 기반 LG HVAC 실내기 제어 설정입니다.\n4,800 bps 8N1 RS485 통신을 사용하며 ODU를 통해 zone별 상태를 polling합니다.\n\njourdant/esphome-lgap의 공개 프로토콜 분석을 기반으로 합니다.\n수신 상태 프레임은 16바이트, 송신 제어 프레임은 8바이트이며\n체크섬은 전체 프레임 바이트 XOR 결과에 0x55를 최종 XOR하는 방식입니다.\n",
+          "description": "LGAP(LG Air Conditioner Protocol) 기반 LG HVAC 실내기 제어 설정입니다.\n4,800 bps 8N1 RS485 통신을 사용하며 ODU를 통해 zone별 상태를 polling합니다.\n\njourdant/esphome-lgap의 공개 프로토콜 분석을 기반으로 합니다.\n수신 상태 프레임은 16바이트, 송신 제어 프레임은 8바이트이며\n체크섬은 전체 프레임 바이트 합산(Sum) 결과에 0x55를 최종 XOR(add_final_xor(0x55))하는 방식입니다.\n",
           "description_en": "LG HVAC configuration based on the LGAP RS485 protocol.\nUses 4800 bps 8N1 and polls each indoor-unit zone through the ODU.\nBased on the public protocol analysis in jourdant/esphome-lgap.\n",
           "version": "1.0.0",
           "author": "homenet2mqtt",

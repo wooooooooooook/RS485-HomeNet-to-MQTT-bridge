@@ -4,6 +4,7 @@ import {
   calculateChecksumFromBuffer,
   getChecksumFunction,
   getChecksumOffsetType,
+  STANDARD_CHECKSUM_TYPES,
 } from '../../src/protocol/utils/checksum.js';
 import { PacketParser } from '../../src/protocol/packet-parser.js';
 
@@ -155,6 +156,86 @@ describe('Parameterized Final Checksums (8 variants x 256)', () => {
       const csSamsungTx = calculateChecksum([], testData, 'samsung_tx');
       const csXorFinal = calculateChecksum([], testData, 'xor_final_xor_no_header(0x80)');
       expect(csSamsungTx).toBe(csXorFinal);
+    });
+  });
+
+  describe('Full STANDARD_CHECKSUM_TYPES Parameterized Round-Trip Tests', () => {
+    const parameterizedTypes = STANDARD_CHECKSUM_TYPES.filter(
+      (type) => typeof type === 'string' && type.includes('_final'),
+    );
+
+    it('contains all 2,560 parameterized checksum types (8 variants + 2 legacy x 256)', () => {
+      expect(parameterizedTypes.length).toBe(2560);
+    });
+
+    it('performs round-trip PacketParser parsing across all parameterized checksum types (Fixed Length Strategy A)', () => {
+      const header = [0xaa, 0x55];
+      const payload = [0x12, 0x34, 0x56, 0x78];
+
+      for (const type of parameterizedTypes) {
+        const checksum = calculateChecksum(header, payload, type);
+        const fullPacket = Buffer.from([...header, ...payload, checksum]);
+
+        const parser = new PacketParser({
+          rx_header: [0xaa, 0x55],
+          rx_length: fullPacket.length,
+          rx_checksum: type,
+        });
+
+        // Add prefix noise to verify sliding window resynchronization
+        const stream = Buffer.concat([Buffer.from([0x00, 0x11, 0x22]), fullPacket]);
+        const parsed = parser.parseChunk(stream);
+
+        expect(parsed.length).toBe(1);
+        expect(Buffer.compare(parsed[0], fullPacket)).toBe(0);
+      }
+    });
+
+    it('performs round-trip PacketParser parsing across all parameterized checksum types (Footer Strategy B)', () => {
+      const header = [0xaa];
+      const payload = [0x10, 0x20, 0x30];
+      const footer = [0x0d, 0x0a];
+
+      for (const type of parameterizedTypes) {
+        const checksum = calculateChecksum(header, payload, type);
+        const fullPacket = Buffer.from([...header, ...payload, checksum, ...footer]);
+
+        const parser = new PacketParser({
+          rx_header: [0xaa],
+          rx_footer: [0x0d, 0x0a],
+          rx_checksum: type,
+          rx_min_length: fullPacket.length,
+        });
+
+        const stream = Buffer.concat([Buffer.from([0x00, 0x11, 0x22]), fullPacket]);
+        const parsed = parser.parseChunk(stream);
+
+        expect(parsed.length).toBe(1);
+        expect(Buffer.compare(parsed[0], fullPacket)).toBe(0);
+      }
+    });
+
+    it('performs round-trip PacketParser parsing across all parameterized checksum types (Sweep Strategy C)', () => {
+      const header = [0x02];
+      const payload = [0x11, 0x22, 0x33, 0x44];
+
+      for (const type of parameterizedTypes) {
+        const checksum = calculateChecksum(header, payload, type);
+        const fullPacket = Buffer.from([...header, ...payload, checksum]);
+
+        const parser = new PacketParser({
+          rx_header: [0x02],
+          rx_min_length: fullPacket.length,
+          rx_max_length: fullPacket.length + 4,
+          rx_checksum: type,
+        });
+
+        const stream = Buffer.concat([Buffer.from([0x00, 0x11]), fullPacket]);
+        const parsed = parser.parseChunk(stream);
+
+        expect(parsed.length).toBe(1);
+        expect(Buffer.compare(parsed[0], fullPacket)).toBe(0);
+      }
     });
   });
 });
